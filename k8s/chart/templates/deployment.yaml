@@ -28,10 +28,10 @@ spec:
               value: {{ if .Values.staging }}staging.{{ end }}{{ .Values.ingress.domain }}
 {{- if .Values.staging }}
             - name: DJANGO_SETTINGS_MODULE
-              value: pennclubs.settings.staging
+              value: gsrs.settings.staging
 {{- else }}
             - name: DJANGO_SETTINGS_MODULE
-              value: pennclubs.settings.production
+              value: gsrs.settings.production
 {{- end }}
 {{- if .Values.secrets.enabled }}
           envFrom:
