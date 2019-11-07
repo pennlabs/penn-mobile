@@ -9,8 +9,8 @@ verify_ssl = true
 django = "*"
 django-labs-accounts = "*"
 django-rest-framework = "*"
-install = "*"
 django-filter = "*"
+gunicorn = "*"
 
 [requires]
 python_version = "3.7"
