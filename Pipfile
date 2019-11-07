@@ -12,6 +12,7 @@ django-rest-framework = "*"
 django-filter = "*"
 gunicorn = "*"
 dj-database-url = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.7"
