@@ -26,9 +26,9 @@ To create users, you first have to create a main superuser.
     - Get all open invites for a user.
 - `POST membership/invite/`
     - Invite a user to a group. This is a POST request, where you sent a JSON payload `{"username": <pennkey>, "group": <group ID>}`
-- `POST membership/<invite id>/accept`
+- `POST membership/<invite id>/accept/`
     - Accept an invite.
-- `POST membership/<invite id>/decline`
+- `POST membership/<invite id>/decline/`
     - Decline an invite.
 - `GET groups/`
     - Get a list of all groups
