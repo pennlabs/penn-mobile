@@ -13,4 +13,4 @@ ingress:
   domain: gsr.upenn.club
 
 secrets:
-  secretEnv: example-django
+  enabled: false
