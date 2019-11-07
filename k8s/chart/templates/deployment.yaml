@@ -23,6 +23,9 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.port }}
+          env:
+            - name: BACKEND_DOMAIN
+              value: {{ if .Values.staging }}staging.{{ end }}{{ .Values.backend.ingress.domain }}
 {{- if .Values.secrets.enabled }}
           envFrom:
             - secretRef:
