@@ -40,11 +40,15 @@ class GroupMembershipViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin):
 
     @action(detail=False, methods=['post'])
     def invite(self, request):
+        print('DAVISDEBUG', request.data)
         group_id = request.data.get('group')
         username = request.data.get('user')
         group = Group.objects.get(pk=group_id)
         user = User.objects.get(username=username)
+        if GroupMembership.objects.filter(user=user, group=group, type=request.data.get('type', 'M')).exists():
+            return Response({'message': 'invite exists'}, status=400)
         GroupMembership.objects.create(user=user, group=group, type=request.data.get('type', 'M'))
+        return Response({'message': 'invite sent.'})
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
