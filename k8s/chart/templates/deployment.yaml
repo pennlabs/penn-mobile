@@ -25,7 +25,7 @@ spec:
             - containerPort: {{ .Values.service.port }}
           env:
             - name: BACKEND_DOMAIN
-              value: {{ if .Values.staging }}staging.{{ end }}{{ .Values.backend.ingress.domain }}
+              value: {{ if .Values.staging }}staging.{{ end }}{{ .Values.ingress.domain }}
 {{- if .Values.secrets.enabled }}
           envFrom:
             - secretRef:
