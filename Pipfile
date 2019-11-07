@@ -1,0 +1,16 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+django = "*"
+django-labs-accounts = "*"
+django-rest-framework = "*"
+install = "*"
+django-filter = "*"
+
+[requires]
+python_version = "3.7"
