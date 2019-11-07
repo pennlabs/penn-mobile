@@ -12,4 +12,4 @@ RUN pipenv install --system
 COPY . /app/
 
 # Collect static files
-RUN python3.7 /app/manage.py collectstatic --noinput
+RUN python3 /app/manage.py collectstatic --noinput
