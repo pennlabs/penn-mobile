@@ -9,6 +9,9 @@ from gsrs.settings.base import *  # noqa
 DEBUG = False
 
 # Fix MySQL Emoji support
+DATABASES = {
+    'default': dj_database_url.config(default='mysql://gsr:QSJcCI4kt9EiVBTT@sql.pennlabs.org:3306/gsr')
+}
 DATABASES['default']['OPTIONS'] = {'charset': 'utf8mb4'}
 
 # Honour the 'X-Forwarded-Proto' header for request.is_secure()
