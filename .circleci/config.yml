@@ -1,0 +1,84 @@
+version: 2.1
+orbs:
+  docker: circleci/docker@0.5.13
+
+branch-filters: &branch-filters
+  filters:
+    branches:
+      only:
+        - master
+        - staging
+
+jobs:
+  test:
+    working_directory: ~/pennlabs
+    docker:
+      - image: circleci/python:3.7
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/circle_test
+      - image: circleci/mysql:latest
+        command: --default-authentication-plugin=mysql_native_password
+        environment:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: circle_test
+    steps:
+      - checkout
+      - run: sudo chown -R circleci:circleci /usr/local/bin
+      - run: sudo chown -R circleci:circleci /usr/local/lib/python3.7/site-packages
+      - restore_cache:
+          key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+      - run:
+          name: Install dependencies
+          command: |
+            sudo pip install pipenv
+            pipenv install --deploy --dev
+      - save_cache:
+          key: deps9-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+          paths:
+            - ".venv"
+            - "/usr/local/bin"
+            - "/usr/local/lib/python3.7/site-packages"
+      - run:
+          name: Lint
+          command: |
+            pipenv run flake8 .
+      - run:
+          name: Run tests
+          command: |
+            pipenv run coverage run manage.py test --settings=pennlabs.settings.ci
+      - run:
+          name: Upload code coverage
+          command: |
+            pipenv run coveralls
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: trl
+  deploy:
+    working_directory: ~/pennlabs
+    docker:
+      - image: pennlabs/labs-helm
+    steps:
+      - checkout
+      - run:
+          name: Deploy to k8s
+          command: /deploy.sh
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - test
+      - docker/publish:
+          name: docker-publish
+          requires:
+            - test
+          image: pennlabs/example-django
+          tag: "${CIRCLE_SHA1}"
+          context: docker-publish
+      - deploy:
+          requires:
+            - docker-publish
+          context: k8s-deploy
+          <<: *branch-filters

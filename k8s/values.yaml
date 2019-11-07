@@ -1,0 +1,16 @@
+replicaCount: 1
+
+image:
+  repository: pennlabs/example-django
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  port: 80
+
+ingress:
+  enabled: true
+  domain: example.pennlabs.org
+
+secrets:
+  secretEnv: example-django
