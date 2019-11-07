@@ -39,10 +39,10 @@ jobs:
             - ".venv"
             - "/usr/local/bin"
             - "/usr/local/lib/python3.7/site-packages"
-      - run:
-          name: Lint
-          command: |
-            pipenv run flake8 .
+#      - run:
+#          name: Lint
+#          command: |
+#            pipenv run flake8 .
       - run:
           name: Run tests
           command: |
