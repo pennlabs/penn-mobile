@@ -43,14 +43,14 @@ jobs:
 #          name: Lint
 #          command: |
 #            pipenv run flake8 .
-      - run:
-          name: Run tests
-          command: |
-            pipenv run python manage.py test --settings=gsrs.settings.ci
-      - run:
-          name: Upload code coverage
-          command: |
-            pipenv run coveralls
+#       - run:
+#           name: Run tests
+#           command: |
+#             pipenv run coverage run manage.py test --settings=gsrs.settings.ci
+#       - run:
+#           name: Upload code coverage
+#           command: |
+#             pipenv run coveralls
       - store_test_results:
           path: test-results
       - store_artifacts:
