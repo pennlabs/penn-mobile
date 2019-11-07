@@ -78,7 +78,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'pennlabs.wsgi.application'
+WSGI_APPLICATION = 'gsrs.wsgi.application'
 
 
 # Database
