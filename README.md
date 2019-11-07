@@ -4,6 +4,7 @@
 - `git clone`
 - `cd` in
 - `pipenv install`
+- `pipenv run python manage.py migrate`
 - `pipenv run python manage.py runserver 8000`
 
 You should be good to go!
