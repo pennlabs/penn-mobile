@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.http import Http404
+from django.db.models import Prefetch
 
 from rest_framework import viewsets, mixins
 from rest_framework.decorators import api_view, action
@@ -35,7 +36,7 @@ class GroupMembershipViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin):
     def invite(self, request):
         group_id = request.data.get('group')
         username = request.data.get('user')
-        group = Group.objects.get(group_id)
+        group = Group.objects.get(pk=group_id)
         user = User.objects.get(username=username)
         GroupMembership.objects.create(user=user, group=group, type=request.data.get('type', 'M'))
 
@@ -58,6 +59,9 @@ class GroupMembershipViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin):
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
+
+    def get_queryset(self):
+        return super().get_queryset().prefetch_related(Prefetch('members', User.objects.filter(memberships__accepted=True)))
 
     # def get_queryset(self):
     #     if self.request.user is None or not hasattr(self.request.user, 'booking_groups'):
