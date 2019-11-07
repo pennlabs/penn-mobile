@@ -74,7 +74,7 @@ workflows:
           name: docker-publish
           requires:
             - test
-          image: pennlabs/example-django
+          image: pennlabs/study-rooms
           tag: "${CIRCLE_SHA1}"
           context: docker-publish
       - deploy:
