@@ -4,8 +4,16 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+coveralls = "*"
+unittest-xml-reporting = "*"
+flake8 = "*"
+flake8-isort = "*"
+flake8-quotes = "*"
 
 [packages]
+mysqlclient = "*"
+sentry-sdk = "*"
+uwsgi = "*"
 django = "*"
 django-labs-accounts = "*"
 django-rest-framework = "*"
