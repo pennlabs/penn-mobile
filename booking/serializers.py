@@ -22,7 +22,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ['owner', 'members', 'name']
+        fields = ['owner', 'members', 'name', 'color', 'id']
 
 
 class GroupField(serializers.RelatedField):

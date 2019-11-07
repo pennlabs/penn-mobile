@@ -15,7 +15,7 @@ User = get_user_model()
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = get_user_model().objects.all()
+    queryset = get_user_model().objects.all().prefetch_related(Prefetch('booking_groups', Group.objects.filter(groupmembership__accepted=True)))
     serializer_class = UserSerializer
     lookup_field = 'username'
 
