@@ -1,0 +1,17 @@
+replicaCount: 1
+
+staging: false
+
+image:
+  repository: nginx
+  tag: stable
+  pullPolicy: IfNotPresent
+
+service:
+  port: 80
+
+ingress:
+  enabled: false
+
+secrets:
+  secretEnv: ""
