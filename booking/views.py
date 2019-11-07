@@ -40,7 +40,6 @@ class GroupMembershipViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin):
 
     @action(detail=False, methods=['post'])
     def invite(self, request):
-        print('DAVISDEBUG', request.data)
         group_id = request.data.get('group')
         username = request.data.get('user')
         group = Group.objects.get(pk=group_id)
