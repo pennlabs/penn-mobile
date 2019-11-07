@@ -19,6 +19,12 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializer
     lookup_field = 'username'
 
+    @action(detail=True, methods=['get'])
+    def invites(self, request, username=None):
+        user = get_object_or_404(User, username=username)
+        return Response(
+            GroupMembershipSerializer(GroupMembership.objects.filter(user=user, accepted=False), many=True).data)
+
 
 class GroupMembershipViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin):
     filter_backends = [DjangoFilterBackend]
@@ -62,6 +68,11 @@ class GroupViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return super().get_queryset().prefetch_related(Prefetch('members', User.objects.filter(memberships__accepted=True)))
+
+    @action(detail=True, methods=['get'])
+    def invites(self, request, pk):
+        group = get_object_or_404(Group, pk=pk)
+        return Response(GroupMembershipSerializer(GroupMembership.objects.filter(group=group, accepted=False), many=True).data)
 
     # def get_queryset(self):
     #     if self.request.user is None or not hasattr(self.request.user, 'booking_groups'):
