@@ -81,4 +81,3 @@ class GroupViewSet(viewsets.ModelViewSet):
     #     if self.request.user is None or not hasattr(self.request.user, 'booking_groups'):
     #         return Group.objects.none()
     #     return self.request.user.booking_groups.all()
-
