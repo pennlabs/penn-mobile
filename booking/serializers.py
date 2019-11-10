@@ -38,6 +38,7 @@ class GroupField(serializers.RelatedField):
         return {
             'name': value.name,
             'id': value.id,
+            'color': value.color,
         }
 
     def to_internal_value(self, data):
