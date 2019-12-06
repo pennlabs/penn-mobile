@@ -16,6 +16,10 @@ class GroupMembership(models.Model):
     MEMBER = 'M'
     type = models.CharField(max_length=10, choices=[(ADMIN, 'Admin'), (MEMBER, 'M')])
 
+    pennkey_allow = models.BooleanField(default=False)
+
+    notifications = models.BooleanField(default=True)
+
     def __str__(self):
         return '{}<->{}'.format(self.user, self.group)
 

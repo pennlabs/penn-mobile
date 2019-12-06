@@ -64,6 +64,34 @@ class GroupMembershipViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin):
         membership.delete()
         return Response(resp)
 
+    @action(detail=True, methods=['post'])
+    def allow_pennkey(self, request, pk=None):
+        membership = get_object_or_404(GroupMembership, pk=pk)
+        membership.pennkey_allow = True
+        membership.save()
+        return Response({'message': 'pennkey allowed', 'user': membership.user.username, 'group': membership.group_id})
+
+    @action(detail=True, methods=['post'])
+    def deny_pennkey(self, request, pk=None):
+        membership = get_object_or_404(GroupMembership, pk=pk)
+        membership.pennkey_allow = False
+        membership.save()
+        return Response({'message': 'pennkey denied', 'user': membership.user.username, 'group': membership.group_id})
+
+    @action(detail=True, methods=['post'])
+    def activate_notification(self, request, pk=None):
+        membership = get_object_or_404(GroupMembership, pk=pk)
+        membership.notifications = True
+        membership.save()
+        return Response({'message': 'notifications activated', 'user': membership.user.username, 'group': membership.group_id})
+
+    @action(detail=True, methods=['post'])
+    def deactivate_notification(self, request, pk=None):
+        membership = get_object_or_404(GroupMembership, pk=pk)
+        membership.notifications = False
+        membership.save()
+        return Response({'message': 'notifications deactivated', 'user': membership.user.username, 'group': membership.group_id})
+
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
