@@ -70,33 +70,30 @@ class GroupMembershipViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin):
         membership.delete()
         return Response(resp)
 
-    @action(detail=True, methods=['post'])
-    def allow_pennkey(self, request, pk=None):
-        membership = get_object_or_404(GroupMembership, pk=pk)
-        membership.pennkey_allow = True
+    @action(detail=False, methods=['post'])
+    def pennkey(self, request):
+        group_id = request.data.get('group')
+        username = request.data.get('user')
+        allow = request.data.get('allow')
+        group = Group.objects.get(pk=group_id)
+        user = User.objects.get(username=username)
+        membership = GroupMembership.objects.get(user=user, group=group)
+        membership.pennkey_allow = allow
         membership.save()
-        return Response({'message': 'pennkey allowed', 'user': membership.user.username, 'group': membership.group_id})
+        return Response({'message': 'pennkey allowance updated', 'user': membership.user.username, 'group': membership.group_id})
 
-    @action(detail=True, methods=['post'])
-    def deny_pennkey(self, request, pk=None):
-        membership = get_object_or_404(GroupMembership, pk=pk)
-        membership.pennkey_allow = False
+    @action(detail=False, methods=['post'])
+    def notification(self, request):
+        group_id = request.data.get('group')
+        username = request.data.get('user')
+        active = request.data.get('active')
+        print(active)
+        group = Group.objects.get(pk=group_id)
+        user = User.objects.get(username=username)
+        membership = GroupMembership.objects.get(user=user, group=group)
+        membership.notifications = active
         membership.save()
-        return Response({'message': 'pennkey denied', 'user': membership.user.username, 'group': membership.group_id})
-
-    @action(detail=True, methods=['post'])
-    def activate_notification(self, request, pk=None):
-        membership = get_object_or_404(GroupMembership, pk=pk)
-        membership.notifications = True
-        membership.save()
-        return Response({'message': 'notifications activated', 'user': membership.user.username, 'group': membership.group_id})
-
-    @action(detail=True, methods=['post'])
-    def deactivate_notification(self, request, pk=None):
-        membership = get_object_or_404(GroupMembership, pk=pk)
-        membership.notifications = False
-        membership.save()
-        return Response({'message': 'notifications deactivated', 'user': membership.user.username, 'group': membership.group_id})
+        return Response({'message': 'notification updated', 'user': membership.user.username, 'group': membership.group_id})
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -115,3 +112,4 @@ class GroupViewSet(viewsets.ModelViewSet):
     #     if self.request.user is None or not hasattr(self.request.user, 'booking_groups'):
     #         return Group.objects.none()
     #     return self.request.user.booking_groups.all()
+

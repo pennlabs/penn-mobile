@@ -53,12 +53,9 @@ To create users, you first have to create a main superuser.
     - Update a group's information.
 - `GET /groups/<group ID/invites/`
     - Get a list of all open invites to this group.
-- `POST /membership/<membership id>/allow_pennkey/`
-    - Allow your pennkey to be used in a group.
-- `POST /membership/<membership id>/deny_pennkey/`
-    - Deny your pennkey to be used in a group.
-- `POST /membership/<membership id>/activate_notification/`
-    - Activate notifications for a group.
-- `POST /membership/<membership id>/deactivate_notification/`
-    - Deactivate notifications for a group.
+- `POST /membership/pennkey/`
+    - Update the pennkey for a user. This is a POST request, where you sent a JSON payload `{"user": <pennkey>, "group": <group ID>, "allow": <true/false>}`
+- `POST /membership/notification/`
+    - Update the pennkey for a user. This is a POST request, where you sent a JSON payload `{"user": <pennkey>, "group": <group ID>, "active": <true/false>}`
+
 
