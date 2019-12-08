@@ -25,7 +25,7 @@ To create users, you first have to create a main superuser.
 - `GET /users/<pennkey>/invites/`
     - Get all open invites for a user.
 - `POST /membership/invite/`
-    - Invite a user to a group. This is a POST request, where you sent a JSON payload `{"username": <pennkey>, "group": <group ID>}`
+    - Invite a user to a group. This is a POST request, where you sent a JSON payload `{"user": <pennkey>, "group": <group ID>}`
 - `POST /membership/<invite id>/accept/`
     - Accept an invite.
 - `POST /membership/<invite id>/decline/`
@@ -40,5 +40,9 @@ To create users, you first have to create a main superuser.
     - Update a group's information.
 - `GET /groups/<group ID/invites/`
     - Get a list of all open invites to this group.
+- `POST /membership/pennkey/`
+    - Update the pennkey for a user. This is a POST request, where you sent a JSON payload `{"user": <pennkey>, "group": <group ID>, "allow": <true/false>}`
+- `POST /membership/notification/`
+    - Update the pennkey for a user. This is a POST request, where you sent a JSON payload `{"user": <pennkey>, "group": <group ID>, "active": <true/false>}`
 
 
