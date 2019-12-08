@@ -29,7 +29,7 @@ class Group(models.Model):
     members = models.ManyToManyField(User, through=GroupMembership, related_name='booking_groups')
 
     name = models.CharField(max_length=255)
-    color = models.CharField(max_length=8)
+    color = models.CharField(max_length=255)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
