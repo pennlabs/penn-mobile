@@ -64,6 +64,31 @@ class GroupMembershipViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin):
         membership.delete()
         return Response(resp)
 
+    @action(detail=False, methods=['post'])
+    def pennkey(self, request):
+        group_id = request.data.get('group')
+        username = request.data.get('user')
+        allow = request.data.get('allow')
+        group = Group.objects.get(pk=group_id)
+        user = User.objects.get(username=username)
+        membership = GroupMembership.objects.get(user=user, group=group)
+        membership.pennkey_allow = allow
+        membership.save()
+        return Response({'message': 'pennkey allowance updated', 'user': membership.user.username, 'group': membership.group_id})
+
+    @action(detail=False, methods=['post'])
+    def notification(self, request):
+        group_id = request.data.get('group')
+        username = request.data.get('user')
+        active = request.data.get('active')
+        print(active)
+        group = Group.objects.get(pk=group_id)
+        user = User.objects.get(username=username)
+        membership = GroupMembership.objects.get(user=user, group=group)
+        membership.notifications = active
+        membership.save()
+        return Response({'message': 'notification updated', 'user': membership.user.username, 'group': membership.group_id})
+
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
