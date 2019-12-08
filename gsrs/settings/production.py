@@ -6,7 +6,7 @@ import os
 from gsrs.settings.base import *  # noqa
 
 
-DEBUG = False
+DEBUG = True
 
 # Fix MySQL Emoji support
 DATABASES = {
