@@ -35,7 +35,7 @@ To create users, you first have to create a main superuser.
     or, for bulk invites,
     ```
     {
-      "users": [<pennkey>, ...], 
+      "user": '<pennkey>,<pennkey2>,...' 
       "group": <group ID>
     }
     ```
@@ -43,6 +43,10 @@ To create users, you first have to create a main superuser.
     - Accept an invite.
 - `POST /membership/<invite id>/decline/`
     - Decline an invite.
+- `POST /membership/pennkey/`
+    - Update the pennkey for a user. This is a POST request, where you sent a JSON payload `{"user": <pennkey>, "group": <group ID>, "allow": <true/false>}`
+- `POST /membership/notification/`
+    - Update the pennkey for a user. This is a POST request, where you sent a JSON payload `{"user": <pennkey>, "group": <group ID>, "active": <true/false>}`
 - `GET /groups/`
     - Get a list of all groups
 - `POST /groups/`
@@ -53,9 +57,5 @@ To create users, you first have to create a main superuser.
     - Update a group's information.
 - `GET /groups/<group ID/invites/`
     - Get a list of all open invites to this group.
-- `POST /membership/pennkey/`
-    - Update the pennkey for a user. This is a POST request, where you sent a JSON payload `{"user": <pennkey>, "group": <group ID>, "allow": <true/false>}`
-- `POST /membership/notification/`
-    - Update the pennkey for a user. This is a POST request, where you sent a JSON payload `{"user": <pennkey>, "group": <group ID>, "active": <true/false>}`
 
 
