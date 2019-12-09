@@ -41,7 +41,7 @@ class GroupMembershipViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin):
     @action(detail=False, methods=['post'])
     def invite(self, request):
         group_id = request.data.get('group')
-        usernames = request.data.get('users', request.data.get('user', []))
+        usernames = request.data.get('user').split(',')
         group = Group.objects.get(pk=group_id)
 
         if isinstance(usernames, str):
