@@ -8,8 +8,8 @@ from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-from booking.serializers import UserSerializer, GroupMembershipSerializer, GroupSerializer
-from booking.models import GroupMembership, Group
+from gsr_booking.serializers import UserSerializer, GroupMembershipSerializer, GroupSerializer
+from gsr_booking.models import GroupMembership, Group
 
 User = get_user_model()
 

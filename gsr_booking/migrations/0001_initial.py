@@ -30,14 +30,14 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('accepted', models.BooleanField(default=False)),
                 ('type', models.CharField(choices=[('A', 'Admin'), ('M', 'M')], max_length=10)),
-                ('group', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='booking.Group')),
+                ('group', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='gsr_booking.Group')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='memberships', to=settings.AUTH_USER_MODEL)),
             ],
         ),
         migrations.AddField(
             model_name='group',
             name='members',
-            field=models.ManyToManyField(related_name='booking_groups', through='booking.GroupMembership', to=settings.AUTH_USER_MODEL),
+            field=models.ManyToManyField(related_name='booking_groups', through='gsr_booking.GroupMembership', to=settings.AUTH_USER_MODEL),
         ),
         migrations.AddField(
             model_name='group',

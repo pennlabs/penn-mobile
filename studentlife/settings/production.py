@@ -3,7 +3,7 @@ import os
 # import sentry_sdk
 # from sentry_sdk.integrations.django import DjangoIntegration
 
-from gsrs.settings.base import *  # noqa
+from studentlife.settings.base import *  # noqa
 
 
 DEBUG = True

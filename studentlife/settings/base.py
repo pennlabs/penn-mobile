@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
 
-    'booking.apps.BookingConfig'
+    'gsr_booking.apps.GsrBookingConfig'
 ]
 
 MIDDLEWARE = [
@@ -60,7 +60,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'gsrs.urls'
+ROOT_URLCONF = 'studentlife.urls'
 
 TEMPLATES = [
     {
@@ -78,7 +78,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'gsrs.wsgi.application'
+WSGI_APPLICATION = 'studentlife.wsgi.application'
 
 
 # Database

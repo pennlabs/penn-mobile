@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from booking.models import Group, GroupMembership
+from gsr_booking.models import Group, GroupMembership
 User = get_user_model()
 
 

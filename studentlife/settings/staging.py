@@ -1,4 +1,4 @@
-from gsrs.settings.production import *
+from studentlife.settings.production import *
 
 
 DEBUG = True
