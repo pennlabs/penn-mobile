@@ -1,6 +1,9 @@
-# GSR Booking
+# student-life
+This repository will hopefully be the django-based successor to labs-api-server, containing API routes to help students
+manage keep track of things around campus that matter to them. Currently, this repo contains:
+- Group GSR Booking
 
-# Install
+## Install
 - `git clone`
 - `cd` in
 - `pipenv install`
