@@ -28,10 +28,10 @@ spec:
               value: {{ if .Values.staging }}staging.{{ end }}{{ .Values.ingress.domain }}
 {{- if .Values.staging }}
             - name: DJANGO_SETTINGS_MODULE
-              value: gsrs.settings.staging
+              value: studentlife.settings.staging
 {{- else }}
             - name: DJANGO_SETTINGS_MODULE
-              value: gsrs.settings.production
+              value: studentlife.settings.production
 {{- end }}
 {{- if .Values.secrets.enabled }}
           envFrom:

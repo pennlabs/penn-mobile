@@ -1,4 +1,4 @@
-from gsrs.settings.base import * # noqa
+from studentlife.settings.base import * # noqa
 
 
 TEST_RUNNER = 'xmlrunner.extra.djangotestrunner.XMLTestRunner'

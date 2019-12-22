@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from booking.models import GroupMembership, Group
+from gsr_booking.models import GroupMembership, Group
 
 User = get_user_model()
 

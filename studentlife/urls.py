@@ -1,4 +1,4 @@
-"""gsrs URL Configuration
+"""studentlife URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/2.2/topics/http/urls/
@@ -18,5 +18,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path(r'', include('booking.urls')),
+    path(r'', include('gsr_booking.urls')),
 ]

@@ -1,6 +1,6 @@
 import os
 
-from gsrs.settings.base import * # noqa
+from studentlife.settings.base import * # noqa
 
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
