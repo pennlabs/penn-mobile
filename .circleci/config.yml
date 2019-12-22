@@ -46,7 +46,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            pipenv run python manage.py test --settings=gsrs.settings.ci
+            pipenv run python manage.py test --settings=studentlife.settings.ci
 #       - run:
 #           name: Upload code coverage
 #           command: |
