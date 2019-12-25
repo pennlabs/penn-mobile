@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from gsr_booking.models import Group, GroupMembership
+from gsr_booking.models import Group, GroupMembership, UserSearchIndex
 from rest_framework.test import APIClient
 
 
@@ -11,6 +11,9 @@ class UserViewTestCase(TestCase):
     def setUp(self):
         self.user1 = User.objects.create_user(username='user1', password='password', first_name="user", last_name="one")
         self.user2 = User.objects.create_user(username='user2', password='password', first_name="user", last_name="two")
+        UserSearchIndex.objects.create(user=self.user1)
+        UserSearchIndex.objects.create(user=self.user2)
+
         self.group = Group.objects.create(owner=self.user1, name='g1', color='blue')
         self.group.members.add(self.user1)
         memship = self.group.groupmembership_set.all()[0]
@@ -174,10 +177,6 @@ class MembershipViewTestCase(TestCase):
         mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=True)
         response = self.client.post(f'/membership/{mem.pk}/decline/')
         self.assertEqual(404, response.status_code)
-
-
-
-
 
 
 class GroupTestCase(TestCase):
