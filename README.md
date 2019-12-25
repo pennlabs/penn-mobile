@@ -27,6 +27,14 @@ To create users, you first have to create a main superuser.
     - Detail view on one user.
 - `GET /users/<pennkey>/invites/`
     - Get all open invites for a user.
+- `POST /users/<pennkey>/activate/`
+    - **IMPORTANT** This endpoint should be called when the user logs in. Updates any invites with the user's pennkey 
+      to be associated with their account (now that it exists), and also adds their name and pennkey to the search index
+      (see below)
+- `GET /users/search/?q=<search query>`
+    - Returns all users whose name or pennkey matches the search query. Users are only included in the autocomplete
+      if they have an account in the system and their account has been activated -- otherwise users will need to 
+      invite based off of Pennkey.
 - `POST /membership/invite/`
     - Invite a user to a group. This is a POST request, where you sent a JSON payload in the following format: 
     ```
@@ -42,10 +50,12 @@ To create users, you first have to create a main superuser.
       "group": <group ID>
     }
     ```
+    **note** that the user with the associated pennkey *need not* have an account in the system. the invite will be
+    entered either way!
 - `POST /membership/<invite id>/accept/`
-    - Accept an invite.
+    - Accept an invite. If an invite with the given ID has already been accepted, will return a 400.
 - `POST /membership/<invite id>/decline/`
-    - Decline an invite.
+    - Decline an invite. If the invite has already been accepted, will return a 400.
 - `POST /membership/pennkey/`
     - Update the pennkey for a user. This is a POST request, where you sent a JSON payload `{"user": <pennkey>, "group": <group ID>, "allow": <true/false>}`
 - `POST /membership/notification/`
