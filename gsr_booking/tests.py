@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from gsr_booking.models import Group, GroupMembership
 from rest_framework.test import APIClient
 
-from gsr_booking.models import Group, GroupMembership
+
 User = get_user_model()
 
 
@@ -52,7 +53,9 @@ class MembershipViewTestCase(TestCase):
         self.user1 = User.objects.create_user(username='user1', password='password')
         self.user2 = User.objects.create_user(username='user2', password='password')
         self.group = Group.objects.create(owner=self.user1, name='g1', color='blue')
+        self.group2 = Group.objects.create(owner=self.user2, name='g2', color='white')
         self.client = APIClient()
+        self.client.login(username='user1', password='password')
 
     def test_invite_single(self):
         response = self.client.post('/membership/invite/', {'user': 'user2', 'group': self.group.pk})
@@ -61,7 +64,7 @@ class MembershipViewTestCase(TestCase):
                                                        user=self.user2).exists())
 
     def test_bulk_invite(self):
-        user3 = User.objects.create_user(username='user3', password='password')
+        User.objects.create_user(username='user3', password='password')
         response = self.client.post('/membership/invite/',
                                     {
                                         'user': 'user2,user3',
@@ -69,3 +72,88 @@ class MembershipViewTestCase(TestCase):
                                     })
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, GroupMembership.objects.filter(accepted=False).count(), GroupMembership.objects.all())
+
+    def test_invite_no_permission(self):
+        self.client.login(username='user2', password='password')
+        response = self.client.post('/membership/invite/', {'user': 'user2', 'group': self.group.pk})
+        self.assertEqual(403, response.status_code)
+
+    def test_invite_logged_out_fails(self):
+        self.client.logout()
+        response = self.client.post('/membership/invite/', {'user': 'user2', 'group': self.group.pk})
+        self.assertEqual(403, response.status_code)
+
+    def test_invite_bad_group_fails(self):
+        response = self.client.post('/membership/invite/', {'user': 'user2', 'group': 300})
+        self.assertEqual(404, response.status_code)
+
+    def test_duplicate_invite_fails(self):
+        GroupMembership.objects.create(user=self.user2, group=self.group, accepted=False)
+        response = self.client.post('/membership/invite/', {'user': 'user2', 'group': self.group.pk})
+        self.assertEqual(400, response.status_code)
+
+    def test_already_member_invite_fails(self):
+        GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True)
+        response = self.client.post('/membership/invite/', {'user': 'user2', 'group': self.group.pk})
+        self.assertEqual(400, response.status_code)
+
+    def test_accept_invite(self):
+        mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=False)
+        response = self.client.post(f'/membership/{mem.pk}/accept/')
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(GroupMembership.objects.get(pk=mem.pk).accepted)
+
+    def test_wrong_user_accept_invite_fails(self):
+        user3 = User.objects.create_user(username='user3', password='password')
+        mem = GroupMembership.objects.create(user=user3, group=self.group2, accepted=False)
+        response = self.client.post(f'/membership/{mem.pk}/accept/')
+        self.assertEqual(403, response.status_code)
+        self.assertFalse(GroupMembership.objects.get(pk=mem.pk).accepted)
+
+    def test_accept_invite_again_fails(self):
+        mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=True)
+        response = self.client.post(f'/membership/{mem.pk}/accept/')
+        self.assertEqual(404, response.status_code)
+
+    def test_decline_invite(self):
+        mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=False)
+        response = self.client.post(f'/membership/{mem.pk}/decline/')
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(GroupMembership.objects.filter(pk=mem.pk).exists())
+
+    def test_wrong_user_decline_invite_fails(self):
+        user3 = User.objects.create_user(username='user3', password='password')
+        mem = GroupMembership.objects.create(user=user3, group=self.group2, accepted=False)
+        response = self.client.post(f'/membership/{mem.pk}/decline/')
+        self.assertEqual(403, response.status_code)
+        self.assertTrue(GroupMembership.objects.filter(pk=mem.pk).exists())
+        self.assertFalse(GroupMembership.objects.get(pk=mem.pk).accepted)
+
+    def test_decline_invite_again_fails(self):
+        mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=True)
+        response = self.client.post(f'/membership/{mem.pk}/decline/')
+        self.assertEqual(404, response.status_code)
+
+
+class GroupTestCase(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(username='user1', password='password')
+        self.user2 = User.objects.create_user(username='user2', password='password')
+        self.group = Group.objects.create(owner=self.user1, name='g1', color='blue')
+        self.group2 = Group.objects.create(owner=self.user2, name='g2', color='white')
+        self.client = APIClient()
+        self.client.login(username='user1', password='password')
+
+    def test_get_groups(self):
+        response = self.client.get('/groups/')
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(response.data))
+
+    def test_get_groups_includes_invites(self):
+        GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=False)
+        response = self.client.get(f'/groups/{self.group2.pk}/')
+        self.assertEqual(200, response.status_code)
+
+    def test_get_group_not_involved_fails(self):
+        response = self.client.get(f'/groups/{self.group2.pk}/')
+        self.assertEqual(404, response.status_code)

@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'accounts.apps.AccountsConfig',
+    'accounts.apps.AccountsConfig',
 
     'rest_framework',
     'django_filters',
@@ -58,6 +58,12 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'accounts.middleware.OAuth2TokenMiddleware',
+]
+
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.LabsUserBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 ROOT_URLCONF = 'studentlife.urls'

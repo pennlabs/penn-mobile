@@ -1,8 +1,7 @@
+from django.urls import include, path
+from gsr_booking.views import GroupMembershipViewSet, GroupViewSet, UserViewSet
 from rest_framework import routers
 
-from django.urls import path, include
-
-from gsr_booking.views import UserViewSet, GroupMembershipViewSet, GroupViewSet
 
 router = routers.DefaultRouter()
 

@@ -1,5 +1,5 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 
 
 User = get_user_model()
@@ -36,3 +36,11 @@ class Group(models.Model):
 
     def __str__(self):
         return '{}: {}'.format(self.pk, self.name)
+
+    def has_member(self, user):
+        memberships = GroupMembership.objects.filter(group=self, accepted=True)
+        return memberships.all().filter(user=user).exists()
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        GroupMembership.objects.create(group=self, user=self.owner, type=GroupMembership.ADMIN, accepted=True)

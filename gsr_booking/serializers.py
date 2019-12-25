@@ -1,8 +1,7 @@
 from django.contrib.auth import get_user_model
-
+from gsr_booking.models import Group, GroupMembership
 from rest_framework import serializers
 
-from gsr_booking.models import GroupMembership, Group
 
 User = get_user_model()
 
@@ -23,14 +22,6 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ['owner', 'members', 'name', 'color', 'id']
-
-    def create(self, validated_data):
-        group = super().create(validated_data)
-        group.members.add(validated_data['owner'])
-        memship = group.groupmembership_set.all()[0]
-        memship.accepted = True
-        memship.save()
-        return group
 
 
 class GroupField(serializers.RelatedField):
