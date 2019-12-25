@@ -47,6 +47,19 @@ class UserViewTestCase(TestCase):
         self.assertTrue(200, response.status_code)
         self.assertEqual(1, len(response.data))
 
+    def test_actualize_nouser_invite(self):
+        mem = GroupMembership.objects.create(username='user4', group=self.group, accepted=False)
+        self.assertTrue(mem.user is None)
+
+        user4 = User.objects.create_user(username='user4', password='password')
+        self.client.logout()
+        self.client.login(username='user4', password='password')
+        response = self.client.post('/users/user4/activate/')
+        self.assertEqual(200, response.status_code)
+        mem = GroupMembership.objects.get(pk=mem.pk)
+        self.assertEqual(user4, mem.user)
+        self.assertEqual('user4', mem.username)
+
 
 class MembershipViewTestCase(TestCase):
     def setUp(self):
@@ -61,6 +74,7 @@ class MembershipViewTestCase(TestCase):
         response = self.client.post('/membership/invite/', {'user': 'user2', 'group': self.group.pk})
         self.assertEqual(200, response.status_code)
         self.assertTrue(GroupMembership.objects.filter(group=self.group.pk,
+                                                       accepted=False,
                                                        user=self.user2).exists())
 
     def test_bulk_invite(self):
@@ -72,6 +86,18 @@ class MembershipViewTestCase(TestCase):
                                     })
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, GroupMembership.objects.filter(accepted=False).count(), GroupMembership.objects.all())
+
+    def test_invite_by_pennkey_no_user(self):
+        response = self.client.post(f'/membership/invite/',
+                                    {
+                                        'user': 'user4',
+                                        'group': self.group.pk
+                                    })
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(GroupMembership.objects.filter(group=self.group.pk,
+                                                       accepted=False,
+                                                       user=None,
+                                                       username='user4').exists())
 
     def test_invite_no_permission(self):
         self.client.login(username='user2', password='password')
@@ -115,6 +141,11 @@ class MembershipViewTestCase(TestCase):
         response = self.client.post(f'/membership/{mem.pk}/accept/')
         self.assertEqual(404, response.status_code)
 
+    def test_accept_invite_no_user_fails(self):
+        mem = GroupMembership.objects.create(username='user4', group=self.group2, accepted=True)
+        response = self.client.post(f'/membership/{mem.pk}/accept/')
+        self.assertEqual(404, response.status_code)
+
     def test_decline_invite(self):
         mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=False)
         response = self.client.post(f'/membership/{mem.pk}/decline/')
@@ -133,6 +164,10 @@ class MembershipViewTestCase(TestCase):
         mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=True)
         response = self.client.post(f'/membership/{mem.pk}/decline/')
         self.assertEqual(404, response.status_code)
+
+
+
+
 
 
 class GroupTestCase(TestCase):

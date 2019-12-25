@@ -7,12 +7,11 @@ User = get_user_model()
 
 
 class GroupMembershipSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all())
     group = serializers.SlugRelatedField(slug_field='name', queryset=Group.objects.all())
 
     class Meta:
         model = GroupMembership
-        fields = '__all__'
+        fields = ['username', 'group', 'type', 'pennkey_allow', 'notifications']
 
 
 class GroupSerializer(serializers.ModelSerializer):

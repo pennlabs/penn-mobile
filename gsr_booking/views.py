@@ -24,10 +24,27 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['get'])
     def invites(self, request, username=None):
+        if username == 'me':
+            username = request.user.username
+
         user = get_object_or_404(User, username=username)
         return Response(
             GroupMembershipSerializer(GroupMembership.objects.filter(user=user, accepted=False), many=True).data
         )
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, username=None):
+        if username == 'me':
+            username = request.user.username
+
+        user = get_object_or_404(User, username=username)
+        if user != request.user:
+            return HttpResponseForbidden()
+
+        # Ensure that all invites for this user, even ones created before their account was in the DB,
+        # are associated with the User object.
+        GroupMembership.objects.filter(username=user.username).update(user=user)
+        return Response({'success': True})
 
 
 class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):
@@ -56,20 +73,22 @@ class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):
             usernames = [usernames]
 
         for username in usernames:
-            user = User.objects.get(username=username)
-            if GroupMembership.objects.filter(user=user, group=group, accepted=False).exists():
+            if GroupMembership.objects.filter(username=username, group=group, accepted=False).exists():
                 return Response({'message': 'invite exists'}, status=400)
-            elif GroupMembership.objects.filter(user=user, group=group, accepted=True).exists():
+            elif GroupMembership.objects.filter(username=username, group=group, accepted=True).exists():
                 return Response({'message': f'user {username} already member'}, status=400)
-            GroupMembership.objects.create(user=user, group=group, type=request.data.get('type', 'M'))
+            GroupMembership.objects.create(username=username, group=group, type=request.data.get('type', 'M'))
 
         return Response({'message': 'invite(s) sent.'})
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         membership = get_object_or_404(GroupMembership, pk=pk, accepted=False)
-        if membership.user != request.user:
+        if membership.user is None or membership.user != request.user:
             return HttpResponseForbidden()
+
+        if not membership.is_invite:
+            return Response({'message': 'invite has alredy been accepted'}, 400)
 
         membership.accepted = True
         membership.save()
@@ -78,8 +97,10 @@ class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['post'])
     def decline(self, request, pk=None):
         membership = get_object_or_404(GroupMembership, pk=pk, accepted=False)
-        if membership.user != request.user:
+        if membership.user is None or membership.user != request.user:
             return HttpResponseForbidden()
+        if not membership.is_invite:
+            return Response({'message': 'cannot decline an invite that has been accepted.'}, 400)
 
         resp = {'message': 'invite declined', 'user': membership.user.username, 'group': membership.group_id}
         membership.delete()
