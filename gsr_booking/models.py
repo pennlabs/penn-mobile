@@ -6,7 +6,11 @@ User = get_user_model()
 
 
 class GroupMembership(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='memberships')
+    # INVARIANT: either user or username should always be set. if user is not None, then the username
+    # should the be username of the associated user.
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='memberships', blank=True, null=True)
+    username = models.CharField(max_length=127, blank=True, null=True, default=None)
+
     group = models.ForeignKey('Group', on_delete=models.CASCADE)
 
     # when accepted if False, this is a request. when accepted is True, this is an active membership.
@@ -20,8 +24,25 @@ class GroupMembership(models.Model):
 
     notifications = models.BooleanField(default=True)
 
+    @property
+    def is_invite(self):
+        return not self.accepted
+
     def __str__(self):
         return '{}<->{}'.format(self.user, self.group)
+
+    def save(self, *args, **kwargs):
+        if self.user is not None:
+            self.username = self.user.username
+        elif self.username is not None:  # if no user has been set yet, try to find a user to attach.
+            try:
+                self.user = User.objects.get(username=self.username)
+            except User.DoesNotExist:
+                self.user = None
+        else:  # Both user and username are None, which is an invalid Membership.
+            raise ValueError("Either user or username must be set.")
+
+        super().save(*args, **kwargs)
 
 
 class Group(models.Model):
