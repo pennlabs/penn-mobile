@@ -1,13 +1,13 @@
 version: 2.1
 orbs:
   docker: circleci/docker@0.5.13
+  deploy: pennlabs/deploy@0.0.3
 
 branch-filters: &branch-filters
   filters:
     branches:
       only:
         - master
-        - staging
 
 jobs:
   test:
@@ -56,29 +56,20 @@ jobs:
       - store_artifacts:
           path: test-results
           destination: trl
-  deploy:
-    working_directory: ~/pennlabs
-    docker:
-      - image: pennlabs/labs-helm
-    steps:
-      - checkout
-      - run:
-          name: Deploy to k8s
-          command: /deploy.sh
 workflows:
   version: 2
   build-and-deploy:
     jobs:
       - test
       - docker/publish:
-          name: docker-publish
           requires:
             - test
-          image: pennlabs/study-rooms
-          tag: "${CIRCLE_SHA1}"
+          image: pennlabs/student-life
+          tag: "${CIRCLE_SHA1},latest"
           context: docker-publish
-      - deploy:
+          <<: *branch-filters
+      - deploy/deploy:
           requires:
-            - docker-publish
+            - docker/publish
           context: k8s-deploy
           <<: *branch-filters

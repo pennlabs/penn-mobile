@@ -1,0 +1,9 @@
+deploy_version: 0.1.0
+image_tag: latest
+
+applicstions:
+  - name: student-life
+    image: pennlabs/student-life
+    ingress:
+      - host: gsr.upenn.club
+        paths: ["/"]
