@@ -49,6 +49,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         # Ensure that all invites for this user, even ones created before their account was in the DB,
         # are associated with the User object.
         GroupMembership.objects.filter(username=user.username).update(user=user)
+
+        UserSearchIndex.objects.create(user=user)
+
         return Response({'success': True})
 
     @action(detail=False, methods=['get'])
