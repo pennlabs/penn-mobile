@@ -9,8 +9,8 @@ User = get_user_model()
 
 class UserViewTestCase(TestCase):
     def setUp(self):
-        self.user1 = User.objects.create_user(username='user1', password='password')
-        self.user2 = User.objects.create_user(username='user2', password='password')
+        self.user1 = User.objects.create_user(username='user1', password='password', first_name="user", last_name="one")
+        self.user2 = User.objects.create_user(username='user2', password='password', first_name="user", last_name="two")
         self.group = Group.objects.create(owner=self.user1, name='g1', color='blue')
         self.group.members.add(self.user1)
         memship = self.group.groupmembership_set.all()[0]
@@ -44,6 +44,16 @@ class UserViewTestCase(TestCase):
         memship.accepted = False
         memship.save()
         response = self.client.get('/users/user2/invites/')
+        self.assertTrue(200, response.status_code)
+        self.assertEqual(1, len(response.data))
+
+    def test_search_users_first_name(self):
+        response = self.client.get('/users/search/', {'q': 'user'})
+        self.assertTrue(200, response.status_code)
+        self.assertEqual(2, len(response.data))
+
+    def test_search_users_full_name(self):
+        response = self.client.get('/users/search/', {'q': 'user one'})
         self.assertTrue(200, response.status_code)
         self.assertEqual(1, len(response.data))
 

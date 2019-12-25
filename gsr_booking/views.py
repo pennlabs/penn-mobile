@@ -3,12 +3,14 @@ from django.db.models import Prefetch
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from gsr_booking.models import Group, GroupMembership
-from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, UserSerializer
+
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from gsr_booking.models import Group, GroupMembership, UserSearchIndex
+from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, UserSerializer
 
 
 User = get_user_model()
@@ -22,12 +24,21 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializer
     lookup_field = 'username'
 
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['username', 'first_name', 'last_name']
+
     @action(detail=True, methods=['get'])
     def invites(self, request, username=None):
         user = get_object_or_404(User, username=username)
         return Response(
             GroupMembershipSerializer(GroupMembership.objects.filter(user=user, accepted=False), many=True).data
         )
+
+    @action(detail=False, methods=['get'])
+    def search(self, request):
+        query = request.query_params.get('q', '')
+        results = UserSearchIndex.objects.filter(full_name__istartswith=query).select_related('user')
+        return Response(UserSerializer([entry.user for entry in results], many=True).data)
 
 
 class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):

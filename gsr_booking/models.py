@@ -44,3 +44,12 @@ class Group(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         GroupMembership.objects.create(group=self, user=self.owner, type=GroupMembership.ADMIN, accepted=True)
+
+
+class UserSearchIndex(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    full_name = models.CharField(max_length=255, db_index=True)
+
+    def save(self, *args, **kwargs):
+        self.full_name = f'{self.user.first_name} {self.user.last_name}'
+        super().save(*args, **kwargs)
