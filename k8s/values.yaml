@@ -1,7 +1,7 @@
 deploy_version: 0.1.0
 image_tag: latest
 
-applicstions:
+applications:
   - name: student-life
     image: pennlabs/student-life
     secret: student-life
