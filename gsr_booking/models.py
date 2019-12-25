@@ -70,7 +70,9 @@ class Group(models.Model):
 class UserSearchIndex(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     full_name = models.CharField(max_length=255, db_index=True)
+    pennkey = models.CharField(max_length=255, db_index=True)
 
     def save(self, *args, **kwargs):
         self.full_name = f'{self.user.first_name} {self.user.last_name}'
+        self.pennkey = self.user.username
         super().save(*args, **kwargs)

@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -57,7 +57,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'])
     def search(self, request):
         query = request.query_params.get('q', '')
-        results = UserSearchIndex.objects.filter(full_name__istartswith=query).select_related('user')
+        results = UserSearchIndex.objects.filter(
+            Q(full_name__istartswith=query) | Q(pennkey__istartswith=query)
+        ).select_related('user')
+
         return Response(UserSerializer([entry.user for entry in results], many=True).data)
 
 

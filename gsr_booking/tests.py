@@ -65,12 +65,17 @@ class UserViewTestCase(TestCase):
 
     def test_search_users_first_name(self):
         response = self.client.get('/users/search/', {'q': 'user'})
-        self.assertTrue(200, response.status_code)
+        self.assertEqual(200, response.status_code)
         self.assertEqual(2, len(response.data))
 
     def test_search_users_full_name(self):
         response = self.client.get('/users/search/', {'q': 'user one'})
-        self.assertTrue(200, response.status_code)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(response.data))
+
+    def test_search_users_pennkey(self):
+        response = self.client.get('/users/search/', {'q': 'user1'})
+        self.assertEqual(200, response.status_code)
         self.assertEqual(1, len(response.data))
 
 
