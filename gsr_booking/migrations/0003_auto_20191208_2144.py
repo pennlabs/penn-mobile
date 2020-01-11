@@ -5,14 +5,10 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('gsr_booking', '0002_auto_20191208_1251'),
-    ]
+    dependencies = [("gsr_booking", "0002_auto_20191208_1251")]
 
     operations = [
         migrations.AlterField(
-            model_name='group',
-            name='color',
-            field=models.CharField(max_length=255),
-        ),
+            model_name="group", name="color", field=models.CharField(max_length=255)
+        )
     ]

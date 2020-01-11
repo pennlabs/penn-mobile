@@ -6,19 +6,21 @@ User = get_user_model()
 
 
 class GroupMembership(models.Model):
-    # INVARIANT: either user or username should always be set. if user is not None, then the username
-    # should the be username of the associated user.
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='memberships', blank=True, null=True)
+    # INVARIANT: either user or username should always be set. if user is not None, then the
+    # username should the be username of the associated user.
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="memberships", blank=True, null=True
+    )
     username = models.CharField(max_length=127, blank=True, null=True, default=None)
 
-    group = models.ForeignKey('Group', on_delete=models.CASCADE)
+    group = models.ForeignKey("Group", on_delete=models.CASCADE)
 
-    # when accepted if False, this is a request. when accepted is True, this is an active membership.
+    # When accepted is False, this is a request, otherwise this is an active membership.
     accepted = models.BooleanField(default=False)
 
-    ADMIN = 'A'
-    MEMBER = 'M'
-    type = models.CharField(max_length=10, choices=[(ADMIN, 'Admin'), (MEMBER, 'M')])
+    ADMIN = "A"
+    MEMBER = "M"
+    type = models.CharField(max_length=10, choices=[(ADMIN, "Admin"), (MEMBER, "M")])
 
     pennkey_allow = models.BooleanField(default=False)
 
@@ -29,12 +31,14 @@ class GroupMembership(models.Model):
         return not self.accepted
 
     def __str__(self):
-        return '{}<->{}'.format(self.user, self.group)
+        return "{}<->{}".format(self.user, self.group)
 
     def save(self, *args, **kwargs):
         if self.user is not None:
             self.username = self.user.username
-        elif self.username is not None:  # if no user has been set yet, try to find a user to attach.
+        elif (
+            self.username is not None
+        ):  # if no user has been set yet, try to find a user to attach.
             try:
                 self.user = User.objects.get(username=self.username)
             except User.DoesNotExist:
@@ -47,7 +51,7 @@ class GroupMembership(models.Model):
 
 class Group(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    members = models.ManyToManyField(User, through=GroupMembership, related_name='booking_groups')
+    members = models.ManyToManyField(User, through=GroupMembership, related_name="booking_groups")
 
     name = models.CharField(max_length=255)
     color = models.CharField(max_length=255)
@@ -56,7 +60,7 @@ class Group(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return '{}: {}'.format(self.pk, self.name)
+        return "{}: {}".format(self.pk, self.name)
 
     def has_member(self, user):
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
@@ -64,7 +68,9 @@ class Group(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        GroupMembership.objects.create(group=self, user=self.owner, type=GroupMembership.ADMIN, accepted=True)
+        GroupMembership.objects.create(
+            group=self, user=self.owner, type=GroupMembership.ADMIN, accepted=True
+        )
 
 
 class UserSearchIndex(models.Model):
@@ -73,6 +79,6 @@ class UserSearchIndex(models.Model):
     pennkey = models.CharField(max_length=255, db_index=True)
 
     def save(self, *args, **kwargs):
-        self.full_name = f'{self.user.first_name} {self.user.last_name}'
+        self.full_name = f"{self.user.first_name} {self.user.last_name}"
         self.pennkey = self.user.username
         super().save(*args, **kwargs)

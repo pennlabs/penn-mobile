@@ -1,15 +1,14 @@
 import os
 
-from studentlife.settings.base import * # noqa
+from studentlife.settings.base import *  # noqa: F401, F403
+from studentlife.settings.base import INSTALLED_APPS, MIDDLEWARE
 
 
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-PLATFORM_ACCOUNTS.update(
-    {
-        'REDIRECT_URI': os.environ.get('LABS_REDIRECT_URI', 'http://localhost:8000/accounts/callback/'),
-        'CLIENT_ID': 'clientid',
-        'CLIENT_SECRET': 'supersecretclientsecret',
-        'PLATFORM_URL': 'https://platform-dev.pennlabs.org',
-        'CUSTOM_ADMIN': False,
-    }
-)
+# Development extensions
+INSTALLED_APPS += ["django_extensions", "debug_toolbar"]
+
+MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware"] + MIDDLEWARE
+INTERNAL_IPS = ["127.0.0.1"]
+
+# Allow http callback for DLA
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
