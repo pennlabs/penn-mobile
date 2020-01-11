@@ -5,19 +5,17 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('gsr_booking', '0001_initial'),
-    ]
+    dependencies = [("gsr_booking", "0001_initial")]
 
     operations = [
         migrations.AddField(
-            model_name='groupmembership',
-            name='notifications',
+            model_name="groupmembership",
+            name="notifications",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='groupmembership',
-            name='pennkey_allow',
+            model_name="groupmembership",
+            name="pennkey_allow",
             field=models.BooleanField(default=False),
         ),
     ]

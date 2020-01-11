@@ -4,23 +4,28 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-coveralls = "*"
+codecov = "*"
+black = "==19.10b0"
 unittest-xml-reporting = "*"
 flake8 = "*"
 flake8-isort = "*"
 flake8-quotes = "*"
+django-debug-toolbar = "*"
+django-extensions = "*"
 
 [packages]
+dj-database-url = "*"
+djangorestframework = "*"
 mysqlclient = "*"
 sentry-sdk = "*"
-uwsgi = "*"
 django = "*"
-django-labs-accounts = "*"
-django-rest-framework = "*"
+django-cors-headers = "*"
+pyyaml = "*"
+uritemplate = "*"
+uwsgi = "*"
 django-filter = "*"
-gunicorn = "*"
-dj-database-url = "*"
-coverage = "*"
+django-labs-accounts = "*"
+
 
 [requires]
 python_version = "3.7"

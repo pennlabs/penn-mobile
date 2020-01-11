@@ -1,6 +1,6 @@
 FROM pennlabs/django-base
 
-MAINTAINER Penn Labs
+LABEL maintainer="Penn Labs"
 
 # Copy project dependencies
 COPY Pipfile* /app/
@@ -11,5 +11,8 @@ RUN pipenv install --system
 # Copy project files
 COPY . /app/
 
+ENV DJANGO_SETTINGS_MODULE studentlife.settings.production
+ENV SECRET_KEY 'temporary key just to build the docker image'
+
 # Collect static files
-RUN python3 /app/manage.py collectstatic --noinput
+RUN python3.7 /app/manage.py collectstatic --noinput
