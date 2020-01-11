@@ -7,7 +7,7 @@ from studentlife.settings.base import *  # noqa: F401, F403
 from studentlife.settings.base import BACKEND_DOMAIN, DATABASES
 
 
-DEBUG = False
+DEBUG = True
 
 # Fix MySQL Emoji support
 DATABASES["default"]["OPTIONS"] = {"charset": "utf8mb4"}
