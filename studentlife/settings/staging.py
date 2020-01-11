@@ -1,14 +1,7 @@
-from studentlife.settings.production import *
+from studentlife.settings.base import *  # noqa: F401, F403
+from studentlife.settings.base import BACKEND_DOMAIN, PLATFORM_ACCOUNTS
 
 
 DEBUG = True
 
-PLATFORM_ACCOUNTS.update(
-    {
-        'REDIRECT_URI': os.environ.get('LABS_REDIRECT_URI', 'https://{}/accounts/callback/'.format(BACKEND_DOMAIN)),
-        'CLIENT_ID': 'clientid',
-        'CLIENT_SECRET': 'supersecretclientsecret',
-        'PLATFORM_URL': 'https://platform-dev.pennlabs.org',
-        'CUSTOM_ADMIN': False,
-    }
-)
+PLATFORM_ACCOUNTS.update({"REDIRECT_URI": f"https://{BACKEND_DOMAIN}/accounts/callback/"})
