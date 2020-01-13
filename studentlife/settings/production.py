@@ -28,5 +28,5 @@ sentry_sdk.init(dsn=SENTRY_URL, integrations=[DjangoIntegration()])
 # DLA settings
 PLATFORM_ACCOUNTS = {
     "REDIRECT_URI": f"https://{BACKEND_DOMAIN}/accounts/callback/",
-    "ADMIN_PERMISSION": "example_admin",
+    "ADMIN_PERMISSION": "studentlife_admin",
 }
