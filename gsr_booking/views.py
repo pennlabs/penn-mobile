@@ -50,7 +50,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         # DB, are associated with the User object.
         GroupMembership.objects.filter(username=user.username).update(user=user)
 
-        UserSearchIndex.objects.create(user=user)
+        UserSearchIndex.objects.get_or_create(user=user)
 
         return Response({"success": True})
 
