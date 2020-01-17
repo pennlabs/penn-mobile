@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "accounts.apps.AccountsConfig",
     "django_filters",
     "gsr_booking.apps.GsrBookingConfig",
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
