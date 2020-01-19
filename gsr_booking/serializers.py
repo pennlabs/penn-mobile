@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from gsr_booking.models import Group, GroupMembership
+from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials
 from rest_framework import serializers
 
 
@@ -29,6 +29,14 @@ class GroupField(serializers.RelatedField):
 
     def to_internal_value(self, data):
         return None  # TODO: If you want to update based on BookingField, implement this.
+
+
+class GSRBookingCredentialsSerializer(serializers.ModelSerializer):
+    user = serializers.SlugRelatedField(slug_field="user", queryset=User.objects.all())
+
+    class Meta:
+        model = GSRBookingCredentials
+        fields = ["user", "session_id", "expiration_date", "date_added", "email"]
 
 
 class UserSerializer(serializers.ModelSerializer):

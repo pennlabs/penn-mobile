@@ -82,3 +82,27 @@ class UserSearchIndex(models.Model):
         self.full_name = f"{self.user.first_name} {self.user.last_name}"
         self.pennkey = self.user.username
         super().save(*args, **kwargs)
+
+
+# Model to store credentials necessary for booking GSRs.
+class GSRBookingCredentials(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # Session ID is used for Wharton GSR booking
+    session_id = models.CharField("session ID", max_length=50, unique=True, null=True)
+
+    # Expiration date of the Session ID
+    expiration_date = models.DateTimeField("session ID expiration date")
+
+    # When Session ID was added
+    date_added = models.DateTimeField("date added (Session ID)", auto_now_add=True)
+
+    # For LibCal, school emails are used instead
+    email = models.CharField("school email", max_length=255, unique=True, null=True)
+
+    def __str__(self):
+        return self.user.username
+
+    class Meta:
+        verbose_name = "GSR Booking Credentials"
+        verbose_name_plural = "GSR Booking Credentials"

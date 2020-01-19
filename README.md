@@ -86,5 +86,5 @@ To create users, you first have to create a main superuser.
 - `PUT /groups/<group ID>/`
   - Update a group's information.
 
-- `GET /groups/<group ID/invites/`
+- `GET /groups/<group ID>/invites/`
   - Get a list of all open invites to this group.

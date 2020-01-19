@@ -3,8 +3,9 @@ from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from gsr_booking.models import Group, GroupMembership, UserSearchIndex
-from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, UserSerializer
+from django.utils import timezone
+from gsr_booking.models import Group, GroupMembership, UserSearchIndex, GSRBookingCredentials
+from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, UserSerializer, GSRBookingCredentialsSerializer
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -64,6 +65,57 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(UserSerializer([entry.user for entry in results], many=True).data)
 
 
+    # Saves the Session ID and associates it with a user.
+    # @action(detail=True, methods=["get"])
+    # def get_gsr_booking_credentials(self, request, username=None):
+    #     # Ensure that user exists
+    #     user = get_object_or_404(User, username=username)
+        
+    #     # Ensure that user is requesting their own credentials
+    #     if user != request.user:
+    #         return HttpResponseForbidden()
+
+    #     return Response(
+    #         GSRBookingCredentialsSerializer(
+    #             GSRBookingCredentials.objects.filter(user=user)
+    #         ).data
+    #     )
+    
+    @action(detail=True, methods=["post"])
+    def save_session_id(self, request, username=None):
+        session_id = request.query_params.get("session_id")
+        expiration_date = request.query_params.get("expiration_date")
+
+        # Check if Session ID were provided
+        if not session_id:
+            return Response({"message": "you must provide a Session ID."})
+        
+        # Check if expiration date were provided
+        if not expiration_date:
+            return Response({"message": "you must provide an expiration date."})
+        
+        # Ensure that user is adding the Session ID to itself
+        # and not for someone else
+        user = get_object_or_404(User, username=username)
+        if user != request.user:
+            return HttpResponseForbidden()
+
+        # Attempt to get existing user credentials
+        credentials = GSRBookingCredentials.objects.filter(user=user)
+        
+        # If credentials already exists, update the Session ID and related info
+        if credentials.exists():
+            credentials.update(session_id=session_id, expiration_date=expiration_date, date_added=timezone.now())
+        
+        # Else create a new credentials object and associate it with the user
+        else:
+            GSRBookingCredentials.objects.create(
+                user=user, session_id=session_id, expiration_date=expiration_date
+            )
+
+        return Response({"success": True})
+
+
 class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["user", "group"]
@@ -111,7 +163,7 @@ class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):
             return HttpResponseForbidden()
 
         if not membership.is_invite:
-            return Response({"message": "invite has alredy been accepted"}, 400)
+            return Response({"message": "invite has already been accepted"}, 400)
 
         membership.accepted = True
         membership.save()
@@ -203,3 +255,4 @@ class GroupViewSet(viewsets.ModelViewSet):
                 GroupMembership.objects.filter(group=group, accepted=False), many=True
             ).data
         )
+
