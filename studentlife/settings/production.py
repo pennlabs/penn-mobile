@@ -4,7 +4,7 @@ import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
 from studentlife.settings.base import *  # noqa: F401, F403
-from studentlife.settings.base import BACKEND_DOMAIN, DATABASES
+from studentlife.settings.base import DATABASES, DOMAIN
 
 
 DEBUG = True
@@ -16,7 +16,7 @@ DATABASES["default"]["OPTIONS"] = {"charset": "utf8mb4"}
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Allow production host headers
-ALLOWED_HOSTS = [BACKEND_DOMAIN]
+ALLOWED_HOSTS = [DOMAIN]
 
 # Make sure SECRET_KEY is set to a secret in production
 SECRET_KEY = os.environ.get("SECRET_KEY", None)
@@ -26,7 +26,4 @@ SENTRY_URL = os.environ.get("SENTRY_URL", "")
 sentry_sdk.init(dsn=SENTRY_URL, integrations=[DjangoIntegration()])
 
 # DLA settings
-PLATFORM_ACCOUNTS = {
-    "REDIRECT_URI": f"https://{BACKEND_DOMAIN}/accounts/callback/",
-    "ADMIN_PERMISSION": "studentlife_admin",
-}
+PLATFORM_ACCOUNTS = {"ADMIN_PERMISSION": "studentlife_admin"}

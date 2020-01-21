@@ -1,5 +1,8 @@
 # student-life
 
+[![CircleCI](https://circleci.com/gh/pennlabs/student-life.svg?style=shield)](https://circleci.com/gh/pennlabs/student-life)
+[![Coverage Status](https://codecov.io/gh/pennlabs/student-life/branch/master/graph/badge.svg)](https://codecov.io/gh/pennlabs/student-life)
+
 This repository will hopefully be the Django-based successor to `labs-api-server`, containing API routes to help students manage keep track of things around campus that matter to them. Currently, this repo contains:
 
 - Group GSR Booking
@@ -26,6 +29,8 @@ To create users, you first have to create a main superuser.
 - Go to `localhost:8000/` in your browser to explore the API! This is a really good way to click around and discover stuff.
 
 ## Rudimentary API Documentation
+
+Also see the [auto-generated documentation](https://studentlife.pennlabs.org/documentation/)
 
 - `GET /users/`
   - List all users, with their pennkey and the groups they are members of.
