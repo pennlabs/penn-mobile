@@ -19,8 +19,8 @@ workflows:
       - docker/publish:
           requires:
             - django-tools/check
-          cache_from: "pennlabs/studentlife:latest"
-          image: pennlabs/studentlife
+          cache_from: "pennlabs/student-life:latest"
+          image: pennlabs/student-life
           tag: "${CIRCLE_SHA1},latest"
           context: docker-publish
           <<: *branch-filters

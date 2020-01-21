@@ -10,7 +10,6 @@ unittest-xml-reporting = "*"
 flake8 = "*"
 flake8-isort = "*"
 flake8-quotes = "*"
-django-debug-toolbar = "*"
 django-extensions = "*"
 
 [packages]
@@ -25,6 +24,7 @@ uritemplate = "*"
 uwsgi = "*"
 django-filter = "*"
 django-labs-accounts = "*"
+django-debug-toolbar = "*"
 
 
 [requires]
