@@ -2,12 +2,12 @@ from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
+from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
 from gsr_booking.models import Group, GroupMembership, UserSearchIndex
 from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, UserSerializer
 from rest_framework import viewsets
+from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -16,7 +16,6 @@ from rest_framework.response import Response
 User = get_user_model()
 
 
-@method_decorator(csrf_exempt, name="dispatch")
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all().prefetch_related(
         Prefetch("booking_groups", Group.objects.filter(groupmembership__accepted=True))
@@ -24,7 +23,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
     lookup_field = "username"
-
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["username", "first_name", "last_name"]
 
@@ -67,12 +66,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(UserSerializer([entry.user for entry in results], many=True).data)
 
 
-@method_decorator(csrf_exempt, name="dispatch")
 class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["user", "group"]
     permission_classes = [IsAuthenticated]
-
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
     queryset = GroupMembership.objects.all()
     serializer_class = GroupMembershipSerializer
 
@@ -181,11 +179,11 @@ class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
 
-@method_decorator(csrf_exempt, name="dispatch")
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
 
     def get_queryset(self):
         if not self.request.user.is_authenticated:
