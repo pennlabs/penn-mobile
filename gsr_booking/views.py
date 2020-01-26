@@ -3,14 +3,16 @@ from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
 from gsr_booking.models import Group, GroupMembership, UserSearchIndex
 from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, UserSerializer
 from rest_framework import viewsets
+from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.authentication import BasicAuthentication
-from .csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
+
+
 User = get_user_model()
 
 
