@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
-from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
 from gsr_booking.models import Group, GroupMembership, UserSearchIndex
 from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, UserSerializer
