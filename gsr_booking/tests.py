@@ -88,7 +88,7 @@ class UserViewTestCase(TestCase):
         self.assertEqual(1, len(response.data))
 
     def test_no_cross_visibility_without_shared_group(self):
-        group2 = Group.objects.create(owner=self.user2, name="g2", color="red")
+        Group.objects.create(owner=self.user2, name="g2", color="red")
         response = self.client.get("/users/")
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, len(response.data), response.data)
