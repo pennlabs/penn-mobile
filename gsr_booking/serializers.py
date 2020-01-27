@@ -52,22 +52,7 @@ class GroupField(serializers.RelatedField):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    booking_groups = serializers.SerializerMethodField()
-
-    def get_booking_groups(self, obj):
-        result = []
-        for membership in GroupMembership.objects.filter(accepted=True, user=obj):
-            result.append(
-                {
-                    "name": membership.group.name,
-                    "id": membership.group.id,
-                    "color": membership.group.color,
-                    "pennkey_allow": membership.pennkey_allow,
-                    "notifications": membership.notifications,
-                }
-            )
-
-        return result
+    booking_groups = GroupMembershipSerializer(source="memberships", many=True, read_only=True)
 
     class Meta:
         model = User
