@@ -92,7 +92,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             # return Response({"message": "you must provide a Session ID."})
         
         # Check if expiration date were provided
-        print(request.query_params.dict())
         if not expiration_date:
             return Response({"message": "you must provide an expiration date."})
         
@@ -107,13 +106,44 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         
         # If credentials already exists, update the Session ID and related info
         if credentials.exists():
-            credentials.update(session_id=session_id, expiration_date=expiration_date, date_added=timezone.now())
+            credentials.update(session_id=session_id, expiration_date=expiration_date, date_updated=timezone.now())
         
         # Else create a new credentials object and associate it with the user
         else:
             GSRBookingCredentials.objects.create(
                 user=user, session_id=session_id, expiration_date=expiration_date
             )
+
+        return Response({"success": True})
+    
+    @action(detail=True, methods=["post"])
+    def save_email(self, request, username=None):
+        email = request.query_params.get("email")
+        
+        # Check if email were provided
+        if not email:
+            return Response({"message": "you must provide a valid email."})
+
+        # Check if email is a Penn email
+        if not email.endswith("upenn.edu"):
+            return Response({"message": "you must provide a school email."})
+        
+        # Ensure that user is adding the email to itself
+        # and not for someone else
+        user = get_object_or_404(User, username=username)
+        if user != request.user:
+            return HttpResponseForbidden()
+
+        # Attempt to get existing user credentials
+        credentials = GSRBookingCredentials.objects.filter(user=user)
+        
+        # If credentials already exists, update the Session ID and related info
+        if credentials.exists():
+            credentials.update(email=email)
+        
+        # Else create a new credentials object and associate it with the user
+        else:
+            GSRBookingCredentials.objects.create(user=user, email=email)
 
         return Response({"success": True})
 

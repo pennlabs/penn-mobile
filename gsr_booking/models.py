@@ -92,13 +92,14 @@ class GSRBookingCredentials(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     # Session ID is used for Wharton GSR booking
-    session_id = models.CharField("session ID", max_length=50, unique=True, null=True)
+    session_id = models.CharField("Session ID", max_length=50, unique=True, null=True)
 
     # Expiration date of the Session ID
-    expiration_date = models.DateTimeField("session ID expiration date")
+    expiration_date = models.DateTimeField("Session ID expiration date", null=True)
 
-    # When Session ID was added
-    date_added = models.DateTimeField("date added (Session ID)", auto_now_add=True)
+    # When Session ID or email was last updated
+    # TODO: May want to differentiate email and Session ID added times
+    date_updated = models.DateTimeField(auto_now_add=True)
 
     # For LibCal, school emails are used instead
     email = models.CharField("school email", max_length=255, unique=True, null=True)
