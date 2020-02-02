@@ -14,9 +14,15 @@ class GroupMembershipSerializer(serializers.ModelSerializer):
         fields = ["username", "group", "type", "pennkey_allow", "notifications"]
 
 
+class MiniUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["username", "first_name", "last_name"]
+
+
 class GroupSerializer(serializers.ModelSerializer):
     owner = serializers.SlugRelatedField(slug_field="username", queryset=User.objects.all())
-    members = serializers.SlugRelatedField(many=True, slug_field="username", read_only=True)
+    members = MiniUserSerializer(many=True, read_only=True)
 
     class Meta:
         model = Group
