@@ -37,12 +37,12 @@ To create users, you first have to create a main superuser.
   - List Wharton Session ID (if available), its expiration date, and school email.
 
 - `POST /users/<pennkey>/save_session_id/`
-
+  - Associates a Wharton Session ID with a user.
 <table>
     <tbody>
         <tr>
             <td>URL</td>
-            <td><code>https://studentlife.pennlabs.org/<pennkey>/save_session_id/</code></td>
+            <td><code>https://studentlife.pennlabs.org/{pennkey}/save_session_id/</code></td>
         </tr>
         <tr>
             <td>HTTP Methods</td>
@@ -88,7 +88,47 @@ To create users, you first have to create a main superuser.
     </tbody>
 </table>
 
-  - Associates a Wharton Session ID with a user.
+- `POST /users/<pennkey>/save_email/`
+  - Associates a school email with a user for LibCal.
+<table>
+    <tbody>
+        <tr>
+            <td>URL</td>
+            <td><code>https://studentlife.pennlabs.org/{pennkey}/save_email/</code></td>
+        </tr>
+        <tr>
+            <td>HTTP Methods</td>
+            <td>POST</td>
+        </tr>
+        <tr>
+            <td>Response Formats</td>
+            <td>JSON</td>
+        </tr>
+        <tr>
+            <td>Parameters</td>
+            <td>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Default</th>
+                            <th>Description</th>
+                            <th>Example Values</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                          <td><tt>email</tt></td>
+                          <td><strong>Required</strong></td>
+                          <td>The student's school email</td>
+                          <td><tt>pennkey@seas.upenn.edu</tt></td>
+                      </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+</table>
 
 - `GET /users/<pennkey>/invites/`
   - Get all open invites for a user.
