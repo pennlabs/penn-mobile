@@ -33,6 +33,60 @@ To create users, you first have to create a main superuser.
 - `GET /users/<pennkey>/`
   - Detail view on one user.
 
+- `POST /users/<pennkey>/save_session_id/`
+
+<table>
+    <tbody>
+        <tr>
+            <td>URL</td>
+            <td><code>https://studentlife.pennlabs.org/buildings/search</td>
+        </tr>
+        <tr>
+            <td>HTTP Methods</td>
+            <td>POST</td>
+        </tr>
+        <tr>
+            <td>Response Formats</td>
+            <td>JSON</td>
+        </tr>
+        <tr>
+            <td>Parameters</td>
+            <td>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Default</th>
+                            <th>Description</th>
+                            <th>Example Values</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                          <td><tt>session_id</tt></td>
+                          <td><strong>Optional</strong></td>
+                          <td>The student's Wharton Session ID</td>
+                          <td><tt>k44mhe1ta84jw9vdva8y5dv387a1ozd9</tt></td>
+                      </tr>
+                      <tr>
+                          <td><tt>expiration_date</tt></td>
+                          <td><strong>Required</strong></td>
+                          <td>Session ID expiration date</td>
+                          <td><tt>2020-01-25</tt></td>
+                      </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+        <tr>
+          <td>Notes</td>
+          <td><tt>session_id</tt> can be <tt>null</tt> as it is always a temporary value.</td>
+        </tr>
+    </tbody>
+</table>
+
+  - Associates a Wharton Session ID with a user.
+
 - `GET /users/<pennkey>/invites/`
   - Get all open invites for a user.
 

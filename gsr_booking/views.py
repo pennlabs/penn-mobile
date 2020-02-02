@@ -66,20 +66,20 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
 
     # Saves the Session ID and associates it with a user.
-    # @action(detail=True, methods=["get"])
-    # def get_gsr_booking_credentials(self, request, username=None):
-    #     # Ensure that user exists
-    #     user = get_object_or_404(User, username=username)
+    @action(detail=True, methods=["get"])
+    def gsr_booking_credentials(self, request, username=None):
+        # Ensure that user exists
+        user = get_object_or_404(User, username=username)
         
-    #     # Ensure that user is requesting their own credentials
-    #     if user != request.user:
-    #         return HttpResponseForbidden()
+        # Ensure that user is requesting their own credentials
+        if user != request.user:
+            return HttpResponseForbidden()
 
-    #     return Response(
-    #         GSRBookingCredentialsSerializer(
-    #             GSRBookingCredentials.objects.filter(user=user)
-    #         ).data
-    #     )
+        return Response(
+            GSRBookingCredentialsSerializer(
+                GSRBookingCredentials.objects.get(user=user)
+            ).data
+        )
     
     @action(detail=True, methods=["post"])
     def save_session_id(self, request, username=None):
@@ -87,10 +87,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         expiration_date = request.query_params.get("expiration_date")
 
         # Check if Session ID were provided
-        if not session_id:
-            return Response({"message": "you must provide a Session ID."})
+        # if not session_id:
+            # return Response({"message": "you must provide a Session ID."})
         
         # Check if expiration date were provided
+        print(request.query_params.dict())
         if not expiration_date:
             return Response({"message": "you must provide an expiration date."})
         

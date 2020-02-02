@@ -16,7 +16,9 @@ class GroupMembershipSerializer(serializers.ModelSerializer):
 
 class GroupSerializer(serializers.ModelSerializer):
     owner = serializers.SlugRelatedField(slug_field="username", queryset=User.objects.all())
+    print(owner)
     members = serializers.SlugRelatedField(many=True, slug_field="username", read_only=True)
+    print(members)
 
     class Meta:
         model = Group
@@ -32,7 +34,9 @@ class GroupField(serializers.RelatedField):
 
 
 class GSRBookingCredentialsSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(slug_field="user", queryset=User.objects.all())
+    user = serializers.SlugRelatedField(slug_field="username", queryset=User.objects.all())
+
+    # print(user)
 
     class Meta:
         model = GSRBookingCredentials
