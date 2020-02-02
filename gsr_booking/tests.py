@@ -36,6 +36,11 @@ class UserViewTestCase(TestCase):
         self.assertTrue(200, response.status_code)
         self.assertEqual(1, len(response.data["booking_groups"]))
 
+    def test_me_user_detail_in_group(self):
+        response = self.client.get("/users/me/")
+        self.assertTrue(200, response.status_code)
+        self.assertEqual(1, len(response.data["booking_groups"]))
+
     def test_user_detail_invited(self):
         self.group.members.add(self.user2)
         memship = self.group.groupmembership_set.all()[0]

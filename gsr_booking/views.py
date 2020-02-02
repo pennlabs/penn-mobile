@@ -27,6 +27,29 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["username", "first_name", "last_name"]
 
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        param = self.kwargs[lookup_url_kwarg]
+        if param == "me":
+            return self.request.user
+        else:
+            return super().get_object()
+
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return User.objects.none()
+
+        queryset = User.objects.all()
+        queryset = queryset.prefetch_related(
+            Prefetch(
+                "memberships",
+                GroupMembership.objects.filter(
+                    group__in=self.request.user.booking_groups.all(), accepted=True
+                ),
+            )
+        )
+        return queryset
+
     @action(detail=True, methods=["get"])
     def invites(self, request, username=None):
         if username == "me":
