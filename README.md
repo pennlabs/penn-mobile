@@ -33,13 +33,16 @@ To create users, you first have to create a main superuser.
 - `GET /users/<pennkey>/`
   - Detail view on one user.
 
+- `GET /users/<pennkey>/gsr_booking_credentials`
+  - List Wharton Session ID (if available), its expiration date, and school email.
+
 - `POST /users/<pennkey>/save_session_id/`
 
 <table>
     <tbody>
         <tr>
             <td>URL</td>
-            <td><code>https://studentlife.pennlabs.org/buildings/search</td>
+            <td><code>https://studentlife.pennlabs.org/<pennkey>/save_session_id/</code></td>
         </tr>
         <tr>
             <td>HTTP Methods</td>
