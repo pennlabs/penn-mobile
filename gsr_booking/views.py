@@ -87,6 +87,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         expiration_date = request.query_params.get("expiration_date")
 
         # Check if Session ID were provided
+        # FIXME: Should session_id be allowed to be null?
         # if not session_id:
             # return Response({"message": "you must provide a Session ID."})
         
