@@ -26,4 +26,4 @@ SENTRY_URL = os.environ.get("SENTRY_URL", "")
 sentry_sdk.init(dsn=SENTRY_URL, integrations=[DjangoIntegration()])
 
 # DLA settings
-PLATFORM_ACCOUNTS = {"ADMIN_PERMISSION": "studentlife_admin"}
+# PLATFORM_ACCOUNTS = {"ADMIN_PERMISSION": "studentlife_admin"}
