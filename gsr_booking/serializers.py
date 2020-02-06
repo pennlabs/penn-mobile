@@ -11,7 +11,7 @@ class GroupMembershipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupMembership
-        fields = ["username", "group", "type", "pennkey_allow", "notifications"]
+        fields = ["username", "group", "type", "pennkey_allow", "notifications", "id"]
 
 
 class MiniUserSerializer(serializers.ModelSerializer):
