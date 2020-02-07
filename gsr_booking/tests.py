@@ -226,3 +226,9 @@ class GroupTestCase(TestCase):
     def test_get_group_not_involved_fails(self):
         response = self.client.get(f"/groups/{self.group2.pk}/")
         self.assertEqual(404, response.status_code)
+
+    def test_make_group(self):
+        response = self.client.post(f"/groups/", {"name": "gx", "color": "blue"})
+        self.assertEqual(201, response.status_code, response.data)
+        self.assertEqual(3, Group.objects.count())
+        self.assertEqual("user1", Group.objects.get(name="gx").owner.username)

@@ -21,12 +21,24 @@ class MiniUserSerializer(serializers.ModelSerializer):
 
 
 class GroupSerializer(serializers.ModelSerializer):
-    owner = serializers.SlugRelatedField(slug_field="username", queryset=User.objects.all())
+    owner = serializers.SlugRelatedField(
+        slug_field="username", queryset=User.objects.all(), required=False
+    )
     members = MiniUserSerializer(many=True, read_only=True)
 
     class Meta:
         model = Group
         fields = ["owner", "members", "name", "color", "id"]
+
+    def create(self, validated_data):
+        request = self.context.get("request", None)
+        if request is None:
+            return super().create(validated_data)
+
+        if request.user.is_authenticated:
+            validated_data["owner"] = request.user
+
+        return super().create(validated_data)
 
 
 class GroupField(serializers.RelatedField):
