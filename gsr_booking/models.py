@@ -13,14 +13,14 @@ class GroupMembership(models.Model):
     )
     username = models.CharField(max_length=127, blank=True, null=True, default=None)
 
-    group = models.ForeignKey("Group", on_delete=models.CASCADE)
+    group = models.ForeignKey("Group", on_delete=models.CASCADE, related_name="memberships")
 
     # When accepted is False, this is a request, otherwise this is an active membership.
     accepted = models.BooleanField(default=False)
 
     ADMIN = "A"
     MEMBER = "M"
-    type = models.CharField(max_length=10, choices=[(ADMIN, "Admin"), (MEMBER, "M")])
+    type = models.CharField(max_length=10, choices=[(ADMIN, "Admin"), (MEMBER, "Member")])
 
     pennkey_allow = models.BooleanField(default=False)
 

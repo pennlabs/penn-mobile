@@ -18,7 +18,7 @@ User = get_user_model()
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all().prefetch_related(
-        Prefetch("booking_groups", Group.objects.filter(groupmembership__accepted=True))
+        Prefetch("booking_groups", Group.objects.filter(memberships__accepted=True))
     )
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
@@ -215,7 +215,7 @@ class GroupViewSet(viewsets.ModelViewSet):
             super()
             .get_queryset()
             .filter(members=self.request.user)
-            .prefetch_related(Prefetch("members", User.objects.filter(memberships__accepted=True)))
+            .prefetch_related(Prefetch("memberships", GroupMembership.objects.filter(accepted=True)))
         )
 
     @action(detail=True, methods=["get"])
