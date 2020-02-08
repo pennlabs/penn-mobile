@@ -6,18 +6,19 @@ from rest_framework import serializers
 User = get_user_model()
 
 
-class GroupMembershipSerializer(serializers.ModelSerializer):
-    group = serializers.SlugRelatedField(slug_field="name", queryset=Group.objects.all())
-
-    class Meta:
-        model = GroupMembership
-        fields = ["username", "group", "type", "pennkey_allow", "notifications", "id"]
-
-
 class MiniUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["username", "first_name", "last_name"]
+
+
+class GroupMembershipSerializer(serializers.ModelSerializer):
+    user = MiniUserSerializer(read_only=True)
+    group = serializers.SlugRelatedField(slug_field="name", queryset=Group.objects.all())
+
+    class Meta:
+        model = GroupMembership
+        fields = ["user", "group", "type", "pennkey_allow", "notifications", "id"]
 
 
 class GroupSerializer(serializers.ModelSerializer):
