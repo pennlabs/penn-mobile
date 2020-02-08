@@ -20,7 +20,7 @@ class UserViewTestCase(TestCase):
 
         self.group = Group.objects.create(owner=self.user1, name="g1", color="blue")
         self.group.members.add(self.user1)
-        memship = self.group.groupmembership_set.all()[0]
+        memship = self.group.memberships.all()[0]
         memship.accepted = True
         memship.save()
         self.client = APIClient()
@@ -43,7 +43,7 @@ class UserViewTestCase(TestCase):
 
     def test_user_detail_invited(self):
         self.group.members.add(self.user2)
-        memship = self.group.groupmembership_set.all()[0]
+        memship = self.group.memberships.all()[0]
         memship.accepted = False
         memship.save()
         response = self.client.get("/users/user2/")
@@ -52,7 +52,7 @@ class UserViewTestCase(TestCase):
 
     def test_user_invites(self):
         self.group.members.add(self.user2)
-        memship = self.group.groupmembership_set.all()[0]
+        memship = self.group.memberships.all()[0]
         memship.accepted = False
         memship.save()
         response = self.client.get("/users/user2/invites/")
@@ -232,3 +232,14 @@ class GroupTestCase(TestCase):
         self.assertEqual(201, response.status_code, response.data)
         self.assertEqual(3, Group.objects.count())
         self.assertEqual("user1", Group.objects.get(name="gx").owner.username)
+
+    def test_only_accepted_memberships(self):
+        gm = GroupMembership.objects.create(user=self.user2, group=self.group, accepted=False)
+        response = self.client.get(f"/groups/{self.group.pk}/")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(response.data["memberships"]))
+        gm.accepted = True
+        gm.save()
+        response = self.client.get(f"/groups/{self.group.pk}/")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(2, len(response.data["memberships"]))
