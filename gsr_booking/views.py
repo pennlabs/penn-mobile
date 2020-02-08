@@ -215,7 +215,9 @@ class GroupViewSet(viewsets.ModelViewSet):
             super()
             .get_queryset()
             .filter(members=self.request.user)
-            .prefetch_related(Prefetch("memberships", GroupMembership.objects.filter(accepted=True)))
+            .prefetch_related(
+                Prefetch("memberships", GroupMembership.objects.filter(accepted=True))
+            )
         )
 
     @action(detail=True, methods=["get"])
