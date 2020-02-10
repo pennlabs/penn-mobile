@@ -21,11 +21,11 @@ class Account(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'account'
+        db_table = "account"
 
 
 class AnalyticsEvent(models.Model):
-    user = models.ForeignKey('User', models.DO_NOTHING, db_column='user', blank=True, null=True)
+    user = models.ForeignKey("User", models.DO_NOTHING, db_column="user", blank=True, null=True)
     account = models.ForeignKey(Account, models.DO_NOTHING, blank=True, null=True)
     timestamp = models.DateTimeField()
     type = models.CharField(max_length=50)
@@ -36,7 +36,7 @@ class AnalyticsEvent(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'analytics_event'
+        db_table = "analytics_event"
 
 
 class AnonymousId(models.Model):
@@ -49,7 +49,7 @@ class AnonymousId(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'anonymous_id'
+        db_table = "anonymous_id"
 
 
 class ArInternalMetadata(models.Model):
@@ -60,7 +60,7 @@ class ArInternalMetadata(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'ar_internal_metadata'
+        db_table = "ar_internal_metadata"
 
 
 class Course(models.Model):
@@ -80,7 +80,7 @@ class Course(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'course'
+        db_table = "course"
 
 
 class CourseAccount(models.Model):
@@ -89,8 +89,8 @@ class CourseAccount(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'course_account'
-        unique_together = (('account', 'course'),)
+        db_table = "course_account"
+        unique_together = (("account", "course"),)
 
 
 class CourseAnonymousId(models.Model):
@@ -99,8 +99,8 @@ class CourseAnonymousId(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'course_anonymous_id'
-        unique_together = (('anonymous', 'course'),)
+        db_table = "course_anonymous_id"
+        unique_together = (("anonymous", "course"),)
 
 
 class CourseInstructor(models.Model):
@@ -109,8 +109,8 @@ class CourseInstructor(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'course_instructor'
-        unique_together = (('course', 'name'),)
+        db_table = "course_instructor"
+        unique_together = (("course", "name"),)
 
 
 class CourseMeetingTime(models.Model):
@@ -123,18 +123,18 @@ class CourseMeetingTime(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'course_meeting_time'
-        unique_together = (('course', 'weekday', 'start_time'),)
+        db_table = "course_meeting_time"
+        unique_together = (("course", "weekday", "start_time"),)
 
 
 class Degree(models.Model):
     code = models.CharField(primary_key=True, max_length=255)
     name = models.TextField()
-    school = models.ForeignKey('School', models.DO_NOTHING)
+    school = models.ForeignKey("School", models.DO_NOTHING)
 
     class Meta:
         managed = False
-        db_table = 'degree'
+        db_table = "degree"
 
 
 class DiningBalance(models.Model):
@@ -146,18 +146,20 @@ class DiningBalance(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'dining_balance'
+        db_table = "dining_balance"
 
 
 class DiningPreference(models.Model):
     created_at = models.DateTimeField(blank=True, null=True)
-    user = models.ForeignKey('User', models.DO_NOTHING)
-    account = models.ForeignKey(Account, models.DO_NOTHING, db_column='account', blank=True, null=True)
+    user = models.ForeignKey("User", models.DO_NOTHING)
+    account = models.ForeignKey(
+        Account, models.DO_NOTHING, db_column="account", blank=True, null=True
+    )
     venue_id = models.IntegerField()
 
     class Meta:
         managed = False
-        db_table = 'dining_preference'
+        db_table = "dining_preference"
 
 
 class DiningTransaction(models.Model):
@@ -170,7 +172,7 @@ class DiningTransaction(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'dining_transaction'
+        db_table = "dining_transaction"
 
 
 class Event(models.Model):
@@ -191,7 +193,7 @@ class Event(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'event'
+        db_table = "event"
 
 
 class EventUsers(models.Model):
@@ -211,7 +213,7 @@ class EventUsers(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'event_users'
+        db_table = "event_users"
 
 
 class GsrRoomName(models.Model):
@@ -222,8 +224,8 @@ class GsrRoomName(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'gsr_room_name'
-        unique_together = (('lid', 'gid', 'rid'),)
+        db_table = "gsr_room_name"
+        unique_together = (("lid", "gid", "rid"),)
 
 
 class HomeCellOrder(models.Model):
@@ -231,11 +233,13 @@ class HomeCellOrder(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'home_cell_order'
+        db_table = "home_cell_order"
 
 
 class Housing(models.Model):
-    account = models.OneToOneField(Account, models.DO_NOTHING, db_column='account', primary_key=True)
+    account = models.OneToOneField(
+        Account, models.DO_NOTHING, db_column="account", primary_key=True
+    )
     house = models.TextField(blank=True, null=True)
     location = models.TextField(blank=True, null=True)
     address = models.TextField(blank=True, null=True)
@@ -246,19 +250,21 @@ class Housing(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'housing'
-        unique_together = (('account', 'start'),)
+        db_table = "housing"
+        unique_together = (("account", "start"),)
 
 
 class LaundryPreference(models.Model):
     created_at = models.DateTimeField(blank=True, null=True)
-    user = models.ForeignKey('User', models.DO_NOTHING)
-    account = models.ForeignKey(Account, models.DO_NOTHING, db_column='account', blank=True, null=True)
+    user = models.ForeignKey("User", models.DO_NOTHING)
+    account = models.ForeignKey(
+        Account, models.DO_NOTHING, db_column="account", blank=True, null=True
+    )
     room_id = models.IntegerField()
 
     class Meta:
         managed = False
-        db_table = 'laundry_preference'
+        db_table = "laundry_preference"
 
 
 class LaundrySnapshot(models.Model):
@@ -272,21 +278,23 @@ class LaundrySnapshot(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'laundry_snapshot'
+        db_table = "laundry_snapshot"
 
 
 class Major(models.Model):
     code = models.CharField(primary_key=True, max_length=255)
     name = models.TextField()
-    degree_code = models.ForeignKey(Degree, models.DO_NOTHING, db_column='degree_code')
+    degree_code = models.ForeignKey(Degree, models.DO_NOTHING, db_column="degree_code")
 
     class Meta:
         managed = False
-        db_table = 'major'
+        db_table = "major"
 
 
 class NotificationSetting(models.Model):
-    account = models.OneToOneField(Account, models.DO_NOTHING, db_column='account', primary_key=True)
+    account = models.OneToOneField(
+        Account, models.DO_NOTHING, db_column="account", primary_key=True
+    )
     setting = models.CharField(max_length=255)
     enabled = models.IntegerField(blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True)
@@ -294,12 +302,14 @@ class NotificationSetting(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'notification_setting'
-        unique_together = (('account', 'setting'),)
+        db_table = "notification_setting"
+        unique_together = (("account", "setting"),)
 
 
 class NotificationToken(models.Model):
-    account = models.OneToOneField(Account, models.DO_NOTHING, db_column='account', primary_key=True)
+    account = models.OneToOneField(
+        Account, models.DO_NOTHING, db_column="account", primary_key=True
+    )
     ios_token = models.CharField(max_length=255, blank=True, null=True)
     android_token = models.CharField(max_length=255, blank=True, null=True)
     dev = models.IntegerField()
@@ -308,11 +318,11 @@ class NotificationToken(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'notification_token'
+        db_table = "notification_token"
 
 
 class Post(models.Model):
-    account = models.ForeignKey('PostAccount', models.DO_NOTHING, db_column='account')
+    account = models.ForeignKey("PostAccount", models.DO_NOTHING, db_column="account")
     source = models.TextField(blank=True, null=True)
     title = models.TextField(blank=True, null=True)
     subtitle = models.TextField(blank=True, null=True)
@@ -331,7 +341,7 @@ class Post(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'post'
+        db_table = "post"
 
 
 class PostAccount(models.Model):
@@ -348,11 +358,13 @@ class PostAccount(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'post_account'
+        db_table = "post_account"
 
 
 class PostAccountEmail(models.Model):
-    account = models.OneToOneField(PostAccount, models.DO_NOTHING, db_column='account', primary_key=True)
+    account = models.OneToOneField(
+        PostAccount, models.DO_NOTHING, db_column="account", primary_key=True
+    )
     email = models.CharField(max_length=255)
     verified = models.IntegerField(blank=True, null=True)
     auth_token = models.CharField(max_length=255, blank=True, null=True)
@@ -360,55 +372,57 @@ class PostAccountEmail(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'post_account_email'
-        unique_together = (('account', 'email'),)
+        db_table = "post_account_email"
+        unique_together = (("account", "email"),)
 
 
 class PostFilter(models.Model):
-    post = models.OneToOneField(Post, models.DO_NOTHING, db_column='post', primary_key=True)
+    post = models.OneToOneField(Post, models.DO_NOTHING, db_column="post", primary_key=True)
     type = models.CharField(max_length=255)
     filter = models.CharField(max_length=255)
 
     class Meta:
         managed = False
-        db_table = 'post_filter'
-        unique_together = (('post', 'type', 'filter'),)
+        db_table = "post_filter"
+        unique_together = (("post", "type", "filter"),)
 
 
 class PostStatus(models.Model):
-    post = models.OneToOneField(Post, models.DO_NOTHING, db_column='post', primary_key=True)
+    post = models.OneToOneField(Post, models.DO_NOTHING, db_column="post", primary_key=True)
     status = models.CharField(max_length=255)
     msg = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField()
 
     class Meta:
         managed = False
-        db_table = 'post_status'
-        unique_together = (('post', 'status', 'created_at'),)
+        db_table = "post_status"
+        unique_together = (("post", "status", "created_at"),)
 
 
 class PostTargetEmail(models.Model):
-    post = models.OneToOneField(Post, models.DO_NOTHING, db_column='post', primary_key=True)
+    post = models.OneToOneField(Post, models.DO_NOTHING, db_column="post", primary_key=True)
     email = models.CharField(max_length=255)
 
     class Meta:
         managed = False
-        db_table = 'post_target_email'
-        unique_together = (('post', 'email'),)
+        db_table = "post_target_email"
+        unique_together = (("post", "email"),)
 
 
 class PostTester(models.Model):
-    post = models.OneToOneField(Post, models.DO_NOTHING, db_column='post', primary_key=True)
+    post = models.OneToOneField(Post, models.DO_NOTHING, db_column="post", primary_key=True)
     email = models.CharField(max_length=255)
 
     class Meta:
         managed = False
-        db_table = 'post_tester'
-        unique_together = (('post', 'email'),)
+        db_table = "post_tester"
+        unique_together = (("post", "email"),)
 
 
 class PrivacySetting(models.Model):
-    account = models.OneToOneField(Account, models.DO_NOTHING, db_column='account', primary_key=True)
+    account = models.OneToOneField(
+        Account, models.DO_NOTHING, db_column="account", primary_key=True
+    )
     setting = models.CharField(max_length=255)
     enabled = models.IntegerField(blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True)
@@ -416,8 +430,8 @@ class PrivacySetting(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'privacy_setting'
-        unique_together = (('account', 'setting'),)
+        db_table = "privacy_setting"
+        unique_together = (("account", "setting"),)
 
 
 class SchemaMigrations(models.Model):
@@ -425,7 +439,7 @@ class SchemaMigrations(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'schema_migrations'
+        db_table = "schema_migrations"
 
 
 class School(models.Model):
@@ -434,19 +448,19 @@ class School(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'school'
+        db_table = "school"
 
 
 class SchoolMajorAccount(models.Model):
     account = models.OneToOneField(Account, models.DO_NOTHING, primary_key=True)
     school = models.ForeignKey(School, models.DO_NOTHING)
-    major = models.ForeignKey(Major, models.DO_NOTHING, db_column='major')
+    major = models.ForeignKey(Major, models.DO_NOTHING, db_column="major")
     expected_grad = models.TextField()
 
     class Meta:
         managed = False
-        db_table = 'school_major_account'
-        unique_together = (('account', 'school', 'major'),)
+        db_table = "school_major_account"
+        unique_together = (("account", "school", "major"),)
 
 
 class StudySpacesBooking(models.Model):
@@ -459,12 +473,14 @@ class StudySpacesBooking(models.Model):
     booking_id = models.TextField(blank=True, null=True)
     is_cancelled = models.IntegerField()
     reminder_sent = models.IntegerField()
-    account = models.ForeignKey(Account, models.DO_NOTHING, db_column='account', blank=True, null=True)
-    user = models.ForeignKey('User', models.DO_NOTHING, db_column='user', blank=True, null=True)
+    account = models.ForeignKey(
+        Account, models.DO_NOTHING, db_column="account", blank=True, null=True
+    )
+    user = models.ForeignKey("User", models.DO_NOTHING, db_column="user", blank=True, null=True)
 
     class Meta:
         managed = False
-        db_table = 'study_spaces_booking'
+        db_table = "study_spaces_booking"
 
 
 class UniversityEvent(models.Model):
@@ -475,7 +491,7 @@ class UniversityEvent(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'university_event'
+        db_table = "university_event"
 
 
 class User(models.Model):
@@ -486,4 +502,4 @@ class User(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'user'
+        db_table = "user"
