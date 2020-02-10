@@ -15,10 +15,11 @@ class MiniUserSerializer(serializers.ModelSerializer):
 class GroupMembershipSerializer(serializers.ModelSerializer):
     user = MiniUserSerializer(read_only=True)
     group = serializers.SlugRelatedField(slug_field="name", queryset=Group.objects.all())
+    color = serializers.SlugRelatedField(slug_field="color", read_only=True, source="group")
 
     class Meta:
         model = GroupMembership
-        fields = ["user", "group", "type", "pennkey_allow", "notifications", "id"]
+        fields = ["user", "group", "type", "pennkey_allow", "notifications", "id", "color"]
 
 
 class GroupSerializer(serializers.ModelSerializer):
