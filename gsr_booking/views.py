@@ -17,6 +17,10 @@ User = get_user_model()
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Can specify `me` instead of the `username` to retrieve details on the current user.
+    """
+
     queryset = User.objects.all().prefetch_related(
         Prefetch("booking_groups", Group.objects.filter(memberships__accepted=True))
     )
@@ -52,6 +56,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["get"])
     def invites(self, request, username=None):
+        """
+        Retrieve all invites for a given user.
+        """
         if username == "me":
             username = request.user.username
 
@@ -64,6 +71,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def activate(self, request, username=None):
+        """
+        Activate a user's account. Must be run when a user signs in for the first time, at least.
+        The action is idempotent, so no harm in calling it multiple times.
+        """
         if username == "me":
             username = request.user.username
 
@@ -81,6 +92,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"])
     def search(self, request):
+        """
+        Search the database of registered users by name or pennkey. Deprecated in favor
+        of the platform route.
+        """
         query = request.query_params.get("q", "")
         results = UserSearchIndex.objects.filter(
             Q(full_name__istartswith=query) | Q(pennkey__istartswith=query)
@@ -89,7 +104,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(UserSerializer([entry.user for entry in results], many=True).data)
 
 
-class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):
+class GroupMembershipViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["user", "group"]
     permission_classes = [IsAuthenticated]
@@ -104,6 +119,9 @@ class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["post"])
     def invite(self, request):
+        """
+        Invite a user to a group.
+        """
         group_id = request.data.get("group")
         group = get_object_or_404(Group, pk=group_id)
 
