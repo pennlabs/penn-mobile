@@ -59,12 +59,19 @@ class Group(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    ADMIN = "A"
+    MEMBER = "M"
+
     def __str__(self):
         return "{}: {}".format(self.pk, self.name)
 
     def has_member(self, user):
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
         return memberships.all().filter(user=user).exists()
+
+    def is_admin(self, user):
+        memberships = GroupMembership.objects.filter(group=self, accepted=True)
+        return memberships.all().filter(type=ADMIN).filter(user=user).exists()
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
