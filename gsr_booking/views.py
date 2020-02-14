@@ -65,7 +65,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         user = get_object_or_404(User, username=username)
         return Response(
             GroupMembershipSerializer(
-                GroupMembership.objects.filter(user=user, accepted=False), many=True
+                GroupMembership.objects.filter(
+                    user=user, accepted=False, group__in=self.request.user.booking_groups.all()
+                ),
+                many=True,
             ).data
         )
 
@@ -244,6 +247,16 @@ class GroupViewSet(viewsets.ModelViewSet):
         if not group.has_member(request.user):
             return HttpResponseForbidden()
 
+        return Response(
+            GroupMembershipSerializer(
+                GroupMembership.objects.filter(group=group, accepted=False), many=True
+            ).data
+        )
+    @action(detail=True, methods=["post"], url_path="book-room")
+    def book_room(self, request, pk):
+        group = get_object_or_404(Group, pk=pk)
+        if not group.has_member(request.user):
+            return HttpResponseForbidden()
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(group=group, accepted=False), many=True
