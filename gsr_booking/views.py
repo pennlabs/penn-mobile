@@ -65,7 +65,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         user = get_object_or_404(User, username=username)
         return Response(
             GroupMembershipSerializer(
-                GroupMembership.objects.filter(user=user, accepted=False), many=True
+                GroupMembership.objects.filter(
+                    user=user, accepted=False, group__in=self.request.user.booking_groups.all()
+                ),
+                many=True,
             ).data
         )
 
