@@ -25,7 +25,7 @@ uwsgi = "*"
 django-filter = "*"
 django-labs-accounts = "*"
 django-debug-toolbar = "*"
-
+ipython = "*"
 
 [requires]
 python_version = "3.7"
