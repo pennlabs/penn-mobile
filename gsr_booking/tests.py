@@ -101,7 +101,7 @@ class UserViewTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, len(response.data), response.data)
         self.assertEqual(1, len(response.data[1]["booking_groups"]), response.data)
-        self.assertEqual("g1", response.data[1]["booking_groups"][0]["group"]["name"])
+        self.assertEqual("g1", response.data[1]["booking_groups"][0]["group"])
 
 
 class MembershipViewTestCase(TestCase):
