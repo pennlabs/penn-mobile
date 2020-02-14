@@ -255,8 +255,10 @@ class GroupViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="book-room")
     def book_room(self, request, pk):
         group = get_object_or_404(Group, pk=pk)
-        if not group.has_member(request.user):
+        if not group.has_member(request.user) or not group.is_admin(request.user):
             return HttpResponseForbidden()
+
+        print(group.is_admin(request.user))
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(group=group, accepted=False), many=True

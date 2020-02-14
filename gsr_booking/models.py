@@ -71,7 +71,7 @@ class Group(models.Model):
 
     def is_admin(self, user):
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
-        return memberships.all().filter(type=ADMIN).filter(user=user).exists()
+        return memberships.all().filter(type="A").filter(user=user).exists()
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
