@@ -87,22 +87,6 @@ class UserViewTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(1, len(response.data))
 
-    def test_no_cross_visibility_without_shared_group(self):
-        Group.objects.create(owner=self.user2, name="g2", color="red")
-        response = self.client.get("/users/")
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(2, len(response.data), response.data)
-        self.assertEqual(0, len(response.data[1]["booking_groups"]), response.data)
-
-    def test_visibility_within_group(self):
-        Group.objects.create(owner=self.user2, name="g2", color="red")
-        GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True)
-        response = self.client.get("/users/")
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(2, len(response.data), response.data)
-        self.assertEqual(1, len(response.data[1]["booking_groups"]), response.data)
-        self.assertEqual("g1", response.data[1]["booking_groups"][0]["group"])
-
 
 class MembershipViewTestCase(TestCase):
     def setUp(self):
