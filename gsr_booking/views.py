@@ -11,7 +11,7 @@ from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+import requests
 
 User = get_user_model()
 
@@ -257,10 +257,32 @@ class GroupViewSet(viewsets.ModelViewSet):
         group = get_object_or_404(Group, pk=pk)
         if not group.has_member(request.user) or not group.is_admin(request.user):
             return HttpResponseForbidden()
+        
+        roomid = request.data.get("room")
+        startTime = request.data.get("start")
+        endTime = request.data.get("end")
+        lid = request.data.get("lid")
+        sessionid = request.data.get("sessionid")
 
-        print(group.is_admin(request.user))
+        resultJSON = self.make_booking_request(roomid, startTime, endTime, lid, sessionid)
+
+        
         return Response(
-            GroupMembershipSerializer(
-                GroupMembership.objects.filter(group=group, accepted=False), many=True
-            ).data
+            resultJSON
         )
+
+    def make_booking_request(self, roomid, startTime, endTime, lid, sessionid):
+        #makes a request to labs api server to book rooms, and returns result json if successful
+        booking_url = 'https://api.pennlabs.org/studyspaces/book' 
+        form_data = {'room': roomid, 'start': startTime, 'end': endTime, 'lid': lid, 'sessionid': sessionid}
+        r = requests.post(booking_url, data=form_data)
+        resp_data = r.json()
+        print(resp_data)
+
+        result = {
+            'success': resp_data['results']
+        }
+        if 'error' in resp_data:
+            result['error'] = resp_data['error']
+
+        return result
