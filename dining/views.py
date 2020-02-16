@@ -5,7 +5,7 @@ from datetime import timedelta, datetime
 
 from legacy.models import Account, DiningBalance, DiningTransaction, Course
 from options.models import get_value, get_option
-from studentlife.utils import get_new_end
+from studentlife.utils import get_new_start_end
 
 # Create your views here.
 
@@ -15,7 +15,11 @@ class Dashboard(APIView):
 		self.pennkey = request.GET.get("pennid")
 		self.uid = Account.objects.filter(pennkey=self.pennkey)[0].id
 		json = self.balance()
-		json["end-of-semester"] = self.get_semester_end()
+
+		start, end = self.get_semester_start_end()
+		json["start-of-semester"] = start
+		json["end-of-semester"] = end
+
 		json["cards"] = []
 		json["cards"].append(self.recent_transactions_card())
 
@@ -54,14 +58,26 @@ class Dashboard(APIView):
 
 		return card
 
-	def get_semester_end(self):
+	def get_semester_start_end(self):
+
+		current_start = get_value("semester_start")
+		current_start = datetime.strptime(current_start, "%Y-%m-%d")
+
 		current_end = get_value("semester_end")
-		current_end = datetime.strptime(current_end, "%Y-%m-%dT%H:%M:%S")
+		current_end = datetime.strptime(current_end, "%Y-%m-%d")
 
 		if current_end > datetime.now():
-			return current_end
+			return current_start, current_end
 		else: 
-			new_option = get_option("semester_end")
-			new_option.value = get_new_end().strftime("%Y-%m-%dT%H:%M:%S")
-			new_option.save()
-			return get_value("semester_end")
+			new_end_option = get_option("semester_end")
+			new_start_option = get_option("semester_start")
+
+			new_start, new_end = get_new_start_end()
+
+			new_start_option.value = new_start.strftime("%Y-%m-%d")
+			new_start_option.save()
+
+			new_end_option.value = new_end.strftime("%Y-%m-%d")
+			new_end_option.save()
+
+			return get_value("semester_start"), get_value("semester_end"), 

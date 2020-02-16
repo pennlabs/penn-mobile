@@ -3,10 +3,14 @@ from datetime import datetime, timedelta
 import json
 
 
-def get_new_end():
+def get_new_start_end():
+    dates = []
     for event in pull_3year():
         if "Term ends" in event["name"]:
-            return datetime.strptime(event["end"], '%Y-%m-%d')
+            dates.append(datetime.strptime(event["end"], "%Y-%m-%d").date())
+        elif "First Day of Classes" in event["name"]:
+            dates.append(datetime.strptime(event["end"], "%Y-%m-%d").date())
+    return dates[0], dates[1]
 
 def pull_3year():
     """Returns a list (in JSON format) containing all the events from the Penn iCal Calendar.
