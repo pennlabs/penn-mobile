@@ -11,6 +11,7 @@ flake8 = "*"
 flake8-isort = "*"
 flake8-quotes = "*"
 django-extensions = "*"
+rope = "*"
 
 [packages]
 dj-database-url = "*"
@@ -25,7 +26,6 @@ uwsgi = "*"
 django-filter = "*"
 django-labs-accounts = "*"
 django-debug-toolbar = "*"
-
 
 [requires]
 python_version = "3.7"

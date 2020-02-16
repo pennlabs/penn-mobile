@@ -254,35 +254,105 @@ class GroupViewSet(viewsets.ModelViewSet):
         )
     @action(detail=True, methods=["post"], url_path="book-room")
     def book_room(self, request, pk):
+        #parameters: roomid, startTime, endTime, lid, sessionid
         group = get_object_or_404(Group, pk=pk)
         if not group.has_member(request.user) or not group.is_admin(request.user):
             return HttpResponseForbidden()
-        
-        roomid = request.data.get("room")
-        startTime = request.data.get("start")
-        endTime = request.data.get("end")
-        lid = request.data.get("lid")
-        sessionid = request.data.get("sessionid")
 
-        resultJSON = self.make_booking_request(roomid, startTime, endTime, lid, sessionid)
+        #extract params, check if some were not passed
+        param_keys = ['room', 'start', 'end', 'lid']
+        params = {}
+        for field in param_keys:
+            params[field] = request.data.get(field)
+            if params[field] is None:
+                return Response({
+                    'success': False,
+                    'error': field + ' is a missing parameter' 
+                })
+            if field == 'lid': #depending on reservation type, need to add extra params
+                if params['lid'] == '1':
+                    param_keys.append('sessionid')
+                else:
+                    param_keys.extend(['firstname', 'lastname', 'email', 'groupname', 'size', 'phone'])
+            
+        result_json = self.make_booking_request(params)
 
         
         return Response(
-            resultJSON
+            result_json
         )
 
-    def make_booking_request(self, roomid, startTime, endTime, lid, sessionid):
+    def make_booking_request(self, params):
         #makes a request to labs api server to book rooms, and returns result json if successful
         booking_url = 'https://api.pennlabs.org/studyspaces/book' 
-        form_data = {'room': roomid, 'start': startTime, 'end': endTime, 'lid': lid, 'sessionid': sessionid}
-        r = requests.post(booking_url, data=form_data)
-        resp_data = r.json()
-        print(resp_data)
+        if params['lid'] == "1": #huntsman reservation
+            return {
+                "success": False,
+                "error": "Unable to book huntsman rooms yet"
+            }
+        else: #lib reservation
+            #duplicating original params, in case naming conventions change (this method enables more flexibility)
+            form_keys = ['room', 'start', 'end', 'lid', 'firstname', 'lastname', 'email', 'groupname', 'size', 'phone']
+            form_data = {}
+            for key in form_keys:
+                form_data[key] = params[key] 
+            
+            #catch potential error in request
+            result_json = {}
+            try:
+                r = requests.post(booking_url, data=form_data)
+            except requests.exceptions.RequestException as e:
+                print("error: " + str(e))
+                result_json['error'] = str(e)
+                result_json['success'] = False
 
-        result = {
-            'success': resp_data['results']
-        }
-        if 'error' in resp_data:
-            result['error'] = resp_data['error']
+        #go through all of them, do it in 90 minute slots. if it fails, see if anyone has 
+        
+
+        #construct result json
+        if ('r' in locals() and r.status_code == 200):
+            resp_data = r.json()
+            print(resp_data)
+            result_json['success'] = resp_data['results']
+            if 'error' in resp_data and resp_data['error'] is not None:
+                result_json['error'] = resp_data['error']
+        else:
+            result_json['success'] = False
+            result_json['error'] = "Call to labs-api-server failed"
+
+        return result_json
+
+    def make_booking_request_huntsman(self, roomid, startTime, endTime, lid, sessionid):
+        #makes a request to labs api server to book rooms, and returns result json if successful
+        booking_url = 'https://api.pennlabs.org/studyspaces/book' 
+        if lid == "1":
+            return {
+                "success": False,
+                "error": "Unable to book huntsman rooms yet"
+            }
+        form_data = {'room': roomid, 'start': startTime, 'end': endTime, 'lid': lid, 'sessionid': sessionid}
+        
+        #catch potential error in request
+        result = {}
+        try:
+            r = requests.post(booking_url, data=form_data)
+        except requests.exceptions.RequestException as e:
+            print("error: " + str(e))
+            result['error'] = str(e)
+            result['success'] = False
+
+        #go through all of them, do it in 90 minute slots. if it fails, see if anyone has 
+        
+
+        #construct result json
+        if ('r' in locals() and r.status_code == 200):
+            resp_data = r.json()
+            print(resp_data)
+            result['success'] = resp_data['results']
+            if 'error' in resp_data:
+                result['error'] = resp_data['error']
+        else:
+            result['success'] = False
+            result['error'] = "Call to labs-api-server failed"
 
         return result
