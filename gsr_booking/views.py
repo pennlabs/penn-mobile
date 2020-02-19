@@ -297,7 +297,21 @@ class GroupViewSet(viewsets.ModelViewSet):
             for key in form_keys:
                 form_data[key] = params[key] 
             
-            #catch potential error in request
+            #nextSlot <- find first slot (<= 90 min) to book for
+
+            #loop through each member, and attempt to book 90 min on their behalf if pennkeyAllowed
+                #if nextSlot successfully booked, then move nextSlot 90 min ahead or exit loop
+            
+
+            #if unbooked slots still remain, loop through each member again
+                #calculate number of credits (30-min slots) available (getReservations)
+                #if credits > 0, then book as much of nextSlot as possible
+                    #if slot successfully booked, move nextSlot ahead appropriately
+
+            #if unbooked slots still remain, return all the successful bookings, and which ones didn't get booked
+
+
+            #make request to labs-api-server
             result_json = {}
             try:
                 r = requests.post(booking_url, data=form_data)
@@ -305,7 +319,9 @@ class GroupViewSet(viewsets.ModelViewSet):
                 print("error: " + str(e))
                 result_json['error'] = str(e)
                 result_json['success'] = False
+                return result_json
 
+            #
         #go through all of them, do it in 90 minute slots. if it fails, see if anyone has 
         
 
