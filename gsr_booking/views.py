@@ -275,17 +275,19 @@ class GroupViewSet(viewsets.ModelViewSet):
                 else:
                     param_keys.extend(['firstname', 'lastname', 'email', 'groupname', 'size', 'phone'])
             
-        result_json = self.make_booking_request(params)
+        result_json = self.make_booking_request(group, params)
 
         
         return Response(
             result_json
         )
 
-    def make_booking_request(self, params):
+    def make_booking_request(self, group, params):
         #makes a request to labs api server to book rooms, and returns result json if successful
         booking_url = 'https://api.pennlabs.org/studyspaces/book' 
         if params['lid'] == "1": #huntsman reservation
+            pennkey_active_members = group.get_pennkey_active_members()
+
             return {
                 "success": False,
                 "error": "Unable to book huntsman rooms yet"
@@ -298,10 +300,13 @@ class GroupViewSet(viewsets.ModelViewSet):
                 form_data[key] = params[key] 
             
             #nextSlot <- find first slot (<= 90 min) to book for
-
+            
             #loop through each member, and attempt to book 90 min on their behalf if pennkeyAllowed
                 #if nextSlot successfully booked, then move nextSlot 90 min ahead or exit loop
-            
+            members = group.get_members()
+            for member in members:
+                pennkey = member.username
+                #TODO: Obtain emails; don't take in emails as a param anymore
 
             #if unbooked slots still remain, loop through each member again
                 #calculate number of credits (30-min slots) available (getReservations)
