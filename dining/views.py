@@ -12,8 +12,11 @@ from studentlife.utils import get_new_start_end
 class Dashboard(APIView):
 
 	def get(self, request, format=None):
+		if not self.request.user.is_authenticated:
 			return HttpResponseForbidden()
 
+		self.pennid = "76627463" # request.user.username
+		self.uid = Account.objects.filter(pennid=self.pennid)[0].id
 		json = self.balance()
 
 		start, end = self.get_semester_start_end()
