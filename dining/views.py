@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from datetime import timedelta, datetime
 
 from legacy.models import Account, DiningBalance, DiningTransaction, Course
@@ -12,8 +12,8 @@ from studentlife.utils import get_new_start_end
 class Dashboard(APIView):
 
 	def get(self, request, format=None):
-		self.pennkey = request.GET.get("pennid")
-		self.uid = Account.objects.filter(pennkey=self.pennkey)[0].id
+			return HttpResponseForbidden()
+
 		json = self.balance()
 
 		start, end = self.get_semester_start_end()
