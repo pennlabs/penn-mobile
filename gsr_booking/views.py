@@ -12,6 +12,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 import requests
+import datetime
 
 User = get_user_model()
 
@@ -258,7 +259,7 @@ class GroupViewSet(viewsets.ModelViewSet):
         group = get_object_or_404(Group, pk=pk)
         if not group.has_member(request.user) or not group.is_admin(request.user):
             return HttpResponseForbidden()
-
+        
         #extract params, check if some were not passed
         param_keys = ['room', 'start', 'end', 'lid']
         params = {}
@@ -272,8 +273,8 @@ class GroupViewSet(viewsets.ModelViewSet):
             if field == 'lid': #depending on reservation type, need to add extra params
                 if params['lid'] == '1':
                     param_keys.append('sessionid')
-                else:
-                    param_keys.extend(['firstname', 'lastname', 'email', 'groupname', 'size', 'phone'])
+                # else:
+                #     param_keys.extend(['firstname', 'lastname', 'groupname', 'size', 'phone'])
             
         result_json = self.make_booking_request(group, params)
 
@@ -294,19 +295,62 @@ class GroupViewSet(viewsets.ModelViewSet):
             }
         else: #lib reservation
             #duplicating original params, in case naming conventions change (this method enables more flexibility)
-            form_keys = ['room', 'start', 'end', 'lid', 'firstname', 'lastname', 'email', 'groupname', 'size', 'phone']
-            form_data = {}
+            form_keys = ['room', 'start', 'end', 'lid', 'firstname', 'lastname', 'groupname', 'size', 'phone']
+            form_data = {'firstname': 'Group GSR User', 'lastname': 'Group GSR User', 'groupname': 'Group GSR', 'size': '2-3', 'phone': '2158986533'}
             for key in form_keys:
-                form_data[key] = params[key] 
+                if key not in form_data:
+                    form_data[key] = params[key] 
             
-            #nextSlot <- find first slot (<= 90 min) to book for
-            
+            #Date Logic: Find the first timeslot to book for (next_start, next_end)
+            DATE_FORMAT_STR = '%Y-%m-%dT%H:%M:%S%z'
+            START_DATE = datetime.datetime.strptime(form_data['start'], DATE_FORMAT_STR)
+            END_DATE = datetime.datetime.strptime(form_data['end'], DATE_FORMAT_STR)
+
+            next_start = START_DATE
+            next_end = None
+            MAX_SLOT_HRS = 0.5 #the longest booking allowed per person, before moving onto the next person (should be 1.5 hrs)
+            # if END_DATE - START_DATE > datetime.timedelta(hours=MAX_SLOT_HRS):
+            #     next_end = next_start + datetime.timedelta(hours=MAX_SLOT_HRS)
+            # else:
+            #     next_end = END_DATE
+            next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
+            form_data['start'] = next_start.strftime(DATE_FORMAT_STR)
+            form_data['end'] = next_end.strftime(DATE_FORMAT_STR)
+
             #loop through each member, and attempt to book 90 min on their behalf if pennkeyAllowed
                 #if nextSlot successfully booked, then move nextSlot 90 min ahead or exit loop
             members = group.get_members()
+            result_json = {}
             for member in members:
+                if next_end - next_start < datetime.timedelta(hours=0.1):
+                    print("BOOKED EVERYTHING ALREADY")
+                    break
                 pennkey = member.username
-                #TODO: Obtain emails; don't take in emails as a param anymore
+                email = member.user.email
+                if email is "":
+                    print("*User " + pennkey + " had an empty email")
+                    continue #if they don't have an email for some reason, move onto the next person
+                
+                #update form data
+                form_data['email'] = email
+                
+                #make request to labs-api-server
+                try:
+                    print(f'*Attempting to book room {form_data["room"]:s} from {form_data["start"]} to {form_data["end"]} via {email:s}')
+                    r = requests.post(booking_url, data=form_data)
+                    if r.status_code == 200:
+                        resp_data = r.json()
+                        print(resp_data)
+                        if resp_data['results']: #if successful booking, then move the slot to the next person
+                            next_start = next_end
+                            next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
+                            form_data['start'] = next_start.strftime(DATE_FORMAT_STR)
+                            form_data['end'] = next_end.strftime(DATE_FORMAT_STR)
+                except requests.exceptions.RequestException as e:
+                    print("error: " + str(e))
+                    result_json['error'] = str(e)
+                    result_json['success'] = False
+                    return result_json
 
             #if unbooked slots still remain, loop through each member again
                 #calculate number of credits (30-min slots) available (getReservations)
@@ -315,17 +359,6 @@ class GroupViewSet(viewsets.ModelViewSet):
 
             #if unbooked slots still remain, return all the successful bookings, and which ones didn't get booked
 
-
-            #make request to labs-api-server
-            result_json = {}
-            try:
-                r = requests.post(booking_url, data=form_data)
-            except requests.exceptions.RequestException as e:
-                print("error: " + str(e))
-                result_json['error'] = str(e)
-                result_json['success'] = False
-                return result_json
-
             #
         #go through all of them, do it in 90 minute slots. if it fails, see if anyone has 
         
@@ -333,7 +366,6 @@ class GroupViewSet(viewsets.ModelViewSet):
         #construct result json
         if ('r' in locals() and r.status_code == 200):
             resp_data = r.json()
-            print(resp_data)
             result_json['success'] = resp_data['results']
             if 'error' in resp_data and resp_data['error'] is not None:
                 result_json['error'] = resp_data['error']
