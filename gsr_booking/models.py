@@ -73,9 +73,9 @@ class Group(models.Model):
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
         return memberships.all().filter(type="A").filter(user=user).exists()
 
-    def get_members(self):
-        memberships = GroupMembership.objects.filter(group=self, accepted=True)
-        return memberships.all()
+    # def get_members(self):
+    #     memberships = GroupMembership.objects.filter(group=self, accepted=True)
+    #     return memberships.all()
 
     def get_pennkey_active_members(self):
         memberships = GroupMembership.objects.filter(group=self, accepted=True)

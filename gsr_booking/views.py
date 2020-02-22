@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 import requests
 import datetime
+import math
 
 User = get_user_model()
 
@@ -276,16 +277,15 @@ class GroupViewSet(viewsets.ModelViewSet):
                 # else:
                 #     param_keys.extend(['firstname', 'lastname', 'groupname', 'size', 'phone'])
             
-        result_json = self.make_booking_request(group, params)
+        result_json = self.book_room_for_group(group, params)
 
         
         return Response(
             result_json
         )
 
-    def make_booking_request(self, group, params):
+    def book_room_for_group(self, group, params):
         #makes a request to labs api server to book rooms, and returns result json if successful
-        booking_url = 'https://api.pennlabs.org/studyspaces/book' 
         if params['lid'] == "1": #huntsman reservation
             pennkey_active_members = group.get_pennkey_active_members()
 
@@ -306,75 +306,124 @@ class GroupViewSet(viewsets.ModelViewSet):
             START_DATE = datetime.datetime.strptime(form_data['start'], DATE_FORMAT_STR)
             END_DATE = datetime.datetime.strptime(form_data['end'], DATE_FORMAT_STR)
 
-            next_start = START_DATE
-            next_end = None
-            MAX_SLOT_HRS = 0.5 #the longest booking allowed per person, before moving onto the next person (should be 1.5 hrs)
-            # if END_DATE - START_DATE > datetime.timedelta(hours=MAX_SLOT_HRS):
-            #     next_end = next_start + datetime.timedelta(hours=MAX_SLOT_HRS)
-            # else:
-            #     next_end = END_DATE
+            MAX_SLOT_HRS = 1.5 #the longest booking allowed per person (should be 1.5 hrs)
+            MIN_SLOT_HRS = 0.5 #the minimum booking allowed per person
+
+            next_start = START_DATE            
             next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
+
             form_data['start'] = next_start.strftime(DATE_FORMAT_STR)
             form_data['end'] = next_end.strftime(DATE_FORMAT_STR)
 
             #loop through each member, and attempt to book 90 min on their behalf if pennkeyAllowed
                 #if nextSlot successfully booked, then move nextSlot 90 min ahead or exit loop
-            members = group.get_members()
-            result_json = {}
+            members = group.get_pennkey_active_members()
+            failed_members = [] #store the members w/ failed bookings in here
             for member in members:
                 if next_end - next_start < datetime.timedelta(hours=0.1):
                     print("BOOKED EVERYTHING ALREADY")
                     break
-                pennkey = member.username
-                email = member.user.email
-                if email is "":
-                    print("*User " + pennkey + " had an empty email")
-                    continue #if they don't have an email for some reason, move onto the next person
-                
-                #update form data
-                form_data['email'] = email
+                if member.user.email is "":
+                    print("*User " + member.username + " had an empty email")
+                    continue
                 
                 #make request to labs-api-server
-                try:
-                    print(f'*Attempting to book room {form_data["room"]:s} from {form_data["start"]} to {form_data["end"]} via {email:s}')
-                    r = requests.post(booking_url, data=form_data)
-                    if r.status_code == 200:
-                        resp_data = r.json()
-                        print(resp_data)
-                        if resp_data['results']: #if successful booking, then move the slot to the next person
-                            next_start = next_end
-                            next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
-                            form_data['start'] = next_start.strftime(DATE_FORMAT_STR)
-                            form_data['end'] = next_end.strftime(DATE_FORMAT_STR)
-                except requests.exceptions.RequestException as e:
-                    print("error: " + str(e))
-                    result_json['error'] = str(e)
-                    result_json['success'] = False
-                    return result_json
+                success = self.book_room_for_user(form_data["room"], form_data["lid"], next_start.strftime(DATE_FORMAT_STR), next_end.strftime(DATE_FORMAT_STR), member.user.email)
+                if success:
+                    next_start = next_end
+                    next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
+                    print("Succeeded!")
+                else:
+                    failed_members.append(member)
+                    print("Failed :(")
 
-            #if unbooked slots still remain, loop through each member again
-                #calculate number of credits (30-min slots) available (getReservations)
+            print("*Attempting to rebook failed slots now (if any)")
+            #if unbooked slots still remain and not all booking requests succeeded, loop through each member again
                 #if credits > 0, then book as much of nextSlot as possible
                     #if slot successfully booked, move nextSlot ahead appropriately
+            for member in failed_members:
+                if next_end - next_start < datetime.timedelta(hours=0.1):
+                    print("BOOKED EVERYTHING ALREADY")
+                    break
+                if member.user.email is "":
+                    print("empty email address")
+                    continue  
 
-            #if unbooked slots still remain, return all the successful bookings, and which ones didn't get booked
+                #calculate number of credits already used via getReservations
+                (success, used_credit_hours) = self.get_used_booking_credit_for_user(form_data['lid'], member.user.email, DATE_FORMAT_STR)
+                remaining_credit_hours = MAX_SLOT_HRS - used_credit_hours
+                rounded_remaining_credit_hours = math.floor(2 * remaining_credit_hours) / 2
+                print(f"Found ", rounded_remaining_credit_hours, " remaining booking hrs!")
+                if (success and remaining_credit_hours >= MIN_SLOT_HRS):
+                    next_end = min(END_DATE, next_start + datetime.timedelta(hours=rounded_remaining_credit_hours))
+                    success = self.book_room_for_user(form_data["room"], form_data["lid"], next_start.strftime(DATE_FORMAT_STR), next_end.strftime(DATE_FORMAT_STR), member.user.email)
+                    if success:
+                        next_start = next_end
+                        next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
+                        print("Suceeded!")
+                    else:
+                        print("Failed :(")
 
-            #
-        #go through all of them, do it in 90 minute slots. if it fails, see if anyone has 
+                
+            success = next_end - next_start < datetime.timedelta(hours=0.1)
+            return {
+                'success': success,
+                'fromDate': START_DATE.strftime(DATE_FORMAT_STR),
+                'toDate': next_start.strftime(DATE_FORMAT_STR)
+            }
+
+    def get_used_booking_credit_for_user(self, lid, email, DATE_FORMAT_STR):
+        #returns a user's used booking credit (in hours) for a specific building (lid)
+        RESERVATIONS_URL = 'https://api.pennlabs.org/studyspaces/reservations'
+        if lid == "1":
+            return (False, 0) #doesn't support huntsman yet
+        try:
+            print(f'*Attempting to get reservation credits for {email:s}')
+            r = requests.get(RESERVATIONS_URL + "?email=" + email)
+            if r.status_code == 200:
+                resp_data = r.json()
+                reservations = resp_data['reservations']
+                used_credit_hours = 0
+                for reservation in reservations:
+                    from_date = datetime.datetime.strptime(reservation['fromDate'], DATE_FORMAT_STR)
+                    to_date = datetime.datetime.strptime(reservation['toDate'], DATE_FORMAT_STR)
+                    reservation_hours = (to_date - from_date).total_seconds() / 3600
+                    if str(reservation['lid']) == lid and reservation_hours > 0.1:
+                        used_credit_hours += reservation_hours   
+                return (True, used_credit_hours)
+        except requests.exceptions.RequestException as e:
+            print(e)
+        return (False, 0)
+
+    def book_room_for_user(self, room, lid, start, end, email):
+        #tries to make a booking for an individual user, and returns success or not
+        if lid is '1':
+            return False # does not support huntsman booking yet
+        print(f'*Attempting to book room {room:s} from {start:s} to {end:s} via {email:s}')
+        BOOKING_URL = 'https://api.pennlabs.org/studyspaces/book' 
+        form_data = {
+            'firstname': 'Group GSR User', 
+            'lastname': 'Group GSR User', 
+            'groupname': 'Group GSR', 
+            'size': '2-3', 
+            'phone': '2158986533',
+            'room': room,
+            'lid': lid,
+            'start': start,
+            'end': end,
+            'email': email}
+
+        try:
+            r = requests.post(BOOKING_URL, data=form_data)
+            if r.status_code == 200:
+                resp_data = r.json()
+                if 'error' in resp_data and resp_data['error'] is not None:
+                    print("error: " + resp_data['error'])
+                return resp_data['results']
+        except requests.exceptions.RequestException as e:
+            print("error: " + str(e))
+        return False
         
-
-        #construct result json
-        if ('r' in locals() and r.status_code == 200):
-            resp_data = r.json()
-            result_json['success'] = resp_data['results']
-            if 'error' in resp_data and resp_data['error'] is not None:
-                result_json['error'] = resp_data['error']
-        else:
-            result_json['success'] = False
-            result_json['error'] = "Call to labs-api-server failed"
-
-        return result_json
-
     def make_booking_request_huntsman(self, roomid, startTime, endTime, lid, sessionid):
         #makes a request to labs api server to book rooms, and returns result json if successful
         booking_url = 'https://api.pennlabs.org/studyspaces/book' 
