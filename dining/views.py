@@ -23,8 +23,7 @@ class Dashboard(APIView):
         json["start-of-semester"] = start
         json["end-of-semester"] = end
 
-        json["cards"] = {}
-        json["cards"]["recent-transactions"] = self.recent_transactions_card()
+        json["cards"] = {"recent-transactions": self.recent_transactions_card()}
 
         return JsonResponse(json)
 
