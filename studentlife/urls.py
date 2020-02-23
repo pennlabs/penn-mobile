@@ -23,7 +23,7 @@ urlpatterns = [
         ),
         name="documentation",
     ),
-    path("dining/", include("dining.urls"))
+    path("dining/", include("dining.urls")),
 ]
 
 if settings.DEBUG:
