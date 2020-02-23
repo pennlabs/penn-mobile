@@ -268,81 +268,41 @@ class GroupViewSet(viewsets.ModelViewSet):
     def book_room(self, request, pk):
         request.data.update({"group_id": pk})
         booking_serialized = GroupBookingRequestSerializer(data=request.data)
-        if not booking_serialized.is_valid:
+        if not booking_serialized.is_valid():
             return Response(status=400)
 
-        booking = booking_serialized.validated_data
+        booking_data = booking_serialized.data
 
         # parameters: roomid, startTime, endTime, lid, sessionid
-        group = get_object_or_404(Group, pk=booking["group_id"])
+        group = get_object_or_404(Group, pk=booking_data["group_id"])
         if not group.has_member(request.user) or not group.is_admin(request.user):
             return HttpResponseForbidden()
 
-        # extract params, check if some were not passed
-        param_keys = ["room", "start", "end", "lid"]
-        params = {}
-        for field in param_keys:
-            params[field] = request.data.get(field)
-            if params[field] is None:
-                return Response({"success": False, "error": field + " is a missing parameter"})
-            if field == "lid":  # depending on reservation type, need to add extra params
-                if params["lid"] == "1":
-                    param_keys.append("sessionid")
-                # else:
-                #     param_keys.extend(['firstname', 'lastname', 'groupname', 'size', 'phone'])
-
-        result_json = self.book_room_for_group(group, booking)
+        result_json = self.book_room_for_group(group, booking_data['is_wharton'], booking_data['room'], booking_data['lid'], booking_data['start'], booking_data['end'])
 
         return Response(result_json)
 
-    def book_room_for_group(self, group, params):
+    def book_room_for_group(self, group, is_wharton, room, lid, start, end):
         # makes a request to labs api server to book rooms, and returns result json if successful
-        if params["is_wharton"]:  # huntsman reservation
+        if is_wharton:  # huntsman reservation
             pennkey_active_members = group.get_pennkey_active_members()
 
             return {"success": False, "error": "Unable to book huntsman rooms yet"}
         else:  # lib reservation
-            # duplicating original params, in case naming conventions change (this method enables more flexibility)
-            form_keys = [
-                "room",
-                "start",
-                "end",
-                "lid",
-                "firstname",
-                "lastname",
-                "groupname",
-                "size",
-                "phone",
-            ]
-            form_data = {
-                "firstname": "Group GSR User",
-                "lastname": "Group GSR User",
-                "groupname": "Group GSR",
-                "size": "2-3",
-                "phone": "2158986533",
-            }
-            for key in form_keys:
-                if key not in form_data:
-                    form_data[key] = params[key]
-
-            # Date Logic: Find the first timeslot to book for (next_start, next_end)
+           
+            #Find the first timeslot to book for (next_start, next_end)
             DATE_FORMAT_STR = "%Y-%m-%dT%H:%M:%S%z"
-            START_DATE = datetime.datetime.strptime(form_data["start"], DATE_FORMAT_STR)
-            END_DATE = datetime.datetime.strptime(form_data["end"], DATE_FORMAT_STR)
-
+            START_DATE = datetime.datetime.strptime(start, DATE_FORMAT_STR)
+            END_DATE = datetime.datetime.strptime(end, DATE_FORMAT_STR)
             MAX_SLOT_HRS = 1.5  # the longest booking allowed per person (should be 1.5 hrs)
             MIN_SLOT_HRS = 0.5  # the minimum booking allowed per person
-
             next_start = START_DATE
             next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
 
-            form_data["start"] = next_start.strftime(DATE_FORMAT_STR)
-            form_data["end"] = next_end.strftime(DATE_FORMAT_STR)
-
-            # loop through each member, and attempt to book 90 min on their behalf if pennkeyAllowed
-            # if nextSlot successfully booked, then move nextSlot 90 min ahead or exit loop
+            # loop through each member, and attempt to book on their behalf
             members = group.get_pennkey_active_members()
-            failed_members = []  # store the members w/ failed bookings in here
+            bookings = {}
+            failed_members = []  #store the members w/ failed bookings in here
             for member in members:
                 if next_end - next_start < datetime.timedelta(hours=0.1):
                     print("BOOKED EVERYTHING ALREADY")
@@ -353,13 +313,36 @@ class GroupViewSet(viewsets.ModelViewSet):
 
                 # make request to labs-api-server
                 success = self.book_room_for_user(
-                    form_data["room"],
-                    form_data["lid"],
+                    room,
+                    lid,
                     next_start.strftime(DATE_FORMAT_STR),
                     next_end.strftime(DATE_FORMAT_STR),
                     member.user.email,
                 )
                 if success:
+                    key = f'{lid}_{room}' 
+                    booking_obj = {
+                        'start': next_start.strftime(DATE_FORMAT_STR), 
+                        'end': next_end.strftime(DATE_FORMAT_STR), 
+                        'pennkey': member.username,
+                        'booked': True
+                    }
+                    if not key in bookings:
+                        bookings[key] = []
+                    bookings[key].append(booking_obj)
+                    # successful_bookings.append({
+                    #     'lid': lid, 
+                    #     'room': room, 
+                    #     'bookings': [
+                    #         {
+                    #             'start': next_start.strftime(DATE_FORMAT_STR), 
+                    #             'end': next_end.strftime(DATE_FORMAT_STR), 
+                    #             'pennkey': member.username,
+                    #             'booked': True
+                    #         }
+                    #     ]
+                    #     })
+                    
                     next_start = next_end
                     next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
                     print("Succeeded!")
@@ -368,9 +351,11 @@ class GroupViewSet(viewsets.ModelViewSet):
                     print("Failed :(")
 
             print("*Attempting to rebook failed slots now (if any)")
+
             # if unbooked slots still remain and not all booking requests succeeded, loop through each member again
             # if credits > 0, then book as much of nextSlot as possible
             # if slot successfully booked, move nextSlot ahead appropriately
+            
             for member in failed_members:
                 if next_end - next_start < datetime.timedelta(hours=0.1):
                     print("BOOKED EVERYTHING ALREADY")
@@ -381,24 +366,36 @@ class GroupViewSet(viewsets.ModelViewSet):
 
                 # calculate number of credits already used via getReservations
                 (success, used_credit_hours) = self.get_used_booking_credit_for_user(
-                    form_data["lid"], member.user.email, DATE_FORMAT_STR
+                    lid, member.user.email, DATE_FORMAT_STR
                 )
                 remaining_credit_hours = MAX_SLOT_HRS - used_credit_hours
                 rounded_remaining_credit_hours = math.floor(2 * remaining_credit_hours) / 2
                 print(f"Found ", rounded_remaining_credit_hours, " remaining booking hrs!")
                 if success and remaining_credit_hours >= MIN_SLOT_HRS:
+                    
                     next_end = min(
                         END_DATE,
                         next_start + datetime.timedelta(hours=rounded_remaining_credit_hours),
                     )
                     success = self.book_room_for_user(
-                        form_data["room"],
-                        form_data["lid"],
+                        room,
+                        lid,
                         next_start.strftime(DATE_FORMAT_STR),
                         next_end.strftime(DATE_FORMAT_STR),
                         member.user.email,
                     )
                     if success:
+                        key = f'{lid}_{room}' 
+                        booking_obj = {
+                            'start': next_start.strftime(DATE_FORMAT_STR), 
+                            'end': next_end.strftime(DATE_FORMAT_STR), 
+                            'pennkey': member.username,
+                            'booked': True
+                        }
+                        if not key in bookings:
+                            bookings[key] = []
+                        bookings[key].append(booking_obj)
+
                         next_start = next_end
                         next_end = min(
                             END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS)
@@ -407,12 +404,26 @@ class GroupViewSet(viewsets.ModelViewSet):
                     else:
                         print("Failed :(")
 
-            success = next_end - next_start < datetime.timedelta(hours=0.1)
-            return {
-                "success": success,
-                "fromDate": START_DATE.strftime(DATE_FORMAT_STR),
-                "toDate": next_start.strftime(DATE_FORMAT_STR),
+            complete_success = next_end - next_start < datetime.timedelta(hours=0.1)
+            partial_success = (len(bookings) > 0)
+            result_json = {
+                "complete_success": success,
+                "partial_success": partial_success,
+                "rooms": []#,
+                # "fromDate": START_DATE.strftime(DATE_FORMAT_STR),
+                # "toDate": next_start.strftime(DATE_FORMAT_STR)
             }
+            for (key, bookings_array) in bookings.items():
+                key_split = key.split('_')
+                lid = key_split[0]
+                room = key_split[1]
+                result_json['rooms'].append({
+                    'lid': lid,
+                    'room': room,
+                    'bookings': bookings_array
+                })
+
+            return result_json
 
     def get_used_booking_credit_for_user(self, lid, email, DATE_FORMAT_STR):
         # returns a user's used booking credit (in hours) for a specific building (lid)
@@ -441,7 +452,7 @@ class GroupViewSet(viewsets.ModelViewSet):
         # tries to make a booking for an individual user, and returns success or not
         if lid is "1":
             return False  # does not support huntsman booking yet
-        print(f"*Attempting to book room {room:s} from {start:s} to {end:s} via {email:s}")
+        print(f"*Attempting to book room {room:d} from {start:s} to {end:s} via {email:s}")
         BOOKING_URL = "https://api.pennlabs.org/studyspaces/book"
         form_data = {
             "firstname": "Group GSR User",

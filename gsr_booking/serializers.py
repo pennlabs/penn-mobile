@@ -18,7 +18,7 @@ class GroupBookingRequestSerializer(serializers.Serializer):
     is_wharton = serializers.SerializerMethodField()
 
     def get_is_wharton(self, obj):
-        return obj.lid == 1
+        return obj["lid"] == 1
 
 
 class MiniUserSerializer(serializers.ModelSerializer):
