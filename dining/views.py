@@ -5,7 +5,7 @@ from legacy.models import Account, DiningBalance, DiningTransaction
 from options.models import get_option, get_value
 from rest_framework.views import APIView
 
-from studentlife.utils import get_new_start_end
+from studentlife.utils import date_iso_eastern, get_new_start_end
 
 
 # Create your views here.
@@ -21,8 +21,8 @@ class Dashboard(APIView):
         json = self.balance()
 
         start, end = self.get_semester_start_end()
-        json["start-of-semester"] = start
-        json["end-of-semester"] = end
+        json["start-of-semester"] = date_iso_eastern(start)
+        json["end-of-semester"] = date_iso_eastern(end)
 
         json["cards"] = {"recent-transactions": self.recent_transactions_card()}
 
@@ -54,7 +54,7 @@ class Dashboard(APIView):
             card["data"].append(
                 {
                     "location": transaction.description,
-                    "date": transaction.date.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "date": date_iso_eastern(transaction.date),
                     "balance": transaction.balance,
                     "amount": transaction.amount,
                 }

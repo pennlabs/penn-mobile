@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import pytz
 import requests
 
 
@@ -49,3 +50,14 @@ def pull_3year():
 
     events.sort(key=lambda d: d["start"])
     return events
+
+
+def date_iso_eastern(date):
+
+    date = date.replace(tzinfo=None)
+    eastern = pytz.timezone("US/Eastern")
+    date = eastern.localize(date)
+
+    print(date)
+
+    return date.replace(second=0, microsecond=0).isoformat()
