@@ -9,84 +9,78 @@ from studentlife.utils import get_new_start_end
 
 # Create your views here.
 
-
 class Dashboard(APIView):
-    def get(self, request, format=None):
-        if not self.request.user.is_authenticated:
-            return HttpResponseForbidden()
 
-        self.pennid = "76627463"  # request.user.username
-        self.uid = Account.objects.filter(pennid=self.pennid)[0].id
-        json = self.balance()
+	def get(self, request, format=None):
+		if not self.request.user.is_authenticated:
+			return HttpResponseForbidden()
 
-        start, end = self.get_semester_start_end()
-        json["start-of-semester"] = start
-        json["end-of-semester"] = end
+		self.pennid = "76627463" # request.user.username
+		self.uid = Account.objects.filter(pennid=self.pennid)[0].id
+		json = self.balance()
 
-        json["cards"] = {}
-        json["cards"]["recent-transactions"] = self.recent_transactions_card()
+		start, end = self.get_semester_start_end()
+		json["start-of-semester"] = start
+		json["end-of-semester"] = end
 
-        return JsonResponse(json)
+		json["cards"] = {}
+		json["cards"]["recent-transactions"] = self.recent_transactions_card()
 
-    def balance(self):
-        balance = DiningBalance.objects.filter(account=self.uid).order_by("-created_at")
-        latest = balance[0]
-        return {
-            "swipes": latest.swipes,
-            "dining-dollars": latest.dining_dollars,
-            "guest-swipes": latest.guest_swipes,
-        }
+		return JsonResponse(json)
 
-    def recent_transactions_card(self):
+	def balance(self):
+		balance = DiningBalance.objects.filter(account=self.uid).order_by("-created_at")
+		latest = balance[0]
+		return {
+			"swipes": latest.swipes,
+			"dining-dollars": latest.dining_dollars,
+			"guest-swipes": latest.guest_swipes
+		}
 
-        card = {
-            "type": "recent-transactions",
-            "header-title": "Transactions",
-            "header-body": "Your recent dining dollar transactions",
-            "data": [],
-        }
 
-        transactions = DiningTransaction.objects.filter(account=self.uid).order_by(
-            "-date"
-        )
+	def recent_transactions_card(self):
 
-        transactions = transactions[0:5]
+		card = {
+			"type": "recent-transactions",
+			"header-title": "Transactions",
+			"header-body": "Your recent dining dollar transactions",
+			"data": []
+		}
 
-        for transaction in transactions:
-            card["data"].append(
-                {
-                    "location": transaction.description,
-                    "date": transaction.date.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "balance": transaction.balance,
-                    "amount": transaction.amount,
-                }
-            )
+		transactions = DiningTransaction.objects.filter(account=self.uid).order_by("-date")
 
-        return card
+		transactions = transactions[0:5]
 
-    def get_semester_start_end(self):
+		for transaction in transactions:
+			card["data"].append({
+					"location": transaction.description,
+					"date": transaction.date.strftime('%Y-%m-%dT%H:%M:%S'),
+					"balance": transaction.balance,
+					"amount": transaction.amount
+			})
 
-        current_start = get_value("semester_start")
-        current_start = datetime.strptime(current_start, "%Y-%m-%d")
+		return card
 
-        current_end = get_value("semester_end")
-        current_end = datetime.strptime(current_end, "%Y-%m-%d")
+	def get_semester_start_end(self):
 
-        if current_end > datetime.now():
-            return current_start, current_end
-        else:
-            new_end_option = get_option("semester_end")
-            new_start_option = get_option("semester_start")
+		current_start = get_value("semester_start")
+		current_start = datetime.strptime(current_start, "%Y-%m-%d")
 
-            new_start, new_end = get_new_start_end()
+		current_end = get_value("semester_end")
+		current_end = datetime.strptime(current_end, "%Y-%m-%d")
 
-            new_start_option.value = new_start.strftime("%Y-%m-%d")
-            new_start_option.save()
+		if current_end > datetime.now():
+			return current_start, current_end
+		else: 
+			new_end_option = get_option("semester_end")
+			new_start_option = get_option("semester_start")
 
-            new_end_option.value = new_end.strftime("%Y-%m-%d")
-            new_end_option.save()
+			new_start, new_end = get_new_start_end()
 
-            return (
-                get_value("semester_start"),
-                get_value("semester_end"),
-            )
+			new_start_option.value = new_start.strftime("%Y-%m-%d")
+			new_start_option.save()
+
+			new_end_option.value = new_end.strftime("%Y-%m-%d")
+			new_end_option.save()
+
+			return get_value("semester_start"), get_value("semester_end"), 
