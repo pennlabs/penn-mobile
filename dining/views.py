@@ -1,11 +1,12 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from django.http import JsonResponse, HttpResponseForbidden
-from datetime import timedelta, datetime
+from datetime import datetime
 
-from legacy.models import Account, DiningBalance, DiningTransaction, Course
-from options.models import get_value, get_option
+from django.http import HttpResponseForbidden, JsonResponse
+from legacy.models import Account, DiningBalance, DiningTransaction
+from options.models import get_option, get_value
+from rest_framework.views import APIView
+
 from studentlife.utils import get_new_start_end
+
 
 # Create your views here.
 
