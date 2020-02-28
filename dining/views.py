@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from legacy.models import Account, DiningBalance, DiningTransaction
 from options.models import get_option, get_value
 from rest_framework.views import APIView
@@ -17,7 +17,12 @@ class Dashboard(APIView):
             return HttpResponseForbidden()
 
         pennid = "76627463"  # request.user.username
-        uid = Account.objects.filter(pennid=pennid)[0].id
+
+        try:
+            uid = Account.objects.get(pennid=pennid).id
+        except Account.DoesNotExist:
+            return HttpResponseBadRequest()
+
         json = self.balance(uid)
 
         start, end = self.get_semester_start_end()
