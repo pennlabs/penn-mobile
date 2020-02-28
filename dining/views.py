@@ -16,20 +16,20 @@ class Dashboard(APIView):
         if not self.request.user.is_authenticated:
             return HttpResponseForbidden()
 
-        self.pennid = "76627463"  # request.user.username
-        self.uid = Account.objects.filter(pennid=self.pennid)[0].id
-        json = self.balance()
+        pennid = "76627463"  # request.user.username
+        uid = Account.objects.filter(pennid=pennid)[0].id
+        json = self.balance(uid)
 
         start, end = self.get_semester_start_end()
         json["start-of-semester"] = date_iso_eastern(start)
         json["end-of-semester"] = date_iso_eastern(end)
 
-        json["cards"] = {"recent-transactions": self.recent_transactions_card()}
+        json["cards"] = {"recent-transactions": self.recent_transactions_card(uid)}
 
         return JsonResponse(json)
 
-    def balance(self):
-        balance = DiningBalance.objects.filter(account=self.uid).order_by("-created_at")
+    def balance(self, uid):
+        balance = DiningBalance.objects.filter(account=uid).order_by("-created_at")
         latest = balance[0]
         return {
             "swipes": latest.swipes,
@@ -37,7 +37,7 @@ class Dashboard(APIView):
             "guest-swipes": latest.guest_swipes,
         }
 
-    def recent_transactions_card(self):
+    def recent_transactions_card(self, uid):
 
         card = {
             "type": "recent-transactions",
@@ -46,7 +46,7 @@ class Dashboard(APIView):
             "data": [],
         }
 
-        transactions = DiningTransaction.objects.filter(account=self.uid).order_by("-date")
+        transactions = DiningTransaction.objects.filter(account=uid).order_by("-date")
 
         transactions = transactions[0:5]
 
