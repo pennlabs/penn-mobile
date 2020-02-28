@@ -1,6 +1,7 @@
 import requests
 import datetime
 import math
+import random
 
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
@@ -278,75 +279,89 @@ class GroupViewSet(viewsets.ModelViewSet):
         if not group.has_member(request.user) or not group.is_admin(request.user):
             return HttpResponseForbidden()
 
-        result_json = self.book_room_for_group(group, booking_data['is_wharton'], booking_data['room'], booking_data['lid'], booking_data['start'], booking_data['end'])
+        result_json = self.book_room_for_group(group, 
+            booking_data['is_wharton'], 
+            booking_data['room'], 
+            booking_data['lid'], 
+            booking_data['start'], 
+            booking_data['end'],
+            request.user.username)
 
         return Response(result_json)
 
-    def book_room_for_group(self, group, is_wharton, room, lid, start, end):
-        # makes a request to labs api server to book rooms, and returns result json if successful
-        if is_wharton:  # huntsman reservation
-            pennkey_active_members = group.get_pennkey_active_members()
+    DATE_FORMAT_STR = "%Y-%m-%dT%H:%M:%S%z"
+    MAX_SLOT_HRS = 2.0  # the longest booking allowed per person
+    MIN_SLOT_HRS = 0.5  # the minimum booking allowed per person
 
+    def book_room_for_group(self, group, is_wharton, room, lid, start, end, requester_pennkey):
+        # makes a request to labs api server to book rooms, and returns result json if successful
+        members = group.get_pennkey_active_members()
+        if len(members) < 1:
+            return {
+                "complete_success": False,
+                "partial_success": False,
+                "error": "No members in the group have enabled their pennkey to be used for group bookings"
+            }
+
+        #randomize order, and put requester first in the order
+        random.shuffle(members)
+        print(members[0]['username'])
+
+        for (i, member) in enumerate(members): #puts the requester as the first person
+            if (member['username'] == requester_pennkey):
+                temp = members[0]
+                members[0] = member
+                members[i] = temp
+                break
+
+        if is_wharton:  # huntsman reservation
             return {"success": False, "error": "Unable to book huntsman rooms yet"}
         else:  # lib reservation
            
             #Find the first timeslot to book for (next_start, next_end)
-            DATE_FORMAT_STR = "%Y-%m-%dT%H:%M:%S%z"
-            START_DATE = datetime.datetime.strptime(start, DATE_FORMAT_STR)
-            END_DATE = datetime.datetime.strptime(end, DATE_FORMAT_STR)
-            MAX_SLOT_HRS = 1.5  # the longest booking allowed per person (should be 1.5 hrs)
-            MIN_SLOT_HRS = 0.5  # the minimum booking allowed per person
+            START_DATE = datetime.datetime.strptime(start, self.DATE_FORMAT_STR)
+            END_DATE = datetime.datetime.strptime(end, self.DATE_FORMAT_STR)
             next_start = START_DATE
-            next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
+            next_end = min(END_DATE, next_start + datetime.timedelta(hours=self.MAX_SLOT_HRS))
 
             # loop through each member, and attempt to book on their behalf
-            members = group.get_pennkey_active_members()
             bookings = {}
             failed_members = []  #store the members w/ failed bookings in here
+
             for member in members:
                 if next_end - next_start < datetime.timedelta(hours=0.1):
                     print("BOOKED EVERYTHING ALREADY")
                     break
-                if member.user.email is "":
-                    print("*User " + member.username + " had an empty email")
+                if member['user__email'] is "":
+                    print("*User " + member['username'] + " had an empty email")
                     continue
 
                 # make request to labs-api-server
-                success = self.book_room_for_user(
+                success, error = self.book_room_for_user(
                     room,
                     lid,
-                    next_start.strftime(DATE_FORMAT_STR),
-                    next_end.strftime(DATE_FORMAT_STR),
-                    member.user.email,
+                    next_start.strftime(self.DATE_FORMAT_STR),
+                    next_end.strftime(self.DATE_FORMAT_STR),
+                    member['user__email'],
                 )
                 if success:
                     key = f'{lid}_{room}' 
-                    booking_obj = {
-                        'start': next_start.strftime(DATE_FORMAT_STR), 
-                        'end': next_end.strftime(DATE_FORMAT_STR), 
-                        'pennkey': member.username,
-                        'booked': True
-                    }
                     if not key in bookings:
                         bookings[key] = []
-                    bookings[key].append(booking_obj)
-                    # successful_bookings.append({
-                    #     'lid': lid, 
-                    #     'room': room, 
-                    #     'bookings': [
-                    #         {
-                    #             'start': next_start.strftime(DATE_FORMAT_STR), 
-                    #             'end': next_end.strftime(DATE_FORMAT_STR), 
-                    #             'pennkey': member.username,
-                    #             'booked': True
-                    #         }
-                    #     ]
-                    #     })
+                    new_bookings = self.split_booking(next_start, next_end, member['username'], True)
+                    bookings[key].extend(new_bookings)
                     
                     next_start = next_end
-                    next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
+                    next_end = min(END_DATE, next_start + datetime.timedelta(hours=self.MAX_SLOT_HRS))
                     print("Succeeded!")
                 else:
+                    if (error is not None and ("not a valid".lower() in error.lower())):
+                        #this means that the booking was for an invalid time (already partially booked)
+                        return { #if fatal error
+                            "complete_success": False,
+                            "partial_success": False,
+                            "error": "Attempted to book for an invalid time slot"
+                        }
                     failed_members.append(member)
                     print("Failed :(")
 
@@ -360,41 +375,36 @@ class GroupViewSet(viewsets.ModelViewSet):
                 if next_end - next_start < datetime.timedelta(hours=0.1):
                     print("BOOKED EVERYTHING ALREADY")
                     break
-                if member.user.email is "":
+                if member['user__email'] is "":
                     print("empty email address")
                     continue
 
                 # calculate number of credits already used via getReservations
                 (success, used_credit_hours) = self.get_used_booking_credit_for_user(
-                    lid, member.user.email, DATE_FORMAT_STR
+                    lid, member['user__email'], DATE_FORMAT_STR
                 )
-                remaining_credit_hours = MAX_SLOT_HRS - used_credit_hours
+                remaining_credit_hours = self.MAX_SLOT_HRS - used_credit_hours
                 rounded_remaining_credit_hours = math.floor(2 * remaining_credit_hours) / 2
                 print(f"Found ", rounded_remaining_credit_hours, " remaining booking hrs!")
-                if success and remaining_credit_hours >= MIN_SLOT_HRS:
+                if success and remaining_credit_hours >= self.MIN_SLOT_HRS:
                     
                     next_end = min(
                         END_DATE,
                         next_start + datetime.timedelta(hours=rounded_remaining_credit_hours),
                     )
-                    success = self.book_room_for_user(
+                    (success, error) = self.book_room_for_user(
                         room,
                         lid,
-                        next_start.strftime(DATE_FORMAT_STR),
-                        next_end.strftime(DATE_FORMAT_STR),
-                        member.user.email,
+                        next_start.strftime(self.DATE_FORMAT_STR),
+                        next_end.strftime(self.DATE_FORMAT_STR),
+                        member['user__email'],
                     )
                     if success:
                         key = f'{lid}_{room}' 
-                        booking_obj = {
-                            'start': next_start.strftime(DATE_FORMAT_STR), 
-                            'end': next_end.strftime(DATE_FORMAT_STR), 
-                            'pennkey': member.username,
-                            'booked': True
-                        }
                         if not key in bookings:
                             bookings[key] = []
-                        bookings[key].append(booking_obj)
+                        new_bookings = self.split_booking(next_start, next_end, member['username'], True)
+                        bookings[key].extend(new_bookings)
 
                         next_start = next_end
                         next_end = min(
@@ -402,6 +412,14 @@ class GroupViewSet(viewsets.ModelViewSet):
                         )
                         print("Suceeded!")
                     else:
+                        if (error is not None and ("not a valid".lower() in error.lower())):
+                            #this means that the booking was for an invalid time (already partially booked)
+                            return { #if fatal error 
+                            #PROBLEM, THIS WONT RETURN THE ROOM EVEN IF THE PERSON BOOKED PARTIALLY BUT STILL SHOULD
+                                "complete_success": False,
+                                "partial_success": False,
+                                "error": "Attempted to book for an invalid time slot"
+                            }
                         print("Failed :(")
 
             complete_success = next_end - next_start < datetime.timedelta(hours=0.1)
@@ -409,9 +427,7 @@ class GroupViewSet(viewsets.ModelViewSet):
             result_json = {
                 "complete_success": success,
                 "partial_success": partial_success,
-                "rooms": []#,
-                # "fromDate": START_DATE.strftime(DATE_FORMAT_STR),
-                # "toDate": next_start.strftime(DATE_FORMAT_STR)
+                "rooms": []
             }
             for (key, bookings_array) in bookings.items():
                 key_split = key.split('_')
@@ -425,7 +441,7 @@ class GroupViewSet(viewsets.ModelViewSet):
 
             return result_json
 
-    def get_used_booking_credit_for_user(self, lid, email, DATE_FORMAT_STR):
+    def get_used_booking_credit_for_user(self, lid, email):
         # returns a user's used booking credit (in hours) for a specific building (lid)
         RESERVATIONS_URL = "https://api.pennlabs.org/studyspaces/reservations"
         if lid == "1":
@@ -438,8 +454,8 @@ class GroupViewSet(viewsets.ModelViewSet):
                 reservations = resp_data["reservations"]
                 used_credit_hours = 0
                 for reservation in reservations:
-                    from_date = datetime.datetime.strptime(reservation["fromDate"], DATE_FORMAT_STR)
-                    to_date = datetime.datetime.strptime(reservation["toDate"], DATE_FORMAT_STR)
+                    from_date = datetime.datetime.strptime(reservation["fromDate"], self.DATE_FORMAT_STR)
+                    to_date = datetime.datetime.strptime(reservation["toDate"], self.DATE_FORMAT_STR)
                     reservation_hours = (to_date - from_date).total_seconds() / 3600
                     if str(reservation["lid"]) == lid and reservation_hours > 0.1:
                         used_credit_hours += reservation_hours
@@ -448,8 +464,25 @@ class GroupViewSet(viewsets.ModelViewSet):
             print(e)
         return (False, 0)
 
+    def split_booking(self, start, end, pennkey, booked):
+        # splits a booking into smaller bookings (of min_slot_hrs) for displaying to user
+        bookings = []
+        temp_start = start
+        temp_end = temp_start + datetime.timedelta(hours=self.MIN_SLOT_HRS)
+        while (end - temp_start >= datetime.timedelta(hours=self.MIN_SLOT_HRS)):
+            booking_obj = {
+                'start': temp_start.strftime(self.DATE_FORMAT_STR), 
+                'end': temp_end.strftime(self.DATE_FORMAT_STR), 
+                'pennkey': pennkey,
+                'booked': True
+            }
+            bookings.append(booking_obj)
+            temp_start = temp_end
+            temp_end += datetime.timedelta(hours=self.MIN_SLOT_HRS)
+        return bookings
+
     def book_room_for_user(self, room, lid, start, end, email):
-        # tries to make a booking for an individual user, and returns success or not
+        # tries to make a booking for an individual user, and returns success or not (and the error) in a tuple
         if lid is "1":
             return False  # does not support huntsman booking yet
         print(f"*Attempting to book room {room:d} from {start:s} to {end:s} via {email:s}")
@@ -473,10 +506,11 @@ class GroupViewSet(viewsets.ModelViewSet):
                 resp_data = r.json()
                 if "error" in resp_data and resp_data["error"] is not None:
                     print("error: " + resp_data["error"])
-                return resp_data["results"]
+                    return (False, resp_data["error"])
+                return (resp_data["results"], None)
         except requests.exceptions.RequestException as e:
             print("error: " + str(e))
-        return False
+        return (False, None)
 
     def make_booking_request_huntsman(self, roomid, startTime, endTime, lid, sessionid):
         # makes a request to labs api server to book rooms, and returns result json if successful
