@@ -58,6 +58,4 @@ def date_iso_eastern(date):
     eastern = pytz.timezone("US/Eastern")
     date = eastern.localize(date)
 
-    print(date)
-
     return date.replace(second=0, microsecond=0).isoformat()
