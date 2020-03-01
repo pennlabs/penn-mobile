@@ -305,8 +305,6 @@ class GroupViewSet(viewsets.ModelViewSet):
 
         #randomize order, and put requester first in the order
         random.shuffle(members)
-        print(members[0]['username'])
-
         for (i, member) in enumerate(members): #puts the requester as the first person
             if (member['username'] == requester_pennkey):
                 temp = members[0]
@@ -315,7 +313,7 @@ class GroupViewSet(viewsets.ModelViewSet):
                 break
 
         if is_wharton:  # huntsman reservation
-            return {"success": False, "error": "Unable to book huntsman rooms yet"}
+            return {"complete_success": False, "partial_success": False, "error": "Unable to book huntsman rooms yet"}
         else:  # lib reservation
            
             #Find the first timeslot to book for (next_start, next_end)
@@ -354,22 +352,17 @@ class GroupViewSet(viewsets.ModelViewSet):
                     next_start = next_end
                     next_end = min(END_DATE, next_start + datetime.timedelta(hours=self.MAX_SLOT_HRS))
                     print("Succeeded!")
+                elif self.is_fatal_error(error):
+                    result_json = self.construct_bookings_json_obj(bookings, lid, room, END_DATE, next_start, next_end, error)
+                    return result_json
                 else:
-                    if (error is not None and ("not a valid".lower() in error.lower())):
-                        #this means that the booking was for an invalid time (already partially booked)
-                        return { #if fatal error
-                            "complete_success": False,
-                            "partial_success": False,
-                            "error": "Attempted to book for an invalid time slot"
-                        }
                     failed_members.append(member)
                     print("Failed :(")
 
             print("*Attempting to rebook failed slots now (if any)")
 
             # if unbooked slots still remain and not all booking requests succeeded, loop through each member again
-            # if credits > 0, then book as much of nextSlot as possible
-            # if slot successfully booked, move nextSlot ahead appropriately
+            # but get reservation credits first to see how much we can book
             
             for member in failed_members:
                 if next_end - next_start < datetime.timedelta(hours=0.1):
@@ -380,9 +373,7 @@ class GroupViewSet(viewsets.ModelViewSet):
                     continue
 
                 # calculate number of credits already used via getReservations
-                (success, used_credit_hours) = self.get_used_booking_credit_for_user(
-                    lid, member['user__email'], DATE_FORMAT_STR
-                )
+                (success, used_credit_hours) = self.get_used_booking_credit_for_user(lid, member['user__email'])
                 remaining_credit_hours = self.MAX_SLOT_HRS - used_credit_hours
                 rounded_remaining_credit_hours = math.floor(2 * remaining_credit_hours) / 2
                 print(f"Found ", rounded_remaining_credit_hours, " remaining booking hrs!")
@@ -411,35 +402,60 @@ class GroupViewSet(viewsets.ModelViewSet):
                             END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS)
                         )
                         print("Suceeded!")
-                    else:
-                        if (error is not None and ("not a valid".lower() in error.lower())):
-                            #this means that the booking was for an invalid time (already partially booked)
-                            return { #if fatal error 
-                            #PROBLEM, THIS WONT RETURN THE ROOM EVEN IF THE PERSON BOOKED PARTIALLY BUT STILL SHOULD
-                                "complete_success": False,
-                                "partial_success": False,
-                                "error": "Attempted to book for an invalid time slot"
-                            }
-                        print("Failed :(")
-
-            complete_success = next_end - next_start < datetime.timedelta(hours=0.1)
-            partial_success = (len(bookings) > 0)
-            result_json = {
-                "complete_success": success,
-                "partial_success": partial_success,
-                "rooms": []
-            }
-            for (key, bookings_array) in bookings.items():
-                key_split = key.split('_')
-                lid = key_split[0]
-                room = key_split[1]
-                result_json['rooms'].append({
-                    'lid': lid,
-                    'room': room,
-                    'bookings': bookings_array
-                })
-
+                    elif self.is_fatal_error(error):
+                        result_json = self.construct_bookings_json_obj(bookings, lid, room, END_DATE, next_start, next_end, error)
+                        return result_json
+            result_json = self.construct_bookings_json_obj(bookings, lid, room, END_DATE, next_start, next_end, error)
             return result_json
+    def is_fatal_error(self, error):
+        #consider all errors fatal unless its a daily limit error
+        if error is not None:
+            if ('daily limit'.lower() not in error.lower()):
+                return False
+            return True
+        return False
+
+    def construct_bookings_json_obj(self, succesful_bookings, lid, room, end, next_start, next_end, error):
+        #takes in a set of bookings and constructs a JSON object from them (after pre-processing)
+        bookings = succesful_bookings
+        complete_success = (next_end - next_start < datetime.timedelta(hours=0.1)) and (error is None)
+        partial_success = (len(bookings) > 0)
+        result_json = {
+            "complete_success": complete_success,
+            "partial_success": partial_success,
+            "rooms": []
+        }
+
+        #add failed bookings to bookings
+        failed_bookings = self.split_booking(next_start, end, None, False)
+        failed_key = f'{lid}_{room}' 
+        if not failed_key in bookings:
+            bookings[failed_key] = []
+        failed_split_bookings = self.split_booking(next_start, next_end, None, False)
+        bookings[failed_key].extend(failed_split_bookings)
+
+        #add successful bookings to result_json
+        for (key, bookings_array) in bookings.items():
+            key_split = key.split('_')
+            lid = key_split[0]
+            room = key_split[1]
+            result_json['rooms'].append({
+                'lid': lid,
+                'room': room,
+                'bookings': bookings_array
+            })
+
+        #handle potential error
+        if error is not None:
+            if "not a valid".lower() in error.lower():
+                result_json['error'] = 'Attempted to book for an invalid time slot'
+            elif "daily limit".lower() in error.lower():
+                result_json['error'] = 'Group does not have sufficient booking credits'
+            else:
+                result_json['error'] = str(error)
+        return result_json    
+
+        
 
     def get_used_booking_credit_for_user(self, lid, email):
         # returns a user's used booking credit (in hours) for a specific building (lid)
@@ -473,9 +489,10 @@ class GroupViewSet(viewsets.ModelViewSet):
             booking_obj = {
                 'start': temp_start.strftime(self.DATE_FORMAT_STR), 
                 'end': temp_end.strftime(self.DATE_FORMAT_STR), 
-                'pennkey': pennkey,
-                'booked': True
+                'booked': booked
             }
+            if pennkey is not None:
+                booking_obj['pennkey'] = pennkey
             bookings.append(booking_obj)
             temp_start = temp_end
             temp_end += datetime.timedelta(hours=self.MIN_SLOT_HRS)
