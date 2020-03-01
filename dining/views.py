@@ -1,14 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from legacy.models import Account, DiningBalance, DiningTransaction
 from options.models import get_option, get_value
+from pytz import timezone
 from rest_framework.views import APIView
 
 from studentlife.utils import date_iso_eastern, get_new_start_end
-
-
-# Create your views here.
 
 
 class Dashboard(APIView):
@@ -30,6 +28,11 @@ class Dashboard(APIView):
         json["end-of-semester"] = date_iso_eastern(end)
 
         json["cards"] = {"recent-transactions": self.recent_transactions_card(uid)}
+
+        average_balances = self.get_average_balances(uid, start)
+
+        if average_balances:
+            json["cards"] = {"daily-average": average_balances}
 
         return JsonResponse(json)
 
@@ -93,3 +96,57 @@ class Dashboard(APIView):
                 get_value("semester_start"),
                 get_value("semester_end"),
             )
+
+    def get_average_balances(self, uid, start_of_semester):
+
+        eastern = timezone("US/Eastern")
+        two_weeks_ago = datetime.now() - timedelta(days=14)
+        two_weeks_ago = two_weeks_ago.replace(
+            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+        )
+        start_of_semester = start_of_semester.replace(
+            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+        )
+
+        if two_weeks_ago < start_of_semester:
+            return None
+
+        transactions = DiningTransaction.objects.filter(
+            account=uid, date__gte=two_weeks_ago
+        ).order_by("date")
+
+        transaction_dict = {}
+
+        for transaction in transactions:
+            date = transaction.date.replace(
+                tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+            )
+            if date not in transaction_dict:
+                transaction_dict[date] = []
+
+            transaction_dict[date].append(transaction.amount)
+
+        transaction_averages = {}
+
+        for date, amounts in transaction_dict.items():
+            amounts = [x for x in amounts if x < 0]
+            if len(amounts) > 0:
+                transaction_averages[date] = round(sum(amounts) / len(amounts), 2)
+
+        for i in range(14):
+            day = two_weeks_ago + timedelta(days=i + 1)
+
+            if day not in transaction_averages.keys():
+                transaction_averages[day] = 0
+
+        card = {"type": "daily-average", "data": {"this-week": [], "last-week": []}}
+
+        for i, (date, average) in enumerate(sorted(transaction_averages.items(), reverse=True)):
+            if i < 7:
+                card["data"]["this-week"].append({"date": date.isoformat(), "average": average})
+            elif i < 14:
+                card["data"]["last-week"].append({"date": date.isoformat(), "average": average})
+            else:
+                break
+
+        return card
