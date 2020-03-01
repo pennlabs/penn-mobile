@@ -276,12 +276,14 @@ class GroupViewSet(viewsets.ModelViewSet):
             return HttpResponseForbidden()
 
         booking_logic = BookingLogic()
-        result_json = booking_logic.book_room_for_group(group, 
-            booking_data['is_wharton'], 
-            booking_data['room'], 
-            booking_data['lid'], 
-            booking_data['start'], 
-            booking_data['end'],
-            request.user.username)
+        result_json = booking_logic.book_room_for_group(
+            group,
+            booking_data["is_wharton"],
+            booking_data["room"],
+            booking_data["lid"],
+            booking_data["start"],
+            booking_data["end"],
+            request.user.username,
+        )
 
         return Response(result_json)

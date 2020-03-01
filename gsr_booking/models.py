@@ -75,7 +75,9 @@ class Group(models.Model):
 
     def get_pennkey_active_members(self):
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
-        pennkey_active_members_list = memberships.all().filter(pennkey_allow=True).all().values('username', 'user__email')
+        pennkey_active_members_list = (
+            memberships.all().filter(pennkey_allow=True).all().values("username", "user__email")
+        )
         return [member for member in pennkey_active_members_list]
 
     def save(self, *args, **kwargs):
