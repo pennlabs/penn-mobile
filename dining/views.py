@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from legacy.models import Account, DiningBalance, DiningTransaction
-from options.models import get_option, get_value
+from options.models import get_option, get_value, Option
 from pytz import timezone
 from rest_framework.views import APIView
 
@@ -73,16 +73,23 @@ class Dashboard(APIView):
     def get_semester_start_end(self):
 
         current_start = get_value("semester_start")
-        current_start = datetime.strptime(current_start, "%Y-%m-%d")
-
         current_end = get_value("semester_end")
-        current_end = datetime.strptime(current_end, "%Y-%m-%d")
 
-        if current_end > datetime.now():
+        try:
+            current_start = datetime.strptime(current_start, "%Y-%m-%d")
+            current_end = datetime.strptime(current_end, "%Y-%m-%d")
+        except:
+            pass
+
+        if current_start is not None and current_end is not None and current_end > datetime.now():
             return current_start, current_end
         else:
-            new_end_option = get_option("semester_end")
-            new_start_option = get_option("semester_start")
+            if current_start is None or current_end is None:
+                new_start_option = Option(key="semester_start", value="")
+                new_end_option = Option(key="semester_end", value="")
+            else:
+                new_start_option = get_option("semester_start")
+                new_end_option = get_option("semester_end")
 
             new_start, new_end = get_new_start_end()
 
@@ -93,8 +100,8 @@ class Dashboard(APIView):
             new_end_option.save()
 
             return (
-                get_value("semester_start"),
-                get_value("semester_end"),
+                datetime.strptime(get_value("semester_start"), "%Y-%m-%d"),
+                datetime.strptime(get_value("semester_end"), "%Y-%m-%d")
             )
 
     def get_average_balances(self, uid, start_of_semester):
