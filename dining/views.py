@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.db.models import Sum
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from legacy.models import Account, DiningBalance, DiningTransaction
 from options.models import get_option, get_value, Option
@@ -43,6 +44,11 @@ class Dashboard(APIView):
 
         if swipes_prediction:
             json["cards"].update({"predictions-graph-swipes": swipes_prediction})
+
+        frequent_locations = self.get_frequent_locations(uid, start, end)
+
+        if frequent_locations:
+            json["cards"].update({"frequent-locations": frequent_locations})
 
         return JsonResponse(json)
 
@@ -180,7 +186,6 @@ class Dashboard(APIView):
 
         transactions = DiningTransaction.objects.filter(
             account=uid, date__gte=start,
-        ).order_by("date")
 
         if len(transactions) < 10:
             return None
@@ -213,7 +218,6 @@ class Dashboard(APIView):
         return card
 
     def get_prediction_swipes(self, uid, start, end):
-        eastern = timezone("US/Eastern")
 
         eastern = timezone("US/Eastern")
         start = start.replace(
@@ -246,7 +250,6 @@ class Dashboard(APIView):
         now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
         days_since_start = (now - start).days
         spend_rate = spent / days_since_start
-        print(spend_rate)
 
         balance = balances[0].swipes
 
@@ -261,7 +264,66 @@ class Dashboard(APIView):
                     "predicted-zero-date": broke_day.isoformat(),
                     "data": []
                 }
+
         for balance in balances:
             card["data"].append({"date": balance.created_at.isoformat(), "balance": balance.swipes})
+
+        return card
+
+    def get_frequent_locations(self, uid, start, end):
+
+        eastern = timezone("US/Eastern")
+        start = start.replace(
+            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+        )
+        end = end.replace(
+            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+        )
+
+        transactions = DiningTransaction.objects.filter(
+            account=uid, date__gte=start, amount__lt=0
+        ).exclude(description__icontains="meal_plan")
+
+        if len(transactions) < 10:
+            return None
+
+        venue_spends = transactions.values("description").annotate(total_spend_venue=Sum("amount")).order_by("total_spend_venue")
+
+        card = {
+                    "type": "predictions-graph-swipes",
+                    "start_of_semester": start.isoformat(),
+                    "end-of-semester": end.isoformat(),
+                    "data": []
+                }
+
+        venues = [{
+                    "location": venue["description"],
+                    "week": 0,
+                    "month": 0,
+                    "semester": venue["total_spend_venue"] * -1
+                } for venue in venue_spends][:5]
+
+        now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
+        for transaction in transactions:
+            
+            days_since_transaction = (now - transaction.date).days
+            venue_index = next((index for (index, d) in enumerate(venues) if d["location"] == transaction.description), None)
+
+            if venue_index is None:
+                continue
+
+            transaction.amount *= -1
+
+            if days_since_transaction <= 7:
+                venues[venue_index]["week"] += transaction.amount
+            elif days_since_transaction <= 30:
+                venues[venue_index]["month"] += transaction.amount
+
+        for venue in venues:
+            venue["week"] = round(venue["week"], 2)
+            venue["month"] = round(venue["month"], 2)
+            venue["semester"] = round(venue["semester"], 2)
+
+        card["data"] = venues
 
         return card
