@@ -186,6 +186,7 @@ class Dashboard(APIView):
 
         transactions = DiningTransaction.objects.filter(
             account=uid, date__gte=start,
+        ).order_by("date").exclude(description__icontains="meal_plan")
 
         if len(transactions) < 10:
             return None
