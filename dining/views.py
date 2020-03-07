@@ -32,7 +32,17 @@ class Dashboard(APIView):
         average_balances = self.get_average_balances(uid, start)
 
         if average_balances:
-            json["cards"] = {"daily-average": average_balances}
+            json["cards"].update({"daily-average": average_balances})
+
+        dollar_prediction = self.get_prediction_dollars(uid, start, end)
+
+        if dollar_prediction:
+            json["cards"].update({"predictions-graph-dollars": dollar_prediction})
+
+        swipes_prediction = self.get_prediction_swipes(uid, start, end)
+
+        if swipes_prediction:
+            json["cards"].update({"predictions-graph-swipes": swipes_prediction})
 
         return JsonResponse(json)
 
@@ -155,5 +165,47 @@ class Dashboard(APIView):
                 card["data"]["last-week"].append({"date": date.isoformat(), "average": average})
             else:
                 break
+
+        return card
+
+        eastern = timezone("US/Eastern")
+        start = start.replace(
+            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+        )
+        end = end.replace(
+            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+        )
+
+        transactions = DiningTransaction.objects.filter(
+            account=uid, date__gte=start,
+        ).order_by("date")
+
+        if len(transactions) < 10:
+            return None
+
+        transactions_negative = transactions.filter(amount__lte=0)
+
+        now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
+        days_since_start = (now - start).days
+        spend_rate = sum([-1*x for x in transactions_negative.values_list("amount", flat=True)]) / days_since_start
+
+        balance = transactions[0].balance
+
+        days_left = int(balance / spend_rate)
+
+        broke_day =  now + timedelta(days=days_left)
+
+        card = {
+                    "type": "predictions-graph-dollars",
+                    "start_of_semester": start.isoformat(),
+                    "end-of-semester": end.isoformat(),
+                    "predicted-zero-date": broke_day.isoformat(),
+                    "data": []
+                }
+
+        for transaction in transactions:
+            card["data"].append({"date": transaction.date.isoformat(), "balance": transaction.balance})
+
+        card["data"] = sorted(card["data"], key=lambda k: k['date'])
 
         return card
