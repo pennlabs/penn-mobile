@@ -206,11 +206,15 @@ class Dashboard(APIView):
 
         card = {
                     "type": "predictions-graph-dollars",
-                    "start_of_semester": start.isoformat(),
+                    "start-of-semester": start.isoformat(),
                     "end-of-semester": end.isoformat(),
                     "predicted-zero-date": broke_day.isoformat(),
                     "data": []
                 }
+
+        if broke_day > end:
+            days_to_end = (end - now).days
+            card["balance-at-semester-end"] = spend_rate * days_to_end
 
         for transaction in transactions:
             card["data"].append({"date": transaction.date.isoformat(), "balance": transaction.balance})
@@ -259,6 +263,10 @@ class Dashboard(APIView):
                     "predicted-zero-date": broke_day.isoformat(),
                     "data": []
                 }
+
+        if broke_day > end:
+            days_to_end = (end - now).days
+            card["balance-at-semester-end"] = round(spend_rate * days_to_end, 0)
 
         for balance in balances:
             card["data"].append({"date": balance.created_at.isoformat(), "balance": balance.swipes})
