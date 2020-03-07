@@ -25,6 +25,14 @@ class Dashboard(APIView):
         json = self.balance(uid)
 
         start, end = self.get_semester_start_end()
+
+        eastern = timezone("US/Eastern")
+        start = start.replace(
+            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+        )
+        end = end.replace(
+            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+        )
         json["start-of-semester"] = date_iso_eastern(start)
         json["end-of-semester"] = date_iso_eastern(end)
 
@@ -73,12 +81,15 @@ class Dashboard(APIView):
         transactions = DiningTransaction.objects.filter(account=uid).order_by("-date")
 
         transactions = transactions[0:5]
+        print([(x.amount, x.date) for x in transactions])
+
+        eastern = timezone("US/Eastern")
 
         for transaction in transactions:
             card["data"].append(
                 {
                     "location": transaction.description,
-                    "date": date_iso_eastern(transaction.date),
+                    "date": transaction.date.replace(tzinfo=eastern).isoformat(),
                     "balance": transaction.balance,
                     "amount": transaction.amount,
                 }
@@ -122,12 +133,9 @@ class Dashboard(APIView):
 
     def get_average_balances(self, uid, start_of_semester):
 
-        eastern = timezone("US/Eastern")
         two_weeks_ago = datetime.now() - timedelta(days=14)
+        eastern = timezone("US/Eastern")
         two_weeks_ago = two_weeks_ago.replace(
-            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
-        )
-        start_of_semester = start_of_semester.replace(
             tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
         )
 
@@ -176,14 +184,6 @@ class Dashboard(APIView):
 
     def get_prediction_dollars(self, uid, start, end):
 
-        eastern = timezone("US/Eastern")
-        start = start.replace(
-            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
-        )
-        end = end.replace(
-            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
-        )
-
         transactions = DiningTransaction.objects.filter(
             account=uid, date__gte=start,
         ).order_by("date").exclude(description__icontains="meal_plan")
@@ -193,6 +193,7 @@ class Dashboard(APIView):
 
         transactions_negative = transactions.filter(amount__lte=0)
 
+        eastern = timezone("US/Eastern")
         now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
         days_since_start = (now - start).days
         spend_rate = sum([-1*x for x in transactions_negative.values_list("amount", flat=True)]) / days_since_start
@@ -220,14 +221,6 @@ class Dashboard(APIView):
 
     def get_prediction_swipes(self, uid, start, end):
 
-        eastern = timezone("US/Eastern")
-        start = start.replace(
-            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
-        )
-        end = end.replace(
-            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
-        )
-
         balances = DiningBalance.objects.filter(
             account_id=uid, created_at__gte=start,
         ).order_by("created_at")
@@ -248,6 +241,7 @@ class Dashboard(APIView):
                 else:
                     spent += swipe_balances[i - 1] - swipe_balances[i]
 
+        eastern = timezone("US/Eastern")
         now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
         days_since_start = (now - start).days
         spend_rate = spent / days_since_start
@@ -273,14 +267,6 @@ class Dashboard(APIView):
 
     def get_frequent_locations(self, uid, start, end):
 
-        eastern = timezone("US/Eastern")
-        start = start.replace(
-            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
-        )
-        end = end.replace(
-            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
-        )
-
         transactions = DiningTransaction.objects.filter(
             account=uid, date__gte=start, amount__lt=0
         ).exclude(description__icontains="meal_plan")
@@ -304,6 +290,7 @@ class Dashboard(APIView):
                     "semester": venue["total_spend_venue"] * -1
                 } for venue in venue_spends][:5]
 
+        eastern = timezone("US/Eastern")
         now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
         for transaction in transactions:
             
