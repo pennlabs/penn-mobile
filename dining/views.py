@@ -168,6 +168,8 @@ class Dashboard(APIView):
 
         return card
 
+    def get_prediction_dollars(self, uid, start, end):
+
         eastern = timezone("US/Eastern")
         start = start.replace(
             tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
@@ -207,5 +209,59 @@ class Dashboard(APIView):
             card["data"].append({"date": transaction.date.isoformat(), "balance": transaction.balance})
 
         card["data"] = sorted(card["data"], key=lambda k: k['date'])
+
+        return card
+
+    def get_prediction_swipes(self, uid, start, end):
+        eastern = timezone("US/Eastern")
+
+        eastern = timezone("US/Eastern")
+        start = start.replace(
+            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+        )
+        end = end.replace(
+            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
+        )
+
+        balances = DiningBalance.objects.filter(
+            account_id=uid, created_at__gte=start,
+        ).order_by("created_at")
+
+        swipe_balances = []
+
+        for balance in balances:
+            swipe_balances.append(balance.swipes)
+
+        spent = 0
+
+        for i, balance in enumerate(swipe_balances):
+            if i == 0:
+                continue
+            else:
+                if swipe_balances[i]> swipe_balances[i - 1]:
+                    continue
+                else:
+                    spent += swipe_balances[i - 1] - swipe_balances[i]
+
+        now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
+        days_since_start = (now - start).days
+        spend_rate = spent / days_since_start
+        print(spend_rate)
+
+        balance = balances[0].swipes
+
+        days_left = int(balance / spend_rate)
+
+        broke_day =  now + timedelta(days=days_left)
+
+        card = {
+                    "type": "predictions-graph-swipes",
+                    "start_of_semester": start.isoformat(),
+                    "end-of-semester": end.isoformat(),
+                    "predicted-zero-date": broke_day.isoformat(),
+                    "data": []
+                }
+        for balance in balances:
+            card["data"].append({"date": balance.created_at.isoformat(), "balance": balance.swipes})
 
         return card
