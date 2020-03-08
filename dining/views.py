@@ -81,7 +81,6 @@ class Dashboard(APIView):
         transactions = DiningTransaction.objects.filter(account=uid).order_by("-date")
 
         transactions = transactions[0:5]
-        print([(x.amount, x.date) for x in transactions])
 
         eastern = timezone("US/Eastern")
 
@@ -186,7 +185,7 @@ class Dashboard(APIView):
 
         transactions = DiningTransaction.objects.filter(
             account=uid, date__gte=start,
-        ).order_by("date").exclude(description__icontains="meal_plan")
+        ).order_by("-date").exclude(description__icontains="meal_plan")
 
         if len(transactions) < 10:
             return None
@@ -227,7 +226,7 @@ class Dashboard(APIView):
 
         balances = DiningBalance.objects.filter(
             account_id=uid, created_at__gte=start,
-        ).order_by("created_at")
+        ).order_by("-created_at")
 
         swipe_balances = []
 
@@ -240,10 +239,10 @@ class Dashboard(APIView):
             if i == 0:
                 continue
             else:
-                if swipe_balances[i]> swipe_balances[i - 1]:
+                if swipe_balances[i] < swipe_balances[i - 1]:
                     continue
                 else:
-                    spent += swipe_balances[i - 1] - swipe_balances[i]
+                    spent +=  swipe_balances[i] - swipe_balances[i - 1]
 
         eastern = timezone("US/Eastern")
         now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
