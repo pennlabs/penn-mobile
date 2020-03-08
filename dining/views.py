@@ -27,12 +27,8 @@ class Dashboard(APIView):
         start, end = self.get_semester_start_end()
 
         eastern = timezone("US/Eastern")
-        start = start.replace(
-            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
-        )
-        end = end.replace(
-            tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0
-        )
+        start = start.replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
+        end = end.replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
         json["start-of-semester"] = date_iso_eastern(start)
         json["end-of-semester"] = date_iso_eastern(end)
 
@@ -127,7 +123,7 @@ class Dashboard(APIView):
 
             return (
                 datetime.strptime(get_value("semester_start"), "%Y-%m-%d"),
-                datetime.strptime(get_value("semester_end"), "%Y-%m-%d")
+                datetime.strptime(get_value("semester_end"), "%Y-%m-%d"),
             )
 
     def get_average_balances(self, uid, start_of_semester):
@@ -183,9 +179,11 @@ class Dashboard(APIView):
 
     def get_prediction_dollars(self, uid, start, end):
 
-        transactions = DiningTransaction.objects.filter(
-            account=uid, date__gte=start,
-        ).order_by("-date").exclude(description__icontains="meal_plan")
+        transactions = (
+            DiningTransaction.objects.filter(account=uid, date__gte=start,)
+            .order_by("-date")
+            .exclude(description__icontains="meal_plan")
+        )
 
         if len(transactions) < 10:
             return None
@@ -195,38 +193,43 @@ class Dashboard(APIView):
         eastern = timezone("US/Eastern")
         now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
         days_since_start = (now - start).days
-        spend_rate = sum([-1*x for x in transactions_negative.values_list("amount", flat=True)]) / days_since_start
+        spend_rate = (
+            sum([-1 * x for x in transactions_negative.values_list("amount", flat=True)])
+            / days_since_start
+        )
 
         balance = transactions[0].balance
 
         days_left = int(balance / spend_rate)
 
-        broke_day =  now + timedelta(days=days_left)
+        broke_day = now + timedelta(days=days_left)
 
         card = {
-                    "type": "predictions-graph-dollars",
-                    "start-of-semester": start.isoformat(),
-                    "end-of-semester": end.isoformat(),
-                    "predicted-zero-date": broke_day.isoformat(),
-                    "data": []
-                }
+            "type": "predictions-graph-dollars",
+            "start-of-semester": start.isoformat(),
+            "end-of-semester": end.isoformat(),
+            "predicted-zero-date": broke_day.isoformat(),
+            "data": [],
+        }
 
         if broke_day > end:
             days_to_end = (end - now).days
             card["balance-at-semester-end"] = spend_rate * days_to_end
 
         for transaction in transactions:
-            card["data"].append({"date": transaction.date.isoformat(), "balance": transaction.balance})
+            card["data"].append(
+                {"date": transaction.date.isoformat(), "balance": transaction.balance}
+            )
 
-        card["data"] = sorted(card["data"], key=lambda k: k['date'])
+        card["data"] = sorted(card["data"], key=lambda k: k["date"])
 
         return card
 
     def get_prediction_swipes(self, uid, start, end):
 
-        balances = DiningBalance.objects.filter(
-            account_id=uid, created_at__gte=start,
-        ).order_by("-created_at")
+        balances = DiningBalance.objects.filter(account_id=uid, created_at__gte=start,).order_by(
+            "-created_at"
+        )
 
         swipe_balances = []
 
@@ -242,7 +245,7 @@ class Dashboard(APIView):
                 if swipe_balances[i] < swipe_balances[i - 1]:
                     continue
                 else:
-                    spent +=  swipe_balances[i] - swipe_balances[i - 1]
+                    spent += swipe_balances[i] - swipe_balances[i - 1]
 
         eastern = timezone("US/Eastern")
         now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
@@ -253,15 +256,15 @@ class Dashboard(APIView):
 
         days_left = int(balance / spend_rate)
 
-        broke_day =  now + timedelta(days=days_left)
+        broke_day = now + timedelta(days=days_left)
 
         card = {
-                    "type": "predictions-graph-swipes",
-                    "start_of_semester": start.isoformat(),
-                    "end-of-semester": end.isoformat(),
-                    "predicted-zero-date": broke_day.isoformat(),
-                    "data": []
-                }
+            "type": "predictions-graph-swipes",
+            "start_of_semester": start.isoformat(),
+            "end-of-semester": end.isoformat(),
+            "predicted-zero-date": broke_day.isoformat(),
+            "data": [],
+        }
 
         if broke_day > end:
             days_to_end = (end - now).days
@@ -281,28 +284,42 @@ class Dashboard(APIView):
         if len(transactions) < 10:
             return None
 
-        venue_spends = transactions.values("description").annotate(total_spend_venue=Sum("amount")).order_by("total_spend_venue")
+        venue_spends = (
+            transactions.values("description")
+            .annotate(total_spend_venue=Sum("amount"))
+            .order_by("total_spend_venue")
+        )
 
         card = {
-                    "type": "predictions-graph-swipes",
-                    "start_of_semester": start.isoformat(),
-                    "end-of-semester": end.isoformat(),
-                    "data": []
-                }
+            "type": "predictions-graph-swipes",
+            "start_of_semester": start.isoformat(),
+            "end-of-semester": end.isoformat(),
+            "data": [],
+        }
 
-        venues = [{
-                    "location": venue["description"],
-                    "week": 0,
-                    "month": 0,
-                    "semester": venue["total_spend_venue"] * -1
-                } for venue in venue_spends][:5]
+        venues = [
+            {
+                "location": venue["description"],
+                "week": 0,
+                "month": 0,
+                "semester": venue["total_spend_venue"] * -1,
+            }
+            for venue in venue_spends
+        ][:5]
 
         eastern = timezone("US/Eastern")
         now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
         for transaction in transactions:
-            
+
             days_since_transaction = (now - transaction.date).days
-            venue_index = next((index for (index, d) in enumerate(venues) if d["location"] == transaction.description), None)
+            venue_index = next(
+                (
+                    index
+                    for (index, d) in enumerate(venues)
+                    if d["location"] == transaction.description
+                ),
+                None,
+            )
 
             if venue_index is None:
                 continue
