@@ -6,6 +6,7 @@ import random
 MAX_SLOT_HRS = 2.0  # the longest booking allowed per person
 MIN_SLOT_HRS = 0.5  # the minimum booking allowed per person
 
+
 def book_room_for_group(group, is_wharton, room, lid, start, end, requester_pennkey):
     # makes a request to labs api server to book rooms, and returns result json if successful
     members = group.get_pennkey_active_members()
@@ -45,29 +46,21 @@ def book_room_for_group(group, is_wharton, room, lid, start, end, requester_penn
             if next_end - next_start < datetime.timedelta(hours=MIN_SLOT_HRS):
                 break
             if member["user__email"] is "":
-                continue #this member cannot be used for libcal booking b/c email required
+                continue  # this member cannot be used for libcal booking b/c email required
 
             # make request to labs-api-server
             success, error = book_room_for_user(
-                room,
-                lid,
-                next_start.isoformat(),
-                next_end.isoformat(),
-                member["user__email"],
+                room, lid, next_start.isoformat(), next_end.isoformat(), member["user__email"],
             )
             if success:
                 key = f"{lid}_{room}"
                 if not key in bookings:
                     bookings[key] = []
-                new_bookings = split_booking(
-                    next_start, next_end, member["username"], True
-                )
+                new_bookings = split_booking(next_start, next_end, member["username"], True)
                 bookings[key].extend(new_bookings)
 
                 next_start = next_end
-                next_end = min(
-                    END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS)
-                )
+                next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
             elif is_fatal_error(error):
                 result_json = construct_bookings_json_obj(
                     bookings, lid, room, END_DATE, next_start, next_end, error
@@ -81,10 +74,10 @@ def book_room_for_group(group, is_wharton, room, lid, start, end, requester_penn
 
         for member in failed_members:
             if next_end - next_start < datetime.timedelta(hours=MIN_SLOT_HRS):
-                #booked everything already
+                # booked everything already
                 break
             if member["user__email"] is "":
-                continue #this member cannot be used for libcal booking b/c email required
+                continue  # this member cannot be used for libcal booking b/c email required
 
             # calculate number of credits already used via getReservations
             (success, used_credit_hours) = get_used_booking_credit_for_user(
@@ -94,29 +87,20 @@ def book_room_for_group(group, is_wharton, room, lid, start, end, requester_penn
             rounded_remaining_credit_hours = math.floor(2 * remaining_credit_hours) / 2
             if success and remaining_credit_hours >= MIN_SLOT_HRS:
                 next_end = min(
-                    END_DATE,
-                    next_start + datetime.timedelta(hours=rounded_remaining_credit_hours),
+                    END_DATE, next_start + datetime.timedelta(hours=rounded_remaining_credit_hours),
                 )
                 (success, error) = book_room_for_user(
-                    room,
-                    lid,
-                    next_start.isoformat(),
-                    next_end.isoformat(),
-                    member["user__email"],
+                    room, lid, next_start.isoformat(), next_end.isoformat(), member["user__email"],
                 )
                 if success:
                     key = f"{lid}_{room}"
                     if not key in bookings:
                         bookings[key] = []
-                    new_bookings = split_booking(
-                        next_start, next_end, member["username"], True
-                    )
+                    new_bookings = split_booking(next_start, next_end, member["username"], True)
                     bookings[key].extend(new_bookings)
 
                     next_start = next_end
-                    next_end = min(
-                        END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS)
-                    )
+                    next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
                 elif is_fatal_error(error):
                     result_json = construct_bookings_json_obj(
                         bookings, lid, room, END_DATE, next_start, next_end, error
@@ -127,6 +111,7 @@ def book_room_for_group(group, is_wharton, room, lid, start, end, requester_penn
         )
         return result_json
 
+
 def is_fatal_error(error):
     # consider all errors fatal unless its a daily limit error
     if error is not None:
@@ -135,9 +120,8 @@ def is_fatal_error(error):
         return True
     return False
 
-def construct_bookings_json_obj(
-    succesful_bookings, lid, room, end, next_start, next_end, error
-):
+
+def construct_bookings_json_obj(succesful_bookings, lid, room, end, next_start, next_end, error):
     # takes in a set of bookings and constructs a JSON object from them (after pre-processing)
     bookings = succesful_bookings
     complete_success = (next_end - next_start < datetime.timedelta(hours=MIN_SLOT_HRS)) and (
@@ -175,6 +159,7 @@ def construct_bookings_json_obj(
             result_json["error"] = str(error)
     return result_json
 
+
 def get_used_booking_credit_for_user(lid, email):
     # returns a user's used booking credit (in hours) for a specific building (lid)
     RESERVATIONS_URL = "https://api.pennlabs.org/studyspaces/reservations"
@@ -197,6 +182,7 @@ def get_used_booking_credit_for_user(lid, email):
         print(e)
     return (False, 0)
 
+
 def split_booking(start, end, pennkey, booked):
     # splits a booking into smaller bookings (of min_slot_hrs) for displaying to user
     bookings = []
@@ -214,6 +200,7 @@ def split_booking(start, end, pennkey, booked):
         temp_start = temp_end
         temp_end += datetime.timedelta(hours=MIN_SLOT_HRS)
     return bookings
+
 
 def book_room_for_user(room, lid, start, end, email):
     # tries to make a booking for an individual user, and returns success or not (and the error) in a tuple
