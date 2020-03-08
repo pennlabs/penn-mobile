@@ -19,7 +19,7 @@ from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
 )
 
-from .booking_logic import BookingLogic
+from .booking_logic import book_room_for_group, is_fatal_error, construct_bookings_json_obj, get_used_booking_credit_for_user, split_booking, book_room_for_user
 
 User = get_user_model()
 
@@ -270,13 +270,11 @@ class GroupViewSet(viewsets.ModelViewSet):
 
         booking_data = booking_serialized.data
 
-        # parameters: roomid, startTime, endTime, lid, sessionid
         group = get_object_or_404(Group, pk=booking_data["group_id"])
         if not group.has_member(request.user) or not group.is_admin(request.user):
             return HttpResponseForbidden()
 
-        booking_logic = BookingLogic()
-        result_json = booking_logic.book_room_for_group(
+        result_json = book_room_for_group(
             group,
             booking_data["is_wharton"],
             booking_data["room"],
