@@ -3,7 +3,6 @@ import datetime
 import math
 import random
 
-DATE_FORMAT_STR = "%Y-%m-%dT%H:%M:%S%z"
 MAX_SLOT_HRS = 2.0  # the longest booking allowed per person
 MIN_SLOT_HRS = 0.5  # the minimum booking allowed per person
 
@@ -34,27 +33,26 @@ def book_room_for_group(group, is_wharton, room, lid, start, end, requester_penn
         }
     else:  # lib reservation
         # Find the first timeslot to book for (next_start, next_end)
-        START_DATE = datetime.datetime.strptime(start, DATE_FORMAT_STR)
-        END_DATE = datetime.datetime.strptime(end, DATE_FORMAT_STR)
+        START_DATE = datetime.datetime.fromisoformat(start)
+        END_DATE = datetime.datetime.fromisoformat(end)
         next_start = START_DATE
         next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
-
         # loop through each member, and attempt to book on their behalf
-        bookings = {}
+        bookings = dict()
         failed_members = []  # store the members w/ failed bookings in here
 
         for member in members:
-            if next_end - next_start < datetime.timedelta(hours=0.1):
+            if next_end - next_start < datetime.timedelta(hours=MIN_SLOT_HRS):
                 break
             if member["user__email"] is "":
-                continue
+                continue #this member cannot be used for libcal booking b/c email required
 
             # make request to labs-api-server
             success, error = book_room_for_user(
                 room,
                 lid,
-                next_start.strftime(DATE_FORMAT_STR),
-                next_end.strftime(DATE_FORMAT_STR),
+                next_start.isoformat(),
+                next_end.isoformat(),
                 member["user__email"],
             )
             if success:
@@ -82,12 +80,11 @@ def book_room_for_group(group, is_wharton, room, lid, start, end, requester_penn
         # but get reservation credits first to see how much we can book
 
         for member in failed_members:
-            if next_end - next_start < datetime.timedelta(hours=0.1):
-                print("BOOKED EVERYTHING ALREADY")
+            if next_end - next_start < datetime.timedelta(hours=MIN_SLOT_HRS):
+                #booked everything already
                 break
             if member["user__email"] is "":
-                print("empty email address")
-                continue
+                continue #this member cannot be used for libcal booking b/c email required
 
             # calculate number of credits already used via getReservations
             (success, used_credit_hours) = get_used_booking_credit_for_user(
@@ -103,8 +100,8 @@ def book_room_for_group(group, is_wharton, room, lid, start, end, requester_penn
                 (success, error) = book_room_for_user(
                     room,
                     lid,
-                    next_start.strftime(DATE_FORMAT_STR),
-                    next_end.strftime(DATE_FORMAT_STR),
+                    next_start.isoformat(),
+                    next_end.isoformat(),
                     member["user__email"],
                 )
                 if success:
@@ -143,7 +140,7 @@ def construct_bookings_json_obj(
 ):
     # takes in a set of bookings and constructs a JSON object from them (after pre-processing)
     bookings = succesful_bookings
-    complete_success = (next_end - next_start < datetime.timedelta(hours=0.1)) and (
+    complete_success = (next_end - next_start < datetime.timedelta(hours=MIN_SLOT_HRS)) and (
         error is None
     )
     partial_success = len(bookings) > 0
@@ -190,14 +187,10 @@ def get_used_booking_credit_for_user(lid, email):
             reservations = resp_data["reservations"]
             used_credit_hours = 0
             for reservation in reservations:
-                from_date = datetime.datetime.strptime(
-                    reservation["fromDate"], DATE_FORMAT_STR
-                )
-                to_date = datetime.datetime.strptime(
-                    reservation["toDate"], DATE_FORMAT_STR
-                )
+                from_date = datetime.datetime.fromisoformat(reservation["fromDate"])
+                to_date = datetime.datetime.fromisoformat(reservation["toDate"])
                 reservation_hours = (to_date - from_date).total_seconds() / 3600
-                if str(reservation["lid"]) == lid and reservation_hours > 0.1:
+                if str(reservation["lid"]) == lid and reservation_hours >= MIN_SLOT_HRS:
                     used_credit_hours += reservation_hours
             return (True, used_credit_hours)
     except requests.exceptions.RequestException as e:
@@ -211,8 +204,8 @@ def split_booking(start, end, pennkey, booked):
     temp_end = temp_start + datetime.timedelta(hours=MIN_SLOT_HRS)
     while end - temp_start >= datetime.timedelta(hours=MIN_SLOT_HRS):
         booking_obj = {
-            "start": temp_start.strftime(DATE_FORMAT_STR),
-            "end": temp_end.strftime(DATE_FORMAT_STR),
+            "start": temp_start.isoformat(),
+            "end": temp_end.isoformat(),
             "booked": booked,
         }
         if pennkey is not None:
