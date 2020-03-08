@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db.models import Sum
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from legacy.models import Account, DiningBalance, DiningTransaction
-from options.models import get_option, get_value, Option
+from options.models import Option, get_option, get_value
 from pytz import timezone
 from rest_framework.views import APIView
 
