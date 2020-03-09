@@ -263,7 +263,7 @@ class Dashboard(APIView):
 
         card = {
             "type": "predictions-graph-swipes",
-            "start_of_semester": start.isoformat(),
+            "start-of-semester": start.isoformat(),
             "end-of-semester": end.isoformat(),
             "predicted-zero-date": broke_day.isoformat(),
             "data": [],
@@ -297,9 +297,7 @@ class Dashboard(APIView):
         )
 
         card = {
-            "type": "predictions-graph-swipes",
-            "start_of_semester": start.isoformat(),
-            "end-of-semester": end.isoformat(),
+            "type": "frequent-locations",
             "data": [],
         }
 
