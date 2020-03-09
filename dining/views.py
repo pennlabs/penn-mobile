@@ -223,6 +223,9 @@ class Dashboard(APIView):
 
         card["data"] = sorted(card["data"], key=lambda k: k["date"])
 
+        if balance == 0:
+            del card["predicted-zero-date"]
+
         return card
 
     def get_prediction_swipes(self, uid, start, end):
@@ -265,6 +268,9 @@ class Dashboard(APIView):
             "predicted-zero-date": broke_day.isoformat(),
             "data": [],
         }
+
+        if balance == 0:
+            del card["predicted-zero-date"]
 
         if broke_day > end:
             days_to_end = (end - now).days
