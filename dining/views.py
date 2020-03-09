@@ -234,50 +234,52 @@ class Dashboard(APIView):
             "-created_at"
         )
 
-        swipe_balances = []
+        card = {
+                "type": "predictions-graph-swipes",
+                "start-of-semester": start.isoformat(),
+                "end-of-semester": end.isoformat(),
+                "data": [],
+            }
 
-        for balance in balances:
-            swipe_balances.append(balance.swipes)
+        balance = 0
 
-        spent = 0
+        if balance != 0:
 
-        for i, balance in enumerate(swipe_balances):
-            if i == 0:
-                continue
-            else:
-                if swipe_balances[i] < swipe_balances[i - 1]:
+            swipe_balances = []
+
+            for balance in balances:
+                swipe_balances.append(balance.swipes)
+
+            spent = 0
+
+            for i, balance in enumerate(swipe_balances):
+                if i == 0:
                     continue
                 else:
-                    spent += swipe_balances[i] - swipe_balances[i - 1]
+                    if swipe_balances[i] < swipe_balances[i - 1]:
+                        continue
+                    else:
+                        spent += swipe_balances[i] - swipe_balances[i - 1]
 
-        eastern = timezone("US/Eastern")
-        now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
-        days_since_start = (now - start).days
-        spend_rate = spent / days_since_start
+            eastern = timezone("US/Eastern")
+            now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
+            days_since_start = (now - start).days
+            spend_rate = spent / days_since_start
 
-        balance = balances[0].swipes
+            days_left = int(balance / spend_rate)
 
-        days_left = int(balance / spend_rate)
+            broke_day = now + timedelta(days=days_left)
 
-        broke_day = now + timedelta(days=days_left)
+            card["predicted-zero-date"] = broke_day.isoformat()
 
-        card = {
-            "type": "predictions-graph-swipes",
-            "start-of-semester": start.isoformat(),
-            "end-of-semester": end.isoformat(),
-            "predicted-zero-date": broke_day.isoformat(),
-            "data": [],
-        }
-
-        if balance == 0:
-            del card["predicted-zero-date"]
-
-        if broke_day > end:
-            days_to_end = (end - now).days
-            card["balance-at-semester-end"] = round(spend_rate * days_to_end, 0)
+            if broke_day > end:
+                days_to_end = (end - now).days
+                card["balance-at-semester-end"] = round(spend_rate * days_to_end, 0)
 
         for balance in balances:
             card["data"].append({"date": balance.created_at.isoformat(), "balance": balance.swipes})
+
+        card["data"] = sorted(card["data"], key=lambda k: k["date"])
 
         return card
 
