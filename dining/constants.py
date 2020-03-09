@@ -1,4 +1,4 @@
-pretty_names = {
+pretty_venue_names = {
 	'Houston HM Grill': 'Houston HM Grill',
 	'Joes Cafe Mobile': "Joe's Cafe",
 	'Ginger Mobile': 'Houston Ginger',
@@ -94,8 +94,8 @@ pretty_names = {
 }
 
 def map_to_pretty(description):
-	if description in pretty_names:
-		return pretty_names[description]
+	if description in pretty_venue_names:
+		return pretty_venue_names[description]
 	else:
 		description = ''.join([i for i in description if not i.isdigit()])
 		description = description.split["-"][0]
