@@ -241,7 +241,7 @@ class Dashboard(APIView):
                 "data": [],
             }
 
-        balance = 0
+        balance = balances[0].swipes
 
         if balance != 0:
 
