@@ -188,33 +188,36 @@ class Dashboard(APIView):
         if len(transactions) < 10:
             return None
 
-        transactions_negative = transactions.filter(amount__lte=0)
-
-        eastern = timezone("US/Eastern")
-        now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
-        days_since_start = (now - start).days
-        spend_rate = (
-            sum([-1 * x for x in transactions_negative.values_list("amount", flat=True)])
-            / days_since_start
-        )
-
-        balance = transactions[0].balance
-
-        days_left = int(balance / spend_rate)
-
-        broke_day = now + timedelta(days=days_left)
-
         card = {
             "type": "predictions-graph-dollars",
             "start-of-semester": start.isoformat(),
             "end-of-semester": end.isoformat(),
-            "predicted-zero-date": broke_day.isoformat(),
             "data": [],
         }
 
-        if broke_day > end:
-            days_to_end = (end - now).days
-            card["balance-at-semester-end"] = spend_rate * days_to_end
+        balance = transactions[0].balance
+
+        if balance != 0:
+
+            transactions_negative = transactions.filter(amount__lte=0)
+
+            eastern = timezone("US/Eastern")
+            now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
+            days_since_start = (now - start).days
+            spend_rate = (
+                sum([-1 * x for x in transactions_negative.values_list("amount", flat=True)])
+                / days_since_start
+            )
+
+            days_left = int(balance / spend_rate)
+
+            broke_day = now + timedelta(days=days_left)
+
+            card["predicted-zero-date"] = broke_day.isoformat()
+
+            if broke_day > end:
+                days_to_end = (end - now).days
+                card["balance-at-semester-end"] = spend_rate * days_to_end
 
         for transaction in transactions:
             card["data"].append(
@@ -222,9 +225,6 @@ class Dashboard(APIView):
             )
 
         card["data"] = sorted(card["data"], key=lambda k: k["date"])
-
-        if balance == 0:
-            del card["predicted-zero-date"]
 
         return card
 
