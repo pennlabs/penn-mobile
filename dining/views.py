@@ -1,13 +1,12 @@
 from datetime import datetime, timedelta
 
+from dining.constants import map_to_pretty
 from django.db.models import Sum
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from legacy.models import Account, DiningBalance, DiningTransaction
 from options.models import Option, get_option, get_value
 from pytz import timezone
 from rest_framework.views import APIView
-
-from dining.constants import map_to_pretty
 
 from studentlife.utils import date_iso_eastern, get_new_start_end
 
@@ -102,7 +101,7 @@ class Dashboard(APIView):
         try:
             current_start = datetime.strptime(current_start, "%Y-%m-%d")
             current_end = datetime.strptime(current_end, "%Y-%m-%d")
-        except:
+        except ValueError:
             pass
 
         if current_start is not None and current_end is not None and current_end > datetime.now():
@@ -237,11 +236,11 @@ class Dashboard(APIView):
         )
 
         card = {
-                "type": "predictions-graph-swipes",
-                "start-of-semester": start.isoformat(),
-                "end-of-semester": end.isoformat(),
-                "data": [],
-            }
+            "type": "predictions-graph-swipes",
+            "start-of-semester": start.isoformat(),
+            "end-of-semester": end.isoformat(),
+            "data": [],
+        }
 
         balance = balances[0].swipes
 
