@@ -7,6 +7,8 @@ from options.models import Option, get_option, get_value
 from pytz import timezone
 from rest_framework.views import APIView
 
+from dining.constants import map_to_pretty
+
 from studentlife.utils import date_iso_eastern, get_new_start_end
 
 
@@ -83,7 +85,7 @@ class Dashboard(APIView):
         for transaction in transactions:
             card["data"].append(
                 {
-                    "location": transaction.description,
+                    "location": map_to_pretty(transaction.description),
                     "date": transaction.date.replace(tzinfo=eastern).isoformat(),
                     "balance": transaction.balance,
                     "amount": transaction.amount,
@@ -305,7 +307,7 @@ class Dashboard(APIView):
 
         venues = [
             {
-                "location": venue["description"],
+                "location": map_to_pretty(venue["description"]),
                 "week": 0,
                 "month": 0,
                 "semester": venue["total_spend_venue"] * -1,
@@ -322,7 +324,7 @@ class Dashboard(APIView):
                 (
                     index
                     for (index, d) in enumerate(venues)
-                    if d["location"] == transaction.description
+                    if d["location"] == map_to_pretty(transaction.description)
                 ),
                 None,
             )
