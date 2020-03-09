@@ -69,7 +69,7 @@ class Group(models.Model):
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
         return memberships.all().filter(user=user).exists()
 
-    def is_admin(self, user):
+    def has_admin(self, user):
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
         return memberships.all().filter(type="A").filter(user=user).exists()
 

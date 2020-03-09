@@ -19,7 +19,7 @@ from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
 )
 
-from .booking_logic import (
+from gsr_booking.booking_logic import (
     book_room_for_group,
     is_fatal_error,
     construct_bookings_json_obj,
@@ -278,7 +278,7 @@ class GroupViewSet(viewsets.ModelViewSet):
         booking_data = booking_serialized.data
 
         group = get_object_or_404(Group, pk=booking_data["group_id"])
-        if not group.has_member(request.user) or not group.is_admin(request.user):
+        if not group.has_member(request.user) or not group.has_admin(request.user):
             return HttpResponseForbidden()
 
         result_json = book_room_for_group(
