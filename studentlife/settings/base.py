@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "debug_toolbar",
     "gsr_booking",
     "legacy",
+    "options.apps.OptionsConfig",
 ]
 
 MIDDLEWARE = [
