@@ -190,6 +190,8 @@ def construct_bookings_json_obj(succesful_bookings, lid, room, end, next_start, 
             result_json["error"] = "Group does not have sufficient booking credits"
         else:
             result_json["error"] = str(error)
+    elif complete_success is False:
+        result_json["error"] = "Group does not have sufficient booking credits"
     return result_json
 
 
