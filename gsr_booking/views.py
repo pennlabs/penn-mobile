@@ -135,6 +135,14 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
             return GroupMembership.objects.none()
         return self.request.user.memberships.all()
 
+    def create(self, request, *args, **kwargs):
+        group_id = request.data.get("group")
+        group = get_object_or_404(Group, pk=group_id)
+        if not group.has_member(request.user):
+            return HttpResponseForbidden()
+
+        return super().create(request, *args, **kwargs)
+
     @action(detail=False, methods=["post"])
     def invite(self, request):
         """
