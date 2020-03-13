@@ -19,14 +19,7 @@ from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
 )
 
-from gsr_booking.booking_logic import (
-    book_room_for_group,
-    is_fatal_error,
-    construct_bookings_json_obj,
-    get_used_booking_credit_for_user,
-    split_booking,
-    book_room_for_user,
-)
+from gsr_booking.booking_logic import book_room_for_group
 
 User = get_user_model()
 
