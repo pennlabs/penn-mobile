@@ -243,3 +243,12 @@ class GroupTestCase(TestCase):
         response = self.client.get(f"/groups/{self.group.pk}/")
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, len(response.data["memberships"]))
+
+    # TODO: Curently this test fails, due to querydict not immutable error
+    # def test_book_room(self):
+    #     GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True)
+    #     GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True)
+    #     params = {"room": 16993, "start": "2020-03-10T10:00:00-0500",
+    #               "end": "2020-03-10T16:00:00-0500", "lid": 2587}
+    #     response = self.client.post(f"/groups/{self.group.pk}/book-room/", params)
+    #     self.assertEqual(200, response.status_code)

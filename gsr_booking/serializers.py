@@ -6,6 +6,21 @@ from rest_framework import serializers
 User = get_user_model()
 
 
+class GroupBookingRequestSerializer(serializers.Serializer):
+    lid = serializers.IntegerField()
+    room = serializers.IntegerField()
+
+    start = serializers.DateTimeField()
+    end = serializers.DateTimeField()
+
+    group_id = serializers.IntegerField()
+
+    is_wharton = serializers.SerializerMethodField()
+
+    def get_is_wharton(self, obj):
+        return obj["lid"] == 1
+
+
 class MiniUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

@@ -3,9 +3,15 @@ from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from gsr_booking.booking_logic import book_room_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
 from gsr_booking.models import Group, GroupMembership, UserSearchIndex
-from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, UserSerializer
+from gsr_booking.serializers import (
+    GroupBookingRequestSerializer,
+    GroupMembershipSerializer,
+    GroupSerializer,
+    UserSerializer,
+)
 from rest_framework import viewsets
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
@@ -65,7 +71,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         user = get_object_or_404(User, username=username)
         return Response(
             GroupMembershipSerializer(
-                GroupMembership.objects.filter(user=user, accepted=False), many=True
+                GroupMembership.objects.filter(
+                    user=user, accepted=False, group__in=self.request.user.booking_groups.all()
+                ),
+                many=True,
             ).data
         )
 
@@ -257,3 +266,28 @@ class GroupViewSet(viewsets.ModelViewSet):
                 GroupMembership.objects.filter(group=group, accepted=False), many=True
             ).data
         )
+
+    @action(detail=True, methods=["post"], url_path="book-room")
+    def book_room(self, request, pk):
+        request.data.update({"group_id": pk})
+        booking_serialized = GroupBookingRequestSerializer(data=request.data)
+        if not booking_serialized.is_valid():
+            return Response(status=400)
+
+        booking_data = booking_serialized.data
+
+        group = get_object_or_404(Group, pk=booking_data["group_id"])
+        if not group.has_member(request.user) or not group.has_admin(request.user):
+            return HttpResponseForbidden()
+
+        result_json = book_room_for_group(
+            group,
+            booking_data["is_wharton"],
+            booking_data["room"],
+            booking_data["lid"],
+            booking_data["start"],
+            booking_data["end"],
+            request.user.username,
+        )
+
+        return Response(result_json)
