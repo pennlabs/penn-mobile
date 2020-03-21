@@ -6,6 +6,7 @@ from dining.helpers import (
     get_prediction_swipes,
     get_semester_start_end,
     recent_transactions_card,
+    update_if_not_none
 )
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from legacy.models import Account
@@ -39,24 +40,9 @@ class Dashboard(APIView):
 
         json["cards"] = {"recent-transactions": recent_transactions_card(uid)}
 
-        average_balances = get_average_balances(uid, start)
-
-        if average_balances:
-            json["cards"].update({"daily-average": average_balances})
-
-        dollar_prediction = get_prediction_dollars(uid, start, end)
-
-        if dollar_prediction:
-            json["cards"].update({"predictions-graph-dollars": dollar_prediction})
-
-        swipes_prediction = get_prediction_swipes(uid, start, end)
-
-        if swipes_prediction:
-            json["cards"].update({"predictions-graph-swipes": swipes_prediction})
-
-        frequent_locations = get_frequent_locations(uid, start, end)
-
-        if frequent_locations:
-            json["cards"].update({"frequent-locations": frequent_locations})
+        update_if_not_none(json["cards"], "daily-average", get_average_balances(uid, start))
+        update_if_not_none(json["cards"], "predictions-graph-dollars", get_prediction_dollars(uid, start, end))
+        update_if_not_none(json["cards"], "predictions-graph-swipes", get_prediction_swipes(uid, start, end))
+        update_if_not_none(json["cards"], "frequent-locations", get_prediction_swipes(uid, start, end))
 
         return JsonResponse(json)

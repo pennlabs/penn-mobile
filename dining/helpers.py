@@ -296,3 +296,7 @@ def get_frequent_locations(uid, start, end):
     card["data"] = venues
 
     return card
+
+def update_if_not_none(cards, name, content):
+        if content is not None:
+            cards.update({name: content})
