@@ -20,7 +20,7 @@ class Dashboard(APIView):
         if not self.request.user.is_authenticated:
             return HttpResponseForbidden()
 
-        pennid = "76627463"  # request.user.username
+        pennid = request.user.username
 
         try:
             uid = Account.objects.get(pennid=pennid).id
