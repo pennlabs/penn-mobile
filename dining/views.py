@@ -70,8 +70,6 @@ class Dashboard(APIView):
 
         card = {
             "type": "recent-transactions",
-            "header-title": "Transactions",
-            "header-body": "Your recent dining dollar transactions",
             "data": [],
         }
 
