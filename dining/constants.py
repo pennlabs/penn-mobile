@@ -1,5 +1,6 @@
 """
-DB has names for venues under `description` field. These do not look good and should not be shown to user.
+DB has names for venues under `description` field.
+These do not look good and should not be shown to user.
 Some names are also slightly different but actually represent the same venue.
 These names look a lot better and map different descriptions to the same venue.
 """
