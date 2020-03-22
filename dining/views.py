@@ -32,6 +32,8 @@ class Dashboard(APIView):
 
         start, end = get_semester_start_end()
 
+        # set all timezones to eastern to be consistent with ISO date format that iOS accepts.
+        # also resets tzinfo that DB might add to allow for consistent comparison.
         eastern = timezone("US/Eastern")
         start = start.replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
         end = end.replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
