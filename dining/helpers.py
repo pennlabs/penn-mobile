@@ -147,7 +147,6 @@ def get_prediction_dollars(uid, start, end):
     }
 
     balance = transactions[0].balance
-
     if balance != 0:
 
         transactions_negative = transactions.filter(amount__lte=0)
