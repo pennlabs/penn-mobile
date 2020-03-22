@@ -377,6 +377,7 @@ def get_frequent_locations(uid, start, end):
         "data": [],
     }
 
+    TOP_VENUES = 5
     venues = [
         {
             "location": map_to_pretty(venue["description"]),
@@ -385,7 +386,7 @@ def get_frequent_locations(uid, start, end):
             "semester": venue["total_spend_venue"] * -1,
         }
         for venue in venue_spends
-    ][:5]
+    ][:TOP_VENUES]
 
     eastern = timezone("US/Eastern")
     now = datetime.now().replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
