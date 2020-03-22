@@ -14,6 +14,20 @@ DAYS_PER_MONTH = 30
 
 
 def balance(uid):
+    """Gets the latest balance for the user.
+
+        Parameters
+        ----------
+        uid : str
+            ID of the user in the database.
+
+        Returns
+        -------
+        dict
+            Detailed balances including, swipes, dining-dollars and
+            guest-swipes.
+    """
+
     balance = DiningBalance.objects.filter(account=uid).order_by("-created_at")
     latest = balance[0]
     return {
@@ -24,6 +38,18 @@ def balance(uid):
 
 
 def recent_transactions_card(uid):
+    """Returns a user's 5 latest transactions
+
+        Parameters
+        ----------
+        uid : str
+            ID of the user in the database.
+
+        Returns
+        -------
+        dict
+            Card with list of transactions and info in list of dicts.
+    """
 
     card = {
         "type": "recent-transactions",
@@ -50,6 +76,18 @@ def recent_transactions_card(uid):
 
 
 def get_semester_start_end():
+    """Start and end of semester dates
+
+    If the start and end of semester is not up-to-date then fetch new
+    dates from API.
+
+        Returns
+        -------
+        datetime.datetime
+            start of semester.
+        datetime.datetime
+            end of semesester
+    """
 
     current_start = get_value("semester_start")
     current_end = get_value("semester_end")
@@ -85,6 +123,23 @@ def get_semester_start_end():
 
 
 def get_average_balances(uid, start_of_semester):
+    """Gets average spends for user over past 2 weeks.
+
+        Parameters
+        ----------
+        uid : str
+            ID of the user in the database.
+        start_of_semester : datetime.datetime
+            date that the semester began.
+
+        Returns
+        -------
+        None
+            If beginning of semester was less than two weeks ago.
+
+        dict
+            Detailed balances over the past two weeks.
+    """
 
     two_weeks_ago = datetime.now() - timedelta(days=14)
     eastern = timezone("US/Eastern")
@@ -133,6 +188,28 @@ def get_average_balances(uid, start_of_semester):
 
 
 def get_prediction_dollars(uid, start, end):
+    """Gets prediction for when user will run out of dining-dollars.
+
+        Parameters
+        ----------
+        uid : str
+            ID of the user in the database.
+        start : datetime.datetime
+            date that the semester began
+        end : datetime.datetime
+            date that the semester ends.
+
+        Returns
+        -------
+        None
+            if the user has registered fewer than 10 transactions in the
+            semester.
+
+        dict
+            Includes start, end of semester, predicted date for when
+            user will have 0 balance and balance at end of semester
+            if they will not run out.
+    """
 
     transactions = (
         DiningTransaction.objects.filter(account=uid, date__gte=start,)
@@ -181,6 +258,28 @@ def get_prediction_dollars(uid, start, end):
 
 
 def get_prediction_swipes(uid, start, end):
+    """Gets prediction for when user will run out of dining-swipes.
+
+        Parameters
+        ----------
+        uid : str
+            ID of the user in the database.
+        start : datetime.datetime
+            date that the semester began
+        end : datetime.datetime
+            date that the semester ends.
+
+        Returns
+        -------
+        None
+            if the user has registered fewer than 10 transactions in the
+            semester.
+
+        dict
+            Includes start, end of semester, predicted date for when
+            user will have 0 balance and balance at end of semester
+            if they will not run out.
+    """
 
     balances = DiningBalance.objects.filter(account_id=uid, created_at__gte=start,).order_by(
         "-created_at"
@@ -236,6 +335,27 @@ def get_prediction_swipes(uid, start, end):
 
 
 def get_frequent_locations(uid, start, end):
+    """Gets users most frequented venues.
+
+        Parameters
+        ----------
+        uid : str
+            ID of the user in the database.
+        start : datetime.datetime
+            date that the semester began
+        end : datetime.datetime
+            date that the semester ends.
+
+        Returns
+        -------
+        None
+            if the user has registered fewer than 10 transactions in the
+            semester.
+
+        dict
+            Includes 5 most frequent locations at which the user has
+            registered transactions.
+    """
 
     transactions = DiningTransaction.objects.filter(
         account=uid, date__gte=start, amount__lt=0
@@ -299,5 +419,17 @@ def get_frequent_locations(uid, start, end):
 
 
 def update_if_not_none(cards, name, content):
+    """Gets prediction for when user will run out of dining-dollars.
+
+        Parameters
+        ----------
+        cards : str
+            json to update
+        name : datetime.datetime
+            name of specific card for key in dict.
+        end : datetime.datetime
+            content of card for value in dict.
+    """
+
     if content is not None:
         cards.update({name: content})
