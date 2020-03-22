@@ -147,7 +147,6 @@ def get_prediction_dollars(uid, start, end):
     }
 
     balance = transactions[0].balance
-
     if balance != 0:
 
         transactions_negative = transactions.filter(amount__lte=0)
@@ -174,7 +173,6 @@ def get_prediction_dollars(uid, start, end):
         card["data"].append({"date": transaction.date.isoformat(), "balance": transaction.balance})
 
     card["data"] = sorted(card["data"], key=lambda k: k["date"])
-
     return card
 
 
@@ -230,7 +228,6 @@ def get_prediction_swipes(uid, start, end):
         card["data"].append({"date": balance.created_at.isoformat(), "balance": balance.swipes})
 
     card["data"] = sorted(card["data"], key=lambda k: k["date"])
-
     return card
 
 
@@ -294,7 +291,6 @@ def get_frequent_locations(uid, start, end):
         venue["semester"] = round(venue["semester"], 2)
 
     card["data"] = venues
-
     return card
 
 def update_if_not_none(cards, name, content):
