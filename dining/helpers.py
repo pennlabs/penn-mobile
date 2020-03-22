@@ -11,6 +11,7 @@ from studentlife.utils import get_new_start_end
 
 DAYS_PER_WEEK = 7
 DAYS_PER_MONTH = 30
+MINIMUM_USABLE_TRANSACTIONS = 10
 
 
 def balance(uid):
@@ -58,7 +59,8 @@ def recent_transactions_card(uid):
 
     transactions = DiningTransaction.objects.filter(account=uid).order_by("-date")
 
-    transactions = transactions[0:5]
+    MINIMUM_TRANSACTIONS = 5
+    transactions = transactions[0:MINIMUM_TRANSACTIONS]
 
     eastern = timezone("US/Eastern")
 
@@ -217,7 +219,7 @@ def get_prediction_dollars(uid, start, end):
         .exclude(description__icontains="meal_plan")
     )
 
-    if len(transactions) < 10:
+    if len(transactions) < MINIMUM_USABLE_TRANSACTIONS:
         return None
 
     card = {
@@ -361,7 +363,7 @@ def get_frequent_locations(uid, start, end):
         account=uid, date__gte=start, amount__lt=0
     ).exclude(description__icontains="meal_plan")
 
-    if len(transactions) < 10:
+    if len(transactions) < MINIMUM_USABLE_TRANSACTIONS:
         return None
 
     venue_spends = (
