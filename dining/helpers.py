@@ -9,6 +9,10 @@ from pytz import timezone
 from studentlife.utils import get_new_start_end
 
 
+DAYS_PER_WEEK = 7
+DAYS_PER_MONTH = 30
+
+
 def balance(uid):
     balance = DiningBalance.objects.filter(account=uid).order_by("-created_at")
     latest = balance[0]
@@ -118,9 +122,9 @@ def get_average_balances(uid, start_of_semester):
     card = {"type": "daily-average", "data": {"this-week": [], "last-week": []}}
 
     for i, (date, average) in enumerate(sorted(transaction_averages.items(), reverse=True)):
-        if i < 7:
+        if i < DAYS_PER_WEEK:
             card["data"]["this-week"].append({"date": date.isoformat(), "average": average})
-        elif i < 14:
+        elif i < DAYS_PER_WEEK * 2:
             card["data"]["last-week"].append({"date": date.isoformat(), "average": average})
         else:
             break
@@ -280,9 +284,9 @@ def get_frequent_locations(uid, start, end):
 
         transaction.amount *= -1
 
-        if days_since_transaction <= 7:
+        if days_since_transaction <= DAYS_PER_WEEK:
             venues[venue_index]["week"] += transaction.amount
-        elif days_since_transaction <= 30:
+        elif days_since_transaction <= DAYS_PER_MONTH:
             venues[venue_index]["month"] += transaction.amount
 
     for venue in venues:
@@ -293,6 +297,7 @@ def get_frequent_locations(uid, start, end):
     card["data"] = venues
     return card
 
+
 def update_if_not_none(cards, name, content):
-        if content is not None:
-            cards.update({name: content})
+    if content is not None:
+        cards.update({name: content})
