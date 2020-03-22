@@ -6,7 +6,7 @@ from dining.helpers import (
     get_prediction_swipes,
     get_semester_start_end,
     recent_transactions_card,
-    update_if_not_none
+    update_if_not_none,
 )
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from legacy.models import Account
@@ -17,6 +17,15 @@ from studentlife.utils import date_iso_eastern
 
 
 class Dashboard(APIView):
+    """
+    Dining Dashboard containing user's balance and transaction info.
+
+    Methods
+    -------
+    get(request, format=None)
+        returns json for user's dining info using helpers.py methods.
+    """
+
     def get(self, request, format=None):
         if not self.request.user.is_authenticated:
             return HttpResponseForbidden()
@@ -32,8 +41,9 @@ class Dashboard(APIView):
 
         start, end = get_semester_start_end()
 
-        # set all timezones to eastern to be consistent with ISO date format that iOS accepts.
-        # also resets tzinfo that DB might add to allow for consistent comparison.
+        # set all timezones to eastern to be consistent with ISO date format
+        # that iOS accepts. Also resets tzinfo that DB might add to allow for
+        # consistent comparison.
         eastern = timezone("US/Eastern")
         start = start.replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
         end = end.replace(tzinfo=eastern, hour=0, minute=0, second=0, microsecond=0)
@@ -43,8 +53,14 @@ class Dashboard(APIView):
         json["cards"] = {"recent-transactions": recent_transactions_card(uid)}
 
         update_if_not_none(json["cards"], "daily-average", get_average_balances(uid, start))
-        update_if_not_none(json["cards"], "predictions-graph-dollars", get_prediction_dollars(uid, start, end))
-        update_if_not_none(json["cards"], "predictions-graph-swipes", get_prediction_swipes(uid, start, end))
-        update_if_not_none(json["cards"], "frequent-locations", get_prediction_swipes(uid, start, end))
+        update_if_not_none(
+            json["cards"], "predictions-graph-dollars", get_prediction_dollars(uid, start, end)
+        )
+        update_if_not_none(
+            json["cards"], "predictions-graph-swipes", get_prediction_swipes(uid, start, end)
+        )
+        update_if_not_none(
+            json["cards"], "frequent-locations", get_frequent_locations(uid, start, end)
+        )
 
         return JsonResponse(json)
