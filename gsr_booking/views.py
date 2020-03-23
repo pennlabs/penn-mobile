@@ -269,22 +269,20 @@ class GroupViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="book-rooms")
     def book_rooms(self, request, pk):
-        request.data.update({"group_id": pk})
         booking_serialized = GroupBookingRequestSerializer(data=request.data)
         if not booking_serialized.is_valid():
             return Response(status=400)
 
         booking_data = booking_serialized.data
 
-        group = get_object_or_404(Group, pk=booking_data["group_id"])
-        #must be admin of the group to book
+        group = get_object_or_404(Group, pk=pk)
+
+        # must be admin of the group to book
         if not group.has_member(request.user) or not group.has_admin(request.user):
             return HttpResponseForbidden()
 
         result_json = book_rooms_for_group(
-            group,
-            booking_data["room_bookings"],
-            request.user.username,
+            group, booking_data["room_bookings"], request.user.username,
         )
 
         return Response(result_json)

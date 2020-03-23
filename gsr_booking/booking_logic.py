@@ -8,7 +8,7 @@ import requests
 MAX_SLOT_HRS = 2.0  # the longest booking allowed per person
 MIN_SLOT_HRS = 0.5  # the minimum booking allowed per person
 
-    
+
 def book_rooms_for_group(group, rooms, requester_pennkey):
     """ makes a request to labs api server to book rooms for group """
     members = group.get_pennkey_active_members()
@@ -16,12 +16,16 @@ def book_rooms_for_group(group, rooms, requester_pennkey):
     complete_success = True
     partial_success = False
     error = None
+    fatal_error = False  # if false, don't book the remaining rooms, but still return them
 
     if len(members) < 1:
         result_json = construct_result_json_obj(
-            [], False, False,  "No members in the group have enabled their pennkey to be used for group bookings"
+            [],
+            False,
+            False,
+            "No members in the group have enabled their pennkey to be used for group bookings",
         )
-        return result_json 
+        return result_json
 
     # randomize order, and put requester first in the order
     random.shuffle(members)
@@ -31,8 +35,9 @@ def book_rooms_for_group(group, rooms, requester_pennkey):
             members[0] = member
             members[i] = temp
             break
-    
-    #call book_room_for_group on each room
+
+    # call book_room_for_group on each room
+    # TODO: pass on failed_members from one request to the other to avoid wasting calls
     for room in rooms:
         is_wharton = room["is_wharton"]
         roomid = room["room"]
@@ -40,36 +45,41 @@ def book_rooms_for_group(group, rooms, requester_pennkey):
         start = datetime.datetime.fromisoformat(room["start"])
         end = datetime.datetime.fromisoformat(room["end"])
 
-        (booking_slots, next_start, next_end, error, isFatalError) = book_room_for_group(members, is_wharton, roomid, lid, start, end)
-        (room_json, room_complete_success, room_partial_success) = construct_room_json_obj(
-                booking_slots, lid, roomid, end, next_start, next_end
+        if not fatal_error:
+            (booking_slots, next_start, next_end, error, room_fatal_error) = book_room_for_group(
+                members, is_wharton, roomid, lid, start, end
             )
+        else:
+            room_fatal_error = None
+            booking_slots = []
+            next_start = start
+            next_end = end
+
+        (room_json, room_complete_success, room_partial_success) = construct_room_json_obj(
+            booking_slots, lid, roomid, end, next_start, next_end
+        )
         room_json_array.append(room_json)
         complete_success = complete_success and room_complete_success and (error is None)
         partial_success = partial_success or room_partial_success
-
-        if isFatalError:
-            result_json = construct_result_json_obj(
-                room_json_array, partial_success, complete_success, error
-            )
-            return result_json 
+        fatal_error = fatal_error or room_fatal_error
 
     result_json = construct_result_json_obj(
         room_json_array, partial_success, complete_success, error
     )
-    return result_json 
+    return result_json
 
-def book_room_for_group(members, is_wharton, room, lid, START_DATE, END_DATE):
+
+def book_room_for_group(members, is_wharton, room, lid, start, end):
     """returns (booking_slots, next_start, next_end, error, isFatalError)"""
     if is_wharton:  # huntsman reservation
         return ([], start, end, "Unable to book huntsman rooms yet", True)
-    else: # lib reservation
+    else:  # lib reservation
         # Find the first timeslot to book for (next_start, next_end)
-        next_start = START_DATE
-        next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
-        
+        next_start = start
+        next_end = min(end, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
+
         # loop through each member, and attempt to book on their behalf
-        booking_slots = [] # booking_slots is an array of (i.e. 30 minute) booking_slots
+        booking_slots = []  # booking_slots is an array of (i.e. 30 minute) booking_slots
         failed_members = []  # store the members w/ failed bookings in here
         error = None
         for member in members:
@@ -84,19 +94,21 @@ def book_room_for_group(members, is_wharton, room, lid, START_DATE, END_DATE):
                     room, lid, next_start.isoformat(), next_end.isoformat(), member["user__email"]
                 )
                 if success:
-                    new_booking_slots = split_booking(next_start, next_end, member["username"], True)
+                    new_booking_slots = split_booking(
+                        next_start, next_end, member["username"], True
+                    )
                     booking_slots.extend(new_booking_slots)
 
                     next_start = next_end
-                    next_end = min(END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
+                    next_end = min(end, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
                 else:
                     failed_members.append(member)
             except BookingError as e:
+                error = e
                 if is_fatal_error(e):
                     return (booking_slots, next_start, next_end, error, True)
                 else:
                     failed_members.append(member)
-                error = e
 
         # if unbooked slots still remain, loop through each member again
         # but get reservation credits first to see how much we can book
@@ -114,7 +126,7 @@ def book_room_for_group(members, is_wharton, room, lid, START_DATE, END_DATE):
             rounded_remaining_credit_hours = math.floor(2 * remaining_credit_hours) / 2
             if success and remaining_credit_hours >= MIN_SLOT_HRS:
                 next_end = min(
-                    END_DATE, next_start + datetime.timedelta(hours=rounded_remaining_credit_hours),
+                    end, next_start + datetime.timedelta(hours=rounded_remaining_credit_hours),
                 )
                 try:
                     success = book_room_for_user(
@@ -125,30 +137,34 @@ def book_room_for_group(members, is_wharton, room, lid, START_DATE, END_DATE):
                         member["user__email"],
                     )
                     if success:
-                        new_booking_slots = split_booking(next_start, next_end, member["username"], True)
+                        new_booking_slots = split_booking(
+                            next_start, next_end, member["username"], True
+                        )
                         booking_slots.extend(new_booking_slots)
 
                         next_start = next_end
-                        next_end = min(
-                            END_DATE, next_start + datetime.timedelta(hours=MAX_SLOT_HRS)
-                        )
+                        next_end = min(end, next_start + datetime.timedelta(hours=MAX_SLOT_HRS))
                 except BookingError as e:
+                    error = e
                     if is_fatal_error(e):
                         return (booking_slots, next_start, next_end, error, True)
-                    error = e
 
         return (booking_slots, next_start, next_end, error, False)
+
 
 def is_fatal_error(error):
     # consider all errors fatal unless its a daily limit error
     if error is not None:
-        if "daily limit".lower() in (str(error)).lower():
-            return False
-        return True
+        return not ("daily limit".lower() in (str(error)).lower())
     return False
 
+
 def construct_result_json_obj(room_json_array, partial_success, complete_success, error):
-    result_json = {"complete_success": complete_success, "partial_success": partial_success, "rooms": room_json_array}
+    result_json = {
+        "complete_success": complete_success,
+        "partial_success": partial_success,
+        "rooms": room_json_array,
+    }
     # handle potential error
     if error is not None:
         if "not a valid".lower() in str(error).lower():
@@ -157,15 +173,16 @@ def construct_result_json_obj(room_json_array, partial_success, complete_success
             result_json["error"] = "Group does not have sufficient booking credits"
         else:
             result_json["error"] = str(error)
-    elif complete_success is False:
+    elif not complete_success:
         result_json["error"] = "Group does not have sufficient booking credits"
+    elif complete_success:
+        result_json["partial_success"] = True  # in case, 0 bookings were made
     return result_json
-    
+
+
 def construct_room_json_obj(succesful_booking_slots, lid, room, end, next_start, next_end):
-    """ """
     """
-    Takes in a set of booking_slots and constructs a room JSON object from them (after pre-processing).
-    For example,
+    Takes in a set of booking_slots and constructs a room JSON object from them. E.g.
     room_json = {
         "lid": "2587",
         "room": "16993",
@@ -189,8 +206,9 @@ def construct_room_json_obj(succesful_booking_slots, lid, room, end, next_start,
     booking_slots.extend(failed_booking_slots)
 
     room_json = {"lid": lid, "room": room, "bookings": booking_slots}
-        
+
     return (room_json, complete_success, partial_success)
+
 
 def get_used_booking_credit_for_user(lid, email):
     """ returns a user's used booking credit (in hours) for a specific building (lid) """
