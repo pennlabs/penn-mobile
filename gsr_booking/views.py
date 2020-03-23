@@ -269,6 +269,9 @@ class GroupViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="book-rooms")
     def book_rooms(self, request, pk):
+        """
+        Book GSR room(s) for a group. Requester must be an admin to book.
+        """
         booking_serialized = GroupBookingRequestSerializer(data=request.data)
         if not booking_serialized.is_valid():
             return Response(status=400)
@@ -277,8 +280,8 @@ class GroupViewSet(viewsets.ModelViewSet):
 
         group = get_object_or_404(Group, pk=pk)
 
-        # must be admin of the group to book
-        if not group.has_member(request.user) or not group.has_admin(request.user):
+        # must be admin (and also a member) of the group to book
+        if not group.has_admin(request.user):
             return HttpResponseForbidden()
 
         result_json = book_rooms_for_group(

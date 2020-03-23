@@ -20,7 +20,7 @@ class GroupRoomBookingRequestSerializer(serializers.Serializer):
 
 
 class GroupBookingRequestSerializer(serializers.Serializer):
-    room_bookings = serializers.ListField(child=GroupRoomBookingRequestSerializer())
+    room_bookings = GroupRoomBookingRequestSerializer(many=True)
 
 
 class MiniUserSerializer(serializers.ModelSerializer):

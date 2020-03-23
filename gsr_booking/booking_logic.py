@@ -59,6 +59,9 @@ def book_rooms_for_group(group, rooms, requester_pennkey):
             booking_slots, lid, roomid, end, next_start, next_end
         )
         room_json_array.append(room_json)
+        print(room_complete_success)
+        print(error)
+        print("-------")
         complete_success = complete_success and room_complete_success and (error is None)
         partial_success = partial_success or room_partial_success
         fatal_error = fatal_error or room_fatal_error
@@ -148,7 +151,9 @@ def book_room_for_group(members, is_wharton, room, lid, start, end):
                     error = e
                     if is_fatal_error(e):
                         return (booking_slots, next_start, next_end, error, True)
-
+        if next_start >= end:
+            # even if there was a daily limit error, delete it if all rooms were booked
+            error = None
         return (booking_slots, next_start, next_end, error, False)
 
 
