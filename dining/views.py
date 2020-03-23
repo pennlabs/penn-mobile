@@ -30,10 +30,10 @@ class Dashboard(APIView):
         if not self.request.user.is_authenticated:
             return HttpResponseForbidden()
 
-        pennid = request.user.username
+        pennkey = request.user.username
 
         try:
-            uid = Account.objects.get(pennid=pennid).id
+            uid = Account.objects.get(pennkey=pennkey).id
         except Account.DoesNotExist:
             return HttpResponseBadRequest()
 
