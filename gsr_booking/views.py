@@ -3,7 +3,7 @@ from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from gsr_booking.booking_logic import book_room_for_group
+from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
 from gsr_booking.models import Group, GroupMembership, UserSearchIndex
 from gsr_booking.serializers import (
@@ -267,27 +267,25 @@ class GroupViewSet(viewsets.ModelViewSet):
             ).data
         )
 
-    @action(detail=True, methods=["post"], url_path="book-room")
-    def book_room(self, request, pk):
-        request.data.update({"group_id": pk})
+    @action(detail=True, methods=["post"], url_path="book-rooms")
+    def book_rooms(self, request, pk):
+        """
+        Book GSR room(s) for a group. Requester must be an admin to book.
+        """
         booking_serialized = GroupBookingRequestSerializer(data=request.data)
         if not booking_serialized.is_valid():
             return Response(status=400)
 
         booking_data = booking_serialized.data
 
-        group = get_object_or_404(Group, pk=booking_data["group_id"])
-        if not group.has_member(request.user) or not group.has_admin(request.user):
+        group = get_object_or_404(Group, pk=pk)
+
+        # must be admin (and also a member) of the group to book
+        if not group.has_admin(request.user):
             return HttpResponseForbidden()
 
-        result_json = book_room_for_group(
-            group,
-            booking_data["is_wharton"],
-            booking_data["room"],
-            booking_data["lid"],
-            booking_data["start"],
-            booking_data["end"],
-            request.user.username,
+        result_json = book_rooms_for_group(
+            group, booking_data["room_bookings"], request.user.username,
         )
 
         return Response(result_json)
