@@ -102,7 +102,7 @@ def get_semester_start_end():
     try:
         current_start = datetime.strptime(current_start, "%Y-%m-%d")
         current_end = datetime.strptime(current_end, "%Y-%m-%d")
-    except ValueError:
+    except TypeError:
         pass
 
     if current_start is not None and current_end is not None and current_end > datetime.now():
