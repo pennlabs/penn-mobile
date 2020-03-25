@@ -30,6 +30,11 @@ def balance(uid):
     """
 
     balance = DiningBalance.objects.filter(account=uid).order_by("-created_at")
+
+    # if they do not have a dining plan
+    if len(balance) == 0:
+        return None
+
     latest = balance[0]
     return {
         "swipes": latest.swipes,

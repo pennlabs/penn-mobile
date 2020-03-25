@@ -37,7 +37,7 @@ class Dashboard(APIView):
         except Account.DoesNotExist:
             return HttpResponseBadRequest()
 
-        json = balance(uid)
+        json = {}
 
         start, end = get_semester_start_end()
 
@@ -50,8 +50,16 @@ class Dashboard(APIView):
         json["start-of-semester"] = date_iso_eastern(start)
         json["end-of-semester"] = date_iso_eastern(end)
 
-        json["cards"] = {"recent-transactions": recent_transactions_card(uid)}
+        bal = balance(uid)
 
+        # if not on dining plan only return these fields
+        if bal is None:
+            json["cards"] = {}
+            return JsonResponse(json)
+
+        json.update(bal)
+
+        json["cards"] = {"recent-transactions": recent_transactions_card(uid)}
         update_if_not_none(json["cards"], "daily-average", get_average_balances(uid, start))
         update_if_not_none(
             json["cards"], "predictions-graph-dollars", get_prediction_dollars(uid, start, end)
