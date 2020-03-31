@@ -133,7 +133,6 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
             )
         )
 
-
     def create(self, request, *args, **kwargs):
         group_id = request.data.get("group")
         group = get_object_or_404(Group, pk=group_id)
