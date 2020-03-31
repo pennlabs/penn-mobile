@@ -124,7 +124,15 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if not self.request.user.is_authenticated or not hasattr(self.request.user, "memberships"):
             return GroupMembership.objects.none()
-        return self.request.user.memberships.all()
+        return GroupMembership.objects.filter(
+            Q(id__in=self.request.user.memberships.all())
+            | Q(
+                group__in=Group.objects.filter(
+                    memberships__in=GroupMembership.objects.filter(user=self.request.user, type="A")
+                )
+            )
+        )
+
 
     def create(self, request, *args, **kwargs):
         group_id = request.data.get("group")

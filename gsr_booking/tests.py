@@ -203,6 +203,16 @@ class MembershipViewTestCase(TestCase):
         response = self.client.post(f"/membership/{mem.pk}/decline/")
         self.assertEqual(404, response.status_code)
 
+    def test_promote_to_admin(self):
+        GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True, type="A")
+        mem = GroupMembership.objects.create(
+            user=self.user2, group=self.group, accepted=True, type="M"
+        )
+        response = self.client.patch(f"/membership/{mem.pk}/", {"type": "A"})
+        self.assertEqual(200, response.status_code)
+        mem.refresh_from_db()
+        self.assertEqual("A", mem.type)
+
 
 class GroupTestCase(TestCase):
     def setUp(self):

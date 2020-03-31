@@ -12,6 +12,7 @@ flake8-isort = "*"
 flake8-quotes = "*"
 django-extensions = "*"
 rope = "*"
+pytest = "*"
 
 [packages]
 dj-database-url = "*"
