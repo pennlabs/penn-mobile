@@ -65,7 +65,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(UserSerializer([entry.user for entry in results], many=True).data)
 
 
-    # Saves the Session ID and associates it with a user.
+    # Gets the Session ID and associates it with a user.
     @action(detail=True, methods=["get"])
     def gsr_booking_credentials(self, request, username=None):
         # Ensure that user exists
@@ -73,24 +73,28 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         
         # Ensure that user is requesting their own credentials
         if user != request.user:
-            return HttpResponseForbidden()
-
-        return Response(
-            GSRBookingCredentialsSerializer(
+            pass
+        #FIXME: uncomment next line
+        #    return HttpResponseForbidden()
+        #FIXME: instead of try/catch, use objects.filter
+        try:
+            booking_credential = GSRBookingCredentialsSerializer(
                 GSRBookingCredentials.objects.get(user=user)
             ).data
-        )
+            return Response(
+               booking_credential        
+            )
+        except: 
+            return Response(
+                {"error": "could not find booking cred"}
+            )
+        
     
     @action(detail=True, methods=["post"])
     def save_session_id(self, request, username=None):
         session_id = request.query_params.get("session_id")
         expiration_date = request.query_params.get("expiration_date")
 
-        # Check if Session ID were provided
-        # FIXME: Should session_id be allowed to be null?
-        # if not session_id:
-            # return Response({"message": "you must provide a Session ID."})
-        
         # Check if expiration date were provided
         if not expiration_date:
             return Response({"message": "you must provide an expiration date."})
@@ -101,8 +105,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         if user != request.user:
             return HttpResponseForbidden()
 
+        
         # Attempt to get existing user credentials
-        credentials = GSRBookingCredentials.objects.filter(user=user)
+        credentials = GSRBookingCredentials.objects.filter(user_id=user.id)
         
         # If credentials already exists, update the Session ID and related info
         if credentials.exists():
@@ -116,36 +121,36 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response({"success": True})
     
-    @action(detail=True, methods=["post"])
-    def save_email(self, request, username=None):
-        email = request.query_params.get("email")
+    # @action(detail=True, methods=["post"])
+    # def save_email(self, request, username=None):
+    #     email = request.query_params.get("email")
         
-        # Check if email were provided
-        if not email:
-            return Response({"message": "you must provide a valid email."})
+    #     # Check if email were provided
+    #     if not email:
+    #         return Response({"message": "you must provide a valid email."})
 
-        # Check if email is a Penn email
-        if not email.endswith("upenn.edu"):
-            return Response({"message": "you must provide a school email."})
+    #     # Check if email is a Penn email
+    #     if not email.endswith("upenn.edu"):
+    #         return Response({"message": "you must provide a school email."})
         
-        # Ensure that user is adding the email to itself
-        # and not for someone else
-        user = get_object_or_404(User, username=username)
-        if user != request.user:
-            return HttpResponseForbidden()
+    #     # Ensure that user is adding the email to itself
+    #     # and not for someone else
+    #     user = get_object_or_404(User, username=username)
+    #     if user != request.user:
+    #         return HttpResponseForbidden()
 
-        # Attempt to get existing user credentials
-        credentials = GSRBookingCredentials.objects.filter(user=user)
+    #     # Attempt to get existing user credentials
+    #     credentials = GSRBookingCredentials.objects.filter(user=user)
         
-        # If credentials already exists, update the Session ID and related info
-        if credentials.exists():
-            credentials.update(email=email)
+    #     # If credentials already exists, update the Session ID and related info
+    #     if credentials.exists():
+    #         credentials.update(email=email)
         
-        # Else create a new credentials object and associate it with the user
-        else:
-            GSRBookingCredentials.objects.create(user=user, email=email)
+    #     # Else create a new credentials object and associate it with the user
+    #     else:
+    #         GSRBookingCredentials.objects.create(user=user, email=email)
 
-        return Response({"success": True})
+    #     return Response({"success": True})
 
 
 class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):

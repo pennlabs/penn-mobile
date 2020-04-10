@@ -36,7 +36,7 @@ class GSRBookingCredentialsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GSRBookingCredentials
-        fields = ["user", "session_id", "expiration_date", "email", "date_updated"]
+        fields = ["user", "session_id", "expiration_date", "date_updated"]
 
 
 class UserSerializer(serializers.ModelSerializer):

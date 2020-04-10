@@ -98,12 +98,8 @@ class GSRBookingCredentials(models.Model):
     expiration_date = models.DateTimeField("Session ID expiration date", null=True)
 
     # When Session ID or email was last updated
-    # TODO: May want to differentiate email and Session ID added times
     date_updated = models.DateTimeField(auto_now_add=True)
-
-    # For LibCal, school emails are used instead
-    email = models.CharField("school email", max_length=255, unique=True, null=True)
-
+    
     def __str__(self):
         return self.user.username
 
