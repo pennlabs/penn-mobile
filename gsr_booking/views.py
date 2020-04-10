@@ -9,6 +9,7 @@ from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthent
 from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials, UserSearchIndex
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
+    GSRBookingCredentialsRequestSerializer,
     GroupMembershipSerializer,
     GroupSerializer,
     GSRBookingCredentialsSerializer,
@@ -125,11 +126,13 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             pass
         #FIXME: uncomment next line
         #    return HttpResponseForbidden()
+        
         #FIXME: instead of try/catch, use objects.filter
         try:
             booking_credential = GSRBookingCredentialsSerializer(
                 GSRBookingCredentials.objects.get(user=user)
             ).data
+            print(booking_credential)
             return Response(
                booking_credential
             )
@@ -141,6 +144,21 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def save_session_id(self, request, username=None):
+        # Ensure that user is adding the Session ID to itself
+        # and not for someone else
+        user = get_object_or_404(User, username=username)
+        if user != request.user:
+            pass
+            #FIXME: uncomment
+            #return HttpResponseForbidden()
+
+        credentials_serialized = GSRBookingCredentialsRequestSerializer(data=request.data, context={'user': user.username})
+        if not credentials_serialized.is_valid():
+            print(credentials_serialized.errors)
+            return Response(status=400)
+        credentials_serialized.save()
+        credentials_data = credentials_serialized.data
+        print(credentials_data)
         session_id = request.query_params.get("session_id")
         expiration_date = request.query_params.get("expiration_date")
 
@@ -148,11 +166,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         if not expiration_date:
             return Response({"message": "you must provide an expiration date."})
 
-        # Ensure that user is adding the Session ID to itself
-        # and not for someone else
-        user = get_object_or_404(User, username=username)
-        if user != request.user:
-            return HttpResponseForbidden()
+        
 
 
         # Attempt to get existing user credentials
