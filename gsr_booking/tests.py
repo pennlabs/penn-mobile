@@ -20,7 +20,7 @@ class UserViewTestCase(TestCase):
 
         self.group = Group.objects.create(owner=self.user1, name="g1", color="blue")
         self.group.members.add(self.user1)
-        memship = self.group.groupmembership_set.all()[0]
+        memship = self.group.memberships.all()[0]
         memship.accepted = True
         memship.save()
         self.client = APIClient()
@@ -36,9 +36,14 @@ class UserViewTestCase(TestCase):
         self.assertTrue(200, response.status_code)
         self.assertEqual(1, len(response.data["booking_groups"]))
 
+    def test_me_user_detail_in_group(self):
+        response = self.client.get("/users/me/")
+        self.assertTrue(200, response.status_code)
+        self.assertEqual(1, len(response.data["booking_groups"]))
+
     def test_user_detail_invited(self):
         self.group.members.add(self.user2)
-        memship = self.group.groupmembership_set.all()[0]
+        memship = self.group.memberships.all()[0]
         memship.accepted = False
         memship.save()
         response = self.client.get("/users/user2/")
@@ -47,7 +52,7 @@ class UserViewTestCase(TestCase):
 
     def test_user_invites(self):
         self.group.members.add(self.user2)
-        memship = self.group.groupmembership_set.all()[0]
+        memship = self.group.memberships.all()[0]
         memship.accepted = False
         memship.save()
         response = self.client.get("/users/user2/invites/")
@@ -198,6 +203,16 @@ class MembershipViewTestCase(TestCase):
         response = self.client.post(f"/membership/{mem.pk}/decline/")
         self.assertEqual(404, response.status_code)
 
+    def test_promote_to_admin(self):
+        GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True, type="A")
+        mem = GroupMembership.objects.create(
+            user=self.user2, group=self.group, accepted=True, type="M"
+        )
+        response = self.client.patch(f"/membership/{mem.pk}/", {"type": "A"})
+        self.assertEqual(200, response.status_code)
+        mem.refresh_from_db()
+        self.assertEqual("A", mem.type)
+
 
 class GroupTestCase(TestCase):
     def setUp(self):
@@ -220,4 +235,88 @@ class GroupTestCase(TestCase):
 
     def test_get_group_not_involved_fails(self):
         response = self.client.get(f"/groups/{self.group2.pk}/")
+        self.assertEqual(404, response.status_code)
+
+    def test_make_group(self):
+        response = self.client.post(f"/groups/", {"name": "gx", "color": "blue"})
+        self.assertEqual(201, response.status_code, response.data)
+        self.assertEqual(3, Group.objects.count())
+        self.assertEqual("user1", Group.objects.get(name="gx").owner.username)
+
+    def test_only_accepted_memberships(self):
+        gm = GroupMembership.objects.create(user=self.user2, group=self.group, accepted=False)
+        response = self.client.get(f"/groups/{self.group.pk}/")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(response.data["memberships"]))
+        gm.accepted = True
+        gm.save()
+        response = self.client.get(f"/groups/{self.group.pk}/")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(2, len(response.data["memberships"]))
+
+    def test_book_rooms(self):
+        GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True)
+        GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True)
+        params = {
+            "room_bookings": [
+                {
+                    "room": 16993,
+                    "start": "2020-03-10T10:00:00-0500",
+                    "end": "2020-03-10T16:00:00-0500",
+                    "lid": 2587,
+                }
+            ]
+        }
+        response = self.client.post(f"/groups/{self.group.pk}/book-rooms/", params, format="json")
+        self.assertEqual(200, response.status_code)
+
+    def test_book_rooms_forbidden_if_not_admin(self):
+        # where user2 is logged in
+        self.client.login(username="user2", password="password")
+        GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True)
+        GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True, type="M")
+        params = {
+            "room_bookings": [
+                {
+                    "room": 16993,
+                    "start": "2020-03-10T10:00:00-0500",
+                    "end": "2020-03-10T16:00:00-0500",
+                    "lid": 2587,
+                }
+            ]
+        }
+        response = self.client.post(f"/groups/{self.group.pk}/book-rooms/", params, format="json")
+        self.assertEqual(403, response.status_code)
+
+    def test_book_rooms_forbidden_if_not_member(self):
+        # where user2 is logged in
+        self.client.login(username="user2", password="password")
+        GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True)
+        params = {
+            "room_bookings": [
+                {
+                    "room": 16993,
+                    "start": "2020-03-10T10:00:00-0500",
+                    "end": "2020-03-10T16:00:00-0500",
+                    "lid": 2587,
+                }
+            ]
+        }
+        response = self.client.post(f"/groups/{self.group.pk}/book-rooms/", params, format="json")
+        self.assertEqual(403, response.status_code)
+
+    def test_book_rooms_group_does_not_exist(self):
+        GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True)
+        GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True, type="M")
+        params = {
+            "room_bookings": [
+                {
+                    "room": 16993,
+                    "start": "2020-03-10T10:00:00-0500",
+                    "end": "2020-03-10T16:00:00-0500",
+                    "lid": 2587,
+                }
+            ]
+        }
+        response = self.client.post(f"/groups/{-1}/book-rooms/", params, format="json")
         self.assertEqual(404, response.status_code)

@@ -13,14 +13,14 @@ class GroupMembership(models.Model):
     )
     username = models.CharField(max_length=127, blank=True, null=True, default=None)
 
-    group = models.ForeignKey("Group", on_delete=models.CASCADE)
+    group = models.ForeignKey("Group", on_delete=models.CASCADE, related_name="memberships")
 
     # When accepted is False, this is a request, otherwise this is an active membership.
     accepted = models.BooleanField(default=False)
 
     ADMIN = "A"
     MEMBER = "M"
-    type = models.CharField(max_length=10, choices=[(ADMIN, "Admin"), (MEMBER, "M")])
+    type = models.CharField(max_length=10, choices=[(ADMIN, "Admin"), (MEMBER, "Member")])
 
     pennkey_allow = models.BooleanField(default=False)
 
@@ -62,12 +62,26 @@ class Group(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    ADMIN = "A"
+    MEMBER = "M"
+
     def __str__(self):
         return "{}: {}".format(self.pk, self.name)
 
     def has_member(self, user):
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
         return memberships.all().filter(user=user).exists()
+
+    def has_admin(self, user):
+        memberships = GroupMembership.objects.filter(group=self, accepted=True)
+        return memberships.all().filter(type="A").filter(user=user).exists()
+
+    def get_pennkey_active_members(self):
+        memberships = GroupMembership.objects.filter(group=self, accepted=True)
+        pennkey_active_members_list = (
+            memberships.all().filter(pennkey_allow=True).all().values("username", "user__email")
+        )
+        return [member for member in pennkey_active_members_list]
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

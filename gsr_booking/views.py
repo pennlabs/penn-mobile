@@ -4,9 +4,18 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
-from gsr_booking.models import Group, GroupMembership, UserSearchIndex, GSRBookingCredentials
-from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, UserSerializer, GSRBookingCredentialsSerializer
+from gsr_booking.booking_logic import book_rooms_for_group
+from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
+from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials, UserSearchIndex
+from gsr_booking.serializers import (
+    GroupBookingRequestSerializer,
+    GroupMembershipSerializer,
+    GroupSerializer,
+    GSRBookingCredentialsSerializer,
+    UserSerializer,
+)
 from rest_framework import viewsets
+from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -16,30 +25,67 @@ User = get_user_model()
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Can specify `me` instead of the `username` to retrieve details on the current user.
+    """
+
     queryset = User.objects.all().prefetch_related(
-        Prefetch("booking_groups", Group.objects.filter(groupmembership__accepted=True))
+        Prefetch("booking_groups", Group.objects.filter(memberships__accepted=True))
     )
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
     lookup_field = "username"
-
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["username", "first_name", "last_name"]
 
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        param = self.kwargs[lookup_url_kwarg]
+        if param == "me":
+            return self.request.user
+        else:
+            return super().get_object()
+
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return User.objects.none()
+
+        queryset = User.objects.all()
+        queryset = queryset.prefetch_related(
+            Prefetch(
+                "memberships",
+                GroupMembership.objects.filter(
+                    group__in=self.request.user.booking_groups.all(), accepted=True
+                ),
+            )
+        )
+        return queryset
+
     @action(detail=True, methods=["get"])
     def invites(self, request, username=None):
+        """
+        Retrieve all invites for a given user.
+        """
         if username == "me":
             username = request.user.username
 
         user = get_object_or_404(User, username=username)
         return Response(
             GroupMembershipSerializer(
-                GroupMembership.objects.filter(user=user, accepted=False), many=True
+                GroupMembership.objects.filter(
+                    user=user, accepted=False, group__in=self.request.user.booking_groups.all()
+                ),
+                many=True,
             ).data
         )
 
     @action(detail=True, methods=["post"])
     def activate(self, request, username=None):
+        """
+        Activate a user's account. Must be run when a user signs in for the first time, at least.
+        The action is idempotent, so no harm in calling it multiple times.
+        """
         if username == "me":
             username = request.user.username
 
@@ -57,6 +103,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"])
     def search(self, request):
+        """
+        Search the database of registered users by name or pennkey. Deprecated in favor
+        of the platform route.
+        """
         query = request.query_params.get("q", "")
         results = UserSearchIndex.objects.filter(
             Q(full_name__istartswith=query) | Q(pennkey__istartswith=query)
@@ -64,13 +114,12 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response(UserSerializer([entry.user for entry in results], many=True).data)
 
-
     # Gets the Session ID and associates it with a user.
     @action(detail=True, methods=["get"])
     def gsr_booking_credentials(self, request, username=None):
         # Ensure that user exists
         user = get_object_or_404(User, username=username)
-        
+
         # Ensure that user is requesting their own credentials
         if user != request.user:
             pass
@@ -82,14 +131,14 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
                 GSRBookingCredentials.objects.get(user=user)
             ).data
             return Response(
-               booking_credential        
+               booking_credential
             )
-        except: 
+        except:
             return Response(
                 {"error": "could not find booking cred"}
             )
-        
-    
+
+
     @action(detail=True, methods=["post"])
     def save_session_id(self, request, username=None):
         session_id = request.query_params.get("session_id")
@@ -98,21 +147,21 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         # Check if expiration date were provided
         if not expiration_date:
             return Response({"message": "you must provide an expiration date."})
-        
+
         # Ensure that user is adding the Session ID to itself
         # and not for someone else
         user = get_object_or_404(User, username=username)
         if user != request.user:
             return HttpResponseForbidden()
 
-        
+
         # Attempt to get existing user credentials
         credentials = GSRBookingCredentials.objects.filter(user_id=user.id)
-        
+
         # If credentials already exists, update the Session ID and related info
         if credentials.exists():
             credentials.update(session_id=session_id, expiration_date=expiration_date, date_updated=timezone.now())
-        
+
         # Else create a new credentials object and associate it with the user
         else:
             GSRBookingCredentials.objects.create(
@@ -120,11 +169,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         return Response({"success": True})
-    
+
     # @action(detail=True, methods=["post"])
     # def save_email(self, request, username=None):
     #     email = request.query_params.get("email")
-        
+
     #     # Check if email were provided
     #     if not email:
     #         return Response({"message": "you must provide a valid email."})
@@ -132,7 +181,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     #     # Check if email is a Penn email
     #     if not email.endswith("upenn.edu"):
     #         return Response({"message": "you must provide a school email."})
-        
+
     #     # Ensure that user is adding the email to itself
     #     # and not for someone else
     #     user = get_object_or_404(User, username=username)
@@ -141,11 +190,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     #     # Attempt to get existing user credentials
     #     credentials = GSRBookingCredentials.objects.filter(user=user)
-        
+
     #     # If credentials already exists, update the Session ID and related info
     #     if credentials.exists():
     #         credentials.update(email=email)
-        
+
     #     # Else create a new credentials object and associate it with the user
     #     else:
     #         GSRBookingCredentials.objects.create(user=user, email=email)
@@ -153,21 +202,39 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     #     return Response({"success": True})
 
 
-class GroupMembershipViewSet(viewsets.ReadOnlyModelViewSet):
+class GroupMembershipViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["user", "group"]
     permission_classes = [IsAuthenticated]
-
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
     queryset = GroupMembership.objects.all()
     serializer_class = GroupMembershipSerializer
 
     def get_queryset(self):
         if not self.request.user.is_authenticated or not hasattr(self.request.user, "memberships"):
             return GroupMembership.objects.none()
-        return self.request.user.memberships.all()
+        return GroupMembership.objects.filter(
+            Q(id__in=self.request.user.memberships.all())
+            | Q(
+                group__in=Group.objects.filter(
+                    memberships__in=GroupMembership.objects.filter(user=self.request.user, type="A")
+                )
+            )
+        )
+
+    def create(self, request, *args, **kwargs):
+        group_id = request.data.get("group")
+        group = get_object_or_404(Group, pk=group_id)
+        if not group.has_member(request.user):
+            return HttpResponseForbidden()
+
+        return super().create(request, *args, **kwargs)
 
     @action(detail=False, methods=["post"])
     def invite(self, request):
+        """
+        Invite a user to a group.
+        """
         group_id = request.data.get("group")
         group = get_object_or_404(Group, pk=group_id)
 
@@ -270,6 +337,7 @@ class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
 
     def get_queryset(self):
         if not self.request.user.is_authenticated:
@@ -278,7 +346,9 @@ class GroupViewSet(viewsets.ModelViewSet):
             super()
             .get_queryset()
             .filter(members=self.request.user)
-            .prefetch_related(Prefetch("members", User.objects.filter(memberships__accepted=True)))
+            .prefetch_related(
+                Prefetch("memberships", GroupMembership.objects.filter(accepted=True))
+            )
         )
 
     @action(detail=True, methods=["get"])
@@ -293,3 +363,25 @@ class GroupViewSet(viewsets.ModelViewSet):
             ).data
         )
 
+    @action(detail=True, methods=["post"], url_path="book-rooms")
+    def book_rooms(self, request, pk):
+        """
+        Book GSR room(s) for a group. Requester must be an admin to book.
+        """
+        booking_serialized = GroupBookingRequestSerializer(data=request.data)
+        if not booking_serialized.is_valid():
+            return Response(status=400)
+
+        booking_data = booking_serialized.data
+
+        group = get_object_or_404(Group, pk=pk)
+
+        # must be admin (and also a member) of the group to book
+        if not group.has_admin(request.user):
+            return HttpResponseForbidden()
+
+        result_json = book_rooms_for_group(
+            group, booking_data["room_bookings"], request.user.username,
+        )
+
+        return Response(result_json)
