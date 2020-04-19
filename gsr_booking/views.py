@@ -1,21 +1,19 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
-from django.http import HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from django.utils import timezone
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
 from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials, UserSearchIndex
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
-    GSRBookingCredentialsRequestSerializer,
     GroupMembershipSerializer,
     GroupSerializer,
     GSRBookingCredentialsSerializer,
     UserSerializer,
 )
-from rest_framework import viewsets
+from rest_framework import generics, viewsets
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -115,105 +113,30 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response(UserSerializer([entry.user for entry in results], many=True).data)
 
-    # Gets the Session ID and associates it with a user.
-    @action(detail=True, methods=["get"])
-    def gsr_booking_credentials(self, request, username=None):
-        # Ensure that user exists
-        user = get_object_or_404(User, username=username)
 
-        # Ensure that user is requesting their own credentials
-        if user != request.user:
-            pass
-        #FIXME: uncomment next line
-        #    return HttpResponseForbidden()
-        
-        #FIXME: instead of try/catch, use objects.filter
+class GSRBookingCredentialsViewSet(generics.RetrieveUpdateAPIView, generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    serializer_class = GSRBookingCredentialsSerializer
+
+    def get_object(self):
+        if not self.request.user.is_authenticated:
+            return GSRBookingCredentials.objects.none()
         try:
-            booking_credential = GSRBookingCredentialsSerializer(
-                GSRBookingCredentials.objects.get(user=user)
-            ).data
-            print(booking_credential)
-            return Response(
-               booking_credential
-            )
-        except:
-            return Response(
-                {"error": "could not find booking cred"}
-            )
+            return GSRBookingCredentials.objects.get(pk=self.request.user.pk)
+        except GSRBookingCredentials.DoesNotExist:
+            if self.request.method == "PUT":
+                return GSRBookingCredentials(pk=self.request.user.pk)
+            else:
+                raise Http404("detail not found")
 
-
-    @action(detail=True, methods=["post"])
-    def save_session_id(self, request, username=None):
-        # Ensure that user is adding the Session ID to itself
-        # and not for someone else
-        user = get_object_or_404(User, username=username)
-        if user != request.user:
-            pass
-            #FIXME: uncomment
-            #return HttpResponseForbidden()
-
-        credentials_serialized = GSRBookingCredentialsRequestSerializer(data=request.data, context={'user': user.username})
-        if not credentials_serialized.is_valid():
-            print(credentials_serialized.errors)
-            return Response(status=400)
-        credentials_serialized.save()
-        credentials_data = credentials_serialized.data
-        print(credentials_data)
-        session_id = request.query_params.get("session_id")
-        expiration_date = request.query_params.get("expiration_date")
-
-        # Check if expiration date were provided
-        if not expiration_date:
-            return Response({"message": "you must provide an expiration date."})
-
-        
-
-
-        # Attempt to get existing user credentials
-        credentials = GSRBookingCredentials.objects.filter(user_id=user.id)
-
-        # If credentials already exists, update the Session ID and related info
-        if credentials.exists():
-            credentials.update(session_id=session_id, expiration_date=expiration_date, date_updated=timezone.now())
-
-        # Else create a new credentials object and associate it with the user
-        else:
-            GSRBookingCredentials.objects.create(
-                user=user, session_id=session_id, expiration_date=expiration_date
-            )
-
-        return Response({"success": True})
-
-    # @action(detail=True, methods=["post"])
-    # def save_email(self, request, username=None):
-    #     email = request.query_params.get("email")
-
-    #     # Check if email were provided
-    #     if not email:
-    #         return Response({"message": "you must provide a valid email."})
-
-    #     # Check if email is a Penn email
-    #     if not email.endswith("upenn.edu"):
-    #         return Response({"message": "you must provide a school email."})
-
-    #     # Ensure that user is adding the email to itself
-    #     # and not for someone else
-    #     user = get_object_or_404(User, username=username)
-    #     if user != request.user:
-    #         return HttpResponseForbidden()
-
-    #     # Attempt to get existing user credentials
-    #     credentials = GSRBookingCredentials.objects.filter(user=user)
-
-    #     # If credentials already exists, update the Session ID and related info
-    #     if credentials.exists():
-    #         credentials.update(email=email)
-
-    #     # Else create a new credentials object and associate it with the user
-    #     else:
-    #         GSRBookingCredentials.objects.create(user=user, email=email)
-
-    #     return Response({"success": True})
+    def update(self, *args, **kwargs):
+        supplied_username = args[0].data.get("user")
+        if supplied_username is None:
+            return Response(data={"user": "not supplied"}, status=404)
+        if self.request.user.username != supplied_username:
+            return HttpResponseForbidden()
+        return super().update(*args, **kwargs)
 
 
 class GroupMembershipViewSet(viewsets.ModelViewSet):

@@ -7,28 +7,27 @@ import django.utils.timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('gsr_booking', '0009_auto_20200202_1232'),
+        ("gsr_booking", "0009_auto_20200202_1232"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='gsrbookingcredentials',
-            name='date_added',
-        ),
+        migrations.RemoveField(model_name="gsrbookingcredentials", name="date_added",),
         migrations.AddField(
-            model_name='gsrbookingcredentials',
-            name='date_updated',
+            model_name="gsrbookingcredentials",
+            name="date_updated",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='gsrbookingcredentials',
-            name='expiration_date',
-            field=models.DateTimeField(null=True, verbose_name='Session ID expiration date'),
+            model_name="gsrbookingcredentials",
+            name="expiration_date",
+            field=models.DateTimeField(null=True, verbose_name="Session ID expiration date"),
         ),
         migrations.AlterField(
-            model_name='gsrbookingcredentials',
-            name='session_id',
-            field=models.CharField(max_length=50, null=True, unique=True, verbose_name='Session ID'),
+            model_name="gsrbookingcredentials",
+            name="session_id",
+            field=models.CharField(
+                max_length=50, null=True, unique=True, verbose_name="Session ID"
+            ),
         ),
     ]

@@ -47,7 +47,7 @@ class GroupMembership(models.Model):
             raise ValueError("Either user or username must be set.")
 
         super().save(*args, **kwargs)
-    
+
     class Meta:
         verbose_name = "Group Membership"
 
@@ -103,17 +103,17 @@ class UserSearchIndex(models.Model):
 
 # Model to store credentials necessary for booking GSRs.
 class GSRBookingCredentials(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
 
     # Session ID is used for Wharton GSR booking
-    session_id = models.CharField("Session ID", max_length=50, unique=True, null=True)
+    session_id = models.CharField("Session ID", max_length=50, unique=False, null=True)
 
     # Expiration date of the Session ID
     expiration_date = models.DateTimeField("Session ID expiration date", null=True)
 
     # When Session ID or email was last updated
     date_updated = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
         return self.user.username
 

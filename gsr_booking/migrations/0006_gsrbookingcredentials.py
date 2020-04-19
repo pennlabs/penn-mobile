@@ -9,19 +9,45 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('gsr_booking', '0005_usersearchindex'),
+        ("gsr_booking", "0005_usersearchindex"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='GSRBookingCredentials',
+            name="GSRBookingCredentials",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('session_id', models.CharField(max_length=50, null=True, unique=True, verbose_name='session ID')),
-                ('expiration_date', models.DateTimeField(verbose_name='session ID expiration date')),
-                ('date_added', models.DateTimeField(auto_now_add=True, verbose_name='date added (Session ID)')),
-                ('email', models.CharField(max_length=255, null=True, unique=True, verbose_name='school email')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "session_id",
+                    models.CharField(
+                        max_length=50, null=True, unique=True, verbose_name="session ID"
+                    ),
+                ),
+                (
+                    "expiration_date",
+                    models.DateTimeField(verbose_name="session ID expiration date"),
+                ),
+                (
+                    "date_added",
+                    models.DateTimeField(auto_now_add=True, verbose_name="date added (Session ID)"),
+                ),
+                (
+                    "email",
+                    models.CharField(
+                        max_length=255, null=True, unique=True, verbose_name="school email"
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+                    ),
+                ),
             ],
         ),
     ]

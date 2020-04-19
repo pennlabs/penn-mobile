@@ -69,27 +69,13 @@ class GroupField(serializers.RelatedField):
 
 
 class GSRBookingCredentialsSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(slug_field="username", queryset=User.objects.all())
-    
-    class Meta:
-        model = GSRBookingCredentials
-        fields = ["user", "session_id", "expiration_date", "date_updated"]
-class GSRBookingCredentialsRequestSerializer(serializers.ModelSerializer):
-    # session_id = serializers.SlugRelatedField(slug_field="session_id")
-    # expiration_date = serializers.SlugRelatedField(slug_field="expiration_date")
-    user = serializers.SerializerMethodField()
+    user = serializers.SlugRelatedField(
+        slug_field="username", queryset=User.objects.all(), required=True
+    )
 
     class Meta:
         model = GSRBookingCredentials
         fields = ["user", "session_id", "expiration_date", "date_updated"]
-
-    def get_user(self, obj):
-        user = self.context.get("user")
-        if user:
-            return user
-        return False
-        
-        
 
 
 class UserSerializer(serializers.ModelSerializer):

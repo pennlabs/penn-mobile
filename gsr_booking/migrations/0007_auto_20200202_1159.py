@@ -6,16 +6,18 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('gsr_booking', '0006_gsrbookingcredentials'),
+        ("gsr_booking", "0006_gsrbookingcredentials"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='groupmembership',
-            options={'verbose_name': 'Group Membership'},
+            name="groupmembership", options={"verbose_name": "Group Membership"},
         ),
         migrations.AlterModelOptions(
-            name='gsrbookingcredentials',
-            options={'verbose_name': 'GSR Booking Credentials', 'verbose_name_plural': 'GSR Booking Credentials'},
+            name="gsrbookingcredentials",
+            options={
+                "verbose_name": "GSR Booking Credentials",
+                "verbose_name_plural": "GSR Booking Credentials",
+            },
         ),
     ]
