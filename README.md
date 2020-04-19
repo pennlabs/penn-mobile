@@ -38,102 +38,8 @@ Also see the [auto-generated documentation](https://studentlife.pennlabs.org/doc
 - `GET /users/<pennkey>/`
   - Detail view on one user.
 
-- `GET /users/<pennkey>/gsr_booking_credentials`
-  - List Wharton Session ID (if available), its expiration date, and school email.
-
-- `POST /users/<pennkey>/save_session_id/`
-  - Associates a Wharton Session ID with a user.
-<table>
-    <tbody>
-        <tr>
-            <td>URL</td>
-            <td><code>https://studentlife.pennlabs.org/{pennkey}/save_session_id/</code></td>
-        </tr>
-        <tr>
-            <td>HTTP Methods</td>
-            <td>POST</td>
-        </tr>
-        <tr>
-            <td>Response Formats</td>
-            <td>JSON</td>
-        </tr>
-        <tr>
-            <td>Parameters</td>
-            <td>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Default</th>
-                            <th>Description</th>
-                            <th>Example Values</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                          <td><tt>session_id</tt></td>
-                          <td><strong>Optional</strong></td>
-                          <td>The student's Wharton Session ID</td>
-                          <td><tt>k44mhe1ta84jw9vdva8y5dv387a1ozd9</tt></td>
-                      </tr>
-                      <tr>
-                          <td><tt>expiration_date</tt></td>
-                          <td><strong>Required</strong></td>
-                          <td>Session ID expiration date</td>
-                          <td><tt>2020-01-25</tt></td>
-                      </tr>
-                    </tbody>
-                </table>
-            </td>
-        </tr>
-        <tr>
-          <td>Notes</td>
-          <td><tt>session_id</tt> can be <tt>null</tt> as it is always a temporary value.</td>
-        </tr>
-    </tbody>
-</table>
-
-- `POST /users/<pennkey>/save_email/`
-  - Associates a school email with a user for LibCal.
-<table>
-    <tbody>
-        <tr>
-            <td>URL</td>
-            <td><code>https://studentlife.pennlabs.org/{pennkey}/save_email/</code></td>
-        </tr>
-        <tr>
-            <td>HTTP Methods</td>
-            <td>POST</td>
-        </tr>
-        <tr>
-            <td>Response Formats</td>
-            <td>JSON</td>
-        </tr>
-        <tr>
-            <td>Parameters</td>
-            <td>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Default</th>
-                            <th>Description</th>
-                            <th>Example Values</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                          <td><tt>email</tt></td>
-                          <td><strong>Required</strong></td>
-                          <td>The student's school email</td>
-                          <td><tt>pennkey@seas.upenn.edu</tt></td>
-                      </tr>
-                    </tbody>
-                </table>
-            </td>
-        </tr>
-    </tbody>
-</table>
+- `GET /credentials/`
+  - Lists Wharton Session ID (if available), its expiration date, and date updated associated with user requesting information.
 
 - `GET /users/<pennkey>/invites/`
   - Get all open invites for a user.
@@ -193,3 +99,14 @@ Also see the [auto-generated documentation](https://studentlife.pennlabs.org/doc
 
 - `POST /groups/<group ID>/book-room/`
   - Books a room for a group. `POST` JSON body needs to include `room`, `lid`, `start` and `end`. `start` and `end` parameters must be in `ISO 8601` format.
+
+  - `PUT /credentials/`
+    - Updates credentials object with Wharton Session ID & Expiration. If credentials, does not exist, this will create a new credentials object. This is a PUT request, where you can send JSON payload in following format:
+    ```json
+    {
+      "user": <pennkey>,
+      "session_id": <session_id>,
+      "expiration_date": <expiration_date>
+    }
+    ```
+    - Both the ```session_id``` and ```expiration_date``` are optional fields. They can also be set to ```null```.
