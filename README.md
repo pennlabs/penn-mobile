@@ -38,6 +38,9 @@ Also see the [auto-generated documentation](https://studentlife.pennlabs.org/doc
 - `GET /users/<pennkey>/`
   - Detail view on one user.
 
+- `GET /credentials/`
+  - Lists Wharton Session ID (if available), its expiration date, and date updated associated with user requesting information.
+
 - `GET /users/<pennkey>/invites/`
   - Get all open invites for a user.
 
@@ -91,8 +94,19 @@ Also see the [auto-generated documentation](https://studentlife.pennlabs.org/doc
 - `PUT /groups/<group ID>/`
   - Update a group's information.
 
-- `GET /groups/<group ID/invites/`
+- `GET /groups/<group ID>/invites/`
   - Get a list of all open invites to this group.
 
 - `POST /groups/<group ID>/book-room/`
   - Books a room for a group. `POST` JSON body needs to include `room`, `lid`, `start` and `end`. `start` and `end` parameters must be in `ISO 8601` format.
+
+  - `PUT /credentials/`
+    - Updates credentials object with Wharton Session ID & Expiration. If credentials, does not exist, this will create a new credentials object. This is a PUT request, where you can send JSON payload in following format:
+    ```json
+    {
+      "user": <pennkey>,
+      "session_id": <session_id>,
+      "expiration_date": <expiration_date>
+    }
+    ```
+    - Both the ```session_id``` and ```expiration_date``` are optional fields. They can also be set to ```null```.
