@@ -123,10 +123,10 @@ class GSRBookingCredentialsViewSet(generics.RetrieveUpdateAPIView, generics.Dest
         if not self.request.user.is_authenticated:
             return GSRBookingCredentials.objects.none()
         try:
-            return GSRBookingCredentials.objects.get(pk=self.request.user.pk)
+            return GSRBookingCredentials.objects.get(user=self.request.user)
         except GSRBookingCredentials.DoesNotExist:
             if self.request.method == "PUT":
-                return GSRBookingCredentials(pk=self.request.user.pk)
+                return GSRBookingCredentials(user=self.request.user)
             else:
                 raise Http404("detail not found")
 
