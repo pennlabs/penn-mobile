@@ -1,18 +1,19 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
-from django.http import HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
-from gsr_booking.models import Group, GroupMembership, UserSearchIndex
+from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials, UserSearchIndex
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
     GroupSerializer,
+    GSRBookingCredentialsSerializer,
     UserSerializer,
 )
-from rest_framework import viewsets
+from rest_framework import generics, viewsets
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -113,6 +114,31 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(UserSerializer([entry.user for entry in results], many=True).data)
 
 
+class GSRBookingCredentialsViewSet(generics.RetrieveUpdateAPIView, generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    serializer_class = GSRBookingCredentialsSerializer
+
+    def get_object(self):
+        if not self.request.user.is_authenticated:
+            return GSRBookingCredentials.objects.none()
+        try:
+            return GSRBookingCredentials.objects.get(user=self.request.user)
+        except GSRBookingCredentials.DoesNotExist:
+            if self.request.method == "PUT":
+                return GSRBookingCredentials(user=self.request.user)
+            else:
+                raise Http404("detail not found")
+
+    def update(self, *args, **kwargs):
+        supplied_username = args[0].data.get("user")
+        if supplied_username is None:
+            return Response(data={"user": "not supplied"}, status=404)
+        if self.request.user.username != supplied_username:
+            return HttpResponseForbidden()
+        return super().update(*args, **kwargs)
+
+
 class GroupMembershipViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["user", "group"]
@@ -178,7 +204,7 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
             return HttpResponseForbidden()
 
         if not membership.is_invite:
-            return Response({"message": "invite has alredy been accepted"}, 400)
+            return Response({"message": "invite has already been accepted"}, 400)
 
         membership.accepted = True
         membership.save()
