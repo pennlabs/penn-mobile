@@ -17,7 +17,7 @@ pytest = "*"
 [packages]
 dj-database-url = "*"
 djangorestframework = "*"
-mysqlclient = "*"
+psycopg2 = "*"
 sentry-sdk = "*"
 django = "*"
 django-cors-headers = "*"
