@@ -151,7 +151,7 @@ class MembershipViewTestCase(TestCase):
 
     def test_invite_by_pennkey_no_user(self):
         response = self.client.post(
-            f"/membership/invite/", {"user": "user4", "group": self.group.pk}
+            "/membership/invite/", {"user": "user4", "group": self.group.pk}
         )
         self.assertEqual(200, response.status_code)
         self.assertTrue(
@@ -269,7 +269,7 @@ class GroupTestCase(TestCase):
         self.assertEqual(404, response.status_code)
 
     def test_make_group(self):
-        response = self.client.post(f"/groups/", {"name": "gx", "color": "blue"})
+        response = self.client.post("/groups/", {"name": "gx", "color": "blue"})
         self.assertEqual(201, response.status_code, response.data)
         self.assertEqual(3, Group.objects.count())
         self.assertEqual("user1", Group.objects.get(name="gx").owner.username)
