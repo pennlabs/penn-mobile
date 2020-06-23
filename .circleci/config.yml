@@ -171,7 +171,7 @@ orbs:
           Check a django project against Penn Labs' standards
         docker:
           - environment:
-              DATABASE_URL: postgres://postgres:postgres@127.0.0.1:3306/postgres
+              DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
               PIPENV_VENV_IN_PROJECT: true
             image: circleci/python:<< parameters.python-version >>
           - environment:
