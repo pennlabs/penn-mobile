@@ -5,7 +5,12 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
-from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials, UserSearchIndex
+from gsr_booking.models import (
+    Group,
+    GroupMembership,
+    GSRBookingCredentials,
+    UserSearchIndex,
+)
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
@@ -73,7 +78,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(
-                    user=user, accepted=False, group__in=self.request.user.booking_groups.all()
+                    user=user,
+                    accepted=False,
+                    group__in=self.request.user.booking_groups.all(),
                 ),
                 many=True,
             ).data
@@ -318,7 +325,9 @@ class GroupViewSet(viewsets.ModelViewSet):
             return HttpResponseForbidden()
 
         result_json = book_rooms_for_group(
-            group, booking_data["room_bookings"], request.user.username,
+            group,
+            booking_data["room_bookings"],
+            request.user.username,
         )
 
         return Response(result_json)

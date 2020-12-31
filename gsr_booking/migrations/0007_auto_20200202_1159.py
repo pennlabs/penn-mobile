@@ -11,7 +11,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name="groupmembership", options={"verbose_name": "Group Membership"},
+            name="groupmembership",
+            options={"verbose_name": "Group Membership"},
         ),
         migrations.AlterModelOptions(
             name="gsrbookingcredentials",

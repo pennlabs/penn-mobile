@@ -11,7 +11,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="gsrbookingcredentials", name="date_added",),
+        migrations.RemoveField(
+            model_name="gsrbookingcredentials",
+            name="date_added",
+        ),
         migrations.AddField(
             model_name="gsrbookingcredentials",
             name="date_updated",

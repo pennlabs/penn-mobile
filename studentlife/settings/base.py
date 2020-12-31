@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "accounts.apps.AccountsConfig",
+    "user.apps.UserConfig",
     "django_filters",
     "debug_toolbar",
     "gsr_booking",

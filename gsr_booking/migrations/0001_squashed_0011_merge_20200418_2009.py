@@ -36,7 +36,10 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
                 ("name", models.CharField(max_length=255)),
@@ -51,15 +54,22 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
                 ("accepted", models.BooleanField(default=False)),
-                ("type", models.CharField(choices=[("A", "Admin"), ("M", "M")], max_length=10)),
+                (
+                    "type",
+                    models.CharField(choices=[("A", "Admin"), ("M", "M")], max_length=10),
+                ),
                 (
                     "group",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to="gsr_booking.Group"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="gsr_booking.Group",
                     ),
                 ),
                 (
@@ -74,9 +84,14 @@ class Migration(migrations.Migration):
                 ),
                 ("notifications", models.BooleanField(default=True)),
                 ("pennkey_allow", models.BooleanField(default=False)),
-                ("username", models.CharField(blank=True, default=None, max_length=127, null=True)),
+                (
+                    "username",
+                    models.CharField(blank=True, default=None, max_length=127, null=True),
+                ),
             ],
-            options={"verbose_name": "Group Membership",},
+            options={
+                "verbose_name": "Group Membership",
+            },
         ),
         migrations.AddField(
             model_name="group",
@@ -95,7 +110,9 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="group", name="color", field=models.CharField(max_length=255),
+            model_name="group",
+            name="color",
+            field=models.CharField(max_length=255),
         ),
         migrations.CreateModel(
             name="UserSearchIndex",
@@ -103,7 +120,10 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
                 ("full_name", models.CharField(db_index=True, max_length=255)),
@@ -111,7 +131,8 @@ class Migration(migrations.Migration):
                 (
                     "user",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
                     ),
                 ),
             ],
@@ -122,7 +143,10 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
                 (
@@ -138,13 +162,17 @@ class Migration(migrations.Migration):
                 (
                     "email",
                     models.CharField(
-                        max_length=255, null=True, unique=True, verbose_name="school email"
+                        max_length=255,
+                        null=True,
+                        unique=True,
+                        verbose_name="school email",
                     ),
                 ),
                 (
                     "user",
                     models.OneToOneField(
-                        on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
                     ),
                 ),
                 (
