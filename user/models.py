@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+import timezone
 
 
 User = get_user_model()
@@ -26,10 +27,24 @@ class NotificationToken(models.Model):
     token = models.CharField(max_length=255)
 
 
-class Profile(models.Model):
+class MobileProfile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     laundry_preferences = models.ManyToManyField(LaundryRoom)
     dining_preferences = models.ManyToManyField(DiningVenue)
+
+
+class SchoolProfile(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    school_name = models.CharField(max_length=255)
+    degree_name = models.CharField(max_length=255)
+    major_name = models.CharField(max_length=255)
+    expected_graduation = models.DateField(default=timezone.now)
+
+
+
+
+class Course(models.Model):
+
 
 
 # TODO: dining balance/transactions
