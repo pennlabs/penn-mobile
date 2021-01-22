@@ -16,6 +16,10 @@ class DiningVenue(models.Model):
     pass
 
 
+class Course(models.Model):
+    pass
+
+
 class NotificationToken(models.Model):
     KIND_IOS = "IOS"
     KIND_ANDROID = "ANDROID"
@@ -27,24 +31,18 @@ class NotificationToken(models.Model):
     token = models.CharField(max_length=255)
 
 
-class MobileProfile(models.Model):
+class Profile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     laundry_preferences = models.ManyToManyField(LaundryRoom)
     dining_preferences = models.ManyToManyField(DiningVenue)
+    expected_graduation = models.DateField(default=timezone.now)
+    degrees = models.ManyToManyField(Degree)
 
 
-class SchoolProfile(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class Degree(models.Model):
     school_name = models.CharField(max_length=255)
     degree_name = models.CharField(max_length=255)
     major_name = models.CharField(max_length=255)
-    expected_graduation = models.DateField(default=timezone.now)
-
-
-
-
-class Course(models.Model):
-
 
 
 # TODO: dining balance/transactions
