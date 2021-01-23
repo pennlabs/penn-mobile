@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
-from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials
 from rest_framework import serializers
+
+from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials
 
 
 User = get_user_model()
