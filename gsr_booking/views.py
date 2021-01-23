@@ -3,6 +3,12 @@ from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics, viewsets
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
 from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials, UserSearchIndex
@@ -13,11 +19,6 @@ from gsr_booking.serializers import (
     GSRBookingCredentialsSerializer,
     UserSerializer,
 )
-from rest_framework import generics, viewsets
-from rest_framework.authentication import BasicAuthentication
-from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 
 
 User = get_user_model()
@@ -318,7 +319,7 @@ class GroupViewSet(viewsets.ModelViewSet):
             return HttpResponseForbidden()
 
         result_json = book_rooms_for_group(
-            group, booking_data["room_bookings"], request.user.username,
+            group, booking_data["room_bookings"], request.user.username
         )
 
         return Response(result_json)

@@ -129,7 +129,7 @@ def book_room_for_group(members, is_wharton, room, lid, start, end):
             rounded_remaining_credit_hours = math.floor(2 * remaining_credit_hours) / 2
             if success and remaining_credit_hours >= MIN_SLOT_HRS:
                 next_end = min(
-                    end, next_start + datetime.timedelta(hours=rounded_remaining_credit_hours),
+                    end, next_start + datetime.timedelta(hours=rounded_remaining_credit_hours)
                 )
                 try:
                     success = book_room_for_user(
