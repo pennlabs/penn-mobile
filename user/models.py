@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+import timezone
 
 
 User = get_user_model()
@@ -12,6 +13,10 @@ class LaundryRoom(models.Model):
 
 
 class DiningVenue(models.Model):
+    pass
+
+
+class Course(models.Model):
     pass
 
 
@@ -30,6 +35,14 @@ class Profile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     laundry_preferences = models.ManyToManyField(LaundryRoom)
     dining_preferences = models.ManyToManyField(DiningVenue)
+    expected_graduation = models.DateField(default=timezone.now)
+    degrees = models.ManyToManyField(Degree)
+
+
+class Degree(models.Model):
+    school_name = models.CharField(max_length=255)
+    degree_name = models.CharField(max_length=255)
+    major_name = models.CharField(max_length=255)
 
 
 # TODO: dining balance/transactions
