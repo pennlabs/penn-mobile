@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from gsr_booking.models import Group, GroupMembership, UserSearchIndex
 from rest_framework.test import APIClient
+
+from gsr_booking.models import Group, GroupMembership, UserSearchIndex
 
 
 User = get_user_model()
