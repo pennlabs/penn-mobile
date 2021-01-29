@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 
-from dining.constants import map_to_pretty
 from django.db.models import Sum
-from legacy.models import DiningBalance, DiningTransaction
 from options.models import Option, get_option, get_value
 from pytz import timezone
 
+from dining.constants import map_to_pretty
+from legacy.models import DiningBalance, DiningTransaction
 from studentlife.utils import get_new_start_end
 
 
@@ -57,10 +57,7 @@ def recent_transactions_card(uid):
         Card with list of transactions and info in list of dicts.
     """
 
-    card = {
-        "type": "recent-transactions",
-        "data": [],
-    }
+    card = {"type": "recent-transactions", "data": []}
 
     transactions = DiningTransaction.objects.filter(account=uid).order_by("-date")
 
@@ -219,10 +216,7 @@ def get_prediction_dollars(uid, start, end):
     """
 
     transactions = (
-        DiningTransaction.objects.filter(
-            account=uid,
-            date__gte=start,
-        )
+        DiningTransaction.objects.filter(account=uid, date__gte=start)
         .order_by("-date")
         .exclude(description__icontains="meal_plan")
     )
@@ -291,10 +285,9 @@ def get_prediction_swipes(uid, start, end):
         if they will not run out.
     """
 
-    balances = DiningBalance.objects.filter(
-        account_id=uid,
-        created_at__gte=start,
-    ).order_by("-created_at")
+    balances = DiningBalance.objects.filter(account_id=uid, created_at__gte=start).order_by(
+        "-created_at"
+    )
 
     card = {
         "type": "predictions-graph-swipes",
@@ -381,10 +374,7 @@ def get_frequent_locations(uid, start, end):
         .order_by("total_spend_venue")
     )
 
-    card = {
-        "type": "frequent-locations",
-        "data": [],
-    }
+    card = {"type": "frequent-locations", "data": []}
 
     TOP_VENUES = 5
     venues = [
