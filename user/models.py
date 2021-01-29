@@ -2,9 +2,10 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
 
+
 User = get_user_model()
 
-
+# TODO: dining balance/transactions
 # TODO: Move LaundryRoom + Dining Venue to different django apps
 class LaundryRoom(models.Model):
     # TODO: information about the laundry room
@@ -12,10 +13,6 @@ class LaundryRoom(models.Model):
 
 
 class DiningVenue(models.Model):
-    pass
-
-
-class Course(models.Model):
     pass
 
 
@@ -38,15 +35,12 @@ class Degree(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)
-    dining_preferences = models.ManyToManyField(DiningVenue, blank=True)
-    expected_graduation = models.DateField(default=timezone.now)
+    expected_graduation = models.DateField(null=True, blank=True)
     degrees = models.ManyToManyField(Degree, blank=True)
 
-    # is this faculty used?
+    # TODO: Adding serializers + correct models for this in subsequent updates
+    laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)
+    dining_preferences = models.ManyToManyField(DiningVenue, blank=True)
 
-    #laundry, dining, privacy
-
-
-
-# TODO: dining balance/transactions
+    # faculty used?
+    # work on laundry, dining, and privacy
