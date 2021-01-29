@@ -11,12 +11,7 @@ from rest_framework.response import Response
 
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
-from gsr_booking.models import (
-    Group,
-    GroupMembership,
-    GSRBookingCredentials,
-    UserSearchIndex,
-)
+from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials, UserSearchIndex
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
@@ -79,9 +74,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(
-                    user=user,
-                    accepted=False,
-                    group__in=self.request.user.booking_groups.all(),
+                    user=user, accepted=False, group__in=self.request.user.booking_groups.all(),
                 ),
                 many=True,
             ).data

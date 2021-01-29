@@ -46,24 +46,18 @@ def book_rooms_for_group(group, rooms, requester_pennkey):
         end = datetime.datetime.fromisoformat(room["end"])
 
         if not fatal_error:
-            (
-                booking_slots,
-                next_start,
-                next_end,
-                error,
-                room_fatal_error,
-            ) = book_room_for_group(members, is_wharton, roomid, lid, start, end)
+            (booking_slots, next_start, next_end, error, room_fatal_error,) = book_room_for_group(
+                members, is_wharton, roomid, lid, start, end
+            )
         else:
             room_fatal_error = None
             booking_slots = []
             next_start = start
             next_end = end
 
-        (
-            room_json,
-            room_complete_success,
-            room_partial_success,
-        ) = construct_room_json_obj(booking_slots, lid, roomid, end, next_start, next_end)
+        (room_json, room_complete_success, room_partial_success,) = construct_room_json_obj(
+            booking_slots, lid, roomid, end, next_start, next_end
+        )
         room_json_array.append(room_json)
         print(room_complete_success)
         print(error)
@@ -100,11 +94,7 @@ def book_room_for_group(members, is_wharton, room, lid, start, end):
             # make 'blind-booking' request to labs-api-server first
             try:
                 success = book_room_for_user(
-                    room,
-                    lid,
-                    next_start.isoformat(),
-                    next_end.isoformat(),
-                    member["user__email"],
+                    room, lid, next_start.isoformat(), next_end.isoformat(), member["user__email"],
                 )
                 if success:
                     new_booking_slots = split_booking(

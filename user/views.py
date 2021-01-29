@@ -1,12 +1,11 @@
-from .models import Profile, Degree
-from .serializers import PrivateUserSerializer
-
 from rest_framework import generics
 
+from .models import Degree, Profile
+from .serializers import UserSerializer
 
 
 class UserView(generics.RetrieveUpdateAPIView):
-    '''
+    """
     get:
     Return information about the logged in user.
 
@@ -17,10 +16,9 @@ class UserView(generics.RetrieveUpdateAPIView):
     patch:
     Update information about the logged in user.
     Only updates fields that are passed to the server.
-    '''
+    """
 
-    serializer_class = PrivateUserSerializer
-
+    serializer_class = UserSerializer
 
     def get_object(self):
         return self.request.user
