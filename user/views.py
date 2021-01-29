@@ -1,6 +1,5 @@
 from rest_framework import generics
 
-from .models import Degree, Profile
 from .serializers import UserSerializer
 
 
