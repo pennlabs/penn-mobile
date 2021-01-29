@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-import timezone
-
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -31,18 +30,23 @@ class NotificationToken(models.Model):
     token = models.CharField(max_length=255)
 
 
-class Profile(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    laundry_preferences = models.ManyToManyField(LaundryRoom)
-    dining_preferences = models.ManyToManyField(DiningVenue)
-    expected_graduation = models.DateField(default=timezone.now)
-    degrees = models.ManyToManyField(Degree)
-
-
 class Degree(models.Model):
     school_name = models.CharField(max_length=255)
     degree_name = models.CharField(max_length=255)
     major_name = models.CharField(max_length=255)
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)
+    dining_preferences = models.ManyToManyField(DiningVenue, blank=True)
+    expected_graduation = models.DateField(default=timezone.now)
+    degrees = models.ManyToManyField(Degree, blank=True)
+
+    # is this faculty used?
+
+    #laundry, dining, privacy
+
 
 
 # TODO: dining balance/transactions

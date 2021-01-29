@@ -1,9 +1,8 @@
 from django.contrib import admin
 
-from user.models import DiningPreference, LaundryPreference, NotificationToken, Profile
-
+from user.models import NotificationToken, Profile, Degree
 
 admin.site.register(NotificationToken)
-admin.site.register(LaundryPreference)
-admin.site.register(DiningPreference)
 admin.site.register(Profile)
+admin.site.register(Degree)
+
