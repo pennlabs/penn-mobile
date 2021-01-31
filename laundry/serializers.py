@@ -3,16 +3,6 @@ from rest_framework import serializers
 from laundry.models import Hall, LaundryRoom, LaundrySnapshot
 
 
-class LaundryRoomSerializer(serializers.Serialization):
-    class Meta:
-        model = LaundryRoom
-        fields = (
-            "name",
-            "hall",
-            "total_washers" "total_dryers",
-        )
-
-
 class LaundrySnapshotSerializer(serializers.ModelSerializer):
     class Meta:
         model = LaundrySnapshot
@@ -25,7 +15,31 @@ class LaundrySnapshotSerializer(serializers.ModelSerializer):
         return super.save()
 
 
-class LaundryHallSerializer(serializers.Serialization):
+class LaundryHallSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hall
-        fields = ("name",)
+        fields = ("name", )
+
+
+class LaundryRoomSerializer(serializers.ModelSerializer):
+
+    hall = LaundryHallSerializer(read_only=False, required=True)
+
+    class Meta:
+        model = LaundryRoom
+        fields = (
+            "id",
+            "name",
+            "total_washers",
+            "total_dryers",
+            "hall",
+        )
+
+# class LaundryRoomStatusSerializer(serializers.ModelSerializer):
+
+#     room = LaundryRoomSerializer(read_only=False, required=True)
+#     hall = LaundryHallSerializer(read_only=False, required=True)
+
+#     class Meta:
+#         model = LaundryRoom
+#         fields = ("room", "hall")
