@@ -6,7 +6,7 @@ class Hall(models.Model):
 
 
 class LaundryRoom(models.Model):
-    name = models.TextField()
+    name = models.CharField(max_length=40)
     total_washers = models.IntegerField(default=0, null=False)
     total_dryers = models.IntegerField(default=0, null=False)
     hall = models.ForeignKey(Hall, on_delete=models.CASCADE, related_name="halls")

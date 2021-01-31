@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "user.apps.UserConfig",
     "laundry.apps.LaundryConfig",
+    "accounts.apps.AccountsConfig",
     "django_filters",
     "debug_toolbar",
     "gsr_booking",
