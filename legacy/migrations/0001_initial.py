@@ -14,13 +14,13 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Account",
             fields=[
-                ("id", models.CharField(max_length=255, primary_key=True, serialize=False)),
+                ("id", models.CharField(max_length=255, primary_key=True, serialize=False),),
                 ("first", models.TextField(blank=True, null=True)),
                 ("last", models.TextField(blank=True, null=True)),
                 ("pennkey", models.CharField(max_length=255, unique=True)),
                 ("pennid", models.IntegerField(blank=True, null=True)),
                 ("email", models.TextField(blank=True, null=True)),
-                ("affiliation", models.CharField(blank=True, max_length=255, null=True)),
+                ("affiliation", models.CharField(blank=True, max_length=255, null=True),),
                 ("image_url", models.TextField(blank=True, null=True)),
                 ("created_at", models.DateTimeField(blank=True, null=True)),
             ],
@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("timestamp", models.DateTimeField()),
@@ -47,10 +47,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="AnonymousId",
             fields=[
-                ("id", models.CharField(max_length=255, primary_key=True, serialize=False)),
+                ("id", models.CharField(max_length=255, primary_key=True, serialize=False),),
                 ("type", models.CharField(blank=True, max_length=255, null=True)),
                 ("device_key", models.CharField(blank=True, max_length=255, null=True)),
-                ("password_hash", models.CharField(blank=True, max_length=255, null=True)),
+                ("password_hash", models.CharField(blank=True, max_length=255, null=True),),
                 ("created_at", models.DateTimeField(blank=True, null=True)),
                 ("updated_at", models.DateTimeField(blank=True, null=True)),
             ],
@@ -59,7 +59,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="ArInternalMetadata",
             fields=[
-                ("key", models.CharField(max_length=255, primary_key=True, serialize=False)),
+                ("key", models.CharField(max_length=255, primary_key=True, serialize=False),),
                 ("value", models.CharField(blank=True, max_length=255, null=True)),
                 ("created_at", models.DateTimeField()),
                 ("updated_at", models.DateTimeField()),
@@ -72,7 +72,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("name", models.TextField()),
@@ -94,7 +94,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Degree",
             fields=[
-                ("code", models.CharField(max_length=255, primary_key=True, serialize=False)),
+                ("code", models.CharField(max_length=255, primary_key=True, serialize=False),),
                 ("name", models.TextField()),
             ],
             options={"db_table": "degree", "managed": False},
@@ -105,7 +105,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("dining_dollars", models.FloatField()),
@@ -121,7 +121,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("created_at", models.DateTimeField(blank=True, null=True)),
@@ -135,7 +135,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("date", models.DateTimeField()),
@@ -156,8 +156,8 @@ class Migration(migrations.Migration):
                 ("image_url", models.TextField()),
                 ("start_time", models.DateTimeField()),
                 ("end_time", models.DateTimeField()),
-                ("image_file_name", models.CharField(blank=True, max_length=255, null=True)),
-                ("image_content_type", models.CharField(blank=True, max_length=255, null=True)),
+                ("image_file_name", models.CharField(blank=True, max_length=255, null=True),),
+                ("image_content_type", models.CharField(blank=True, max_length=255, null=True),),
                 ("image_file_size", models.IntegerField(blank=True, null=True)),
                 ("image_updated_at", models.DateTimeField(blank=True, null=True)),
                 ("website", models.CharField(blank=True, max_length=255, null=True)),
@@ -181,8 +181,8 @@ class Migration(migrations.Migration):
                 ("sign_in_count", models.IntegerField()),
                 ("current_sign_in_at", models.DateTimeField(blank=True, null=True)),
                 ("last_sign_in_at", models.DateTimeField(blank=True, null=True)),
-                ("current_sign_in_ip", models.CharField(blank=True, max_length=255, null=True)),
-                ("last_sign_in_ip", models.CharField(blank=True, max_length=255, null=True)),
+                ("current_sign_in_ip", models.CharField(blank=True, max_length=255, null=True),),
+                ("last_sign_in_ip", models.CharField(blank=True, max_length=255, null=True),),
                 ("created_at", models.DateTimeField()),
                 ("updated_at", models.DateTimeField()),
             ],
@@ -204,7 +204,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("cell_type", models.TextField()),
@@ -217,7 +217,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("created_at", models.DateTimeField(blank=True, null=True)),
@@ -231,7 +231,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("date", models.DateField()),
@@ -247,7 +247,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Major",
             fields=[
-                ("code", models.CharField(max_length=255, primary_key=True, serialize=False)),
+                ("code", models.CharField(max_length=255, primary_key=True, serialize=False),),
                 ("name", models.TextField()),
             ],
             options={"db_table": "major", "managed": False},
@@ -258,7 +258,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("source", models.TextField(blank=True, null=True)),
@@ -282,7 +282,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="PostAccount",
             fields=[
-                ("id", models.CharField(max_length=255, primary_key=True, serialize=False)),
+                ("id", models.CharField(max_length=255, primary_key=True, serialize=False),),
                 ("name", models.TextField()),
                 ("email", models.CharField(max_length=255, unique=True)),
                 ("encrypted_password", models.CharField(max_length=255)),
@@ -290,7 +290,7 @@ class Migration(migrations.Migration):
                     "reset_password_token",
                     models.CharField(blank=True, max_length=255, null=True, unique=True),
                 ),
-                ("reset_password_token_sent_at", models.DateTimeField(blank=True, null=True)),
+                ("reset_password_token_sent_at", models.DateTimeField(blank=True, null=True),),
                 ("sign_in_count", models.IntegerField()),
                 ("last_sign_in_at", models.DateTimeField()),
                 ("created_at", models.DateTimeField(blank=True, null=True)),
@@ -311,7 +311,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("name", models.TextField()),
@@ -325,7 +325,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("date", models.DateTimeField(blank=True, null=True)),
@@ -346,7 +346,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("type", models.TextField()),
@@ -362,7 +362,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("created_at", models.DateTimeField(blank=True, null=True)),
@@ -495,7 +495,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("ios_token", models.CharField(blank=True, max_length=255, null=True)),
-                ("android_token", models.CharField(blank=True, max_length=255, null=True)),
+                ("android_token", models.CharField(blank=True, max_length=255, null=True),),
                 ("dev", models.IntegerField()),
                 ("created_at", models.DateTimeField(blank=True, null=True)),
                 ("updated_at", models.DateTimeField(blank=True, null=True)),

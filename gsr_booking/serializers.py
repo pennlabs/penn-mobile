@@ -37,7 +37,15 @@ class GroupMembershipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupMembership
-        fields = ["user", "group", "type", "pennkey_allow", "notifications", "id", "color"]
+        fields = [
+            "user",
+            "group",
+            "type",
+            "pennkey_allow",
+            "notifications",
+            "id",
+            "color",
+        ]
 
 
 class GroupSerializer(serializers.ModelSerializer):

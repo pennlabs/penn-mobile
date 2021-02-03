@@ -147,7 +147,9 @@ class MembershipViewTestCase(TestCase):
         )
         self.assertEqual(200, response.status_code)
         self.assertEqual(
-            2, GroupMembership.objects.filter(accepted=False).count(), GroupMembership.objects.all()
+            2,
+            GroupMembership.objects.filter(accepted=False).count(),
+            GroupMembership.objects.all(),
         )
 
     def test_invite_by_pennkey_no_user(self):
