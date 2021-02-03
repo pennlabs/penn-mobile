@@ -23,6 +23,8 @@ class LaundryUsageSerializer(serializers.Serializer):
     def save(self):
         integer = self.validated_data["integer"]
 
+        # test
+
 
 
 
