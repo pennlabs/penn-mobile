@@ -1,8 +1,7 @@
 from django.contrib import admin
 
-from laundry.models import Hall, LaundryRoom, LaundrySnapshot
+from laundry.models import LaundrySnapshot
 
 
-admin.site.register(LaundryRoom)
 admin.site.register(LaundrySnapshot)
-admin.site.register(Hall)
+

@@ -1,40 +1,59 @@
 from rest_framework import generics
+from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from laundry.models import Hall, LaundryRoom
-from laundry.serializers import LaundryHallSerializer, LaundryRoomSerializer
+from requests.exceptions import HTTPError
+
+import datetime, calendar
+from pytz import timezone
+
+from laundry.api_wrapper import Laundry
+from laundry.serializers import LaundryUsageSerializer
+
+laundry = Laundry()
 
 
+# should i just use the regular API view with a GET header?
 class Halls(generics.ListAPIView):
 
-    queryset = Hall.objects.all()
-    serializer_class = LaundryHallSerializer
-
     def list(self, request):
-        queryset = self.get_queryset()
-        serializer = LaundryHallSerializer(queryset, many=True)
-        return Response(serializer.data)
+        try:
+            return Response(laundry.all_status())
+        except HTTPError:
+            return Response({"error": "The laundry api is currently unavailable."})
 
 
-class HallStatus(generics.ListAPIView):
-
-
-    def get_queryset(self):
-        hall_id = self.kwargs['hall_id']
-        return LaundryRoom.objects.filter(id=hall_id)
+class HallInfo(generics.ListAPIView):
 
     def list(self, request, hall_id):
-        queryset = self.get_queryset()
-        serializer = LaundryRoomSerializer(queryset, many=True)
-        return Response(serializer.data)
+        try:
+            return Response(laundry.hall_status(int(hall_id)))
+        except ValueError:
+            return Response({"error": "Invalid hall id passed to server."})
+        except HTTPError:
+            return Response({"error": "The laundry api is currently unavailable."})
 
 
 class HallUsage(generics.ListAPIView):
 
-    def get_queryset(self):
-        pass
+    serializer_class = LaundryUsageSerializer
+
 
     def list(self, request, hall_id):
-        pass
+        return Response()
+#     serializer
+
+# class HallUsage(generics.ListAPIView):
+
+#     def get_queryset(self):
+#         pass
+
+#     def list(self, request, hall_id):
+#         try:
+#             return Response(laundry.machine_usage(int(hall_id)))
+#         except ValueError:
+#             return Response({"error": "Invalid hall id passed to server."})
+#         except HTTPError:
+#             return Response({"error": "The laundry api is currently unavailable."})
 
 

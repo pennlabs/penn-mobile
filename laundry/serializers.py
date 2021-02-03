@@ -1,12 +1,12 @@
 from rest_framework import serializers
 
-from laundry.models import Hall, LaundryRoom, LaundrySnapshot
+from laundry.models import LaundrySnapshot
 
 
 class LaundrySnapshotSerializer(serializers.ModelSerializer):
     class Meta:
         model = LaundrySnapshot
-        fields = ("date", "washers_available", "dryers_available")
+        fields = ("room", "date", "available_washers", "available_dryers", "total_washers", "total_dryers")
 
     def save(self):
         self.validated_data["room"] = LaundryRoom.objects.get(
@@ -15,31 +15,35 @@ class LaundrySnapshotSerializer(serializers.ModelSerializer):
         return super.save()
 
 
-class LaundryHallSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Hall
-        fields = ("name", )
+class LaundryUsageSerializer(serializers.Serializer):
+
+    integer = serializers.IntegerField()
+    laundry_snapshot = LaundrySnapshotSerializer(read_only=False, required=False)
+
+    def save(self):
+        integer = self.validated_data["integer"]
 
 
-class LaundryRoomSerializer(serializers.ModelSerializer):
 
-    hall = LaundryHallSerializer(read_only=False, required=True)
 
-    class Meta:
-        model = LaundryRoom
-        fields = (
-            "id",
-            "name",
-            "total_washers",
-            "total_dryers",
-            "hall",
-        )
 
-# class LaundryRoomStatusSerializer(serializers.ModelSerializer):
+# class ProfileSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Profile
+#         fields = ("expected_graduation", "degrees", "laundry_preferences", "dining_preferences")
 
-#     room = LaundryRoomSerializer(read_only=False, required=True)
-#     hall = LaundryHallSerializer(read_only=False, required=True)
+
+# class UserSerializer(serializers.ModelSerializer):
+
+#     profile = ProfileSerializer(read_only=False, required=False)
 
 #     class Meta:
-#         model = LaundryRoom
-#         fields = ("room", "hall")
+#         model = get_user_model()
+#         fields = (
+#             "id",
+#             "first_name",
+#             "last_name",
+#             "email",
+#             "username",
+#             "profile",
+#         )
