@@ -11,6 +11,7 @@ urlpatterns = [
     path("", include("gsr_booking.urls")),
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls", namespace="accounts")),
+    path("user/", include("user.urls")),
     path(
         "openapi/",
         get_schema_view(title="Student Life Documentation", public=True),

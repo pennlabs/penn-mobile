@@ -11,6 +11,7 @@ flake8 = "*"
 flake8-isort = "*"
 flake8-quotes = "*"
 django-extensions = "*"
+flake8-absolute-import = "*"
 rope = "*"
 pytest = "*"
 

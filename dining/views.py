@@ -62,10 +62,10 @@ class Dashboard(APIView):
         json["cards"] = {"recent-transactions": recent_transactions_card(uid)}
         update_if_not_none(json["cards"], "daily-average", get_average_balances(uid, start))
         update_if_not_none(
-            json["cards"], "predictions-graph-dollars", get_prediction_dollars(uid, start, end)
+            json["cards"], "predictions-graph-dollars", get_prediction_dollars(uid, start, end),
         )
         update_if_not_none(
-            json["cards"], "predictions-graph-swipes", get_prediction_swipes(uid, start, end)
+            json["cards"], "predictions-graph-swipes", get_prediction_swipes(uid, start, end),
         )
         update_if_not_none(
             json["cards"], "frequent-locations", get_frequent_locations(uid, start, end)
