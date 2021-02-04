@@ -16,6 +16,7 @@ rope = "*"
 pytest = "*"
 
 [packages]
+beautifulsoup4 = "*"
 dj-database-url = "*"
 djangorestframework = "*"
 psycopg2 = "*"
