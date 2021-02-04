@@ -1,25 +1,28 @@
-import os, csv, requests, pkg_resources
+import csv
+import os
+
+import pkg_resources
+import requests
 from bs4 import BeautifulSoup
 
-LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
-ALL_URL = '{}/?location='.format(LAUNDRY_URL)
 
-# this URL does not work
-#USAGE_BASE_URL = 'https://www.laundryalert.com/cgi-bin/penn6389/LMRoomUsage?CallingPage=LMRoom&Password=penn6389&Halls='
+LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
+ALL_URL = "{}/?location=".format(LAUNDRY_URL)
+
+# USAGE_BASE_URL from LAS does not work
+
 
 class Laundry(object):
-
     def __init__(self):
         self.busy_dict = {
-            'LowBusyNightColor': 'Low',
-            'LowBusyDayColor': 'Low',
-            'MediumLowBusyColor': 'Medium',
-            'MediumHighBusyColor': 'High',
-            'HighBusyColor': 'Very High',
-            'NoDataBusyColor': 'No Data'
+            "LowBusyNightColor": "Low",
+            "LowBusyDayColor": "Low",
+            "MediumLowBusyColor": "Medium",
+            "MediumHighBusyColor": "High",
+            "HighBusyColor": "Very High",
+            "NoDataBusyColor": "No Data",
         }
-        self.days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-                     'Saturday', 'Sunday']
+        self.days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
         self.hall_to_link = {}
         self.id_to_hall = {}
         self.id_to_location = {}
@@ -37,14 +40,15 @@ class Laundry(object):
                 self.hall_to_link[hall_name] = ALL_URL + uuid
                 self.id_to_hall[hall_id] = hall_name
                 self.id_to_location[hall_id] = location
-                self.hall_id_list.append({"hall_name": hall_name, "id": hall_id, "location": location})
-
+                self.hall_id_list.append(
+                    {"hall_name": hall_name, "id": hall_id, "location": location}
+                )
 
     @staticmethod
     def update_machine_object(cols, machine_object):
-        '''
+        """
         Updates Machine status and time remaining
-        '''
+        """
 
         if cols[2].getText() == "In use" or cols[2].getText() == "Almost done":
             time_remaining = cols[3].getText().split(" ")[0]
@@ -68,7 +72,6 @@ class Laundry(object):
 
         return machine_object
 
-
     def parse_a_hall(self, hall):
         """Return names, hall numbers, and the washers/dryers available for a certain hall.
         :param hall:
@@ -78,16 +81,16 @@ class Laundry(object):
         if hall not in self.hall_to_link:
             return None  # change to to empty json idk
         page = requests.get(self.hall_to_link[hall], timeout=60)
-        soup = BeautifulSoup(page.content, 'html.parser')
+        soup = BeautifulSoup(page.content, "html.parser")
         soup.prettify()
         washers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
         dryers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
 
         detailed = []
 
-        rows = soup.find_all('tr')
+        rows = soup.find_all("tr")
         for row in rows:
-            cols = row.find_all('td')
+            cols = row.find_all("td")
             if len(cols) > 1:
                 machine_type = cols[1].getText()
                 if machine_type == "Washer":
@@ -99,16 +102,17 @@ class Laundry(object):
                         time = int(cols[3].getText().split(" ")[0])
                     except ValueError:
                         time = 0
-                    detailed.append({
-                        "id": int(cols[0].getText().split(" ")[1][1:]),
-                        "type": cols[1].getText().lower(),
-                        "status": cols[2].getText(),
-                        "time_remaining": time
-                    })
+                    detailed.append(
+                        {
+                            "id": int(cols[0].getText().split(" ")[1][1:]),
+                            "type": cols[1].getText().lower(),
+                            "status": cols[2].getText(),
+                            "time_remaining": time,
+                        }
+                    )
 
         machines = {"washers": washers, "dryers": dryers, "details": detailed}
         return machines
-
 
     def all_status(self):
         """Return names, hall numbers, and the washers/dryers available for all
@@ -120,7 +124,6 @@ class Laundry(object):
             laundry_rooms[room] = self.parse_a_hall(room)
 
         return laundry_rooms
-
 
     def hall_status(self, hall_id):
         """Return the status of each specific washer/dryer in a particular
@@ -137,11 +140,7 @@ class Laundry(object):
         location = self.id_to_location[hall_id]
         machines = self.parse_a_hall(hall_name)
 
-        return {
-            'machines': machines,
-            'hall_name': hall_name,
-            'location': location
-        }
+        return {"machines": machines, "hall_name": hall_name, "location": location}
 
     def check_is_working(self):
         """ Returns True if the wash alert web interface seems to be
@@ -149,20 +148,27 @@ class Laundry(object):
         >>> l.check_is_working()
         """
         try:
-            r = requests.post("{}/".format(LAUNDRY_URL), timeout=60, data={
-                "locationid": "5faec7e9-a4aa-47c2-a514-950c03fac460",
-                "email": "pennappslabs@gmail.com",
-                "washers": 0,
-                "dryers": 0,
-                "locationalert": "OK"
-            })
+            r = requests.post(
+                "{}/".format(LAUNDRY_URL),
+                timeout=60,
+                data={
+                    "locationid": "5faec7e9-a4aa-47c2-a514-950c03fac460",
+                    "email": "pennappslabs@gmail.com",
+                    "washers": 0,
+                    "dryers": 0,
+                    "locationalert": "OK",
+                },
+            )
             r.raise_for_status()
-            return "The transaction log for database 'QuantumCoin' is full due to 'LOG_BACKUP'." not in r.text
+            return (
+                "The transaction log for database 'QuantumCoin' is full due to 'LOG_BACKUP'."
+                not in r.text
+            )
         except requests.exceptions.HTTPError:
             return False
 
-
     # this function does not work
+    '''
     def machine_usage(self, hall_no):
         """Returns the average usage of laundry machines every hour
         for a given hall.
@@ -180,17 +186,15 @@ class Laundry(object):
         except ValueError:
             raise ValueError("Room Number must be integer")
         r = requests.get(USAGE_BASE_URL + str(num), timeout=60)
-        parsed = BeautifulSoup(r.text, 'html5lib')
-        usage_table = parsed.find_all('table', width='504px')[0]
-        rows = usage_table.find_all('tr')
+        parsed = BeautifulSoup(r.text, "html5lib")
+        usage_table = parsed.find_all("table", width="504px")[0]
+        rows = usage_table.find_all("tr")
         usages = {}
         for i, row in enumerate(rows):
             day = []
-            hours = row.find_all('td')
+            hours = row.find_all("td")
             for hour in hours:
-                day.append(self.busy_dict[str(hour['class'][0])])
+                day.append(self.busy_dict[str(hour["class"][0])])
             usages[self.days[i]] = day
         return usages
-        
-
-
+    '''

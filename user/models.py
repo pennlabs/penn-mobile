@@ -4,16 +4,6 @@ from django.db import models
 
 User = get_user_model()
 
-# TODO: dining balance/transactions
-# TODO: Move LaundryRoom + Dining Venue to different django apps
-class LaundryRoom(models.Model):
-    # TODO: information about the laundry room
-    pass
-
-
-class DiningVenue(models.Model):
-    pass
-
 
 class NotificationToken(models.Model):
     KIND_IOS = "IOS"
@@ -36,10 +26,5 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     expected_graduation = models.DateField(null=True, blank=True)
     degrees = models.ManyToManyField(Degree, blank=True)
-
-    # TODO: Adding serializers + correct models for this in subsequent updates
-    laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)
-    dining_preferences = models.ManyToManyField(DiningVenue, blank=True)
-
     # faculty used?
     # work on laundry, dining, and privacy
