@@ -26,13 +26,5 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     expected_graduation = models.DateField(null=True, blank=True)
     degrees = models.ManyToManyField(Degree, blank=True)
-<<<<<<< HEAD
     # faculty used?
     # work on laundry, dining, and privacy
-=======
-
-    # TODO: Adding serializers + correct models for this in subsequent updates
-    # add laundry and dining preferences
-
-    # faculty used?
->>>>>>> master
