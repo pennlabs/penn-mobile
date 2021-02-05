@@ -4,8 +4,8 @@ import datetime
 from django.utils import timezone
 from django.utils.timezone import make_aware
 from requests.exceptions import HTTPError
-from rest_framework import generics
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from laundry.api_wrapper import Laundry
 from laundry.models import LaundrySnapshot
@@ -16,25 +16,25 @@ laundry = Laundry()
 
 
 # should i just use the regular API view with a GET header?
-class Halls(generics.ListAPIView):
-    def list(self, request):
+class Halls(APIView):
+    def get(self, request):
         try:
             return Response(laundry.all_status())
         except HTTPError:
-            return Response({"error": "The laundry api is currently unavailable."})
+            return Response({"error": "The laundry api is currently unavailable."}, status=503)
 
 
-class HallInfo(generics.ListAPIView):
-    def list(self, request, hall_id):
+class HallInfo(APIView):
+    def get(self, request, hall_id):
         try:
             return Response(laundry.hall_status(int(hall_id)))
         except ValueError:
-            return Response({"error": "Invalid hall id passed to server."})
+            return Response({"error": "Invalid hall id passed to server."}, status=404)
         except HTTPError:
-            return Response({"error": "The laundry api is currently unavailable."})
+            return Response({"error": "The laundry api is currently unavailable."}, status=503)
 
 
-class HallUsage(generics.ListAPIView):
+class HallUsage(APIView):
 
     serializer_class = LaundrySnapshotSerializer
 
@@ -63,11 +63,9 @@ class HallUsage(generics.ListAPIView):
 
         return snapshots
 
-    def list(self, request, hall_id):
+    def get(self, request, hall_id):
 
         snapshots = self.get_queryset(hall_id)
-
-        print(snapshots.count())
 
         # [0]: available washers, [1]: available dryers, [2]: total number of LaundrySnapshots
         data = [(0, 0, 0)] * 27
