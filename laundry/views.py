@@ -15,7 +15,6 @@ from laundry.serializers import LaundrySnapshotSerializer
 laundry = Laundry()
 
 
-# should i just use the regular API view with a GET header?
 class Halls(APIView):
     def get(self, request):
         try:
@@ -61,7 +60,8 @@ class HallUsage(APIView):
             )
             snapshots = snapshots.union(new_snapshots)
 
-        return snapshots
+        print(snapshots.count())
+        return snapshots.order_by("-date")
 
     def get(self, request, hall_id):
 
@@ -101,8 +101,8 @@ class HallUsage(APIView):
 
         # collects total washers and dryers
         try:
-            total_washers = LaundrySnapshot.objects.filter(room=hall_id).first().total_washers
-            total_dryers = LaundrySnapshot.objects.filter(room=hall_id).first().total_washers
+            total_washers = snapshots.first().total_washers
+            total_dryers = snapshots.first().total_washers
         except AttributeError:
             total_washers = 0
             total_dryers = 0
