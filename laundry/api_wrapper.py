@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
-ALL_URL = "{}/?location=".format(LAUNDRY_URL)
+ALL_URL = f"{LAUNDRY_URL}/?location="
 
 # USAGE_BASE_URL from LAS does not work
 
