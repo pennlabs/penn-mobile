@@ -50,9 +50,9 @@ class HallUsage(APIView):
         # filters for LaundrySnapshots within timeframe
         snapshots = LaundrySnapshot.objects.filter(room=hall_id, date__gt=start, date__lte=end)
 
-        # adds all the LaundrySnapshots from the same weekday within the previous 30 days
+        # adds all the LaundrySnapshots from the same weekday within the previous 28 days
         for week in range(1, 4):
-            new_start = start - 7 * datetime.timedelta(days=week)
+            new_start = start - datetime.timedelta(weeks=week)
             new_end = new_start + datetime.timedelta(hours=26)
 
             new_snapshots = LaundrySnapshot.objects.filter(
@@ -60,7 +60,6 @@ class HallUsage(APIView):
             )
             snapshots = snapshots.union(new_snapshots)
 
-        print(snapshots.count())
         return snapshots.order_by("-date")
 
     def get(self, request, hall_id):
