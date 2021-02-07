@@ -14,6 +14,7 @@ from laundry.serializers import LaundrySnapshotSerializer
 
 laundry = Laundry()
 
+
 class Halls(APIView):
     def get(self, request):
         try:
