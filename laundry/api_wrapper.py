@@ -4,6 +4,9 @@ import os
 import pkg_resources
 import requests
 from bs4 import BeautifulSoup
+from django.utils import timezone
+
+from laundry.models import LaundrySnapshot
 
 
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
@@ -198,3 +201,26 @@ class Laundry(object):
             usages[self.days[i]] = day
         return usages
     '''
+
+    def save_data(self):
+        """Retrieves current laundry info and saves it into the database."""
+
+        now = timezone.localtime()
+
+        if LaundrySnapshot.objects.filter(date=now).count() == 0:
+            ids = {x["hall_name"]: x["id"] for x in self.hall_id_list}
+            data = self.all_status()
+
+            for name, room in data.items():
+                LaundrySnapshot.objects.create(
+                    hall_id=ids[name],
+                    date=now,
+                    available_washers=room["washers"]["open"],
+                    available_dryers=room["dryers"]["open"],
+                    total_washers=sum(
+                        [room["washers"][x] for x in ["open", "running", "offline", "out_of_order"]]
+                    ),
+                    total_dryers=sum(
+                        [room["dryers"][x] for x in ["open", "running", "offline", "out_of_order"]]
+                    ),
+                )
