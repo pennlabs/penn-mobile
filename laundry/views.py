@@ -43,17 +43,18 @@ class HallUsage(APIView):
     def get_queryset(self, hall_id):
         now = timezone.localtime()
 
-        # start is beginning of day, end is 26 hours after start
+        # start is beginning of day, end is 27 hours after start
         start = make_aware(datetime.datetime(year=now.year, month=now.month, day=now.day))
-        end = start + datetime.timedelta(hours=26)
+        end = start + datetime.timedelta(hours=27)
 
         # filters for LaundrySnapshots within timeframe
         snapshots = LaundrySnapshot.objects.filter(room=hall_id, date__gt=start, date__lte=end)
 
         # adds all the LaundrySnapshots from the same weekday within the previous 28 days
         for week in range(1, 4):
+            # new_start is beginning of day, new_end is 27 hours after start
             new_start = start - datetime.timedelta(weeks=week)
-            new_end = new_start + datetime.timedelta(hours=26)
+            new_end = new_start + datetime.timedelta(hours=27)
 
             new_snapshots = LaundrySnapshot.objects.filter(
                 room=hall_id, date__gt=new_start, date__lte=new_end
@@ -84,7 +85,7 @@ class HallUsage(APIView):
 
             hour = date.hour
 
-            # accounts for the 2 hours on the next day
+            # accounts for the 3 hours on the next day
             if (
                 calendar.day_name[timezone.localtime().weekday()]
                 == calendar.day_name[(date - datetime.timedelta(days=1)).weekday()]
