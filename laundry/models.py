@@ -17,3 +17,6 @@ class LaundryRoom(models.Model):
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
     uuid = models.UUIDField(default=uuid.uuid4)
+
+    def __str__(self):
+        return f"{self.hall_id}-{self.name}"

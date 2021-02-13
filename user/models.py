@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from laundry.models import LaundryRoom
+
 
 User = get_user_model()
 
@@ -26,5 +28,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     expected_graduation = models.DateField(null=True, blank=True)
     degrees = models.ManyToManyField(Degree, blank=True)
+    preferences = models.ManyToManyField(LaundryRoom)
+
     # faculty used?
     # work on laundry, dining, and privacy

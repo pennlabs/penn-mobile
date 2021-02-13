@@ -8,8 +8,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from laundry.api_wrapper import Laundry
-from laundry.models import LaundrySnapshot
+from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundrySnapshotSerializer
+from user.models import Profile
 
 
 laundry = Laundry()
@@ -120,3 +121,40 @@ class HallUsage(APIView):
                 "total_number_of_dryers": total_dryers,
             }
         )
+
+
+class Preferences(APIView):
+    def get(self, request):
+
+        # tests if user is logged-in
+        if not request.user.is_authenticated:
+            return Response({"rooms": []})
+
+        preferences = Profile.objects.get(user=request.user).preferences.all()
+
+        hall_ids = [x.hall_id for x in preferences]
+
+        # returns all hall_ids in a person's preferences
+        return Response({"rooms": hall_ids})
+
+    def post(self, request):
+
+        # tests if user is logged-in
+        if not request.user.is_authenticated:
+            return Response({"rooms": []})
+
+        profile = Profile.objects.get(user=request.user)
+
+        # clears all previous preferences in many-to-many
+        profile.preferences.clear()
+
+        hall_ids = request.data["rooms"]
+
+        for hall_id in hall_ids:
+            hall = LaundryRoom.objects.get(hall_id=int(hall_id))
+            # adds all of the preferences given by the request
+            profile.preferences.add(hall)
+
+        profile.save()
+
+        return Response({"detail": "success"})
