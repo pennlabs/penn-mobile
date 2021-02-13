@@ -17,7 +17,7 @@ applications:
 
 cronjobs:
   - name: get_laundry_snapshots
-    schedule: "0 * * * *"
+    schedule: "*/15 * * * *"
     image: pennlabs/student-life
     secret: student-life
     cmd: ["python", "manage.py", "get_snapshot"]
