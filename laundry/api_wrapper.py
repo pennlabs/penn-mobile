@@ -1,12 +1,10 @@
-import csv
 import os
 
-import pkg_resources
 import requests
 from bs4 import BeautifulSoup
 from django.utils import timezone
 
-from laundry.models import LaundrySnapshot
+from laundry.models import LaundryRoom, LaundrySnapshot
 
 
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
@@ -34,18 +32,14 @@ class Laundry(object):
 
     def create_hall_to_link_mapping(self):
 
-        laundry_path = pkg_resources.resource_filename("laundry", "data/laundry_data.csv")
-        with open(laundry_path, "r") as f:
-            reader = csv.reader(f)
-            for row in reader:
-                hall_id, hall_name, location, uuid = row
-                hall_id = int(hall_id)
-                self.hall_to_link[hall_name] = ALL_URL + uuid
-                self.id_to_hall[hall_id] = hall_name
-                self.id_to_location[hall_id] = location
-                self.hall_id_list.append(
-                    {"hall_name": hall_name, "id": hall_id, "location": location}
-                )
+        for room in LaundryRoom.objects.all():
+            hall_id = room.hall_id
+            self.hall_to_link[room.name] = ALL_URL + str(room.uuid)
+            self.id_to_hall[hall_id] = room.name
+            self.id_to_location[hall_id] = room.location
+            self.hall_id_list.append(
+                {"hall_name": room.name, "id": room.hall_id, "location": room.location}
+            )
 
     @staticmethod
     def update_machine_object(cols, machine_object):
