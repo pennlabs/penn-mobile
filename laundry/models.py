@@ -11,6 +11,9 @@ class LaundrySnapshot(models.Model):
     total_washers = models.IntegerField()
     total_dryers = models.IntegerField()
 
+    def __str__(self):
+        return f"Hall No. {self.hall_id} | {self.date.date()}"
+
 
 class LaundryRoom(models.Model):
     hall_id = models.IntegerField(default=0)
@@ -19,4 +22,4 @@ class LaundryRoom(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4)
 
     def __str__(self):
-        return f"{self.hall_id}-{self.name}"
+        return f"Hall No. {self.hall_id} | {self.name}"
