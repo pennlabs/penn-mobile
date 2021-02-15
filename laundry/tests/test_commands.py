@@ -26,7 +26,7 @@ class TestGetSnapshot(TestCase):
         # asserts that all rooms have been snapshotted
         self.assertEqual(LaundrySnapshot.objects.all().count(), 53)
 
-        now = timezone.localtime().date()
+        now = timezone.now().date()
 
         # asserts that all snapshots have the same date (today)
         for snapshot in LaundrySnapshot.objects.all():
