@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 
 from django.db.models import Sum
+from legacy.models import DiningBalance, DiningTransaction
 from options.models import Option, get_option, get_value
 from pytz import timezone
 
 from dining.constants import map_to_pretty
-from legacy.models import DiningBalance, DiningTransaction
 from studentlife.utils import get_new_start_end
 
 
