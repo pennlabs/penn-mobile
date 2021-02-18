@@ -1,4 +1,5 @@
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
+from legacy.models import Account
 from pytz import timezone
 from rest_framework.views import APIView
 
@@ -12,7 +13,6 @@ from dining.helpers import (
     recent_transactions_card,
     update_if_not_none,
 )
-from legacy.models import Account
 from studentlife.utils import date_iso_eastern
 
 
