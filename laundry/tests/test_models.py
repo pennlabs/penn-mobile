@@ -5,7 +5,6 @@ from laundry.models import LaundryRoom, LaundrySnapshot
 
 class LaundrySnapshotTestCase(TestCase):
     def setUp(self):
-        print("here")
         self.snapshot = LaundrySnapshot.objects.create(
             hall_id=1, available_washers=10, available_dryers=10, total_washers=20, total_dryers=20
         )

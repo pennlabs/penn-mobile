@@ -3,6 +3,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from django.utils import timezone
+from django.db.utils import OperationalError
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 
@@ -31,15 +32,18 @@ class Laundry(object):
         self.create_hall_to_link_mapping()
 
     def create_hall_to_link_mapping(self):
-
-        for room in LaundryRoom.objects.all():
-            hall_id = room.hall_id
-            self.hall_to_link[room.name] = ALL_URL + str(room.uuid)
-            self.id_to_hall[hall_id] = room.name
-            self.id_to_location[hall_id] = room.location
-            self.hall_id_list.append(
-                {"hall_name": room.name, "id": room.hall_id, "location": room.location}
-            )
+        try:
+            for room in LaundryRoom.objects.all():
+                hall_id = room.hall_id
+                self.hall_to_link[room.name] = ALL_URL + str(room.uuid)
+                self.id_to_hall[hall_id] = room.name
+                self.id_to_location[hall_id] = room.location
+                self.hall_id_list.append(
+                    {"hall_name": room.name, "id": room.hall_id, "location": room.location}
+                )
+        # OperationalError thrown when initially making migrations
+        except OperationalError:
+            return
 
     @staticmethod
     def update_machine_object(cols, machine_object):
