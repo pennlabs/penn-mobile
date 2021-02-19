@@ -2,8 +2,8 @@ import os
 
 import requests
 from bs4 import BeautifulSoup
-from django.utils import timezone
 from django.db.utils import OperationalError
+from django.utils import timezone
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 
