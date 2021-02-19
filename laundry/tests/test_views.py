@@ -6,12 +6,14 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from laundry.api_wrapper import Laundry
 from laundry.models import LaundryRoom, LaundrySnapshot
-from laundry.views import refresh_laundry
 from user.models import Profile
 
 
 User = get_user_model()
+
+laundry = Laundry()
 
 
 class HallsViewTestCase(TestCase):
@@ -19,7 +21,6 @@ class HallsViewTestCase(TestCase):
         self.laundry_room = LaundryRoom.objects.create(
             hall_id=0, name="Bishop White", location="Quad"
         )
-        refresh_laundry()
         self.client = APIClient()
 
     def test_response(self):
@@ -36,7 +37,6 @@ class HallInfoViewTestCase(TestCase):
         self.laundry_room = LaundryRoom.objects.create(
             hall_id=0, name="Bishop White", location="Quad"
         )
-        refresh_laundry()
         self.client = APIClient()
 
     def test_response(self):
@@ -65,7 +65,6 @@ class HallUsageViewTestCase(TestCase):
             total_washers=15,
             total_dryers=20,
         )
-        refresh_laundry()
         self.client = APIClient()
 
     def test_response(self):
