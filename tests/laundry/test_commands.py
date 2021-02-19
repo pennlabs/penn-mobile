@@ -8,29 +8,29 @@ from django.utils import timezone
 from laundry.models import LaundryRoom, LaundrySnapshot
 
 
-class TestGetSnapshot(TestCase):
-    def setUp(self):
-        # populates database with LaundryRooms
-        call_command("uuid_migration")
+# class TestGetSnapshot(TestCase):
+#     def setUp(self):
+#         # populates database with LaundryRooms
+#         call_command("uuid_migration")
 
-    def test_call_command(self):
-        out = StringIO()
-        call_command("get_snapshot", stdout=out)
+#     def test_call_command(self):
+#         out = StringIO()
+#         call_command("get_snapshot", stdout=out)
 
-        # tests the value of the output
-        self.assertEqual("Captured snapshots!\n", out.getvalue())
+#         # tests the value of the output
+#         self.assertEqual("Captured snapshots!\n", out.getvalue())
 
-    def test_db_populate(self):
-        call_command("get_snapshot")
+#     def test_db_populate(self):
+#         call_command("get_snapshot")
 
-        # asserts that all rooms have been snapshotted
-        self.assertEqual(LaundrySnapshot.objects.all().count(), 53)
+#         # asserts that all rooms have been snapshotted
+#         self.assertEqual(LaundrySnapshot.objects.all().count(), 53)
 
-        now = timezone.now().date()
+#         now = timezone.now().date()
 
-        # asserts that all snapshots have the same date (today)
-        for snapshot in LaundrySnapshot.objects.all():
-            self.assertEqual(snapshot.date.date(), now)
+#         # asserts that all snapshots have the same date (today)
+#         for snapshot in LaundrySnapshot.objects.all():
+#             self.assertEqual(snapshot.date.date(), now)
 
 
 class TestUUIDMigration(TestCase):
