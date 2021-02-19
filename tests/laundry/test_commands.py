@@ -3,10 +3,11 @@ from io import StringIO
 
 from django.core.management import call_command
 from django.test import TestCase
-from django.utils import timezone
 
-from laundry.models import LaundryRoom, LaundrySnapshot
+from laundry.models import LaundryRoom  # , LaundrySnapshot
 
+
+# from django.utils import timezone
 
 # class TestGetSnapshot(TestCase):
 #     def setUp(self):
