@@ -3,7 +3,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from django.core.management import call_command
-from django.db.utils import OperationalError
+from django.db.utils import OperationalError, ProgrammingError
 from django.utils import timezone
 
 from laundry.models import LaundryRoom, LaundrySnapshot
@@ -47,7 +47,7 @@ class Laundry(object):
                     {"hall_name": room.name, "id": room.hall_id, "location": room.location}
                 )
         # OperationalError thrown when initially making migrations
-        except OperationalError:
+        except OperationalError, ProgrammingError:
             return
 
     @staticmethod
