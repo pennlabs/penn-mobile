@@ -16,6 +16,10 @@ from user.models import Profile
 laundry = Laundry()
 
 
+def refresh_laundry():
+    laundry.create_hall_to_link_mapping()
+
+
 class Halls(APIView):
     def get(self, request):
         try:
@@ -49,7 +53,7 @@ class HallUsage(APIView):
         end = start + datetime.timedelta(hours=27)
 
         # filters for LaundrySnapshots within timeframe
-        snapshots = LaundrySnapshot.objects.filter(room=hall_id, date__gt=start, date__lte=end)
+        snapshots = LaundrySnapshot.objects.filter(hall_id=hall_id, date__gt=start, date__lte=end)
 
         # adds all the LaundrySnapshots from the same weekday within the previous 28 days
         for week in range(1, 4):
@@ -58,7 +62,7 @@ class HallUsage(APIView):
             new_end = new_start + datetime.timedelta(hours=27)
 
             new_snapshots = LaundrySnapshot.objects.filter(
-                room=hall_id, date__gt=new_start, date__lte=new_end
+                hall_id=hall_id, date__gt=new_start, date__lte=new_end
             )
             snapshots = snapshots.union(new_snapshots)
 
@@ -103,7 +107,7 @@ class HallUsage(APIView):
         # collects total washers and dryers
         try:
             total_washers = snapshots.first().total_washers
-            total_dryers = snapshots.first().total_washers
+            total_dryers = snapshots.first().total_dryers
         except AttributeError:
             total_washers = 0
             total_dryers = 0
