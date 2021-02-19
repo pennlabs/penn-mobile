@@ -6,21 +6,16 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from laundry.api_wrapper import Laundry
 from laundry.models import LaundryRoom, LaundrySnapshot
 from user.models import Profile
 
 
 User = get_user_model()
 
-laundry = Laundry()
-
 
 class HallsViewTestCase(TestCase):
     def setUp(self):
-        self.laundry_room = LaundryRoom.objects.create(
-            hall_id=0, name="Bishop White", location="Quad"
-        )
+        self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.client = APIClient()
 
     def test_response(self):
@@ -34,9 +29,7 @@ class HallsViewTestCase(TestCase):
 
 class HallInfoViewTestCase(TestCase):
     def setUp(self):
-        self.laundry_room = LaundryRoom.objects.create(
-            hall_id=0, name="Bishop White", location="Quad"
-        )
+        self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.client = APIClient()
 
     def test_response(self):
@@ -55,9 +48,7 @@ class HallInfoViewTestCase(TestCase):
 
 class HallUsageViewTestCase(TestCase):
     def setUp(self):
-        self.laundry_room = LaundryRoom.objects.create(
-            hall_id=0, name="Bishop White", location="Quad"
-        )
+        self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.snapshot = LaundrySnapshot.objects.create(
             hall_id=self.laundry_room.hall_id,
             available_washers=5,
@@ -84,10 +75,8 @@ class PreferencesTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.laundry_room = LaundryRoom.objects.create(
-            hall_id=0, name="Bishop White", location="Quad"
-        )
-        self.other_laundry_room = LaundryRoom.objects.create(
+        self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
+        self.other_laundry_room = LaundryRoom.objects.get(
             hall_id=1, name="Chestnut Butcher", location="Quad"
         )
         self.profile = Profile.objects.create(user=self.test_user)
