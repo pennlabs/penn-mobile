@@ -16,10 +16,6 @@ from user.models import Profile
 laundry = Laundry()
 
 
-def refresh_laundry():
-    laundry.create_hall_to_link_mapping()
-
-
 class Halls(APIView):
     def get(self, request):
         try:
