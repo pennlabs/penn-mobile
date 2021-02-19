@@ -47,7 +47,7 @@ class Laundry(object):
                     {"hall_name": room.name, "id": room.hall_id, "location": room.location}
                 )
         # OperationalError thrown when initially making migrations
-        except OperationalError, ProgrammingError:
+        except (OperationalError, ProgrammingError):
             return
 
     @staticmethod
