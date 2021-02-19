@@ -2,6 +2,7 @@ import os
 
 import requests
 from bs4 import BeautifulSoup
+from django.core.management import call_command
 from django.db.utils import OperationalError
 from django.utils import timezone
 
@@ -33,6 +34,10 @@ class Laundry(object):
 
     def create_hall_to_link_mapping(self):
         try:
+            # makes migration when there are no rooms
+            if LaundryRoom.objects.count() == 0:
+                call_command("uuid_migration")
+
             for room in LaundryRoom.objects.all():
                 hall_id = room.hall_id
                 self.hall_to_link[room.name] = ALL_URL + str(room.uuid)
