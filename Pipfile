@@ -14,6 +14,7 @@ django-extensions = "*"
 flake8-absolute-import = "*"
 rope = "*"
 pytest = "*"
+tblib = "*"
 
 [packages]
 beautifulsoup4 = "*"
