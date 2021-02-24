@@ -11,7 +11,7 @@ from laundry.models import LaundryRoom, LaundrySnapshot
 class TestGetSnapshot(TestCase):
     def setUp(self):
         # populates database with LaundryRooms
-        call_command("uuid_migration")
+        call_command("load_laundry_rooms")
 
     def test_call_command(self):
         out = StringIO()
@@ -36,13 +36,13 @@ class TestGetSnapshot(TestCase):
 class TestUUIDMigration(TestCase):
     def test_call_command(self):
         out = StringIO()
-        call_command("uuid_migration", stdout=out)
+        call_command("load_laundry_rooms", stdout=out)
 
         # tests the value of the output
         self.assertEqual("Uploaded Laundry Rooms!\n", out.getvalue())
 
     def test_db_populate(self):
-        call_command("uuid_migration")
+        call_command("load_laundry_rooms")
 
         # asserts that the number of LaundryRooms created was 53
         self.assertEqual(LaundryRoom.objects.all().count(), 53)
@@ -60,7 +60,7 @@ class TestUUIDMigration(TestCase):
                 self.assertEqual(room.location, location)
                 self.assertEqual(str(room.uuid), uuid)
 
-        call_command("uuid_migration")
+        call_command("load_laundry_rooms")
 
         # asserts that LaundryRooms do not recreate itself
         self.assertEqual(LaundryRoom.objects.all().count(), 53)
