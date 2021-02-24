@@ -1,7 +1,7 @@
 import csv
 import unittest
-from unittest import mock
 from io import StringIO
+from unittest import mock
 
 from django.core.management import call_command
 from django.test import TestCase
@@ -11,13 +11,14 @@ from laundry.models import LaundryRoom, LaundrySnapshot
 
 
 def fakeLaundryGet(url, *args, **kwargs):
-        if "suds.kite.upenn.edu" in url:
-            with open("tests/laundry/laundry_snapshot.html", "rb") as f:
-                m = mock.MagicMock(content=f.read())
-                print('went here')
-            return m
-        else:
-            raise NotImplementedError
+    if "suds.kite.upenn.edu" in url:
+        with open("tests/laundry/laundry_snapshot.html", "rb") as f:
+            m = mock.MagicMock(content=f.read())
+            print("went here")
+        return m
+    else:
+        raise NotImplementedError
+
 
 @mock.patch("requests.get", fakeLaundryGet)
 class TestGetSnapshot(unittest.TestCase):
@@ -43,6 +44,7 @@ class TestGetSnapshot(unittest.TestCase):
         # asserts that all snapshots have the same date (today)
         for snapshot in LaundrySnapshot.objects.all():
             self.assertEqual(snapshot.date.date(), now)
+
 
 @mock.patch("requests.get", fakeLaundryGet)
 class TestLaundryRoomMigration(TestCase):
