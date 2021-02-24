@@ -1,6 +1,7 @@
 import calendar
 import datetime
 
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
 from requests.exceptions import HTTPError
@@ -10,10 +11,13 @@ from rest_framework.views import APIView
 
 from laundry.api_wrapper import all_status, hall_status
 from laundry.models import LaundryRoom, LaundrySnapshot
-from laundry.serializers import LaundrySnapshotSerializer
 
 
 class Halls(APIView):
+    """
+    GET: returns list of all halls, and their respective machines and machine details
+    """
+
     def get(self, request):
         try:
             return Response(all_status())
@@ -22,18 +26,21 @@ class Halls(APIView):
 
 
 class HallInfo(APIView):
+    """
+    GET: returns list of a particular hall, its respective machines and machine details
+    """
+
     def get(self, request, hall_id):
         try:
-            return Response(hall_status(int(hall_id)))
-        except ValueError:
-            return Response({"error": "Invalid hall id passed to server."}, status=404)
+            return Response(hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id)))
         except HTTPError:
             return Response({"error": "The laundry api is currently unavailable."}, status=503)
 
 
 class HallUsage(APIView):
-
-    serializer_class = LaundrySnapshotSerializer
+    """
+    GET: returns usage data for dryers and washers of a particular hall
+    """
 
     def safe_division(self, a, b):
         return round(a / float(b), 3) if b > 0 else 0
@@ -46,10 +53,7 @@ class HallUsage(APIView):
         end = start + datetime.timedelta(hours=27)
 
         # filters for LaundrySnapshots within timeframe
-        try:
-            room = LaundryRoom.objects.get(hall_id=hall_id)
-        except LaundryRoom.DoesNotExist:
-            raise ValueError("No hall with id %s exists." % hall_id)
+        room = get_object_or_404(LaundryRoom, hall_id=hall_id)
 
         snapshots = LaundrySnapshot.objects.filter(room=room, date__gt=start, date__lte=end)
 
@@ -128,6 +132,12 @@ class HallUsage(APIView):
 
 
 class Preferences(APIView):
+    """
+    GET: returns list of a User's laundry preferences
+
+    POST: updates User laundry preferences by clearing past preferences
+    and resetting them with request data
+    """
 
     permission_classes = [IsAuthenticated]
 
