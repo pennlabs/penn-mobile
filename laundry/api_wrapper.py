@@ -111,7 +111,7 @@ def all_status():
     Return names, hall numbers, and the washers/dryers available for all rooms in the system
     """
 
-    if not check_is_working:
+    if not check_is_working():
         raise HTTPError()
 
     laundry_rooms = {}
@@ -125,7 +125,7 @@ def hall_status(hall_id):
     Return the status of each specific washer/dryer in a particular hall_id
     """
 
-    if not check_is_working:
+    if not check_is_working():
         raise HTTPError()
 
     try:

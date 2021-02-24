@@ -1,7 +1,6 @@
 import json
 
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -16,7 +15,18 @@ User = get_user_model()
 
 class HallsViewTestCase(TestCase):
     def setUp(self):
-        call_command("load_laundry_rooms")
+        LaundryRoom.objects.get_or_create(
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=2, name="Class of ***REMOVED***8 Fisher", location="Quad", total_washers=8, total_dryers=8
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
+        )
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.client = APIClient()
 
@@ -31,7 +41,18 @@ class HallsViewTestCase(TestCase):
 
 class HallInfoViewTestCase(TestCase):
     def setUp(self):
-        call_command("load_laundry_rooms")
+        LaundryRoom.objects.get_or_create(
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=2, name="Class of ***REMOVED***8 Fisher", location="Quad", total_washers=8, total_dryers=8
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
+        )
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.client = APIClient()
 
@@ -51,7 +72,18 @@ class HallInfoViewTestCase(TestCase):
 
 class HallUsageViewTestCase(TestCase):
     def setUp(self):
-        call_command("load_laundry_rooms")
+        LaundryRoom.objects.get_or_create(
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=2, name="Class of ***REMOVED***8 Fisher", location="Quad", total_washers=8, total_dryers=8
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
+        )
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.snapshot = LaundrySnapshot.objects.create(
             room=self.laundry_room, available_washers=5, available_dryers=10,
@@ -71,7 +103,18 @@ class HallUsageViewTestCase(TestCase):
 
 class PreferencesTestCase(TestCase):
     def setUp(self):
-        call_command("load_laundry_rooms")
+        LaundryRoom.objects.get_or_create(
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=2, name="Class of ***REMOVED***8 Fisher", location="Quad", total_washers=8, total_dryers=8
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
+        )
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
