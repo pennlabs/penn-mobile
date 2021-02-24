@@ -1,4 +1,6 @@
 import csv
+import unittest
+from unittest import mock
 from io import StringIO
 
 from django.core.management import call_command
@@ -8,7 +10,17 @@ from django.utils import timezone
 from laundry.models import LaundryRoom, LaundrySnapshot
 
 
-class TestGetSnapshot(TestCase):
+def fakeLaundryGet(url, *args, **kwargs):
+        if "suds.kite.upenn.edu" in url:
+            with open("tests/laundry/laundry_snapshot.html", "rb") as f:
+                m = mock.MagicMock(content=f.read())
+                print('went here')
+            return m
+        else:
+            raise NotImplementedError
+
+@mock.patch("requests.get", fakeLaundryGet)
+class TestGetSnapshot(unittest.TestCase):
     def setUp(self):
         # populates database with LaundryRooms
         call_command("load_laundry_rooms")
@@ -32,8 +44,8 @@ class TestGetSnapshot(TestCase):
         for snapshot in LaundrySnapshot.objects.all():
             self.assertEqual(snapshot.date.date(), now)
 
-
-class TestUUIDMigration(TestCase):
+@mock.patch("requests.get", fakeLaundryGet)
+class TestLaundryRoomMigration(TestCase):
     def test_call_command(self):
         out = StringIO()
         call_command("load_laundry_rooms", stdout=out)
