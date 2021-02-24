@@ -72,7 +72,7 @@ class TestHallStatus(TestCase):
         for room in LaundryRoom.objects.all():
 
             # asserts fields are present
-            status = hall_status(room.hall_id)
+            status = hall_status(room)
             machines = status["machines"]
             self.assertTrue("washers" in machines)
             self.assertTrue("dryers" in machines)

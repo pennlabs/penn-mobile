@@ -120,18 +120,13 @@ def all_status():
     return laundry_rooms
 
 
-def hall_status(hall_id):
+def hall_status(room):
     """
     Return the status of each specific washer/dryer in a particular hall_id
     """
 
     if not check_is_working():
         raise HTTPError()
-
-    try:
-        room = LaundryRoom.objects.get(hall_id=hall_id)
-    except LaundryRoom.DoesNotExist:
-        raise ValueError("No hall with id %s exists." % hall_id)
 
     machines = parse_a_hall(HALL_URL + str(room.uuid))
 
