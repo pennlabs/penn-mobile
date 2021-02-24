@@ -5,7 +5,6 @@ from unittest import mock
 
 from django.core.management import call_command
 from django.test import TestCase
-from django.utils import timezone
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 
@@ -14,49 +13,46 @@ def fakeLaundryGet(url, *args, **kwargs):
     if "suds.kite.upenn.edu" in url:
         with open("tests/laundry/laundry_snapshot.html", "rb") as f:
             m = mock.MagicMock(content=f.read())
-            print("went here")
         return m
     else:
         raise NotImplementedError
 
 
-@mock.patch("requests.get", fakeLaundryGet)
+# @mock.patch("requests.get", fakeLaundryGet)
 class TestGetSnapshot(unittest.TestCase):
     def setUp(self):
         # populates database with LaundryRooms
-        call_command("load_laundry_rooms")
+        LaundryRoom.objects.get_or_create(
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
+        )
 
-    def test_call_command(self):
+    def test_db_populate(self):
         out = StringIO()
         call_command("get_snapshot", stdout=out)
 
         # tests the value of the output
         self.assertEqual("Captured snapshots!\n", out.getvalue())
 
-    def test_db_populate(self):
-        call_command("get_snapshot")
-
         # asserts that all rooms have been snapshotted
-        self.assertEqual(LaundrySnapshot.objects.all().count(), 53)
-
-        now = timezone.now().date()
-
-        # asserts that all snapshots have the same date (today)
-        for snapshot in LaundrySnapshot.objects.all():
-            self.assertEqual(snapshot.date.date(), now)
+        self.assertEqual(LaundrySnapshot.objects.all().count(), 4)
 
 
-@mock.patch("requests.get", fakeLaundryGet)
 class TestLaundryRoomMigration(TestCase):
-    def test_call_command(self):
+    def test_db_populate(self):
         out = StringIO()
         call_command("load_laundry_rooms", stdout=out)
 
         # tests the value of the output
         self.assertEqual("Uploaded Laundry Rooms!\n", out.getvalue())
-
-    def test_db_populate(self):
-        call_command("load_laundry_rooms")
 
         # asserts that the number of LaundryRooms created was 53
         self.assertEqual(LaundryRoom.objects.all().count(), 53)
