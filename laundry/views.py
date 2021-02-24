@@ -4,22 +4,19 @@ import datetime
 from django.utils import timezone
 from django.utils.timezone import make_aware
 from requests.exceptions import HTTPError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from laundry.api_wrapper import Laundry
+from laundry.api_wrapper import all_status, hall_status
 from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundrySnapshotSerializer
-from user.models import Profile
-
-
-laundry = Laundry()
 
 
 class Halls(APIView):
     def get(self, request):
         try:
-            return Response(laundry.all_status())
+            return Response(all_status())
         except HTTPError:
             return Response({"error": "The laundry api is currently unavailable."}, status=503)
 
@@ -27,7 +24,7 @@ class Halls(APIView):
 class HallInfo(APIView):
     def get(self, request, hall_id):
         try:
-            return Response(laundry.hall_status(int(hall_id)))
+            return Response(hall_status(int(hall_id)))
         except ValueError:
             return Response({"error": "Invalid hall id passed to server."}, status=404)
         except HTTPError:
@@ -41,7 +38,7 @@ class HallUsage(APIView):
     def safe_division(self, a, b):
         return round(a / float(b), 3) if b > 0 else 0
 
-    def get_queryset(self, hall_id):
+    def get_snapshot_info(self, hall_id):
         now = timezone.localtime()
 
         # start is beginning of day, end is 27 hours after start
@@ -49,7 +46,12 @@ class HallUsage(APIView):
         end = start + datetime.timedelta(hours=27)
 
         # filters for LaundrySnapshots within timeframe
-        snapshots = LaundrySnapshot.objects.filter(hall_id=hall_id, date__gt=start, date__lte=end)
+        try:
+            room = LaundryRoom.objects.get(hall_id=hall_id)
+        except LaundryRoom.DoesNotExist:
+            raise ValueError("No hall with id %s exists." % hall_id)
+
+        snapshots = LaundrySnapshot.objects.filter(room=room, date__gt=start, date__lte=end)
 
         # adds all the LaundrySnapshots from the same weekday within the previous 28 days
         for week in range(1, 4):
@@ -58,15 +60,17 @@ class HallUsage(APIView):
             new_end = new_start + datetime.timedelta(hours=27)
 
             new_snapshots = LaundrySnapshot.objects.filter(
-                hall_id=hall_id, date__gt=new_start, date__lte=new_end
+                room=room, date__gt=new_start, date__lte=new_end
             )
             snapshots = snapshots.union(new_snapshots)
 
-        return snapshots.order_by("-date")
+        return (room, snapshots.order_by("-date"))
 
     def get(self, request, hall_id):
-
-        snapshots = self.get_queryset(hall_id)
+        try:
+            (room, snapshots) = self.get_snapshot_info(hall_id)
+        except ValueError:
+            return Response({"error": "Invalid hall id passed to server."}, status=404)
 
         # [0]: available washers, [1]: available dryers, [2]: total number of LaundrySnapshots
         data = [(0, 0, 0)] * 27
@@ -110,8 +114,8 @@ class HallUsage(APIView):
 
         return Response(
             {
-                "hall_name": laundry.id_to_hall[int(hall_id)],
-                "location": laundry.id_to_location[int(hall_id)],
+                "hall_name": room.name,
+                "location": room.location,
                 "day_of_week": calendar.day_name[timezone.localtime().weekday()],
                 "start_date": min_date.date(),
                 "end_date": max_date.date(),
@@ -124,36 +128,29 @@ class HallUsage(APIView):
 
 
 class Preferences(APIView):
+
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
 
-        # tests if user is logged-in
-        if not request.user.is_authenticated:
-            return Response({"rooms": []})
-
-        preferences = Profile.objects.get(user=request.user).preferences.all()
-
-        hall_ids = [x.hall_id for x in preferences]
+        preferences = request.user.profile.laundry_preferences.all()
 
         # returns all hall_ids in a person's preferences
-        return Response({"rooms": hall_ids})
+        return Response({"rooms": preferences.values_list("hall_id", flat=True)})
 
     def post(self, request):
 
-        # tests if user is logged-in
-        if not request.user.is_authenticated:
-            return Response({"rooms": []})
-
-        profile = Profile.objects.get(user=request.user)
+        profile = request.user.profile
 
         # clears all previous preferences in many-to-many
-        profile.preferences.clear()
+        profile.laundry_preferences.clear()
 
         hall_ids = request.data["rooms"]
 
         for hall_id in hall_ids:
             hall = LaundryRoom.objects.get(hall_id=int(hall_id))
             # adds all of the preferences given by the request
-            profile.preferences.add(hall)
+            profile.laundry_preferences.add(hall)
 
         profile.save()
 

@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from django.core.management import call_command
 from rest_framework.test import APIClient
 
 from laundry.models import LaundryRoom, LaundrySnapshot
@@ -15,6 +16,7 @@ User = get_user_model()
 
 class HallsViewTestCase(TestCase):
     def setUp(self):
+        call_command("load_laundry_rooms")
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.client = APIClient()
 
@@ -29,6 +31,7 @@ class HallsViewTestCase(TestCase):
 
 class HallInfoViewTestCase(TestCase):
     def setUp(self):
+        call_command("load_laundry_rooms")
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.client = APIClient()
 
@@ -48,13 +51,12 @@ class HallInfoViewTestCase(TestCase):
 
 class HallUsageViewTestCase(TestCase):
     def setUp(self):
+        call_command("load_laundry_rooms")
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.snapshot = LaundrySnapshot.objects.create(
-            hall_id=self.laundry_room.hall_id,
+            room=self.laundry_room,
             available_washers=5,
             available_dryers=10,
-            total_washers=15,
-            total_dryers=20,
         )
         self.client = APIClient()
 
@@ -65,14 +67,13 @@ class HallUsageViewTestCase(TestCase):
         time = timezone.localtime()
         hour = time.hour
 
-        self.assertEqual(self.snapshot.total_washers, res_json["total_number_of_washers"])
-        self.assertEqual(self.snapshot.total_dryers, res_json["total_number_of_dryers"])
         self.assertEqual(self.snapshot.available_washers, res_json["washer_data"][str(hour)])
         self.assertEqual(self.snapshot.available_dryers, res_json["dryer_data"][str(hour)])
 
 
 class PreferencesTestCase(TestCase):
     def setUp(self):
+        call_command("load_laundry_rooms")
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
@@ -80,7 +81,7 @@ class PreferencesTestCase(TestCase):
             hall_id=1, name="Chestnut Butcher", location="Quad"
         )
         self.profile = Profile.objects.create(user=self.test_user)
-        self.profile.preferences.add(self.laundry_room)
+        self.profile.laundry_preferences.add(self.laundry_room)
 
     def test_get(self):
         self.client.force_authenticate(user=self.test_user)
