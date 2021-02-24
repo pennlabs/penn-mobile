@@ -17,7 +17,7 @@ class TestAllStatus(TestCase):
         call_command("load_laundry_rooms")
 
     def test_all_status(self):
-        
+
         data = all_status()
 
         self.assertEqual(len(data), 53)

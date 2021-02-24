@@ -1,10 +1,10 @@
 import json
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from django.core.management import call_command
 from rest_framework.test import APIClient
 
 from laundry.models import LaundryRoom, LaundrySnapshot
@@ -54,9 +54,7 @@ class HallUsageViewTestCase(TestCase):
         call_command("load_laundry_rooms")
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.snapshot = LaundrySnapshot.objects.create(
-            room=self.laundry_room,
-            available_washers=5,
-            available_dryers=10,
+            room=self.laundry_room, available_washers=5, available_dryers=10,
         )
         self.client = APIClient()
 

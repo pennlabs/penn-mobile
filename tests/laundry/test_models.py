@@ -1,5 +1,5 @@
-from django.test import TestCase
 from django.core.management import call_command
+from django.test import TestCase
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 
@@ -9,9 +9,7 @@ class LaundrySnapshotTestCase(TestCase):
         call_command("load_laundry_rooms")
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.snapshot = LaundrySnapshot.objects.create(
-            room=self.laundry_room,
-            available_washers=10,
-            available_dryers=10,
+            room=self.laundry_room, available_washers=10, available_dryers=10,
         )
 
     def test_str(self):
