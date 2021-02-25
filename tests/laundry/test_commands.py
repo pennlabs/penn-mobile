@@ -1,8 +1,8 @@
-import unittest
 from io import StringIO
 from unittest import mock
 
 from django.core.management import call_command
+from django.test import TestCase
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 
@@ -18,7 +18,7 @@ def fakeLaundryGet(url, *args, **kwargs):
 
 
 @mock.patch("requests.get", fakeLaundryGet)
-class TestGetSnapshot(unittest.TestCase):
+class TestGetSnapshot(TestCase):
     def setUp(self):
         # populates database with LaundryRooms
         LaundryRoom.objects.get_or_create(
