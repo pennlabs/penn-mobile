@@ -10,7 +10,8 @@ class LaundryRoom(models.Model):
     total_washers = models.IntegerField(default=0)
     total_dryers = models.IntegerField(default=0)
 
-    # used to access Penn API laundry data
+    # Each Laundry Room has a UUID that we need to
+    # access Penn API laundry data
     uuid = models.UUIDField(default=uuid.uuid4)
 
     def __str__(self):
