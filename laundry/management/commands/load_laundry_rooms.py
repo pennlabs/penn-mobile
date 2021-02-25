@@ -17,10 +17,11 @@ class Command(BaseCommand):
 
                 machines = parse_a_hall(HALL_URL + uuid)
                 total_washers = sum(
-                    [machines["washers"][x] for x in ["open", "running", "offline", "out_of_order"]]
+                    machines["washers"][x] for x in ["open", "running", "offline", "out_of_order"]
                 )
+
                 total_dryers = sum(
-                    [machines["dryers"][x] for x in ["open", "running", "offline", "out_of_order"]]
+                    machines["dryers"][x] for x in ["open", "running", "offline", "out_of_order"]
                 )
 
                 LaundryRoom.objects.get_or_create(
