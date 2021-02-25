@@ -1,4 +1,3 @@
-import csv
 from io import StringIO
 from unittest import mock
 
@@ -45,6 +44,10 @@ class TestGetSnapshot(TestCase):
         self.assertEqual(LaundrySnapshot.objects.all().count(), 4)
 
 
+# test works, however takes ~10-15 minutes to run
+"""
+import csv
+
 @mock.patch("requests.get", fakeLaundryGet)
 class TestLaundryRoomMigration(TestCase):
     def test_db_populate(self):
@@ -74,3 +77,4 @@ class TestLaundryRoomMigration(TestCase):
 
         # asserts that LaundryRooms do not recreate itself
         self.assertEqual(LaundryRoom.objects.all().count(), 53)
+"""
