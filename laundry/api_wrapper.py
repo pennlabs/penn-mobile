@@ -3,10 +3,11 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from django.utils import timezone
-from requests.exceptions import HTTPError
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 
+
+# from requests.exceptions import HTTPError
 
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
 HALL_URL = f"{LAUNDRY_URL}/?location="
@@ -111,8 +112,8 @@ def all_status():
     Return names, hall numbers, and the washers/dryers available for all rooms in the system
     """
 
-    if not check_is_working():
-        raise HTTPError()
+    # if not check_is_working():
+    #     raise HTTPError()
 
     laundry_rooms = {}
     for room in LaundryRoom.objects.all():
@@ -125,8 +126,8 @@ def hall_status(room):
     Return the status of each specific washer/dryer in a particular hall_id
     """
 
-    if not check_is_working():
-        raise HTTPError()
+    # if not check_is_working():
+    #     raise HTTPError()
 
     machines = parse_a_hall(HALL_URL + str(room.uuid))
 
