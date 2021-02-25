@@ -17,7 +17,7 @@ def update_machine_object(cols, machine_object):
     Updates Machine status and time remaining
     """
 
-    if cols[2].getText() == "In use" or cols[2].getText() == "Almost done":
+    if cols[2].getText() in ["In use", "Almost done"]:
         time_remaining = cols[3].getText().split(" ")[0]
         machine_object["running"] += 1
         try:
@@ -76,8 +76,7 @@ def parse_a_hall(hall_link):
                     }
                 )
 
-    machines = {"washers": washers, "dryers": dryers, "details": detailed}
-    return machines
+    return {"washers": washers, "dryers": dryers, "details": detailed}
 
 
 def check_is_working():
@@ -111,10 +110,9 @@ def all_status():
     Return names, hall numbers, and the washers/dryers available for all rooms in the system
     """
 
-    laundry_rooms = {}
-    for room in LaundryRoom.objects.all():
-        laundry_rooms[room.name] = parse_a_hall(HALL_URL + str(room.uuid))
-    return laundry_rooms
+    return {
+        room.name: parse_a_hall(HALL_URL + str(room.uuid)) for room in LaundryRoom.objects.all()
+    }
 
 
 def hall_status(room):
