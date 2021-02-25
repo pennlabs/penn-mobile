@@ -1,15 +1,19 @@
 import os
+import unittest
+from unittest import mock
 
 from django.test import TestCase
 
 from laundry.api_wrapper import all_status, hall_status, save_data
 from laundry.models import LaundryRoom, LaundrySnapshot
+from tests.laundry.test_commands import fakeLaundryGet
 
 
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
 ALL_URL = f"{LAUNDRY_URL}/?location="
 
 
+@mock.patch("requests.get", fakeLaundryGet)
 class TestAllStatus(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -52,6 +56,7 @@ class TestAllStatus(TestCase):
                 self.assertTrue(hall[machine]["offline"] >= 0)
 
 
+@mock.patch("requests.get", fakeLaundryGet)
 class TestHallStatus(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -83,6 +88,7 @@ class TestHallStatus(TestCase):
                 self.assertTrue("status" in machine)
 
 
+@mock.patch("requests.get", fakeLaundryGet)
 class TestSaveData(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -97,6 +103,7 @@ class TestSaveData(TestCase):
         LaundryRoom.objects.get_or_create(
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
         )
+
 
     def test_save_data(self):
 

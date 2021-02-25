@@ -1,4 +1,6 @@
 import json
+import unittest
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -7,12 +9,13 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from laundry.models import LaundryRoom, LaundrySnapshot
+from tests.laundry.test_commands import fakeLaundryGet
 from user.models import Profile
 
 
 User = get_user_model()
 
-
+@mock.patch("requests.get", fakeLaundryGet)
 class HallsViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -39,6 +42,7 @@ class HallsViewTestCase(TestCase):
             self.assertEqual("The laundry api is currently unavailable.", res_json["error"])
 
 
+@mock.patch("requests.get", fakeLaundryGet)
 class HallInfoViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -70,6 +74,7 @@ class HallInfoViewTestCase(TestCase):
         self.assertEqual(404, response.status_code)
 
 
+@mock.patch("requests.get", fakeLaundryGet)
 class HallUsageViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -101,6 +106,7 @@ class HallUsageViewTestCase(TestCase):
         self.assertEqual(self.snapshot.available_dryers, res_json["dryer_data"][str(hour)])
 
 
+@mock.patch("requests.get", fakeLaundryGet)
 class PreferencesTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
