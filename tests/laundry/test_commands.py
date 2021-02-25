@@ -1,3 +1,4 @@
+import csv
 from io import StringIO
 from unittest import mock
 
@@ -11,7 +12,6 @@ def fakeLaundryGet(url, *args, **kwargs):
     if "suds.kite.upenn.edu" in url:
         with open("tests/laundry/laundry_snapshot.html", "rb") as f:
             m = mock.MagicMock(content=f.read())
-            print(m)
         return m
     else:
         raise NotImplementedError
@@ -45,32 +45,32 @@ class TestGetSnapshot(TestCase):
         self.assertEqual(LaundrySnapshot.objects.all().count(), 4)
 
 
-# @mock.patch("requests.get", fakeLaundryGet)
-# class TestLaundryRoomMigration(TestCase):
-#     def test_db_populate(self):
-#         out = StringIO()
-#         call_command("load_laundry_rooms", stdout=out)
+@mock.patch("requests.get", fakeLaundryGet)
+class TestLaundryRoomMigration(TestCase):
+    def test_db_populate(self):
+        out = StringIO()
+        call_command("load_laundry_rooms", stdout=out)
 
-#         # tests the value of the output
-#         self.assertEqual("Uploaded Laundry Rooms!\n", out.getvalue())
+        # tests the value of the output
+        self.assertEqual("Uploaded Laundry Rooms!\n", out.getvalue())
 
-#         # asserts that the number of LaundryRooms created was 53
-#         self.assertEqual(LaundryRoom.objects.all().count(), 53)
+        # asserts that the number of LaundryRooms created was 53
+        self.assertEqual(LaundryRoom.objects.all().count(), 53)
 
-#         with open("laundry/data/laundry_data.csv") as data:
-#             reader = csv.reader(data)
+        with open("laundry/data/laundry_data.csv") as data:
+            reader = csv.reader(data)
 
-#             for i, row in enumerate(reader):
-#                 hall_id, hall_name, location, uuid = row
+            for i, row in enumerate(reader):
+                hall_id, hall_name, location, uuid = row
 
-#                 room = LaundryRoom.objects.get(hall_id=hall_id)
+                room = LaundryRoom.objects.get(hall_id=hall_id)
 
-#                 # asserts that all fields of LaundryRoom are same
-#                 self.assertEqual(room.name, hall_name)
-#                 self.assertEqual(room.location, location)
-#                 self.assertEqual(str(room.uuid), uuid)
+                # asserts that all fields of LaundryRoom are same
+                self.assertEqual(room.name, hall_name)
+                self.assertEqual(room.location, location)
+                self.assertEqual(str(room.uuid), uuid)
 
-#         call_command("load_laundry_rooms")
+        call_command("load_laundry_rooms")
 
-#         # asserts that LaundryRooms do not recreate itself
-#         self.assertEqual(LaundryRoom.objects.all().count(), 53)
+        # asserts that LaundryRooms do not recreate itself
+        self.assertEqual(LaundryRoom.objects.all().count(), 53)
