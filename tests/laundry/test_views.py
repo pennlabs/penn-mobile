@@ -1,5 +1,5 @@
 import json
-import unittest
+# import unittest
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -14,6 +14,7 @@ from user.models import Profile
 
 
 User = get_user_model()
+
 
 @mock.patch("requests.get", fakeLaundryGet)
 class HallsViewTestCase(TestCase):
