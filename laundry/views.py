@@ -9,8 +9,18 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from laundry.api_wrapper import all_status, hall_status
+from laundry.api_wrapper import all_status, check_is_working, hall_status
 from laundry.models import LaundryRoom, LaundrySnapshot
+from laundry.serializers import LaundryRoomSerializer
+
+
+class Ids(APIView):
+    """
+    GET: returns list of all hall_ids
+    """
+
+    def get(self, request):
+        return Response(LaundryRoomSerializer(LaundryRoom.objects.all(), many=True).data)
 
 
 class Halls(APIView):
@@ -37,15 +47,52 @@ class HallInfo(APIView):
             return Response({"error": "The laundry api is currently unavailable."}, status=503)
 
 
+class TwoHalls(APIView):
+    """
+    GET: returns list of two particular halls, their respective machines and machine details
+    """
+
+    def get(self, request, hall_id1, hall_id2):
+        try:
+            return Response(
+                {
+                    "halls": [
+                        hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id1)),
+                        hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id2)),
+                    ]
+                }
+            )
+        except HTTPError:
+            return Response({"error": "The laundry api is currently unavailable."}, status=503)
+
+
+class MultipleHallInfo(APIView):
+    """
+    GET: returns list of hall information as well as hall usage
+    """
+
+    def get(self, request, hall_ids):
+        halls = [int(x) for x in hall_ids.split(",")]
+        output = {"rooms": []}
+
+        for hall_id in halls:
+            hall_data = hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id))
+            hall_data["id"] = hall_id
+            hall_data["usage_data"] = HallUsage.compute_usage(hall_id)
+            output["rooms"].append(hall_data)
+
+        return Response(output)
+
+
 class HallUsage(APIView):
     """
     GET: returns usage data for dryers and washers of a particular hall
     """
 
-    def safe_division(self, a, b):
+    def safe_division(a, b):
         return round(a / float(b), 3) if b > 0 else 0
 
-    def get_snapshot_info(self, hall_id):
+    def get_snapshot_info(hall_id):
         now = timezone.localtime()
 
         # start is beginning of day, end is 27 hours after start
@@ -70,9 +117,9 @@ class HallUsage(APIView):
 
         return (room, snapshots.order_by("-date"))
 
-    def get(self, request, hall_id):
+    def compute_usage(hall_id):
         try:
-            (room, snapshots) = self.get_snapshot_info(hall_id)
+            (room, snapshots) = HallUsage.get_snapshot_info(hall_id)
         except ValueError:
             return Response({"error": "Invalid hall id passed to server."}, status=404)
 
@@ -108,19 +155,23 @@ class HallUsage(APIView):
                 data[hour][2] + 1,
             )
 
-        return Response(
-            {
-                "hall_name": room.name,
-                "location": room.location,
-                "day_of_week": calendar.day_name[timezone.localtime().weekday()],
-                "start_date": min_date.date(),
-                "end_date": max_date.date(),
-                "washer_data": {x: self.safe_division(data[x][0], data[x][2]) for x in range(27)},
-                "dryer_data": {x: self.safe_division(data[x][1], data[x][2]) for x in range(27)},
-                "total_number_of_washers": room.total_washers,
-                "total_number_of_dryers": room.total_dryers,
-            }
-        )
+        content = {
+            "hall_name": room.name,
+            "location": room.location,
+            "day_of_week": calendar.day_name[timezone.localtime().weekday()],
+            "start_date": min_date.date(),
+            "end_date": max_date.date(),
+            "washer_data": {x: HallUsage.safe_division(data[x][0], data[x][2]) for x in range(27)},
+            "dryer_data": {x: HallUsage.safe_division(data[x][1], data[x][2]) for x in range(27)},
+            "total_number_of_washers": room.total_washers,
+            "total_number_of_dryers": room.total_dryers,
+        }
+
+        return content
+
+    def get(self, request, hall_id):
+
+        return Response(HallUsage.compute_usage(hall_id))
 
 
 class Preferences(APIView):
@@ -157,3 +208,19 @@ class Preferences(APIView):
         profile.save()
 
         return Response({"detail": "success"})
+
+
+class Status(APIView):
+    """
+    GET: returns Response according to whether or not Penn Laundry API is working or not
+    """
+
+    def get(self, request):
+        if check_is_working():
+            return Response({"is_working": True, "error_msg": None})
+        else:
+            error_msg = (
+                "Penn's laundry server is currently not updating. "
+                + "We hope this will be fixed shortly."
+            )
+            return Response({"is_working": False, "error_msg": error_msg})

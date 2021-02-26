@@ -16,6 +16,34 @@ User = get_user_model()
 
 
 @mock.patch("requests.get", fakeLaundryGet)
+class HallIdViewTestCase(TestCase):
+    def setUp(self):
+        LaundryRoom.objects.get_or_create(
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
+        )
+        self.client = APIClient()
+
+    def test_response(self):
+        response = self.client.get(reverse("hall-ids"))
+        res_json = json.loads(response.content)
+        for hall in res_json:
+            self.assertTrue(
+                LaundryRoom.objects.filter(
+                    name=hall["name"], hall_id=hall["hall_id"], location=hall["location"]
+                )
+            )
+
+
+@mock.patch("requests.get", fakeLaundryGet)
 class HallsViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -71,6 +99,86 @@ class HallInfoViewTestCase(TestCase):
 
     def test_hall_error(self):
         response = self.client.get(reverse("hall-info", args=[1000000]))
+        self.assertEqual(404, response.status_code)
+
+
+@mock.patch("requests.get", fakeLaundryGet)
+class TwoHallInfoViewTestCase(TestCase):
+    def setUp(self):
+        LaundryRoom.objects.get_or_create(
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
+        )
+        self.laundry_room_list = [
+            LaundryRoom.objects.get(hall_id=1, name="Chestnut Butcher", location="Quad"),
+            LaundryRoom.objects.get(hall_id=2, name="Class of 1928 Fisher", location="Quad"),
+        ]
+        self.client = APIClient()
+
+    def test_response(self):
+        response = self.client.get(reverse("two-hall-info", args=["1", "2"]))
+        res_json = json.loads(response.content)
+        if response.status_code == 200:
+            halls = res_json["halls"]
+            self.assertEqual(len(halls), 2)
+            for i in range(2):
+                self.assertEqual(self.laundry_room_list[i].name, halls[i]["hall_name"])
+                self.assertEqual(self.laundry_room_list[i].location, halls[i]["location"])
+        elif response.status_code == 503:
+            self.assertEqual("The laundry api is currently unavailable.", res_json["error"])
+
+    def test_hall_error(self):
+        response = self.client.get(reverse("two-hall-info", args=["1000000", "1"]))
+        self.assertEqual(404, response.status_code)
+
+
+@mock.patch("requests.get", fakeLaundryGet)
+class MultipleHallInfoViewTestCase(TestCase):
+    def setUp(self):
+        LaundryRoom.objects.get_or_create(
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
+        )
+        LaundryRoom.objects.get_or_create(
+            hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
+        )
+        self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
+        self.client = APIClient()
+
+    def test_response(self):
+        response = self.client.get(reverse("multiple-hall-info", args=["0,1,2,3"]))
+        res_json = json.loads(response.content)
+        if response.status_code == 200:
+            rooms = res_json["rooms"]
+
+            for room in rooms:
+                self.assertTrue(LaundryRoom.objects.filter(hall_id=room["id"]))
+                self.assertTrue("machines" in room)
+                self.assertTrue("washers" in room["machines"])
+                self.assertTrue("dryers" in room["machines"])
+                self.assertTrue("usage_data" in room)
+                self.assertTrue("hall_name" in room["usage_data"])
+                self.assertTrue("day_of_week" in room["usage_data"])
+                self.assertTrue("washer_data" in room["usage_data"])
+
+        elif response.status_code == 503:
+            self.assertEqual("The laundry api is currently unavailable.", res_json["error"])
+
+    def test_hall_error(self):
+        response = self.client.get(reverse("multiple-hall-info", args=["1000000"]))
         self.assertEqual(404, response.status_code)
 
 
