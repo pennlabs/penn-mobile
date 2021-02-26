@@ -108,14 +108,6 @@ class HallUsage(APIView):
                 data[hour][2] + 1,
             )
 
-        # collects total washers and dryers
-        try:
-            total_washers = snapshots.first().total_washers
-            total_dryers = snapshots.first().total_dryers
-        except AttributeError:
-            total_washers = 0
-            total_dryers = 0
-
         return Response(
             {
                 "hall_name": room.name,
@@ -125,8 +117,8 @@ class HallUsage(APIView):
                 "end_date": max_date.date(),
                 "washer_data": {x: self.safe_division(data[x][0], data[x][2]) for x in range(27)},
                 "dryer_data": {x: self.safe_division(data[x][1], data[x][2]) for x in range(27)},
-                "total_number_of_washers": total_washers,
-                "total_number_of_dryers": total_dryers,
+                "total_number_of_washers": room.total_washers,
+                "total_number_of_dryers": room.total_dryers,
             }
         )
 
@@ -158,7 +150,7 @@ class Preferences(APIView):
         hall_ids = request.data["rooms"]
 
         for hall_id in hall_ids:
-            hall = LaundryRoom.objects.get(hall_id=int(hall_id))
+            hall = get_object_or_404(LaundryRoom, hall_id=int(hall_id))
             # adds all of the preferences given by the request
             profile.laundry_preferences.add(hall)
 

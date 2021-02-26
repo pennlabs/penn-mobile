@@ -2,7 +2,6 @@ import csv
 
 from django.core.management.base import BaseCommand
 
-from laundry.api_wrapper import HALL_URL, parse_a_hall
 from laundry.models import LaundryRoom
 
 
@@ -13,16 +12,7 @@ class Command(BaseCommand):
             reader = csv.reader(data)
 
             for i, row in enumerate(reader):
-                hall_id, hall_name, location, uuid = row
-
-                machines = parse_a_hall(HALL_URL + uuid)
-                total_washers = sum(
-                    machines["washers"][x] for x in ["open", "running", "offline", "out_of_order"]
-                )
-
-                total_dryers = sum(
-                    machines["dryers"][x] for x in ["open", "running", "offline", "out_of_order"]
-                )
+                hall_id, hall_name, location, uuid, total_washers, total_dryers = row
 
                 LaundryRoom.objects.get_or_create(
                     hall_id=int(hall_id),

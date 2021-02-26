@@ -1,15 +1,13 @@
-import os
-
 import requests
 from bs4 import BeautifulSoup
+from django.conf import settings
 from django.utils import timezone
 from requests.exceptions import HTTPError
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 
 
-LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
-HALL_URL = f"{LAUNDRY_URL}/?location="
+HALL_URL = f"{settings.LAUNDRY_URL}/?location="
 
 
 def update_machine_object(cols, machine_object):
@@ -86,7 +84,7 @@ def check_is_working():
 
     try:
         r = requests.post(
-            "{}/".format(LAUNDRY_URL),
+            "{}/".format(settings.LAUNDRY_URL),
             timeout=60,
             data={
                 "locationid": "5faec7e9-a4aa-47c2-a514-950c03fac460",

@@ -1,3 +1,4 @@
+import csv
 from io import StringIO
 from unittest import mock
 
@@ -44,10 +45,6 @@ class TestGetSnapshot(TestCase):
         self.assertEqual(LaundrySnapshot.objects.all().count(), 4)
 
 
-# test works, however takes ~10-15 minutes to run
-"""
-import csv
-
 @mock.patch("requests.get", fakeLaundryGet)
 class TestLaundryRoomMigration(TestCase):
     def test_db_populate(self):
@@ -64,7 +61,7 @@ class TestLaundryRoomMigration(TestCase):
             reader = csv.reader(data)
 
             for i, row in enumerate(reader):
-                hall_id, hall_name, location, uuid = row
+                hall_id, hall_name, location, uuid, total_washers, total_dryers = row
 
                 room = LaundryRoom.objects.get(hall_id=hall_id)
 
@@ -72,9 +69,10 @@ class TestLaundryRoomMigration(TestCase):
                 self.assertEqual(room.name, hall_name)
                 self.assertEqual(room.location, location)
                 self.assertEqual(str(room.uuid), uuid)
+                self.assertEqual(room.total_washers, int(total_washers))
+                self.assertEqual(room.total_dryers, int(total_dryers))
 
         call_command("load_laundry_rooms")
 
         # asserts that LaundryRooms do not recreate itself
         self.assertEqual(LaundryRoom.objects.all().count(), 53)
-"""
