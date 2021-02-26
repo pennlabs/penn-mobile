@@ -148,3 +148,6 @@ PLATFORM_ACCOUNTS = {
     "PLATFORM_URL": "https://platform-dev.pennlabs.org",
     "CUSTOM_ADMIN": False,
 }
+
+# Laundry API URL
+LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
