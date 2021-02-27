@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from laundry.api_wrapper import all_status, check_is_working, hall_status
+from laundry.api_wrapper import check_is_working, hall_status
 from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundryRoomSerializer
 
@@ -23,18 +23,6 @@ class Ids(APIView):
         return Response(LaundryRoomSerializer(LaundryRoom.objects.all(), many=True).data)
 
 
-class Halls(APIView):
-    """
-    GET: returns list of all halls, and their respective machines and machine details
-    """
-
-    def get(self, request):
-        try:
-            return Response(all_status())
-        except HTTPError:
-            return Response({"error": "The laundry api is currently unavailable."}, status=503)
-
-
 class HallInfo(APIView):
     """
     GET: returns list of a particular hall, its respective machines and machine details
@@ -43,25 +31,6 @@ class HallInfo(APIView):
     def get(self, request, hall_id):
         try:
             return Response(hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id)))
-        except HTTPError:
-            return Response({"error": "The laundry api is currently unavailable."}, status=503)
-
-
-class TwoHalls(APIView):
-    """
-    GET: returns list of two particular halls, their respective machines and machine details
-    """
-
-    def get(self, request, hall_id1, hall_id2):
-        try:
-            return Response(
-                {
-                    "halls": [
-                        hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id1)),
-                        hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id2)),
-                    ]
-                }
-            )
         except HTTPError:
             return Response({"error": "The laundry api is currently unavailable."}, status=503)
 
