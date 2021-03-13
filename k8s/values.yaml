@@ -16,7 +16,7 @@ applications:
         value: studentlife.settings.production
 
 cronjobs:
-  - name: get_laundry_snapshots
+  - name: get-laundry-snapshots
     schedule: "*/15 * * * *"
     image: pennlabs/student-life
     secret: student-life
