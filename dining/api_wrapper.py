@@ -6,9 +6,9 @@ class APIError(ValueError):
 
 
 def headers():
-    '''
+    """
     Returns headers necessary for Penn Dining API access
-    '''
+    """
 
     return {
         "Authorization-Bearer": "sadfsfdsa",
@@ -17,14 +17,14 @@ def headers():
 
 
 def dining_request(url):
-    '''
+    """
     Makes GET request to Penn Dining API and returns the response
-    '''
+    """
 
     response = get(url, params=None, headers=headers(), timeout=30)
 
     if response.status_code != 200:
-        raise APIError('Request to {} returned {}'.format(response.url, response.status_code))
+        raise APIError("Request to {} returned {}".format(response.url, response.status_code))
 
     response = response.json()
 
