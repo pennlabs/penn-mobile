@@ -12,6 +12,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls", namespace="accounts")),
     path("user/", include("user.urls")),
+    path("laundry/", include("laundry.urls")),
     path(
         "openapi/",
         get_schema_view(title="Student Life Documentation", public=True),
