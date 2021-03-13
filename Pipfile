@@ -14,8 +14,10 @@ django-extensions = "*"
 flake8-absolute-import = "*"
 rope = "*"
 pytest = "*"
+tblib = "*"
 
 [packages]
+beautifulsoup4 = "*"
 dj-database-url = "*"
 djangorestframework = "*"
 psycopg2 = "*"

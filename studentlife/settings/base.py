@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "user.apps.UserConfig",
+    "laundry.apps.LaundryConfig",
     "accounts.apps.AccountsConfig",
     "django_filters",
     "debug_toolbar",
@@ -147,3 +148,6 @@ PLATFORM_ACCOUNTS = {
     "PLATFORM_URL": "https://platform-dev.pennlabs.org",
     "CUSTOM_ADMIN": False,
 }
+
+# Laundry API URL
+LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
