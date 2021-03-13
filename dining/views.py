@@ -28,7 +28,7 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from dining.api_wrapper import dining_request, get_meals, normalize_weekly, APIError
+from dining.api_wrapper import APIError, dining_request, get_meals, normalize_weekly
 
 
 V2_BASE_URL = "https://esb.isc-seo.upenn.edu/8091/open_data/dining/v2/?service="
@@ -49,15 +49,15 @@ VENUE_NAMES = {
 
 
 class Venues(APIView):
-    '''
+    """
     GET: returns list of venue data provided by Penn API, as well as an image of the venue
-    '''
+    """
 
     def get(self, request):
         try:
             response = dining_request(V2_ENDPOINTS["VENUES"])["result_data"]
         except APIError as e:
-            return Response({'error': e.args})
+            return Response({"error": e.args})
 
         venues = response["document"]["venue"]
 
@@ -74,23 +74,23 @@ class Venues(APIView):
 
 
 class Hours(APIView):
-    '''
+    """
     GET: Returns info on open and closing hours for a particular venue
-    '''
+    """
 
     def get(self, request, venue_id):
         try:
             response = dining_request(V2_ENDPOINTS["HOURS"] + venue_id)["result_data"]
         except APIError as e:
-            return Response({'error': e.args})
+            return Response({"error": e.args})
 
         return Response(response)
 
 
 class WeeklyMenu(APIView):
-    '''
+    """
     GET: Returns data on weekly menu for a particular venue
-    '''
+    """
 
     def get(self, request, venue_id):
         response = {"result_data": {"Document": {}}}
@@ -100,7 +100,7 @@ class WeeklyMenu(APIView):
             try:
                 v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
             except APIError as e:
-                return Response({'error': e.args})
+                return Response({"error": e.args})
 
             if venue_id in VENUE_NAMES:
                 response["result_data"]["Document"]["location"] = VENUE_NAMES[venue_id]
@@ -118,16 +118,16 @@ class WeeklyMenu(APIView):
 
 
 class DailyMenu(APIView):
-    '''
+    """
     GET: Returns data on daily menu for a particular venue
-    '''
+    """
 
     def get(self, request, venue_id):
         date = str(timezone.localtime().date())
         try:
             v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
         except APIError as e:
-            return Response({'error': e.args})
+            return Response({"error": e.args})
 
         response = {"result_data": {"Document": {}}}
         response["result_data"]["Document"]["menudate"] = datetime.datetime.strptime(
@@ -146,16 +146,17 @@ class DailyMenu(APIView):
 
 
 class DiningItem(APIView):
-    '''
+    """
     GET: Returns data on a particular item
-    '''
+    """
 
     def get(self, request, item_id):
         try:
             response = dining_request(V2_ENDPOINTS["ITEMS"] + item_id)
         except APIError as e:
-            return Response({'error': e.args})
+            return Response({"error": e.args})
         return Response(response["result_data"])
+
 
 """
 END NEW
