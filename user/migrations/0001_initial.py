@@ -9,10 +9,7 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-        ("laundry", "0001_initial"),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-    ]
+    dependencies = [migrations.swappable_dependency(settings.AUTH_USER_MODEL)]
 
     operations = [
         migrations.CreateModel(
@@ -40,7 +37,6 @@ class Migration(migrations.Migration):
                 ),
                 ("expected_graduation", models.DateField(blank=True, null=True)),
                 ("degrees", models.ManyToManyField(blank=True, to="user.Degree")),
-                ("laundry_preferences", models.ManyToManyField(to="laundry.LaundryRoom")),
                 (
                     "user",
                     models.OneToOneField(
