@@ -1,13 +1,7 @@
-<<<<<<< HEAD
 from django.db import models
 
 from user.models import Profile
 
-=======
-# Create your models here.
-
-# create venues
->>>>>>> d3f6306d09f285f0293e8c0148e17a34e80ff3d1
 
 class Venue(models.Model):
     venue_id = models.IntegerField()
