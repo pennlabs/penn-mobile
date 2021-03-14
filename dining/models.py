@@ -1,5 +1,13 @@
 # Create your models here.
 
+# create venues
+
+class Venue(models.Model):
+    venue_id = models.IntegerField()
+    image_url = models.URLField()
+
+
+
 """
 class DiningPreference(sqldb.Model):
     id = sqldb.Column(sqldb.Integer, primary_key=True)

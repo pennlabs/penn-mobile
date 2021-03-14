@@ -81,10 +81,9 @@ class Hours(APIView):
     def get(self, request, venue_id):
         try:
             response = dining_request(V2_ENDPOINTS["HOURS"] + venue_id)["result_data"]
+            return Response(response)
         except APIError as e:
             return Response({"error": e.args})
-
-        return Response(response)
 
 
 class WeeklyMenu(APIView):
