@@ -24,25 +24,18 @@ START NEW
 import csv
 import datetime
 
-<<<<<<< HEAD
 import pytz
 from bs4 import BeautifulSoup
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
-=======
-from django.utils import timezone
->>>>>>> d3f6306d09f285f0293e8c0148e17a34e80ff3d1
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from dining.api_wrapper import APIError, dining_request, get_meals, normalize_weekly
-<<<<<<< HEAD
 from dining.models import DiningBalance, DiningPreference, DiningTransaction, Venue
 from dining.serializers import DiningBalanceSerializer, DiningTransactionSerializer
-=======
->>>>>>> d3f6306d09f285f0293e8c0148e17a34e80ff3d1
 
 
 V2_BASE_URL = "https://esb.isc-seo.upenn.edu/8091/open_data/dining/v2/?service="
@@ -71,27 +64,14 @@ class Venues(APIView):
         try:
             response = dining_request(V2_ENDPOINTS["VENUES"])["result_data"]
         except APIError as e:
-<<<<<<< HEAD
             return Response({"error": e.args}, status=400)
-=======
-            return Response({"error": e.args})
->>>>>>> d3f6306d09f285f0293e8c0148e17a34e80ff3d1
 
         venues = response["document"]["venue"]
 
         # adds dining hall image to associated dining hall
         for venue in venues:
-<<<<<<< HEAD
             image_url = Venue.objects.get(venue_id=str(venue["id"])).image_url
             venue["imageURL"] = image_url
-=======
-            with open("dining/data/dining_images.csv") as data:
-                reader = csv.reader(data)
-                for i, row in enumerate(reader):
-                    uuid, url = row
-                    if uuid == str(venue["id"]):
-                        venue["imageURL"] = url
->>>>>>> d3f6306d09f285f0293e8c0148e17a34e80ff3d1
 
         return Response(response)
 
@@ -106,11 +86,7 @@ class Hours(APIView):
             response = dining_request(V2_ENDPOINTS["HOURS"] + venue_id)["result_data"]
             return Response(response)
         except APIError as e:
-<<<<<<< HEAD
             return Response({"error": e.args}, status=400)
-=======
-            return Response({"error": e.args})
->>>>>>> d3f6306d09f285f0293e8c0148e17a34e80ff3d1
 
 
 class WeeklyMenu(APIView):
@@ -126,11 +102,7 @@ class WeeklyMenu(APIView):
             try:
                 v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
             except APIError as e:
-<<<<<<< HEAD
                 return Response({"error": e.args}, status=400)
-=======
-                return Response({"error": e.args})
->>>>>>> d3f6306d09f285f0293e8c0148e17a34e80ff3d1
 
             if venue_id in VENUE_NAMES:
                 response["result_data"]["Document"]["location"] = VENUE_NAMES[venue_id]
@@ -157,11 +129,7 @@ class DailyMenu(APIView):
         try:
             v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
         except APIError as e:
-<<<<<<< HEAD
             return Response({"error": e.args}, status=400)
-=======
-            return Response({"error": e.args})
->>>>>>> d3f6306d09f285f0293e8c0148e17a34e80ff3d1
 
         response = {"result_data": {"Document": {}}}
         response["result_data"]["Document"]["menudate"] = datetime.datetime.strptime(
@@ -188,7 +156,6 @@ class DiningItem(APIView):
         try:
             response = dining_request(V2_ENDPOINTS["ITEMS"] + item_id)
         except APIError as e:
-<<<<<<< HEAD
             return Response({"error": e.args}, status=400)
         return Response(response["result_data"])
 
@@ -359,12 +326,6 @@ class Projection(APIView):
         pass
 
 
-=======
-            return Response({"error": e.args})
-        return Response(response["result_data"])
-
-
->>>>>>> d3f6306d09f285f0293e8c0148e17a34e80ff3d1
 """
 END NEW
 """
