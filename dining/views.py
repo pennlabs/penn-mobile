@@ -24,11 +24,13 @@ START NEW
 import csv
 import datetime
 
+import pandas as pd
 import pytz
 from bs4 import BeautifulSoup
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.timezone import make_aware
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -235,10 +237,11 @@ class Transactions(APIView):
                     date = datetime.datetime.strptime(row[0], "%m/%d/%Y %I:%M%p")
                     if last_transaction is None or date > last_transaction.date:
                         DiningTransaction.objects.create(
-                            profile=profile, date=date, description=row[1], amount=float(row[2])
+                            profile=profile,
+                            date=date,
+                            description=row[1],
+                            amount=float(row[2], balance=float(row[3])),
                         )
-                        profile.dining_balance = float(row[3])
-                        profile.save()
 
         return Response({"success": True, "error": None})
 
@@ -247,6 +250,9 @@ class Transactions(APIView):
 # how am i able to login to LAS so that I could see it's return values?
 # TODO: look into where i can get the HTML POST data
 class Balance(APIView):
+
+    permission_classes = [IsAuthenticated]
+
     def get_dst_gmt_timezone(self):
         now = datetime.datetime.now(tz=pytz.timezone("US/Eastern"))
         if now.timetuple().tm_isdst:
@@ -264,8 +270,6 @@ class Balance(APIView):
                 self.get_dst_gmt_timezone()
             )
             data = DiningBalanceSerializer(balance, many=False).data
-            dollars = data.pop("dollars")
-            data["dining_dollars"] = dollars
             data["timestamp"] = timestamp
             return Response({"balance": data})
 
@@ -307,23 +311,173 @@ class Balance(APIView):
             profile=profile, dollars=dollars, swipes=total_swipes, guest_swipes=guest_swipes
         )
 
-        return Response(
-            {
-                "hasPlan": True,
-                "balance": DiningBalanceSerializer(balance, many=False),
-                "error": None,
-            }
-        )
+        data = DiningBalanceSerializer(balance, many=False).data
+
+        # reformats dining_dollars into dollars to maintain response fields
+        dollars = data.pop("dining_dollars")
+        data["dollars"] = dollars
+
+        return Response({"hasPlan": True, "balance": data, "error": None})
 
 
+# NOTE: has NOT been fully tested yet
 class AverageBalance(APIView):
+
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        pass
+
+        profile = request.user.profile
+
+        # this is semi-bad but forced to do this to be consistent with LAS url parameters
+        # accepts parameters: /dining/balances?start_date=2000-01-05&end_date=2010-08-31
+        start_date_str = request.GET.get("start_date")
+        end_date_str = request.GET.get("end_date")
+
+        if start_date_str and end_date_str:
+            try:
+                start_date = make_aware(datetime.datetime.strptime(start_date_str, "%Y-%m-%d"))
+                end_date = make_aware(datetime.datetime.strptime(end_date_str, "%Y-%m-%d"))
+                dining_balances = DiningBalance.objects.filter(
+                    profile=profile, date__gt=start_date, date__lte=end_date
+                )
+            except ValueError as e:
+                return Response({"error": e.args}, status=400)
+        else:
+            dining_balances = DiningBalance.objects.filter(profile=profile)
+
+        balance_array = []
+        if dining_balances:
+            for dining_balance in dining_balances:
+                timestamp = dining_balance.date.strftime("%Y-%m-%d")
+                data = DiningBalanceSerializer(dining_balance, many=False).data
+                data["timestamp"] = timestamp
+                balance_array.append(data)
+
+            df = (
+                pd.DataFrame(balance_array)
+                .groupby("timestamp")
+                .agg(lambda x: x.mean())
+                .reset_index()
+            )
+            return Response({"balance": df.to_dict("records")})
+
+        return Response({"balance": None})
 
 
+# NOTE: i fixed it to work with django, but i'm pretty sure the algo is incorrect
 class Projection(APIView):
+
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        pass
+
+        profile = request.user.profile
+
+        date = request.GET.get("date")
+
+        if date:
+            date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+        else:
+            today = timezone.localtime().date()
+            month = int(today.strftime("%m"))
+            if month <= 5:
+                date = today.replace(month=5, day=5)
+            elif month <= 8:
+                date = today.replace(month=8, day=20)
+            else:
+                date = today.replace(month=12, day=15)
+
+        dining_balances = DiningBalance.objects.filter(profile=profile)
+        balance_array = []
+        if dining_balances:
+            for dining_balance in dining_balances:
+                balance_array.append(
+                    {
+                        "dining_dollars": dining_balance.dining_dollars,
+                        "swipes": dining_balance.swipes,
+                        "timestamp": dining_balance.date.strftime("%Y-%m-%d"),
+                    }
+                )
+
+            # wait this aggregates the immediately... doesn't this screw up the rest of the code?
+            # this turns the dataframe into 1 row with the means,
+            # so when you check df.index length, its always = 1
+            df = (
+                pd.DataFrame(balance_array)
+                .groupby("timestamp")
+                .agg(lambda x: x.mean())
+                .reset_index()
+            )
+
+            if df.iloc[-1, 0] == 0.0 and df.iloc[-1, 1] == 0.0:
+                return Response(
+                    {
+                        "projection": {
+                            "swipes_day_left": 0.0,
+                            "dining_dollars_day_left": 0.0,
+                            "swipes_left_on_date": 0.0,
+                            "dollars_left_on_date": 0.0,
+                        }
+                    }
+                )
+
+            df["timestamp"] = pd.to_datetime(df["timestamp"], format="%Y-%m-%d")
+
+            last_day_before_sem = df[(df["dining_dollars"] == 0) & (df["swipes"] == 0)]
+            if last_day_before_sem.any().any():
+                last_zero_timestamp = last_day_before_sem.tail(1).iloc[0]["timestamp"]
+                df = df[df["timestamp"] > last_zero_timestamp]
+
+            if len(df.index) <= 5:
+                return Response(
+                    {"success": False, "error": "Insufficient previous transactions"}, status=501
+                )
+
+            num_days = (
+                abs((df.tail(1).iloc[0]["timestamp"] - df.head(1).iloc[0]["timestamp"]).days) + 1
+            )
+            num_swipes = df.head(1).iloc[0]["swipes"] - df.tail(1).iloc[0]["swipes"]
+            num_dollars = (
+                df.head(1).iloc[0]["dining_dollars"] - df.tail(1).iloc[0]["dining_dollars"]
+            )
+            swipes_per_day = num_swipes / num_days
+            dollars_per_day = num_dollars / num_days
+
+            swipe_days_left = df.tail(1).iloc[0]["swipes"] / swipes_per_day if num_swipes else 0.0
+            dollars_days_left = (
+                df.tail(1).iloc[0]["dining_dollars"] / dollars_per_day if num_dollars else 0.0
+            )
+
+            day_difference = abs((date - datetime.date.today()).days) + 1
+            swipes_left = (
+                df.tail(1).iloc[0]["swipes"] - (swipes_per_day * day_difference)
+                if num_swipes
+                else 0.0
+            )
+            dollars_left = (
+                df.tail(1).iloc[0]["dining_dollars"] - (dollars_per_day * day_difference)
+                if num_dollars
+                else 0.0
+            )
+
+            if swipes_left <= 0:
+                swipes_left = 0.0
+            if dollars_left <= 0:
+                dollars_left = 0.0
+
+            return Response(
+                {
+                    "projection": {
+                        "swipes_day_left": swipe_days_left,
+                        "dining_dollars_day_left": dollars_days_left,
+                        "swipes_left_on_date": swipes_left,
+                        "dollars_left_on_date": dollars_left,
+                    }
+                }
+            )
+
+        return Response({"projection": None})
 
 
 """

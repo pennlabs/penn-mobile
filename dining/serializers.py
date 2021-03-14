@@ -12,4 +12,4 @@ class DiningTransactionSerializer(serializers.ModelSerializer):
 class DiningBalanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiningBalance
-        fields = ("dollars", "swipes", "guest_swipes")
+        fields = ("dining_dollars", "swipes", "guest_swipes")
