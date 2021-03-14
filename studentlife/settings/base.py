@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "user.apps.UserConfig",
+    "dining.apps.DiningConfig",
     "laundry.apps.LaundryConfig",
     "accounts.apps.AccountsConfig",
     "django_filters",

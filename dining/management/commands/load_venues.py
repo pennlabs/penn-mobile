@@ -13,5 +13,5 @@ class Command(BaseCommand):
             for i, row in enumerate(reader):
                 venue_id, image_url = row
                 Venue.objects.get_or_create(venue_id=venue_id, image_url=image_url)
-                
+
         self.stdout.write("Uploaded Venues!")

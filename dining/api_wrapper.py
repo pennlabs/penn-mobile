@@ -12,8 +12,8 @@ def headers():
     """
 
     return {
-        "Authorization-Bearer": "sadfsfdsa",
-        "Authorization-Token": "asdfsdfas",
+        "Authorization-Bearer": "adsfdsa",
+        "Authorization-Token": "adsfas",
     }
 
 

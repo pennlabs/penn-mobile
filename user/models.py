@@ -30,4 +30,7 @@ class Profile(models.Model):
     degrees = models.ManyToManyField(Degree, blank=True)
     laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)
 
-    # work on laundry, dining, and privacy
+    def __str__(self):
+        return str(self.user.username)
+
+    # privacy
