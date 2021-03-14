@@ -27,6 +27,6 @@ urlpatterns = [
     path("preferences/", Preferences.as_view(), name="dining-preferences"),
     path("transactions/", Transactions.as_view(), name="dining-transactions"),
     path("balance/", Balance.as_view(), name="dining-balance"),
-    path("balances/", AverageBalance.as_view(), name="dining-balance-average"),
+    path("balances", AverageBalance.as_view(), name="dining-balance-average"),
     path("projection/", Projection.as_view(), name="dining-projection"),
 ]

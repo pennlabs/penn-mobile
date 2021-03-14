@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 from user.models import Profile
 
@@ -32,8 +33,8 @@ class DiningTransaction(models.Model):
 
 class DiningBalance(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    date = models.DateTimeField(auto_now_add=True)
-    dollars = models.FloatField()
+    date = models.DateTimeField(default=timezone.now)
+    dining_dollars = models.FloatField()
     swipes = models.IntegerField()
     guest_swipes = models.IntegerField()
 
