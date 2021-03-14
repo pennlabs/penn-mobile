@@ -8,6 +8,7 @@ class APIError(ValueError):
 def headers():
     """
     Returns headers necessary for Penn Dining API access
+    TODO: add the username + password to environment
     """
 
     return {
