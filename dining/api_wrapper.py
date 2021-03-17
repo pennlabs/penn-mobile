@@ -1,5 +1,21 @@
 from requests import get
 
+V2_BASE_URL = "https://esb.isc-seo.upenn.edu/8091/open_data/dining/v2/?service="
+
+V2_ENDPOINTS = {
+    "VENUES": V2_BASE_URL + "venues",
+    "HOURS": V2_BASE_URL + "cafes&cafe=",
+    "MENUS": V2_BASE_URL + "menus&cafe=",
+    "ITEMS": V2_BASE_URL + "items&item=",
+}
+
+VENUE_NAMES = {
+    "593": "***REMOVED***0 Commons",
+    "636": "Hill House",
+    "637": "Kings Court English House",
+    "638": "Kosher Dining at Falk",
+}
+
 
 class APIError(ValueError):
     pass
@@ -59,14 +75,14 @@ def normalize_weekly(data):
     return data
 
 
-def get_meals(v2_response, building_id):
+def get_meals(v2_response, venue_id):
     """
     Extract meals into old format from a DiningV2 JSON response
     """
 
     result_data = v2_response["result_data"]
     meals = []
-    day_parts = result_data["days"][0]["cafes"][building_id]["dayparts"][0]
+    day_parts = result_data["days"][0]["cafes"][venue_id]["dayparts"][0]
     for meal in day_parts:
         stations = []
         for station in meal["stations"]:

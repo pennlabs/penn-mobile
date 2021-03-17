@@ -14,10 +14,10 @@ class Venue(models.Model):
 
 class DiningPreference(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    venue_id = models.IntegerField()
+    venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.profile} - {self.venue_id}"
+        return f"{self.profile} - {self.venue.venue_id}"
 
 
 class DiningTransaction(models.Model):
