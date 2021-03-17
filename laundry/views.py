@@ -176,7 +176,7 @@ class Preferences(APIView):
 
         profile.save()
 
-        return Response({"detail": "success"})
+        return Response({"success": True, "error": None})
 
 
 class Status(APIView):

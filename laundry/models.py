@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.utils import timezone
 
 
 class LaundryRoom(models.Model):
@@ -20,7 +21,7 @@ class LaundryRoom(models.Model):
 
 class LaundrySnapshot(models.Model):
     room = models.ForeignKey(LaundryRoom, on_delete=models.CASCADE, null=True)
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(default=timezone.now)
     available_washers = models.IntegerField()
     available_dryers = models.IntegerField()
 
