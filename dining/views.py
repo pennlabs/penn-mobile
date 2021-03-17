@@ -35,26 +35,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from dining.api_wrapper import APIError, dining_request, get_meals, normalize_weekly
+from dining.api_wrapper import APIError, dining_request, get_meals, normalize_weekly, V2_BASE_URL, V2_ENDPOINTS, VENUE_NAMES
 from dining.models import DiningBalance, DiningPreference, DiningTransaction, Venue
 from dining.serializers import DiningBalanceSerializer, DiningTransactionSerializer
-
-
-V2_BASE_URL = "https://esb.isc-seo.upenn.edu/8091/open_data/dining/v2/?service="
-
-V2_ENDPOINTS = {
-    "VENUES": V2_BASE_URL + "venues",
-    "HOURS": V2_BASE_URL + "cafes&cafe=",
-    "MENUS": V2_BASE_URL + "menus&cafe=",
-    "ITEMS": V2_BASE_URL + "items&item=",
-}
-
-VENUE_NAMES = {
-    "593": "1920 Commons",
-    "636": "Hill House",
-    "637": "Kings Court English House",
-    "638": "Kosher Dining at Falk",
-}
 
 
 class Venues(APIView):
@@ -177,7 +160,13 @@ class Preferences(APIView):
         preferences = DiningPreference.objects.filter(profile=request.user.profile)
 
         # aggregated venues and puts it in form {"venue_id": x, "count": x}
-        aggregated_preferences = preferences.values("venue_id").annotate(count=Count("venue_id"))
+        aggregated_preferences = preferences.values("venue_id").annotate(count=Count("venue"))
+
+        # switches venue's auto-generated id with Penn's venue_id
+        for preference in aggregated_preferences:
+            venue = Venue.objects.get(id=preference['venue_id'])
+            preference['venue_id'] = venue.venue_id
+
         return Response({"preferences": aggregated_preferences})
 
     def post(self, request):
@@ -192,9 +181,9 @@ class Preferences(APIView):
         venue_ids = request.data["venues"]
 
         for venue_id in venue_ids:
-            get_object_or_404(Venue, venue_id=int(venue_id))
+            venue = get_object_or_404(Venue, venue_id=int(venue_id))
             # adds all of the preferences given by the request
-            DiningPreference.objects.create(profile=profile, venue_id=venue_id)
+            DiningPreference.objects.create(profile=profile, venue=venue)
 
         return Response({"success": True, "error": None})
 
