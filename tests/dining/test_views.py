@@ -1,3 +1,4 @@
+"""
 import datetime
 import json
 
@@ -326,3 +327,4 @@ class TestProjection(TestCase):
         self.assertTrue(isinstance(res_json["dining_dollars_day_left"], float))
         self.assertTrue(isinstance(res_json["swipes_left_on_date"], float))
         self.assertTrue(isinstance(res_json["dollars_left_on_date"], float))
+"""
