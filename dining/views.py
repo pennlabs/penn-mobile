@@ -35,7 +35,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from dining.api_wrapper import APIError, dining_request, get_meals, normalize_weekly, V2_BASE_URL, V2_ENDPOINTS, VENUE_NAMES
+from dining.api_wrapper import (
+    V2_ENDPOINTS,
+    VENUE_NAMES,
+    APIError,
+    dining_request,
+    get_meals,
+    normalize_weekly,
+)
 from dining.models import DiningBalance, DiningPreference, DiningTransaction, Venue
 from dining.serializers import DiningBalanceSerializer, DiningTransactionSerializer
 
@@ -49,7 +56,7 @@ class Venues(APIView):
         try:
             response = dining_request(V2_ENDPOINTS["VENUES"])["result_data"]
         except APIError as e:
-            return Response({"error": e.args}, status=400)
+            return Response({"error": str(e.args)}, status=400)
 
         venues = response["document"]["venue"]
 
@@ -71,7 +78,7 @@ class Hours(APIView):
             response = dining_request(V2_ENDPOINTS["HOURS"] + venue_id)["result_data"]
             return Response(response)
         except APIError as e:
-            return Response({"error": e.args}, status=400)
+            return Response({"error": str(e.args)}, status=400)
 
 
 class WeeklyMenu(APIView):
@@ -87,7 +94,7 @@ class WeeklyMenu(APIView):
             try:
                 v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
             except APIError as e:
-                return Response({"error": e.args}, status=400)
+                return Response({"error": str(e.args)}, status=400)
 
             if venue_id in VENUE_NAMES:
                 response["result_data"]["Document"]["location"] = VENUE_NAMES[venue_id]
@@ -114,7 +121,7 @@ class DailyMenu(APIView):
         try:
             v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
         except APIError as e:
-            return Response({"error": e.args}, status=400)
+            return Response({"error": str(e.args)}, status=400)
 
         response = {"result_data": {"Document": {}}}
         response["result_data"]["Document"]["menudate"] = datetime.datetime.strptime(
@@ -141,7 +148,7 @@ class DiningItem(APIView):
         try:
             response = dining_request(V2_ENDPOINTS["ITEMS"] + item_id)
         except APIError as e:
-            return Response({"error": e.args}, status=400)
+            return Response({"error": str(e.args)}, status=400)
         return Response(response["result_data"])
 
 
@@ -164,8 +171,8 @@ class Preferences(APIView):
 
         # switches venue's auto-generated id with Penn's venue_id
         for preference in aggregated_preferences:
-            venue = Venue.objects.get(id=preference['venue_id'])
-            preference['venue_id'] = venue.venue_id
+            venue = Venue.objects.get(id=preference["venue_id"])
+            preference["venue_id"] = venue.venue_id
 
         return Response({"preferences": aggregated_preferences})
 
@@ -174,7 +181,7 @@ class Preferences(APIView):
         profile = request.user.profile
 
         # clears all previous preferences associated with the profile
-        preferences = DiningPreference.objects.filter(profile=request.user.profile)
+        preferences = DiningPreference.objects.filter(profile=profile)
         for preference in preferences:
             preference.delete()
 
@@ -188,21 +195,15 @@ class Preferences(APIView):
         return Response({"success": True, "error": None})
 
 
-# NOTE: has NOT been fully tested yet,
-# how am i able to login to LAS so that I could see it's return values?
 class Transactions(APIView):
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         profile = request.user.profile
-
         transactions = DiningTransaction.objects.filter(profile=profile)
-        serialized_data = DiningTransactionSerializer(transactions, many=True).data
-
-        # this serializer outputs the -5:00 after the datetime
-        # is this alright? i don't think LAS has this
-        return Response(serialized_data)
+        serializer = DiningTransactionSerializer(transactions, many=True)
+        return Response(serializer.data)
 
     def post(self, request):
 
@@ -235,9 +236,6 @@ class Transactions(APIView):
         return Response({"success": True, "error": None})
 
 
-# NOTE: has NOT been fully tested yet,
-# how am i able to login to LAS so that I could see it's return values?
-# TODO: look into where i can get the HTML POST data
 class Balance(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -309,7 +307,6 @@ class Balance(APIView):
         return Response({"hasPlan": True, "balance": data, "error": None})
 
 
-# NOTE: has NOT been fully tested yet
 class AverageBalance(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -326,12 +323,14 @@ class AverageBalance(APIView):
         if start_date_str and end_date_str:
             try:
                 start_date = make_aware(datetime.datetime.strptime(start_date_str, "%Y-%m-%d"))
-                end_date = make_aware(datetime.datetime.strptime(end_date_str, "%Y-%m-%d"))
+                end_date = make_aware(
+                    datetime.datetime.strptime(end_date_str, "%Y-%m-%d")
+                ) + datetime.timedelta(days=1)
                 dining_balances = DiningBalance.objects.filter(
                     profile=profile, date__gt=start_date, date__lte=end_date
                 )
             except ValueError as e:
-                return Response({"error": e.args}, status=400)
+                return Response({"error": str(e.args)}, status=400)
         else:
             dining_balances = DiningBalance.objects.filter(profile=profile)
 
@@ -378,6 +377,7 @@ class Projection(APIView):
                 date = today.replace(month=12, day=15)
 
         dining_balances = DiningBalance.objects.filter(profile=profile)
+
         balance_array = []
         if dining_balances:
             for dining_balance in dining_balances:
@@ -389,9 +389,6 @@ class Projection(APIView):
                     }
                 )
 
-            # wait this aggregates the immediately... doesn't this screw up the rest of the code?
-            # this turns the dataframe into 1 row with the means,
-            # so when you check df.index length, its always = 1
             df = (
                 pd.DataFrame(balance_array)
                 .groupby("timestamp")

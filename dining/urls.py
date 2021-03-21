@@ -15,8 +15,6 @@ from dining.views import (
 )
 
 
-app_name = "main"
-
 urlpatterns = [
     path(r"", Dashboard.as_view()),
     path("venues/", Venues.as_view(), name="venues"),

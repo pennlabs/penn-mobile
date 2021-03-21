@@ -8,6 +8,11 @@ class DiningTransactionSerializer(serializers.ModelSerializer):
         model = DiningTransaction
         fields = ("date", "description", "amount", "balance")
 
+    def to_representation(self, instance):
+        date_format = "%Y-%m-%dT%H:%M:%S"
+        instance.date = instance.date.strftime(date_format)
+        return super().to_representation(instance)
+
 
 class DiningBalanceSerializer(serializers.ModelSerializer):
     class Meta:
