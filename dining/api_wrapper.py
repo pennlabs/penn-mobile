@@ -1,5 +1,6 @@
 from requests import get
 
+
 V2_BASE_URL = "https://esb.isc-seo.upenn.edu/8091/open_data/dining/v2/?service="
 
 V2_ENDPOINTS = {
@@ -28,8 +29,8 @@ def headers():
     """
 
     return {
-        "Authorization-Bearer": "adsfdsa",
-        "Authorization-Token": "adsfas",
+        "Authorization-Bearer": "asdfdsa",
+        "Authorization-Token": "asdfsa",
     }
 
 
