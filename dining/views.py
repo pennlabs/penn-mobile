@@ -56,7 +56,7 @@ class Venues(APIView):
         try:
             response = dining_request(V2_ENDPOINTS["VENUES"])["result_data"]
         except APIError as e:
-            return Response({"error": str(e.args)}, status=400)
+            return Response({"error": str(e.args[0])}, status=400)
 
         venues = response["document"]["venue"]
 
@@ -78,7 +78,7 @@ class Hours(APIView):
             response = dining_request(V2_ENDPOINTS["HOURS"] + venue_id)["result_data"]
             return Response(response)
         except APIError as e:
-            return Response({"error": str(e.args)}, status=400)
+            return Response({"error": str(e.args[0])}, status=400)
 
 
 class WeeklyMenu(APIView):
@@ -94,7 +94,7 @@ class WeeklyMenu(APIView):
             try:
                 v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
             except APIError as e:
-                return Response({"error": str(e.args)}, status=400)
+                return Response({"error": str(e.args[0])}, status=400)
 
             if venue_id in VENUE_NAMES:
                 response["result_data"]["Document"]["location"] = VENUE_NAMES[venue_id]
@@ -121,7 +121,7 @@ class DailyMenu(APIView):
         try:
             v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
         except APIError as e:
-            return Response({"error": str(e.args)}, status=400)
+            return Response({"error": str(e.args[0])}, status=400)
 
         response = {"result_data": {"Document": {}}}
         response["result_data"]["Document"]["menudate"] = datetime.datetime.strptime(
@@ -148,7 +148,7 @@ class DiningItem(APIView):
         try:
             response = dining_request(V2_ENDPOINTS["ITEMS"] + item_id)
         except APIError as e:
-            return Response({"error": str(e.args)}, status=400)
+            return Response({"error": str(e.args[0])}, status=400)
         return Response(response["result_data"])
 
 
@@ -330,7 +330,7 @@ class AverageBalance(APIView):
                     profile=profile, date__gt=start_date, date__lte=end_date
                 )
             except ValueError as e:
-                return Response({"error": str(e.args)}, status=400)
+                return Response({"error": str(e.args[0])}, status=400)
         else:
             dining_balances = DiningBalance.objects.filter(profile=profile)
 

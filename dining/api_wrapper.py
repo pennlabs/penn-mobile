@@ -1,3 +1,4 @@
+from django.conf import settings
 from requests import get
 
 
@@ -29,8 +30,8 @@ def headers():
     """
 
     return {
-        "Authorization-Bearer": "asdfdsa",
-        "Authorization-Token": "asdfsa",
+        "Authorization-Bearer": settings.DINING_USERNAME,
+        "Authorization-Token": settings.DINING_PASSWORD,
     }
 
 
