@@ -315,7 +315,7 @@ class AverageBalance(APIView):
 
         profile = request.user.profile
 
-        # this is semi-bad but forced to do this to be consistent with LAS url parameters
+        # this should be fixed later, but right now is kept to LAS url parameters
         # accepts parameters: /dining/balances?start_date=2000-01-05&end_date=2010-08-31
         start_date_str = request.GET.get("start_date")
         end_date_str = request.GET.get("end_date")
@@ -353,7 +353,6 @@ class AverageBalance(APIView):
         return Response({"balance": None})
 
 
-# NOTE: i fixed it to work with django, but i'm pretty sure the algo is incorrect
 class Projection(APIView):
 
     permission_classes = [IsAuthenticated]
