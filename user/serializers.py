@@ -13,7 +13,7 @@ class NotificationTokenSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ("expected_graduation", "degrees", "laundry_preferences")
+        fields = ("expected_graduation", "degrees", "laundry_preferences", "dining_preferences")
 
 
 class UserSerializer(serializers.ModelSerializer):

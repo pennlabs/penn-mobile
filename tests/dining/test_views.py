@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from dining.models import DiningBalance, DiningPreference, DiningTransaction, Venue
+from dining.models import DiningBalance, DiningTransaction, Venue
 from user.models import Profile
 
 
@@ -103,13 +103,13 @@ class TestPreferences(TestCase):
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
         self.profile = Profile.objects.create(user=self.test_user)
 
-        preference = DiningPreference.objects.create(profile=self.profile)
-        preference.venues.add(Venue.objects.get(venue_id=593))
-        preference.venues.add(Venue.objects.get(venue_id=593))
-        preference.venues.add(Venue.objects.get(venue_id=593))
-        preference.venues.add(Venue.objects.get(venue_id=636))
-        preference.venues.add(Venue.objects.get(venue_id=636))
-        preference.venues.add(Venue.objects.get(venue_id=637))
+        preference = self.profile.dining_preferences
+        preference.add(Venue.objects.get(venue_id=593))
+        preference.add(Venue.objects.get(venue_id=593))
+        preference.add(Venue.objects.get(venue_id=593))
+        preference.add(Venue.objects.get(venue_id=636))
+        preference.add(Venue.objects.get(venue_id=636))
+        preference.add(Venue.objects.get(venue_id=637))
 
     def test_get(self):
         self.client.force_authenticate(user=self.test_user)
@@ -133,14 +133,12 @@ class TestPreferences(TestCase):
             content_type="application/json",
         )
 
-        preference_test = DiningPreference.objects.filter(profile=self.profile)
-        preference = DiningPreference.objects.get(profile=self.profile)
+        preference = self.profile.dining_preferences
 
-        self.assertEqual(preference_test.count(), 1)
-        self.assertEqual(preference.venues.count(), 2)
+        self.assertEqual(preference.count(), 2)
 
-        self.assertTrue(Venue.objects.get(venue_id=641) in preference.venues.all())
-        self.assertTrue(Venue.objects.get(venue_id=1733) in preference.venues.all())
+        self.assertTrue(Venue.objects.get(venue_id=641) in preference.all())
+        self.assertTrue(Venue.objects.get(venue_id=1733) in preference.all())
 
 
 class TestTransactions(TestCase):

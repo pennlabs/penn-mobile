@@ -12,14 +12,6 @@ class Venue(models.Model):
         return str(self.venue_id)
 
 
-class DiningPreference(models.Model):
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    venues = models.ManyToManyField(Venue)
-
-    def __str__(self):
-        return f"{self.profile}"
-
-
 class DiningTransaction(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     date = models.DateTimeField()
