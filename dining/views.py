@@ -19,7 +19,7 @@ from dining.api_wrapper import (
     get_meals,
     normalize_weekly,
 )
-from dining.models import DiningBalance, DiningPreference, DiningTransaction, Venue
+from dining.models import DiningBalance, DiningTransaction, Venue
 from dining.serializers import DiningBalanceSerializer, DiningTransactionSerializer
 
 
@@ -140,7 +140,7 @@ class Preferences(APIView):
 
     def get(self, request):
 
-        preferences = DiningPreference.objects.get(profile=request.user.profile).venues
+        preferences = request.user.profile.dining_preferences
 
         # aggregated venues and puts it in form {"venue_id": x, "count": x}
         return Response(
@@ -151,17 +151,17 @@ class Preferences(APIView):
 
         profile = request.user.profile
 
-        preferences, _ = DiningPreference.objects.get_or_create(profile=profile)
+        preferences = profile.dining_preferences
 
         # clears all previous preferences associated with the profile
-        preferences.venues.clear()
+        preferences.clear()
 
         venue_ids = request.data["venues"]
 
         for venue_id in venue_ids:
             venue = get_object_or_404(Venue, venue_id=int(venue_id))
             # adds all of the preferences given by the request
-            preferences.venues.add(venue)
+            preferences.add(venue)
 
         return Response({"success": True, "error": None})
 

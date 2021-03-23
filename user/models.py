@@ -4,6 +4,9 @@ from django.db import models
 from laundry.models import LaundryRoom
 
 
+# from dining.models import Venue
+
+
 User = get_user_model()
 
 
@@ -29,6 +32,7 @@ class Profile(models.Model):
     expected_graduation = models.DateField(null=True, blank=True)
     degrees = models.ManyToManyField(Degree, blank=True)
     laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)
+    dining_preferences = models.ManyToManyField("dining.Venue")
 
     def __str__(self):
         return str(self.user.username)
