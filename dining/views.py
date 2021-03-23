@@ -140,26 +140,28 @@ class Preferences(APIView):
 
     def get(self, request):
 
-        preferences = DiningPreference.objects.filter(profile=request.user.profile)
+        preferences = DiningPreference.objects.get(profile=request.user.profile).venues
 
         # aggregated venues and puts it in form {"venue_id": x, "count": x}
-        aggregated_preferences = preferences.values("venue_id").annotate(count=Count("venue"))
-
-        return Response({"preferences": aggregated_preferences})
+        return Response(
+            {"preferences": preferences.values("venue_id").annotate(count=Count("venue_id"))}
+        )
 
     def post(self, request):
 
         profile = request.user.profile
 
+        preferences, _ = DiningPreference.objects.get_or_create(profile=profile)
+
         # clears all previous preferences associated with the profile
-        DiningPreference.objects.filter(profile=profile).delete()
+        preferences.venues.clear()
 
         venue_ids = request.data["venues"]
 
         for venue_id in venue_ids:
             venue = get_object_or_404(Venue, venue_id=int(venue_id))
             # adds all of the preferences given by the request
-            DiningPreference.objects.create(profile=profile, venue=venue)
+            preferences.venues.add(venue)
 
         return Response({"success": True, "error": None})
 

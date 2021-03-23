@@ -103,12 +103,13 @@ class TestPreferences(TestCase):
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
         self.profile = Profile.objects.create(user=self.test_user)
 
-        DiningPreference.objects.create(profile=self.profile, venue=Venue.objects.get(venue_id=593))
-        DiningPreference.objects.create(profile=self.profile, venue=Venue.objects.get(venue_id=593))
-        DiningPreference.objects.create(profile=self.profile, venue=Venue.objects.get(venue_id=593))
-        DiningPreference.objects.create(profile=self.profile, venue=Venue.objects.get(venue_id=636))
-        DiningPreference.objects.create(profile=self.profile, venue=Venue.objects.get(venue_id=636))
-        DiningPreference.objects.create(profile=self.profile, venue=Venue.objects.get(venue_id=637))
+        preference = DiningPreference.objects.create(profile=self.profile)
+        preference.venues.add(Venue.objects.get(venue_id=593))
+        preference.venues.add(Venue.objects.get(venue_id=593))
+        preference.venues.add(Venue.objects.get(venue_id=593))
+        preference.venues.add(Venue.objects.get(venue_id=636))
+        preference.venues.add(Venue.objects.get(venue_id=636))
+        preference.venues.add(Venue.objects.get(venue_id=637))
 
     def test_get(self):
         self.client.force_authenticate(user=self.test_user)
@@ -118,9 +119,9 @@ class TestPreferences(TestCase):
 
         for item in res_json:
             if item["venue_id"] == 593:
-                self.assertEqual(item["count"], 3)
+                self.assertEqual(item["count"], 1)
             elif item["venue_id"] == 636:
-                self.assertEqual(item["count"], 2)
+                self.assertEqual(item["count"], 1)
             else:
                 self.assertEqual(item["count"], 1)
 
@@ -132,19 +133,14 @@ class TestPreferences(TestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(DiningPreference.objects.filter(profile=self.profile).count(), 4)
-        self.assertEqual(
-            DiningPreference.objects.filter(
-                profile=self.profile, venue=Venue.objects.get(venue_id=641)
-            ).count(),
-            3,
-        )
-        self.assertEqual(
-            DiningPreference.objects.filter(
-                profile=self.profile, venue=Venue.objects.get(venue_id=1733)
-            ).count(),
-            1,
-        )
+        preference_test = DiningPreference.objects.filter(profile=self.profile)
+        preference = DiningPreference.objects.get(profile=self.profile)
+
+        self.assertEqual(preference_test.count(), 1)
+        self.assertEqual(preference.venues.count(), 2)
+
+        self.assertTrue(Venue.objects.get(venue_id=641) in preference.venues.all())
+        self.assertTrue(Venue.objects.get(venue_id=1733) in preference.venues.all())
 
 
 class TestTransactions(TestCase):
