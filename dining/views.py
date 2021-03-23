@@ -2,7 +2,6 @@ import csv
 import datetime
 
 import pandas as pd
-import pytz
 from bs4 import BeautifulSoup
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -144,7 +143,7 @@ class Preferences(APIView):
         preferences = DiningPreference.objects.filter(profile=request.user.profile)
 
         # aggregated venues and puts it in form {"venue_id": x, "count": x}
-        aggregated_preferences = preferences.values('venue_id').annotate(count=Count("venue"))
+        aggregated_preferences = preferences.values("venue_id").annotate(count=Count("venue"))
 
         return Response({"preferences": aggregated_preferences})
 
@@ -215,7 +214,7 @@ class Balance(APIView):
         profile = request.user.profile
         balance = DiningBalance.objects.filter(profile=profile).order_by("-date").first()
 
-        if balance is not None:       
+        if balance is not None:
             data = DiningBalanceSerializer(balance, many=False).data
             data["timestamp"] = balance.date
             return Response({"balance": data})
@@ -423,7 +422,6 @@ class Projection(APIView):
             )
 
         return Response({"projection": None})
-
 
 
 '''
