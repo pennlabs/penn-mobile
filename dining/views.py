@@ -1,26 +1,3 @@
-from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
-
-from dining.helpers import (
-    balance,
-    get_average_balances,
-    get_frequent_locations,
-    get_prediction_dollars,
-    get_prediction_swipes,
-    get_semester_start_end,
-    recent_transactions_card,
-    update_if_not_none,
-)
-from legacy.models import Account
-from studentlife.utils import date_iso_eastern
-
-
-# from pytz import timezone
-
-
-"""
-START NEW
-"""
-
 import csv
 import datetime
 
@@ -167,12 +144,7 @@ class Preferences(APIView):
         preferences = DiningPreference.objects.filter(profile=request.user.profile)
 
         # aggregated venues and puts it in form {"venue_id": x, "count": x}
-        aggregated_preferences = preferences.values("venue_id").annotate(count=Count("venue"))
-
-        # switches venue's auto-generated id with Penn's venue_id
-        for preference in aggregated_preferences:
-            venue = Venue.objects.get(id=preference["venue_id"])
-            preference["venue_id"] = venue.venue_id
+        aggregated_preferences = preferences.values('venue_id').annotate(count=Count("venue"))
 
         return Response({"preferences": aggregated_preferences})
 
@@ -181,9 +153,7 @@ class Preferences(APIView):
         profile = request.user.profile
 
         # clears all previous preferences associated with the profile
-        preferences = DiningPreference.objects.filter(profile=profile)
-        for preference in preferences:
-            preference.delete()
+        DiningPreference.objects.filter(profile=profile).delete()
 
         venue_ids = request.data["venues"]
 
@@ -240,24 +210,14 @@ class Balance(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get_dst_gmt_timezone(self):
-        now = datetime.datetime.now(tz=pytz.timezone("US/Eastern"))
-        if now.timetuple().tm_isdst:
-            return "04:00"
-        else:
-            return "05:00"
-
     def get(self, request):
 
         profile = request.user.profile
         balance = DiningBalance.objects.filter(profile=profile).order_by("-date").first()
 
-        if balance is not None:
-            timestamp = balance.date.strftime("%Y-%m-%dT%H:%M:%S") + "-{}".format(
-                self.get_dst_gmt_timezone()
-            )
+        if balance is not None:       
             data = DiningBalanceSerializer(balance, many=False).data
-            data["timestamp"] = timestamp
+            data["timestamp"] = balance.date
             return Response({"balance": data})
 
         else:
@@ -465,10 +425,24 @@ class Projection(APIView):
         return Response({"projection": None})
 
 
-"""
-END NEW
-"""
 
+'''
+OLD DINING
+
+from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
+
+from dining.helpers import (
+    balance,
+    get_average_balances,
+    get_frequent_locations,
+    get_prediction_dollars,
+    get_prediction_swipes,
+    get_semester_start_end,
+    recent_transactions_card,
+    update_if_not_none,
+)
+from legacy.models import Account
+from studentlife.utils import date_iso_eastern
 
 class Dashboard(APIView):
     """
@@ -526,3 +500,4 @@ class Dashboard(APIView):
         )
 
         return JsonResponse(json)
+'''

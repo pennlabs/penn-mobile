@@ -5,7 +5,7 @@ from user.models import Profile
 
 
 class Venue(models.Model):
-    venue_id = models.IntegerField()
+    venue_id = models.IntegerField(primary_key=True)
     image_url = models.URLField()
 
     def __str__(self):
