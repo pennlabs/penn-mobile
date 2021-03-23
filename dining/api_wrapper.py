@@ -1,5 +1,5 @@
+import requests
 from django.conf import settings
-from requests import get
 
 
 V2_BASE_URL = "https://esb.isc-seo.upenn.edu/8091/open_data/dining/v2/?service="
@@ -39,7 +39,7 @@ def dining_request(url):
     Makes GET request to Penn Dining API and returns the response
     """
 
-    response = get(url, params=None, headers=headers(), timeout=30)
+    response = requests.get(url, params=None, headers=headers(), timeout=30)
 
     if response.status_code != 200:
         raise APIError("Request to {} returned {}".format(response.url, response.status_code))

@@ -1,0 +1,43 @@
+{
+    "result_data": {
+        "items": {
+            "123": {
+                "id": "123",
+                "label": "Texas French Toast",
+                "description": "Texas-style french toast with fresh berry compote, bacon or pork sausage patties and hash browns or breakfast potatoes",
+                "zero_entree": "0",
+                "raw_cooked": "0",
+                "is_rotating": "0",
+                "cor_icon": [],
+                "price": "$1.00",
+                "sizes": [],
+                "nutrition_summary": {
+                    "kcal": "",
+                    "well_being": "",
+                    "well_being_image": ""
+                },
+                "nutrition_details": {},
+                "ingredients": "",
+                "ingredient_details": "",
+                "nutrition_info": "",
+                "special": 1,
+                "rating": "",
+                "connector": "",
+                "options": [],
+                "vendors": [],
+                "monotony": {}
+            }
+        },
+        "cor_icons": {},
+        "vendors": {},
+        "reviews": {}
+    },
+    "service_meta": {
+        "current_page_number": 0,
+        "error_text": "",
+        "next_page_number": 0,
+        "number_of_pages": 0,
+        "previous_page_number": 0,
+        "results_per_page": 0
+    }
+}

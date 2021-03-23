@@ -1,0 +1,75 @@
+{
+    "result_data": {
+        "days": [
+            {
+                "date": "2021-03-23",
+                "cafes": {
+                    "593": {
+                        "name": "1920 Commons",
+                        "comma_operator": "N",
+                        "pipe_operator": "N",
+                        "menu_id": "1",
+                        "dayparts": [
+                            [
+                                {
+                                    "starttime": "07:30",
+                                    "endtime": "10:30",
+                                    "id": "1",
+                                    "label": "Breakfast",
+                                    "abbreviation": "B",
+                                    "message": "",
+                                    "stations": [
+                                        {
+                                            "order_id": "0004-4958",
+                                            "id": "1",
+                                            "label": "breakfast grill",
+                                            "price": "",
+                                            "note": "",
+                                            "soup": 0,
+                                            "image": "",
+                                            "items": [
+                                                "1"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        ]
+                    }
+                }
+            }
+        ],
+        "items": {
+            "1": {
+                "id": "1",
+                "label": "boiled eggs",
+                "description": "hard-boiled, cage free eggs sourced from The Common Market",
+                "short_name": "",
+                "raw_cooked": "0",
+                "is_rotating": "0",
+                "zero_entree": "0",
+                "cor_icon": {
+                    "1": "Vegetarian",
+                    "9": "Made without Gluten-Containing Ingredients",
+                    "6": "Farm to Fork",
+                    "18": "Humane"
+                },
+                "ordered_cor_icon": {
+                    "0001-0001": {
+                        "id": "1",
+                        "label": "Vegetarian"
+                    }
+                },
+                "options": []
+            }
+        }
+    },
+    "service_meta": {
+        "current_page_number": 0,
+        "error_text": "",
+        "next_page_number": 0,
+        "number_of_pages": 0,
+        "previous_page_number": 0,
+        "results_per_page": 0
+    }
+}

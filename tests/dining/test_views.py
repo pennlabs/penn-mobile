@@ -1,6 +1,6 @@
-"""
 import datetime
 import json
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -16,6 +16,29 @@ from user.models import Profile
 User = get_user_model()
 
 
+def mock_requests_get(url, *args, **kwargs):
+    class Mock:
+        def __init__(self, json_data, status_code):
+            self.json_data = json_data
+            self.status_code = status_code
+
+        def json(self):
+            return self.json_data
+
+    if "venues" in url:
+        file_path = "tests/dining/venue.json"
+    elif "cafes&cafe=" in url:
+        file_path = "tests/dining/hours.json"
+    elif "menus&cafe=" in url:
+        file_path = "tests/dining/menu.json"
+    else:
+        file_path = "tests/dining/item.json"
+
+    with open(file_path) as data:
+        return Mock(json.load(data), 200)
+
+
+@mock.patch("requests.get", mock_requests_get)
 class TestVenues(TestCase):
     def setUp(self):
         call_command("load_venues")
@@ -25,11 +48,11 @@ class TestVenues(TestCase):
 
         response = self.client.get(reverse("venues"))
         res_json = json.loads(response.content)
-
         venues = res_json["document"]["venue"]
         self.assertTrue(len(venues[0]) > 0)
 
 
+@mock.patch("requests.get", mock_requests_get)
 class TestHours(TestCase):
     def setUp(self):
         call_command("load_venues")
@@ -42,6 +65,7 @@ class TestHours(TestCase):
         self.assertTrue(len(commons["days"]) > 2)
 
 
+@mock.patch("requests.get", mock_requests_get)
 class TestMenu(TestCase):
     def setUp(self):
         call_command("load_venues")
@@ -50,18 +74,15 @@ class TestMenu(TestCase):
     def test_weekly_get(self):
         response = self.client.get(reverse("weekly-menu", args=["593"]))
         commons = json.loads(response.content)["Document"]["tblMenu"][0]
-        now = timezone.localtime().date()
-        formatted_date = now.strftime("%-m/%d/%Y")
-        self.assertEquals(commons["menudate"], formatted_date)
+        self.assertEquals(commons["menudate"], "3/23/2021")
 
     def test_daily_get(self):
         response = self.client.get(reverse("daily-menu", args=["593"]))
         commons = json.loads(response.content)["Document"]
-        now = timezone.localtime().date()
-        formatted_date = now.strftime("%-m/%d/%Y")
-        self.assertEquals(commons["menudate"], formatted_date)
+        self.assertEquals(commons["menudate"], "3/23/2021")
 
 
+@mock.patch("requests.get", mock_requests_get)
 class TestItem(TestCase):
     def setUp(self):
         call_command("load_venues")
@@ -69,9 +90,9 @@ class TestItem(TestCase):
 
     def test_get(self):
 
-        response = self.client.get(reverse("item-info", args=["3899220"]))
-        tomato_sauce = json.loads(response.content)["items"]["3899220"]
-        self.assertEquals(tomato_sauce["label"], "tomato tzatziki sauce and pita")
+        response = self.client.get(reverse("item-info", args=["123"]))
+        french_toast = json.loads(response.content)["items"]["123"]
+        self.assertEquals(french_toast["label"], "Texas French Toast")
 
 
 class TestPreferences(TestCase):
@@ -327,4 +348,3 @@ class TestProjection(TestCase):
         self.assertTrue(isinstance(res_json["dining_dollars_day_left"], float))
         self.assertTrue(isinstance(res_json["swipes_left_on_date"], float))
         self.assertTrue(isinstance(res_json["dollars_left_on_date"], float))
-"""
