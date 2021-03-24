@@ -6,6 +6,10 @@ from dining.models import Venue
 
 
 class Command(BaseCommand):
+    """
+    Loads Venues based on CSV
+    """
+
     def handle(self, *args, **kwargs):
 
         with open("dining/data/dining_images.csv") as data:
