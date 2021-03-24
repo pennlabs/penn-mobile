@@ -74,12 +74,12 @@ class TestMenu(TestCase):
     def test_weekly_get(self):
         response = self.client.get(reverse("weekly-menu", args=["593"]))
         commons = json.loads(response.content)["Document"]["tblMenu"][0]
-        self.assertEquals(commons["menudate"], "3/23/2021")
+        self.assertEquals(commons["menudate"], timezone.localtime().date().strftime("%-m/%d/%Y"))
 
     def test_daily_get(self):
         response = self.client.get(reverse("daily-menu", args=["593"]))
         commons = json.loads(response.content)["Document"]
-        self.assertEquals(commons["menudate"], "3/23/2021")
+        self.assertEquals(commons["menudate"], timezone.localtime().date().strftime("%-m/%d/%Y"))
 
 
 @mock.patch("requests.get", mock_requests_get)
