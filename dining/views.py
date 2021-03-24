@@ -142,7 +142,7 @@ class Preferences(APIView):
 
         preferences = request.user.profile.dining_preferences
 
-        # aggregated venues and puts it in form {"venue_id": x, "count": x}
+        # aggregates venues and puts it in form {"venue_id": x, "count": x}
         return Response(
             {"preferences": preferences.values("venue_id").annotate(count=Count("venue_id"))}
         )
@@ -276,8 +276,7 @@ class AverageBalance(APIView):
 
         profile = request.user.profile
 
-        # this should be fixed later, but right now is kept to LAS url parameters
-        # accepts parameters: /dining/balances?start_date=2000-01-05&end_date=2010-08-31
+        # accepts url in form: /dining/balances?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
         start_date_str = request.GET.get("start_date")
         end_date_str = request.GET.get("end_date")
 

@@ -4,9 +4,6 @@ from django.db import models
 from laundry.models import LaundryRoom
 
 
-# from dining.models import Venue
-
-
 User = get_user_model()
 
 
@@ -36,5 +33,3 @@ class Profile(models.Model):
 
     def __str__(self):
         return str(self.user.username)
-
-    # privacy
