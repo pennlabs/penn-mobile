@@ -26,6 +26,7 @@ urlpatterns = [
         name="documentation",
     ),
     path("dining/", include("dining.urls")),
+    path("", include("penndata.urls")),
 ]
 
 if settings.DEBUG:
