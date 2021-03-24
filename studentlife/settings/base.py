@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "user.apps.UserConfig",
+    "dining.apps.DiningConfig",
     "laundry.apps.LaundryConfig",
     "accounts.apps.AccountsConfig",
     "django_filters",
@@ -151,3 +152,7 @@ PLATFORM_ACCOUNTS = {
 
 # Laundry API URL
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
+
+# Dining API Credentials
+DINING_USERNAME = os.environ.get("DINING_USERNAME", None)
+DINING_PASSWORD = os.environ.get("DINING_PASSWORD", None)

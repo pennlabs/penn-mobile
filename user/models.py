@@ -29,5 +29,7 @@ class Profile(models.Model):
     expected_graduation = models.DateField(null=True, blank=True)
     degrees = models.ManyToManyField(Degree, blank=True)
     laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)
+    dining_preferences = models.ManyToManyField("dining.Venue")
 
-    # work on laundry, dining, and privacy
+    def __str__(self):
+        return str(self.user.username)
