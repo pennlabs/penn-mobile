@@ -11,6 +11,10 @@ from rest_framework.views import APIView
 
 
 class News(APIView):
+    """
+    GET: Get's news article from the DP
+    """
+
     def get_article(self):
         try:
             resp = requests.get("https://www.thedp.com/")
@@ -59,8 +63,11 @@ class News(APIView):
 
 
 class Calendar(APIView):
-    def get_events(self):
+    """
+    GET: Returns upcoming university events (within 2 weeks away)
+    """
 
+    def get_events(self):
         base_url = "https://www.stanza.co/api/schedules/almanacacademiccalendar/"
         events = []
         for term in ["fall", "summer", "spring"]:
@@ -110,6 +117,9 @@ class Calendar(APIView):
 
 
 class HomePage(APIView):
+    """
+    GET: provides homepage Cells for mobile
+    """
 
     permission_classes = [IsAuthenticated]
 
