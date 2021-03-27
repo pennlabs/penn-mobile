@@ -5,9 +5,13 @@ import requests
 from bs4 import BeautifulSoup
 from django.utils import timezone
 from requests.exceptions import ConnectionError
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from penndata.models import Event
+from penndata.serializers import EventSerializer
 
 
 class News(APIView):
@@ -114,6 +118,19 @@ class Calendar(APIView):
 
     def get(self, request):
         return Response({"calendar": self.get_events()})
+
+
+class Events(generics.ListAPIView):
+    """
+    list:
+    Return a list of events belonging to the type (events/?type=)
+    """
+
+    permission_classes = [AllowAny]
+    serializer_class = EventSerializer
+
+    def get_queryset(self):
+        return Event.objects.filter(event_type=self.kwargs["type"])
 
 
 class HomePage(APIView):
