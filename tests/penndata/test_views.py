@@ -10,6 +10,7 @@ from rest_framework.test import APIClient
 
 from dining.models import Venue
 from laundry.models import LaundryRoom
+from penndata.models import Event
 from user.models import Profile
 
 
@@ -49,6 +50,41 @@ class TestCalender(TestCase):
             end_date = datetime.datetime.strptime(event["end"], "%Y-%m-%d").date()
             time_diff = (end_date - timezone.localtime().date()).total_seconds()
             self.assertTrue(time_diff <= 1209600)
+
+
+class TestEvent(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        Event.objects.create(
+            event_type="type",
+            name="test1",
+            description="asdf",
+            image_url="https://pennlabs.org/",
+            start_time=timezone.localtime(),
+            end_time=timezone.localtime(),
+            email="a",
+            website="https://pennlabs.org/",
+            facebook="https://pennlabs.org/",
+        )
+        Event.objects.create(
+            event_type="type",
+            name="test2",
+            description="asdaf",
+            image_url="https://pennlabs.org/",
+            start_time=timezone.localtime(),
+            end_time=timezone.localtime(),
+            email="a",
+            website="https://pennlabs.org/",
+            facebook="https://pennlabs.org/",
+        )
+
+    def test_response(self):
+
+        response = self.client.get(reverse("events", args=["type"]))
+        res_json = json.loads(response.content)
+        self.assertEquals(2, len(res_json))
+        self.assertEquals(res_json[0]["name"], "test1")
+        self.assertEquals(res_json[1]["name"], "test2")
 
 
 class TestHomePage(TestCase):
