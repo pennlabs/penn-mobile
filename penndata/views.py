@@ -123,14 +123,14 @@ class Calendar(APIView):
 class Events(generics.ListAPIView):
     """
     list:
-    Return a list of events belonging to the type (events/?type=)
+    Return a list of events belonging to the type
     """
 
     permission_classes = [AllowAny]
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        return Event.objects.filter(event_type=self.kwargs["type"])
+        return Event.objects.filter(event_type=self.kwargs.get("type", ""))
 
 
 class HomePage(APIView):
