@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "user.apps.UserConfig",
     "dining.apps.DiningConfig",
     "laundry.apps.LaundryConfig",
+    "penndata.apps.PenndataConfig",
     "accounts.apps.AccountsConfig",
     "django_filters",
     "debug_toolbar",
