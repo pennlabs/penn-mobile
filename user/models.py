@@ -26,6 +26,7 @@ class Degree(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    phone_number = models.IntegerField(null=True)
     expected_graduation = models.DateField(null=True, blank=True)
     degrees = models.ManyToManyField(Degree, blank=True)
     laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)

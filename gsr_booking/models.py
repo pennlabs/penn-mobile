@@ -1,5 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.utils import timezone
+
+from user.models import Profile
 
 
 User = get_user_model()
@@ -120,3 +123,24 @@ class GSRBookingCredentials(models.Model):
     class Meta:
         verbose_name = "GSR Booking Credentials"
         verbose_name_plural = "GSR Booking Credentials"
+
+
+class GSR(models.Model):
+    lid = models.IntegerField()
+    gid = models.IntegerField()
+    rid = models.IntegerField()
+    name = models.CharField(max_length=255)
+    image_url = models.URLField()
+
+
+class GSRBooking(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    booking_id = models.IntegerField()
+    name = models.CharField(max_length=255)
+    size = models.IntegerField()
+    date = models.DateTimeField(default=timezone.now)
+    room = models.ForeignKey(GSR, on_delete=models.CASCADE)
+    start = models.DateTimeField(default=timezone.now)
+    end = models.DateTimeField(default=timezone.now)
+    is_cancelled = models.BooleanField(default=False)
+    reminder_sent = models.BooleanField(default=False)

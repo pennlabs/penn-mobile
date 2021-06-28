@@ -158,9 +158,9 @@ LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
 DINING_USERNAME = os.environ.get("DINING_USERNAME", None)
 DINING_PASSWORD = os.environ.get("DINING_PASSWORD", None)
 
-LIBCAL_ID = '194'
-LIBCAL_SECRET = '***REMOVED***'
-WHARTON_TOKEN = '***REMOVED***'
+LIBCAL_ID = "194"
+LIBCAL_SECRET = "***REMOVED***"
+WHARTON_TOKEN = "***REMOVED***"
 
 # LIBCAL_ID  = os.environ.get("LIBCAL_ID", None)
 # LIBCAL_SECRET = os.environ.get("LIBCAL_SECRET", None)

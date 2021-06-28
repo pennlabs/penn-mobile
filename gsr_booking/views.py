@@ -1,4 +1,3 @@
-from dining.api_wrapper import APIError
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponseForbidden
@@ -11,6 +10,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from dining.api_wrapper import APIError
+from gsr_booking.api_wrapper import LibCalWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
 from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials, UserSearchIndex
@@ -19,10 +20,10 @@ from gsr_booking.serializers import (
     GroupMembershipSerializer,
     GroupSerializer,
     GSRBookingCredentialsSerializer,
+    GSRBookingSerializer,
     UserSerializer,
 )
 
-import requests
 
 User = get_user_model()
 
@@ -327,23 +328,31 @@ class GroupViewSet(viewsets.ModelViewSet):
 
         return Response(result_json)
 
-from gsr_booking.api_wrapper import LibCalWrapper
+
 LCW = LibCalWrapper()
+
 
 class Locations(APIView):
     """Returns location IDs and names."""
+
     def get(self, request):
-        return Response({"locations": LCW.get_buildings()
-            + [{"lid": 1, "name": "Huntsman Hall", "service": "wharton"}]})
+        return Response(
+            {
+                "locations": LCW.get_buildings()
+                + [{"lid": 1, "name": "Huntsman Hall", "service": "wharton"}]
+            }
+        )
+
 
 class Availability(APIView):
-    '''
+    """
     Returns JSON containing all rooms for a given building.
     Usage:
         /studyspaces/availability/<building> gives all rooms for the next 24 hours
         /studyspaces/availability/<building>?start=2018-25-01 gives all rooms in the start date
         /studyspaces/availability/<building>?start=...&end=... gives all rooms between the two days
-    '''
+    """
+
     def get(self, request, lid):
         start = request.GET.get("start")
         end = request.GET.get("end")
@@ -379,3 +388,11 @@ class Availability(APIView):
                     del time["to"]
                 rooms["rooms"].append(room)
         return rooms
+
+
+class BookRoom(generics.CreateAPIView):
+    """
+    Books a room for a given user.
+    """
+
+    serializer_class = GSRBookingSerializer

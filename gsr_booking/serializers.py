@@ -1,7 +1,9 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials
+from gsr_booking.api_wrapper import LibCalWrapper
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRBookingCredentials
+from user.serializers import ProfileSerializer
 
 
 User = get_user_model()
@@ -108,3 +110,52 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["username", "booking_groups"]
+
+
+class GSRSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GSR
+        fields = "__all__"
+
+
+class GSRBookingSerializer(serializers.ModelSerializer):
+
+    room = GSRSerializer
+    profile = ProfileSerializer
+
+    class Meta:
+        model = GSRBooking
+        fields = "__all__"
+
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+        # do the wharton one here
+        data = self.get_data(validated_data)
+        LCW = LibCalWrapper()
+        response = LCW.book_room(
+            validated_data["room"].rid, validated_data["start"], validated_data["end"], *data
+        )
+        if response["error"] is not None:
+            print(response["error"])
+            instance.delete()
+        return instance
+
+    def get_data(self, validated_data):
+        user = validated_data["profile"].user
+        custom = {}
+        custom["q3699"] = self.get_affiliation(user.email)
+        custom["q2533"] = validated_data["profile"].phone_number
+        custom["q2555"] = validated_data["size"]
+        custom["q2537"] = validated_data["size"]
+        context = [user.first_name, user.last_name, user.email, validated_data["name"], custom]
+        return context
+
+    def get_affiliation(self, email):
+        if "wharton" in email:
+            return "Wharton"
+        elif "seas" in email:
+            return "SEAS"
+        elif "sas" in email:
+            return "SAS"
+        else:
+            return "Other"
