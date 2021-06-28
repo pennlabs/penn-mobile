@@ -1,3 +1,4 @@
+from dining.api_wrapper import APIError
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponseForbidden
@@ -8,6 +9,7 @@ from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
@@ -20,6 +22,7 @@ from gsr_booking.serializers import (
     UserSerializer,
 )
 
+import requests
 
 User = get_user_model()
 
@@ -323,3 +326,56 @@ class GroupViewSet(viewsets.ModelViewSet):
         )
 
         return Response(result_json)
+
+from gsr_booking.api_wrapper import LibCalWrapper
+LCW = LibCalWrapper()
+
+class Locations(APIView):
+    """Returns location IDs and names."""
+    def get(self, request):
+        return Response({"locations": LCW.get_buildings()
+            + [{"lid": 1, "name": "Huntsman Hall", "service": "wharton"}]})
+
+class Availability(APIView):
+    '''
+    Returns JSON containing all rooms for a given building.
+    Usage:
+        /studyspaces/availability/<building> gives all rooms for the next 24 hours
+        /studyspaces/availability/<building>?start=2018-25-01 gives all rooms in the start date
+        /studyspaces/availability/<building>?start=...&end=... gives all rooms between the two days
+    '''
+    def get(self, request, lid):
+        start = request.GET.get("start")
+        end = request.GET.get("end")
+
+        # handles wharton cases
+        if lid == 1:
+            pass
+        try:
+            rooms = self.parse_times(lid, start, end)
+        except APIError as e:
+            return Response({"error": str(e)}, status=400)
+        return Response(rooms)
+
+    def parse_times(self, lid, start=None, end=None):
+        rooms = LCW.get_rooms(lid, start, end)
+        rooms["location_id"] = rooms["id"]
+        rooms["rooms"] = []
+        for room_list in rooms["categories"]:
+            for room in room_list["rooms"]:
+                room["thumbnail"] = room["image"]
+                del room["image"]
+                room["room_id"] = room["id"]
+                del room["id"]
+                room["gid"] = room_list["cid"]
+                room["lid"] = lid
+                room["times"] = room["availability"]
+                del room["availability"]
+                for time in room["times"]:
+                    time["available"] = True
+                    time["start"] = time["from"]
+                    time["end"] = time["to"]
+                    del time["from"]
+                    del time["to"]
+                rooms["rooms"].append(room)
+        return rooms
