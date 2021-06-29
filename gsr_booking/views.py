@@ -413,6 +413,8 @@ class CancelRoom(APIView):
         booking_id = request.data["booking_id"]
         # handle wharton here
         gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
+        if request.user.profile != gsr_booking.profile:
+            return Response({"detail": "Unauthorized: This reservation was booked by someone else."}, status=400)
         response = LCW.cancel_room(booking_id)
         if "error" not in response[0]:
             gsr_booking.is_cancelled = True
