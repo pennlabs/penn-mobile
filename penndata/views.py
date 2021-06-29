@@ -5,13 +5,21 @@ import requests
 from bs4 import BeautifulSoup
 from django.utils import timezone
 from requests.exceptions import ConnectionError
+from django.contrib.auth import get_user_model
+
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+
+from gsr_booking.serializers import GroupMembershipSerializer
+from gsr_booking.models import GroupMembership
 
 from penndata.models import Event
 from penndata.serializers import EventSerializer
+
+User = get_user_model()
 
 
 class News(APIView):
@@ -149,6 +157,16 @@ class HomePage(APIView):
         def getCell(self):
             return {"type": self.type, "info": self.info}
 
+    def get_gsr_invites(self, username):
+        user = get_object_or_404(User, username=username)
+        return GroupMembershipSerializer(
+                GroupMembership.objects.filter(
+                    user=user, accepted=False, group__in=self.request.user.booking_groups.all(),
+                ),
+                many=True,
+            ).data
+        
+
     def get(self, request):
 
         # NOTE: accept arguments: ?version=
@@ -196,6 +214,9 @@ class HomePage(APIView):
 
         # adds front page article of DP
         cells.append(self.Cell("news", {"article": News.get_article(self)}, 50))
+
+        # adds gsr invites
+        cells.append(self.Cell("invites", self.get_gsr_invites(request.user.username), 1000))
 
         # sorts by cell weight
         cells.sort(key=lambda x: x.weight, reverse=True)
