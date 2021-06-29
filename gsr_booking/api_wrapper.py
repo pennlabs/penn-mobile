@@ -56,15 +56,13 @@ class LibCalWrapper:
         else:
             kwargs["headers"] = headers
 
-        response = requests.request(*args, **kwargs)
-
-        return response.json() if response.ok else None
+        return requests.request(*args, **kwargs)
 
     def get_buildings(self):
         """Returns a list of location IDs and names."""
         response = self.request("GET", "{}/1.1/space/locations".format(API_URL))
         out = []
-        for x in response:
+        for x in response.json():
             if x["lid"] in LOCATION_BLACKLIST:
                 continue
             if x["public"] == 1:
@@ -94,26 +92,28 @@ class LibCalWrapper:
         else:
             start_datetime = None
 
-        resp = self.request("GET", "{}/1.1/space/categories/{}".format(API_URL, lid))
-        if "error" in resp:
-            raise APIError(resp["error"])
+        response = self.request("GET", "{}/1.1/space/categories/{}".format(API_URL, lid)).json()
+        if "error" in response:
+            raise APIError(response["error"])
         output = {"id": lid, "categories": []}
 
         # if there aren't any rooms associated with this location, return
-        if len(resp) < 1:
+        if len(response) < 1:
             return output
 
-        if "error" in resp[0]:
-            raise APIError(resp[0]["error"])
+        if "error" in response[0]:
+            raise APIError(response[0]["error"])
 
-        if "categories" not in resp[0]:
+        if "categories" not in response[0]:
             return output
 
-        categories = resp[0]["categories"]
+        categories = response[0]["categories"]
         id_to_category = {i["cid"]: i["name"] for i in categories}
         categories = ",".join([str(x["cid"]) for x in categories])
-        resp = self.request("GET", "{}/1.1/space/category/{}".format(API_URL, categories))
-        for category in resp:
+        response = self.request(
+            "GET", "{}/1.1/space/category/{}".format(API_URL, categories)
+        ).json()
+        for category in response:
             cat_out = {"cid": category["cid"], "name": id_to_category[category["cid"]], "rooms": []}
 
             # ignore equipment categories
@@ -122,10 +122,12 @@ class LibCalWrapper:
 
             items = category["items"]
             items = ",".join([str(x) for x in items])
-            resp = self.request("GET", "{}/1.1/space/item/{}?{}".format(API_URL, items, range_str))
+            response = self.request(
+                "GET", "{}/1.1/space/item/{}?{}".format(API_URL, items, range_str)
+            )
 
-            if resp is not None:
-                for room in resp:
+            if response.ok:
+                for room in response.json():
                     if room["id"] in ROOM_BLACKLIST:
                         continue
                     # prepend protocol to urls
@@ -156,58 +158,30 @@ class LibCalWrapper:
         return output
 
     def book_room(self, rid, start, end, fname, lname, email, nickname, custom={}, test=False):
-        """Books a room given the required information.
+        """Books a room given the required information."""
 
-        :param custom:
-            Any other custom fields required to book the room.
-        :type custom: dict
-        :param test:
-            If this is set to true, don't actually book the room. Default is false.
-        :type test: bool
-        :returns:
-            Dictionary containing a success and error field.
-        """
-        # data = {
-        #     "start": "2020-04-30T18:42:45-04:00",
-        #     "fname": fname,
-        #     "lname": lname,
-        #     "email": email,
-        #     "nickname": nickname,
-        #     "bookings": [
-        #         {
-        #             "id": rid,
-        #             "to": "2020-04-30T18:42:45-04:00"
-        #         }
-        #     ],
-        #     # "test": test
-        # }
         data = {
-            "start": "2021-06-29T18:42:45-04:00",
-            "fname": "John",
-            "lname": "Smith",
-            "email": "john.smith@gmail.com",
-            "nickname": "Law 101 Tutorial Group (John)",
-            "q43": "Strawberry",
-            "bookings": [{"id": 1090, "to": "2021-06-29T20:42:45-04:00"}],
-            "test": test,
+            "start": start.isoformat(),
+            "fname": fname,
+            "lname": lname,
+            "email": email,
+            "nickname": nickname,
+            "bookings": [{"id": rid, "to": end.isoformat()}],
         }
-        # print(custom)
-        # data.update(custom)
+        data.update(custom)
+
         response = self.request(
             "POST", "https://libcal.library.upenn.edu/1.1/space/reserve", json=data
-        )
-        print(response)
-        # if "errors" in response and "error" not in response:
-        #     errors = response["errors"]
-        #     if isinstance(errors, list):
-        #         errors = " ".join(errors)
-        #     response["error"] = BeautifulSoup(errors.replace("\n", " "),
-        #       "html.parser").text.strip()
-        #     del response["errors"]
-        # if "results" not in response:
-        #     if "error" not in response:
-        #         response["error"] = None
-        #         response["results"] = True
-        #     else:
-        #         response["results"] = False
+        ).json()
+        if "error" not in response:
+            if "errors" in response:
+                errors = response["errors"]
+                if isinstance(errors, list):
+                    errors = " ".join(errors)
+                response["error"] = BeautifulSoup(
+                    errors.replace("\n", " "), "html.parser"
+                ).text.strip()
+                del response["errors"]
+            else:
+                response["error"] = None
         return response

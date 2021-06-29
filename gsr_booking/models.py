@@ -135,7 +135,7 @@ class GSR(models.Model):
 
 class GSRBooking(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    booking_id = models.IntegerField()
+    booking_id = models.CharField(max_length=255, null=True, blank=True)
     name = models.CharField(max_length=255)
     size = models.IntegerField()
     date = models.DateTimeField(default=timezone.now)
