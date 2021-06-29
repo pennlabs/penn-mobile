@@ -4,6 +4,7 @@ from rest_framework import routers
 from gsr_booking.views import (
     Availability,
     BookRoom,
+    CancelRoom,
     GroupMembershipViewSet,
     GroupViewSet,
     GSRBookingCredentialsViewSet,
@@ -24,4 +25,5 @@ urlpatterns = [
     path("locations/", Locations.as_view()),
     path("availability/<lid>", Availability.as_view()),
     path("book/", BookRoom.as_view()),
+    path("cancel/", CancelRoom.as_view()),
 ]

@@ -170,9 +170,7 @@ class LibCalWrapper:
         }
         data.update(custom)
 
-        response = self.request(
-            "POST", "https://libcal.library.upenn.edu/1.1/space/reserve", json=data
-        ).json()
+        response = self.request("POST", "{}/1.1/space/reserve".format(API_URL), json=data).json()
         if "error" not in response:
             if "errors" in response:
                 errors = response["errors"]
@@ -185,3 +183,6 @@ class LibCalWrapper:
             else:
                 response["error"] = None
         return response
+
+    def cancel_room(self, booking_id):
+        return self.request("POST", "{}/1.1/space/cancel/{}".format(API_URL, booking_id)).json()

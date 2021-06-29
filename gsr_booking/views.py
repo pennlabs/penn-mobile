@@ -14,7 +14,13 @@ from dining.api_wrapper import APIError
 from gsr_booking.api_wrapper import LibCalWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
-from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials, UserSearchIndex
+from gsr_booking.models import (
+    Group,
+    GroupMembership,
+    GSRBooking,
+    GSRBookingCredentials,
+    UserSearchIndex,
+)
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
@@ -396,3 +402,21 @@ class BookRoom(generics.CreateAPIView):
     """
 
     serializer_class = GSRBookingSerializer
+
+
+class CancelRoom(APIView):
+    """
+    Cancels  a room for a given user
+    """
+
+    def post(self, request):
+        booking_id = request.data["booking_id"]
+        # handle wharton here
+        gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
+        response = LCW.cancel_room(booking_id)
+        if "error" not in response[0]:
+            gsr_booking.is_cancelled = True
+            gsr_booking.save()
+            return Response({"detail": "success"})
+
+        return Response({"detail": response[0]["error"]}, status=400)
