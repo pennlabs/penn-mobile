@@ -115,7 +115,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Authentication Backends
 
 AUTHENTICATION_BACKENDS = [
-    "accounts.backends.LabsUserBackend",
+    "user.backends.MobileBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
 
@@ -157,3 +157,6 @@ LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
 # Dining API Credentials
 DINING_USERNAME = os.environ.get("DINING_USERNAME", None)
 DINING_PASSWORD = os.environ.get("DINING_PASSWORD", None)
+
+LIBCAL_ID = os.environ.get("LIBCAL_ID", None)
+LIBCAL_SECRET = os.environ.get("LIBCAL_SECRET", None)
