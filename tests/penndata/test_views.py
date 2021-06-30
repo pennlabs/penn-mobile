@@ -100,14 +100,14 @@ class TestHomePage(TestCase):
         response = self.client.get(reverse("homepage"))
         res_json = json.loads(response.content)["cells"]
 
-        self.assertEqual(res_json[0]["type"], "dining")
-        dining_info = res_json[0]["info"]["venues"]
+        self.assertEqual(res_json[1]["type"], "dining")
+        dining_info = res_json[1]["info"]["venues"]
         self.assertTrue(593 in dining_info)
         self.assertTrue(1442 in dining_info)
         self.assertTrue(636 in dining_info)
 
-        self.assertEqual(res_json[3]["type"], "laundry")
-        self.assertEqual(res_json[3]["info"]["room_id"], 0)
+        self.assertEqual(res_json[4]["type"], "laundry")
+        self.assertEqual(res_json[4]["info"]["room_id"], 0)
 
         self.profile.dining_preferences.add(Venue.objects.get(venue_id=747))
         self.profile.dining_preferences.add(Venue.objects.get(venue_id=1733))
@@ -120,13 +120,13 @@ class TestHomePage(TestCase):
         new_response = self.client.get(reverse("homepage"))
         new_res_json = json.loads(new_response.content)["cells"]
 
-        new_dining_info = new_res_json[0]["info"]["venues"]
+        new_dining_info = new_res_json[1]["info"]["venues"]
 
         self.assertTrue(747 in new_dining_info)
         self.assertTrue(1733 in new_dining_info)
         self.assertTrue(638 in new_dining_info)
 
-        self.assertEqual(new_res_json[3]["info"]["room_id"], 3)
+        self.assertEqual(new_res_json[4]["info"]["room_id"], 3)
 
-        self.assertEqual(new_res_json[1]["type"], "news")
-        self.assertEqual(new_res_json[2]["type"], "calendar")
+        self.assertEqual(new_res_json[2]["type"], "news")
+        self.assertEqual(new_res_json[3]["type"], "calendar")
