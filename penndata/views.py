@@ -171,7 +171,6 @@ class HomePage(APIView):
 
         profile = request.user.profile
 
-        # TODO: add user's GSR reservations to Response
         # TODO: add user's courses to Response
         # TODO: add GSR locations to Response
         # TODO: add features (new Penn Mobile features) to Response
