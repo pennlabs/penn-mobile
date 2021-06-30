@@ -1,7 +1,10 @@
+import datetime
+
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, viewsets
 from rest_framework.authentication import BasicAuthentication
@@ -363,7 +366,7 @@ class Availability(APIView):
         start = request.GET.get("start")
         end = request.GET.get("end")
 
-        # handles wharton cases
+        # TODO: handles wharton cases
         if lid == 1:
             pass
         try:
@@ -411,7 +414,9 @@ class CancelRoom(APIView):
 
     def post(self, request):
         booking_id = request.data["booking_id"]
-        # handle wharton here
+
+        # TODO: handle wharton here
+
         gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
         if request.user.profile != gsr_booking.profile:
             return Response(
@@ -419,8 +424,33 @@ class CancelRoom(APIView):
             )
         response = LCW.cancel_room(booking_id)
         if "error" not in response[0]:
+            # cancels booking
             gsr_booking.is_cancelled = True
             gsr_booking.save()
             return Response({"detail": "success"})
 
         return Response({"detail": response[0]["error"]}, status=400)
+
+
+class ReservationsView(APIView):
+    """
+    Gets reservations for a User
+    """
+
+    def get(self, request):
+        # this variable tells how many days in advance to look for, defaults at 3
+        libcal_search_span = request.GET.get("libcal_search_span")
+        if not libcal_search_span:
+            libcal_search_span = 3
+
+        cutoff = timezone.localtime() + datetime.timedelta(days=libcal_search_span)
+
+        # TODO: do wharton here
+
+        # filters for booking_ids for valid reservations within time span
+        booking_ids = GSRBooking.objects.filter(
+            profile=request.user.profile, is_cancelled=False, end__lte=cutoff
+        ).values_list("booking_id", flat=True)
+        booking_str = ",".join(booking_ids)
+
+        return Response({"reservations": LCW.get_reservations(booking_str)})

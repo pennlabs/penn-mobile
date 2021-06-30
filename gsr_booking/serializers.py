@@ -129,13 +129,18 @@ class GSRBookingSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         instance = super().create(validated_data)
+
         # TODO: do the wharton scheduling here
+
         data = self.get_data(validated_data)
         LCW = LibCalWrapper()
+
+        # does the room booking on LibCal API
         response = LCW.book_room(
             validated_data["room"].rid, validated_data["start"], validated_data["end"], *data
         )
         if response["error"] is not None:
+            # deletes object if there is an error
             instance.delete()
             raise serializers.ValidationError({"detail": response["error"]})
         else:
@@ -151,6 +156,7 @@ class GSRBookingSerializer(serializers.ModelSerializer):
             "q2555": validated_data["size"],
             "q2537": validated_data["size"],
         }
+        # returns data in usable format
         context = [user.first_name, user.last_name, user.email, validated_data["name"], custom]
         return context
 

@@ -160,6 +160,7 @@ class LibCalWrapper:
     def book_room(self, rid, start, end, fname, lname, email, nickname, custom={}, test=False):
         """Books a room given the required information."""
 
+        # turns parameters into valid json format, then books room
         data = {
             "start": start.isoformat(),
             "fname": fname,
@@ -171,6 +172,8 @@ class LibCalWrapper:
         data.update(custom)
 
         response = self.request("POST", "{}/1.1/space/reserve".format(API_URL), json=data).json()
+
+        # corrects keys in response
         if "error" not in response:
             if "errors" in response:
                 errors = response["errors"]
@@ -186,3 +189,60 @@ class LibCalWrapper:
 
     def cancel_room(self, booking_id):
         return self.request("POST", "{}/1.1/space/cancel/{}".format(API_URL, booking_id)).json()
+
+    def get_reservations(self, booking_ids):
+        try:
+            reservations = self.request(
+                "GET", "{}/1.1/space/booking/{}".format(API_URL, booking_ids)
+            ).json()
+
+            # cleans response values
+            for reservation in reservations:
+                reservation["service"] = "libcal"
+                reservation["booking_id"] = reservation["bookId"]
+                reservation["room_id"] = reservation["eid"]
+                reservation["gid"] = reservation["cid"]
+                del reservation["bookId"]
+                del reservation["eid"]
+                del reservation["cid"]
+                del reservation["status"]
+                del reservation["email"]
+                del reservation["firstName"]
+                del reservation["lastName"]
+
+            room_ids = ",".join(
+                list(set([str(reservation["room_id"]) for reservation in reservations]))
+            )
+            # cleans response values and adds room info to reservations
+            if room_ids:
+                rooms = self.get_room_info(room_ids)
+                for room in rooms:
+                    room["thumbnail"] = room["image"]
+                    del room["image"]
+                    del room["formid"]
+
+                for res in reservations:
+                    room = [x for x in rooms if x["id"] == res["room_id"]][0]
+                    res["name"] = room["name"]
+                    res["info"] = room
+                    del res["room_id"]
+
+            return reservations
+
+        except requests.exceptions.HTTPError as error:
+            raise APIError("Server Error: {}".format(error))
+
+    def get_room_info(self, room_ids):
+        """Gets room information for a given list of ids."""
+        try:
+            response = self.request("GET", "{}/1.1/space/item/{}".format(API_URL, room_ids))
+            rooms = response.json()
+            for room in rooms:
+                if not room["image"].startswith("http"):
+                    room["image"] = "https:" + room["image"]
+                if "description" in room:
+                    description = room["description"].replace(u"\xa0", u" ")
+                    room["description"] = BeautifulSoup(description, "html.parser").text.strip()
+        except requests.exceptions.HTTPError as error:
+            raise APIError("Server Error: {}".format(error))
+        return rooms
