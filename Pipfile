@@ -17,6 +17,7 @@ pytest = "*"
 tblib = "*"
 
 [packages]
+apns2 = "*"
 beautifulsoup4 = "*"
 dj-database-url = "*"
 djangorestframework = "*"
