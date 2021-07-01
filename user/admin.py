@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from user.models import Degree, NotificationToken, Profile, NotificationSetting
+from user.models import Degree, NotificationSetting, NotificationToken, Profile
 
 
 admin.site.register(NotificationToken)
