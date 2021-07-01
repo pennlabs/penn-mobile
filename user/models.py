@@ -18,6 +18,12 @@ class NotificationToken(models.Model):
     token = models.CharField(max_length=255)
 
 
+class NotificationSetting(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    setting = models.CharField(max_length=255)
+    enabled = models.BooleanField()
+
+
 class Degree(models.Model):
     school_name = models.CharField(max_length=255)
     degree_name = models.CharField(max_length=255)
@@ -26,6 +32,7 @@ class Degree(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    phone_number = models.IntegerField(null=True)
     expected_graduation = models.DateField(null=True, blank=True)
     degrees = models.ManyToManyField(Degree, blank=True)
     laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)
