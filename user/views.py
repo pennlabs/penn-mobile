@@ -1,20 +1,18 @@
-from rest_framework import generics
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
+import os
 
-from rest_framework import viewsets
-from rest_framework.decorators import action
 from apns2.client import APNsClient
 from apns2.credentials import TokenCredentials
 from apns2.payload import Payload
-
-import os
-
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+from rest_framework import generics, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from user.models import NotificationSetting, NotificationToken
-from user.serializers import UserSerializer, NotificationTokenSerializer
+from user.serializers import UserSerializer
+
 
 User = get_user_model()
 
@@ -74,11 +72,15 @@ class RegisterNotificationToken(APIView):
     """Registers Notification Token for User (Android and/or iOS)"""
 
     def post(self, request):
+
         dev = request.data["dev"]
-        if request.data["ios_token"]:
+
+        # checks if iOS and/or android
+        if request.POST.get("ios_token") is not None:
             ios_token = NotificationToken.objects.filter(
                 user=request.user, kind=NotificationToken.KIND_IOS
             ).first()
+            # only makes new object if there isn't one already there
             if ios_token:
                 ios_token.token = request.data["ios_token"]
                 ios_token.dev = dev
@@ -90,7 +92,7 @@ class RegisterNotificationToken(APIView):
                     token=request.data["ios_token"],
                     dev=dev,
                 )
-        if request.data["android_token"]:
+        if request.POST.get("android_token") is not None:
             android_token = NotificationToken.objects.filter(
                 user=request.user, kind=NotificationToken.KIND_ANDROID
             ).first()
@@ -109,26 +111,31 @@ class RegisterNotificationToken(APIView):
 
 
 class SendNotification(viewsets.ViewSet):
+    """Sends push notifications (iOS only)"""
 
-    queryset = NotificationToken.objects.all()
-    serializer_class = NotificationTokenSerializer
+    queryset = None
+    serializer_class = None
 
     @action(detail=False, methods=["post"])
     def send(self, request):
-        obj = get_object_or_404(NotificationToken, user=request.user, kind=NotificationToken.KIND_IOS)
-        self.send_push_notification(obj.token, request.data['title'], request.data['body'], obj.dev)
+        obj = get_object_or_404(
+            NotificationToken, user=request.user, kind=NotificationToken.KIND_IOS
+        )
+        self.send_push_notification(obj.token, request.data["title"], request.data["body"], obj.dev)
         return Response({"detail": "success"})
 
     @action(detail=False, methods=["post"])
     def send_internal(self, request):
         user = get_object_or_404(User, username=request.user.username)
         obj = get_object_or_404(NotificationToken, user=user, kind=NotificationToken.KIND_IOS)
-        self.send_push_notification(obj.token, request.data['title'], request.data['body'], obj.dev)
+        self.send_push_notification(obj.token, request.data["title"], request.data["body"], obj.dev)
         return Response({"detail": "success"})
-    
+
     @action(detail=False, methods=["post"])
     def send_token_internal(self, request):
-        self.send_push_notification(request.data['token'], request.data['title'], request.data['body'], True)
+        self.send_push_notification(
+            request.data["token"], request.data["title"], request.data["body"], True
+        )
         return Response({"detail": "success"})
 
     def get_client(self, isDev):
@@ -150,9 +157,7 @@ class SendNotification(viewsets.ViewSet):
         topic = "org.pennlabs.PennMobile"
         client.send_notification(token, payload, topic)
 
-
     def send_push_notification_batch(self, notifications, isDev=False):
         client = self.get_client(isDev)
         topic = "org.pennlabs.PennMobile"
         client.send_notification_batch(notifications=notifications, topic=topic)
-
