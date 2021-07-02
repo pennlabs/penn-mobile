@@ -90,3 +90,21 @@ class NotificationTokenTestCase(TestCase):
         self.assertEqual(1, NotificationToken.objects.all().count())
         token_obj = NotificationToken.objects.all().first()
         self.assertEqual("54321", token_obj.token)
+
+    def test_post_notif_register_3(self):
+        self.assertEqual(0, NotificationToken.objects.all().count())
+        data = {
+            "dev": True,
+            "android_token": "12345",
+        }
+        self.client.post(reverse("notif-register"), data)
+        self.assertEqual(1, NotificationToken.objects.all().count())
+        token_obj = NotificationToken.objects.all().first()
+        self.assertEqual("12345", token_obj.token)
+        # changes android token
+        data["android_token"] = "54321"
+        self.client.post(reverse("notif-register"), data)
+        # assert that no new object has been made, previous object was edited
+        self.assertEqual(1, NotificationToken.objects.all().count())
+        token_obj = NotificationToken.objects.all().first()
+        self.assertEqual("54321", token_obj.token)
