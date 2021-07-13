@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from dining.api_wrapper import APIError
-from gsr_booking.api_wrapper import LibCalWrapper
+from gsr_booking.api_wrapper import LibCalWrapper, WhartonLibWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
 from gsr_booking.models import (
@@ -339,12 +339,22 @@ class GroupViewSet(viewsets.ModelViewSet):
 
 
 LCW = LibCalWrapper()
+WLW = WhartonLibWrapper()
+WHARTON_URL = "https://apps.wharton.upenn.edu/gsr/api/v1/"
 
 
 class Locations(APIView):
     """Returns location IDs and names."""
 
     def get(self, request):
+
+        # TODO: this route gives us no locations
+        # wharton_buildings = WLW.request("GET", WHARTON_URL + "locations").json()
+        # for building in wharton_buildings:
+        #     building['name'] = building['location']
+        #     building['service'] = 'wharton'
+        #     del building['location']
+
         return Response(
             {
                 "locations": LCW.get_buildings()
@@ -367,7 +377,7 @@ class Availability(APIView):
         end = request.GET.get("end")
 
         # TODO: handles wharton cases
-        if lid == 1:
+        if lid == 1:  # if lid == 1 OR lid == any wharton building id's
             pass
         try:
             rooms = self.parse_times(lid, start, end)
@@ -445,12 +455,14 @@ class ReservationsView(APIView):
 
         cutoff = timezone.localtime() + datetime.timedelta(days=libcal_search_span)
 
-        # TODO: do wharton here
-
         # filters for booking_ids for valid reservations within time span
         booking_ids = GSRBooking.objects.filter(
             profile=request.user.profile, is_cancelled=False, end__lte=cutoff
         ).values_list("booking_id", flat=True)
         booking_str = ",".join(booking_ids)
+
+        # TODO: do wharton here (don't use LCW)
+
+        print(LCW.get_reservations(booking_str))
 
         return Response({"reservations": LCW.get_reservations(booking_str)})

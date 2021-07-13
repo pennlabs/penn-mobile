@@ -17,6 +17,22 @@ class APIError(ValueError):
     pass
 
 
+class WhartonLibWrapper:
+    def request(self, *args, **kwargs):
+        """Make a signed request to the libcal API."""
+
+        headers = {"Authorization": "Token {}".format(settings.WHARTON_TOKEN)}
+
+        # add authorization headers
+        kwargs["headers"] = headers
+
+        response = requests.request(*args, **kwargs)
+        if response.status_code == 403:
+            raise APIError("Not allowed to view")
+
+        return response
+
+
 class LibCalWrapper:
     def __init__(self):
         self.token = None
@@ -194,10 +210,13 @@ class LibCalWrapper:
         try:
             reservations = self.request(
                 "GET", "{}/1.1/space/booking/{}".format(API_URL, booking_ids)
-            ).json()
+            )
+
+            if reservations.status_code == 404:
+                return {}
 
             # cleans response values
-            for reservation in reservations:
+            for reservation in reservations.json():
                 reservation["service"] = "libcal"
                 reservation["booking_id"] = reservation["bookId"]
                 reservation["room_id"] = reservation["eid"]
@@ -229,7 +248,7 @@ class LibCalWrapper:
 
             return reservations
 
-        except requests.exceptions.HTTPError as error:
+        except (requests.exceptions.HTTPError) as error:
             raise APIError("Server Error: {}".format(error))
 
     def get_room_info(self, room_ids):

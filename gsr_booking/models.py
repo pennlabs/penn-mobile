@@ -126,11 +126,18 @@ class GSRBookingCredentials(models.Model):
 
 
 class GSR(models.Model):
+
     lid = models.IntegerField()
     gid = models.IntegerField()
+    # make these fields nullable (possibly)
+
     rid = models.IntegerField()
     name = models.CharField(max_length=255)
     image_url = models.URLField()
+
+    # add choices for GSR categories?
+    # request.user.username
+    # request.user.pennid
 
 
 class GSRBooking(models.Model):
