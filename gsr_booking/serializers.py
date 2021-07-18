@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from gsr_booking.api_wrapper import LibCalWrapper
+from gsr_booking.api_wrapper import LibCalWrapper  # , WhartonLibWrapper
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRBookingCredentials
 from user.serializers import ProfileSerializer
 
@@ -130,10 +130,25 @@ class GSRBookingSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         instance = super().create(validated_data)
 
-        # TODO: do the wharton scheduling here
-
         data = self.get_data(validated_data)
         LCW = LibCalWrapper()
+        # WLW = WhartonLibWrapper()
+        # WHARTON_URL = "https://apps.wharton.upenn.edu/gsr/api/v1/"
+
+        # TODO: fix/test wharton
+        # room = validated_data["room"]
+        # if room.kind == GSR.KIND_WHARTON:
+        #     payload = {
+        #         "start": validated_data["start"].isoformat(),
+        #         "end": validated_data["end"].isoformat(),
+        #         "pennkey": self.context["request"].user.username,
+        #         "rood": validated_data["room"].lid,
+        #     }
+        #     response = WLW.request(
+        #         "POST",
+        #         WHARTON_URL + self.context["request"].user.pennid + "/student_reserve",
+        #         json=payload,
+        #     ).json()
 
         # does the room booking on LibCal API
         response = LCW.book_room(

@@ -28,7 +28,7 @@ class WhartonLibWrapper:
 
         response = requests.request(*args, **kwargs)
         if response.status_code == 403:
-            raise APIError("Not allowed to view")
+            raise APIError("Not allowed")
 
         return response
 
@@ -213,7 +213,7 @@ class LibCalWrapper:
             )
 
             if reservations.status_code == 404:
-                return {}
+                return []
 
             # cleans response values
             for reservation in reservations.json():
