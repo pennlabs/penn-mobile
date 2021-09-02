@@ -372,7 +372,7 @@ class Availability(APIView):
         time = timezone.localtime().date()
 
         date = start if start is not None else str(time)
-        url = WHARTON_URL + "jongmin" + "/availability/" + lid + "/" + date
+        url = WHARTON_URL + request.user.username + "/availability/" + lid + "/" + date
 
         response = WLW.request("GET", url).json()
 
