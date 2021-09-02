@@ -399,7 +399,7 @@ class BookRoom(APIView):
         end = request.data["end_time"]
         is_wharton = GSR.objects.filter(gid=request.data["gid"]).first().kind == GSR.KIND_WHARTON
         room_id = request.data["id"]
-        room_name = request.data["name"]
+        room_name = request.data["room_name"]
         if is_wharton:
             booking_id = WLW.book_room(room_id, start, end, request.user.username)["booking_id"]
         else:
