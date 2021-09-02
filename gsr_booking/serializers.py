@@ -1,9 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from gsr_booking.api_wrapper import LibCalWrapper  # , WhartonLibWrapper
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRBookingCredentials
-from user.serializers import ProfileSerializer
 
 
 User = get_user_model()
@@ -120,67 +118,8 @@ class GSRSerializer(serializers.ModelSerializer):
 
 class GSRBookingSerializer(serializers.ModelSerializer):
 
-    room = GSRSerializer
-    profile = ProfileSerializer
+    gsr = GSRSerializer(read_only=False, required=False)
 
     class Meta:
         model = GSRBooking
-        fields = "__all__"
-
-    def create(self, validated_data):
-        instance = super().create(validated_data)
-
-        data = self.get_data(validated_data)
-        LCW = LibCalWrapper()
-        # WLW = WhartonLibWrapper()
-        # WHARTON_URL = "https://apps.wharton.upenn.edu/gsr/api/v1/"
-
-        # TODO: fix/test wharton
-        # room = validated_data["room"]
-        # if room.kind == GSR.KIND_WHARTON:
-        #     payload = {
-        #         "start": validated_data["start"].isoformat(),
-        #         "end": validated_data["end"].isoformat(),
-        #         "pennkey": self.context["request"].user.username,
-        #         "rood": validated_data["room"].lid,
-        #     }
-        #     response = WLW.request(
-        #         "POST",
-        #         WHARTON_URL + self.context["request"].user.pennid + "/student_reserve",
-        #         json=payload,
-        #     ).json()
-
-        # does the room booking on LibCal API
-        response = LCW.book_room(
-            validated_data["room"].rid, validated_data["start"], validated_data["end"], *data
-        )
-        if response["error"] is not None:
-            # deletes object if there is an error
-            instance.delete()
-            raise serializers.ValidationError({"detail": response["error"]})
-        else:
-            instance.booking_id = response["booking_id"]
-            instance.save()
-        return instance
-
-    def get_data(self, validated_data):
-        user = validated_data["profile"].user
-        custom = {
-            "q3699": self.get_affiliation(user.email),
-            "q2533": validated_data["profile"].phone_number,
-            "q2555": validated_data["size"],
-            "q2537": validated_data["size"],
-        }
-        # returns data in usable format
-        context = [user.first_name, user.last_name, user.email, validated_data["name"], custom]
-        return context
-
-    def get_affiliation(self, email):
-        if "wharton" in email:
-            return "Wharton"
-        elif "seas" in email:
-            return "SEAS"
-        elif "sas" in email:
-            return "SAS"
-        else:
-            return "Other"
+        fields = ("booking_id", "gsr", "room_id", "room_name", "start", "end")

@@ -2,8 +2,6 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
 
-from user.models import Profile
-
 
 User = get_user_model()
 
@@ -133,21 +131,20 @@ class GSR(models.Model):
 
     kind = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_LIBCAL)
     lid = models.IntegerField()
-    gid = models.IntegerField(null=True, blank=True)
-    rid = models.IntegerField()
+    gid = models.IntegerField(null=True)
     name = models.CharField(max_length=255)
     image_url = models.URLField()
-    # request.user.username
-    # request.user.pennid
+
+    def __str__(self):
+        return f"{self.lid}-{self.gid}"
 
 
 class GSRBooking(models.Model):
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     booking_id = models.CharField(max_length=255, null=True, blank=True)
-    name = models.CharField(max_length=255)
-    size = models.IntegerField()
-    date = models.DateTimeField(default=timezone.now)
-    room = models.ForeignKey(GSR, on_delete=models.CASCADE)
+    gsr = models.ForeignKey(GSR, on_delete=models.CASCADE)
+    room_id = models.IntegerField()
+    room_name = models.CharField(max_length=255)
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(default=timezone.now)
     is_cancelled = models.BooleanField(default=False)

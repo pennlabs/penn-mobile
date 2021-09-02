@@ -4,7 +4,6 @@ from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, viewsets
 from rest_framework.authentication import BasicAuthentication
@@ -16,7 +15,8 @@ from rest_framework.views import APIView
 from gsr_booking.api_wrapper import LibCalWrapper, WhartonLibWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
-from gsr_booking.models import (  # GSR,
+from gsr_booking.models import (
+    GSR,
     Group,
     GroupMembership,
     GSRBooking,
@@ -29,6 +29,7 @@ from gsr_booking.serializers import (
     GroupSerializer,
     GSRBookingCredentialsSerializer,
     GSRBookingSerializer,
+    GSRSerializer,
     UserSerializer,
 )
 
@@ -339,21 +340,11 @@ class GroupViewSet(viewsets.ModelViewSet):
 
 LCW = LibCalWrapper()
 WLW = WhartonLibWrapper()
-WHARTON_URL = "https://apps.wharton.upenn.edu/gsr/api/v1/"
 
 
-class Locations(APIView):
-    """Returns location IDs and names."""
-
-    def get(self, request):
-
-        wharton_buildings = WLW.request("GET", WHARTON_URL + "locations").json()
-        for building in wharton_buildings["locations"]:
-            building["lid"] = building["id"]
-            del building["building_code"]
-            del building["id"]
-
-        return Response({"locations": LCW.get_buildings() + wharton_buildings["locations"]})
+class Locations(generics.ListAPIView):
+    serializer_class = GSRSerializer
+    queryset = GSR.objects.all()
 
 
 class Availability(APIView):
@@ -367,98 +358,65 @@ class Availability(APIView):
 
     def get(self, request, lid):
         start = request.GET.get("start")
-        # end = request.GET.get("end")
-
-        time = timezone.localtime().date()
-
-        date = start if start is not None else str(time)
-        url = WHARTON_URL + request.user.username + "/availability/" + lid + "/" + date
-
-        response = WLW.request("GET", url).json()
-
-        for room in response:
-            keep_list = []
-            for slot in room["availability"]:
-                date = datetime.datetime.strptime(slot["start_time"], "%Y-%m-%dT%H:%M:%S%z")
-                if timezone.localtime() < date:
-                    keep_list.append(slot)
-            room["availability"] = keep_list
-
-        return Response(response)
-
-        # TODO: fix wharton
-        # room = get_object_or_404(GSR, lid=lid)
-        # if room.kind == GSR.KIND_WHARTON:
-        #     date = start if start is not None else str(timezone.localtime().date())
-        #     url = WHARTON_URL + request.user.pennid + "/availability/" + lid + "/" + date
-        #     return Response(WLW.request("GET", url).json())
-
-        # try:
-        #     rooms = self.parse_times(lid, start, end)
-        # except APIError as e:
-        #     return Response({"error": str(e)}, status=400)
-        # return Response(rooms)
-
-    def parse_times(self, lid, start=None, end=None):
-        rooms = LCW.get_rooms(lid, start, end)
-        rooms["location_id"] = rooms["id"]
-        rooms["rooms"] = []
-        for room_list in rooms["categories"]:
-            for room in room_list["rooms"]:
-                room["thumbnail"] = room["image"]
-                del room["image"]
-                room["room_id"] = room["id"]
-                del room["id"]
-                room["gid"] = room_list["cid"]
-                room["lid"] = lid
-                room["times"] = room["availability"]
-                del room["availability"]
-                for time in room["times"]:
-                    time["available"] = True
-                    time["start"] = time["from"]
-                    time["end"] = time["to"]
-                    del time["from"]
-                    del time["to"]
-                rooms["rooms"].append(room)
-        return rooms
+        end = request.GET.get("end")
+        is_wharton = GSR.objects.filter(lid=lid).first().kind == GSR.KIND_WHARTON
+        if is_wharton:
+            response = []
+            gsr = GSR.objects.get(lid=lid)
+            response.append(
+                {
+                    "name": gsr.name,
+                    "gid": gsr.gid,
+                    "rooms": WLW.get_availability(lid, start, end, request.user.username),
+                }
+            )
+            return Response(response)
+        else:
+            response = []
+            rooms = LCW.get_availability(lid, start, end)
+            for category in rooms["categories"]:
+                for room in category["rooms"]:
+                    for availability in room["availability"]:
+                        availability["start_time"] = availability["from"]
+                        availability["end_time"] = availability["to"]
+                        del availability["from"]
+                        del availability["to"]
+            for room in rooms["categories"]:
+                context = {}
+                context["name"] = room["name"]
+                context["gid"] = room["cid"]
+                context["rooms"] = [
+                    {"room_name": x["name"], "id": x["id"], "availability": x["availability"]}
+                    for x in room["rooms"]
+                ]
+                response.append(context)
+            return Response(response)
 
 
-class BookWhartonRoom(APIView):
+class BookRoom(APIView):
     def post(self, request):
-        payload = {
-            "start": request.data["start_time"],
-            "end": request.data["end_time"],
-            "pennkey": request.user.username,
-            "room": request.data["id"],
-        }
-        url = WHARTON_URL + request.user.username + "/student_reserve"
-        return Response(WLW.request("POST", url, json=payload).json())
-
-
-class CancelWhartonRoom(APIView):
-    def post(self, request):
-        url = (
-            WHARTON_URL
-            + request.user.username
-            + "/reservations/"
-            + str(request.data["booking_id"])
-            + "/cancel"
+        start = request.data["start_time"]
+        end = request.data["end_time"]
+        is_wharton = GSR.objects.filter(gid=request.data["gid"]).first().kind == GSR.KIND_WHARTON
+        room_id = request.data["id"]
+        room_name = request.data["name"]
+        if is_wharton:
+            booking_id = WLW.book_room(room_id, start, end, request.user.username)["booking_id"]
+        else:
+            booking_id = LCW.book_room(room_id, start, end, request.user)["booking_id"]
+        GSRBooking.objects.create(
+            user=request.user,
+            booking_id=booking_id,
+            gsr=GSR.objects.get(gid=request.data["gid"]),
+            room_id=room_id,
+            room_name=room_name,
+            start=datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z"),
+            end=datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z"),
         )
-        return Response(WLW.request("DELETE", url).json())
+        return Response({'detail': 'success'})
 
 
-class WhartonReservations(APIView):
-    def get(self, request):
-        url = WHARTON_URL + request.user.username + "/reservations"
-        return Response(WLW.request("GET", url).json())
 
-
-class BookRoom(generics.CreateAPIView):
-    """
-    Books a room for a given user.
-    """
-
-    serializer_class = GSRBookingSerializer
 
 
 class CancelRoom(APIView):
@@ -468,53 +426,34 @@ class CancelRoom(APIView):
 
     def post(self, request):
         booking_id = request.data["booking_id"]
-
         gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
-        if request.user.profile != gsr_booking.profile:
+
+        if request.user != gsr_booking.user:
             return Response(
                 {"detail": "Unauthorized: This reservation was booked by someone else."}, status=400
             )
+        is_wharton = gsr_booking.gsr.kind == GSR.KIND_WHARTON
+        if is_wharton:
+            response = WLW.cancel_room(request.user, booking_id)
+            if "detail" in response:
+                return Response(response, status=400)
 
-        # TODO: fix wharton
-        # room = get_object_or_404(GSR, lid=gsr_booking.room.lid)
-        # if room.kind == GSR.KIND_WHARTON:
-        #     url = WHARTON_URL + request.user.pennid + "/reservations/" + room.lid + "/cancel"
-        #     return Response(WLW.request("DELETE", url).json())
+        else:
+            response = LCW.cancel_room(booking_id)
+            if "error" in response[0]:
+                return Response({"detail": response[0]["error"]}, status=400)
 
-        response = LCW.cancel_room(booking_id)
-        if "error" not in response[0]:
-            # cancels booking
-            gsr_booking.is_cancelled = True
-            gsr_booking.save()
-            return Response({"detail": "success"})
-
-        return Response({"detail": response[0]["error"]}, status=400)
+        gsr_booking.is_cancelled = True
+        gsr_booking.save()
+        return Response({"detail": "success"})
 
 
-class ReservationsView(APIView):
+class ReservationsView(generics.ListAPIView):
     """
     Gets reservations for a User
     """
 
-    def get(self, request):
+    serializer_class = GSRBookingSerializer
 
-        # this variable tells how many days in advance to look for, defaults at 3
-        libcal_search_span = request.GET.get("libcal_search_span")
-        if not libcal_search_span:
-            libcal_search_span = 3
-
-        cutoff = timezone.localtime() + datetime.timedelta(days=libcal_search_span)
-
-        # filters for booking_ids for valid reservations within time span
-        booking_ids = GSRBooking.objects.filter(
-            profile=request.user.profile, is_cancelled=False, end__lte=cutoff
-        ).values_list("booking_id", flat=True)
-        booking_str = ",".join(booking_ids)
-
-        # TODO: do wharton here (don't use LCW)
-        # url = WHARTON_URL + request.user.pennid + "/reservations"
-        # wharton_reservations = WLW.request("GET", url).json()
-        # return Response({"reservations": LCW.get_reservations(booking_str)
-        #                   + wharton_reservations['bookings']})
-
-        return Response({"reservations": LCW.get_reservations(booking_str)})
+    def get_queryset(self):
+        return GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
