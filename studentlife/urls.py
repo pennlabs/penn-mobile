@@ -8,7 +8,7 @@ from rest_framework.schemas import get_schema_view
 admin.site.site_header = "Student Life Admin"
 
 urlpatterns = [
-    path("gsr/", include("gsr_booking.urls")),
+    path("", include("gsr_booking.urls")),
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls", namespace="accounts")),
     path("user/", include("user.urls")),
