@@ -13,7 +13,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from dining.api_wrapper import APIError
 from gsr_booking.api_wrapper import LibCalWrapper, WhartonLibWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
@@ -348,19 +347,13 @@ class Locations(APIView):
 
     def get(self, request):
 
-        # TODO: this route gives us no locations
-        # wharton_buildings = WLW.request("GET", WHARTON_URL + "locations").json()
-        # for building in wharton_buildings['locations']:
-        #     building['name'] = building['location']
-        #     building['service'] = 'wharton'
-        #     del building['location']
+        wharton_buildings = WLW.request("GET", WHARTON_URL + "locations").json()
+        for building in wharton_buildings["locations"]:
+            building["lid"] = building["id"]
+            del building["building_code"]
+            del building["id"]
 
-        return Response(
-            {
-                "locations": LCW.get_buildings()
-                + [{"lid": 1, "name": "Huntsman Hall", "service": "wharton"}]
-            }
-        )
+        return Response({"locations": LCW.get_buildings() + wharton_buildings["locations"]})
 
 
 class Availability(APIView):
@@ -374,7 +367,24 @@ class Availability(APIView):
 
     def get(self, request, lid):
         start = request.GET.get("start")
-        end = request.GET.get("end")
+        # end = request.GET.get("end")
+
+        time = timezone.localtime().date()
+
+        date = start if start is not None else str(time)
+        url = WHARTON_URL + "jongmin" + "/availability/" + lid + "/" + date
+
+        response = WLW.request("GET", url).json()
+
+        for room in response:
+            keep_list = []
+            for slot in room["availability"]:
+                date = datetime.datetime.strptime(slot["start_time"], "%Y-%m-%dT%H:%M:%S%z")
+                if timezone.localtime() < date:
+                    keep_list.append(slot)
+            room["availability"] = keep_list
+
+        return Response(response)
 
         # TODO: fix wharton
         # room = get_object_or_404(GSR, lid=lid)
@@ -383,11 +393,11 @@ class Availability(APIView):
         #     url = WHARTON_URL + request.user.pennid + "/availability/" + lid + "/" + date
         #     return Response(WLW.request("GET", url).json())
 
-        try:
-            rooms = self.parse_times(lid, start, end)
-        except APIError as e:
-            return Response({"error": str(e)}, status=400)
-        return Response(rooms)
+        # try:
+        #     rooms = self.parse_times(lid, start, end)
+        # except APIError as e:
+        #     return Response({"error": str(e)}, status=400)
+        # return Response(rooms)
 
     def parse_times(self, lid, start=None, end=None):
         rooms = LCW.get_rooms(lid, start, end)
@@ -411,6 +421,36 @@ class Availability(APIView):
                     del time["to"]
                 rooms["rooms"].append(room)
         return rooms
+
+
+class BookWhartonRoom(APIView):
+    def post(self, request):
+        payload = {
+            "start": request.data["start_time"],
+            "end": request.data["end_time"],
+            "pennkey": request.user.username,
+            "room": request.data["id"],
+        }
+        url = WHARTON_URL + request.user.username + "/student_reserve"
+        return Response(WLW.request("POST", url, json=payload).json())
+
+
+class CancelWhartonRoom(APIView):
+    def post(self, request):
+        url = (
+            WHARTON_URL
+            + request.user.username
+            + "/reservations/"
+            + str(request.data["booking_id"])
+            + "/cancel"
+        )
+        return Response(WLW.request("DELETE", url).json())
+
+
+class WhartonReservations(APIView):
+    def get(self, request):
+        url = WHARTON_URL + request.user.username + "/reservations"
+        return Response(WLW.request("GET", url).json())
 
 
 class BookRoom(generics.CreateAPIView):

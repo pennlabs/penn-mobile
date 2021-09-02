@@ -9,6 +9,7 @@ from django.utils import timezone
 BASE_URL = "https://libcal.library.upenn.edu"
 API_URL = "https://api2.libcal.com"
 
+# unbookable rooms
 LOCATION_BLACKLIST = set([3620, 2636, 2611, 3217, 2637, 2634])
 ROOM_BLACKLIST = set([7176, 16970, 16998, 17625])
 
@@ -28,8 +29,7 @@ class WhartonLibWrapper:
 
         response = requests.request(*args, **kwargs)
         if response.status_code == 403:
-            raise APIError("Not allowed")
-
+            raise APIError("Disallowed")
         return response
 
 
@@ -83,8 +83,10 @@ class LibCalWrapper:
                 continue
             if x["public"] == 1:
                 del x["public"]
-                x["service"] = "libcal"
+                if "formid" in x:
+                    del x["formid"]
                 out.append(x)
+                print(x)
         return out
 
     def get_rooms(self, lid, start=None, end=None):
