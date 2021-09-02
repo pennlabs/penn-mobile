@@ -345,6 +345,7 @@ WLW = WhartonLibWrapper()
 class Locations(generics.ListAPIView):
     serializer_class = GSRSerializer
     queryset = GSR.objects.all()
+    permission_classes = [IsAuthenticated]
 
 
 class Availability(APIView):
@@ -355,6 +356,8 @@ class Availability(APIView):
         /studyspaces/availability/<building>?start=2018-25-01 gives all rooms in the start date
         /studyspaces/availability/<building>?start=...&end=... gives all rooms between the two days
     """
+
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, lid):
         start = request.GET.get("start")
@@ -394,6 +397,9 @@ class Availability(APIView):
 
 
 class BookRoom(APIView):
+
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         start = request.data["start_time"]
         end = request.data["end_time"]
@@ -420,6 +426,8 @@ class CancelRoom(APIView):
     """
     Cancels  a room for a given user
     """
+
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         booking_id = request.data["booking_id"]
@@ -450,6 +458,7 @@ class ReservationsView(generics.ListAPIView):
     Gets reservations for a User
     """
 
+    permission_classes = [IsAuthenticated]
     serializer_class = GSRBookingSerializer
 
     def get_queryset(self):

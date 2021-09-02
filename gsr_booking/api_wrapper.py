@@ -11,8 +11,8 @@ API_URL = "https://api2.libcal.com"
 WHARTON_URL = "https://apps.wharton.upenn.edu/gsr/api/v1/"
 
 # unbookable rooms
-LOCATION_BLACKLIST = set([3620, 2636, 2611, 3217, 2637, 2634])
-ROOM_BLACKLIST = set([7176, 16970, 16998, 17625])
+LOCATION_BLACKLIST = {3620, 2636, 2611, 3217, 2637, 2634}
+ROOM_BLACKLIST = {7176, 16970, 16998, 17625}
 
 
 class APIError(ValueError):
@@ -23,7 +23,7 @@ class WhartonLibWrapper:
     def request(self, *args, **kwargs):
         """Make a signed request to the libcal API."""
 
-        headers = {"Authorization": "Token {}".format(settings.WHARTON_TOKEN)}
+        headers = {"Authorization": f"Token {settings.WHARTON_TOKEN}"}
 
         # add authorization headers
         kwargs["headers"] = headers
@@ -115,7 +115,7 @@ class LibCalWrapper:
         if not self.token:
             self.get_token()
 
-        headers = {"Authorization": "Bearer {}".format(self.token)}
+        headers = {"Authorization": f"Bearer {self.token}"}
 
         # add authorization headers
         if "headers" in kwargs:
@@ -204,7 +204,7 @@ class LibCalWrapper:
                             room["image"] = "https:" + room["image"]
                     # convert html descriptions to text
                     if "description" in room:
-                        description = room["description"].replace(u"\xa0", u" ")
+                        description = room["description"].replace("\xa0", " ")
                         room["description"] = BeautifulSoup(description, "html.parser").text.strip()
                     # remove extra fields
                     if "formid" in room:
@@ -324,7 +324,7 @@ class LibCalWrapper:
                 if not room["image"].startswith("http"):
                     room["image"] = "https:" + room["image"]
                 if "description" in room:
-                    description = room["description"].replace(u"\xa0", u" ")
+                    description = room["description"].replace("\xa0", " ")
                     room["description"] = BeautifulSoup(description, "html.parser").text.strip()
         except requests.exceptions.HTTPError as error:
             raise APIError("Server Error: {}".format(error))

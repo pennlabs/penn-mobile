@@ -4,7 +4,6 @@ import re
 import requests
 from bs4 import BeautifulSoup
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from requests.exceptions import ConnectionError
 from rest_framework import generics
@@ -156,8 +155,7 @@ class HomePage(APIView):
         def getCell(self):
             return {"type": self.type, "info": self.info}
 
-    def get_gsr_invites(self, username):
-        user = get_object_or_404(User, username=username)
+    def get_gsr_invites(self, user):
         return GroupMembershipSerializer(
             GroupMembership.objects.filter(
                 user=user, accepted=False, group__in=self.request.user.booking_groups.all(),
@@ -213,7 +211,7 @@ class HomePage(APIView):
         cells.append(self.Cell("news", {"article": News.get_article(self)}, 50))
 
         # adds gsr invites
-        cells.append(self.Cell("invites", self.get_gsr_invites(request.user.username), 1000))
+        cells.append(self.Cell("invites", self.get_gsr_invites(request.user), 1000))
 
         # sorts by cell weight
         cells.sort(key=lambda x: x.weight, reverse=True)
