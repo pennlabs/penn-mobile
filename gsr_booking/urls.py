@@ -27,5 +27,5 @@ urlpatterns = [
     path("availability/<lid>", Availability.as_view()),
     path("book/", BookRoom.as_view()),
     path("cancel/", CancelRoom.as_view()),
-    path("reservations", ReservationsView.as_view()),
+    path("reservations/", ReservationsView.as_view()),
 ]
