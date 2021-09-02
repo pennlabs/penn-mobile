@@ -413,10 +413,7 @@ class BookRoom(APIView):
             start=datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z"),
             end=datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z"),
         )
-        return Response({'detail': 'success'})
-
-
-
+        return Response({"detail": "success"})
 
 
 class CancelRoom(APIView):
