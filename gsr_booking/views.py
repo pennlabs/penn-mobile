@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponseForbidden
@@ -8,15 +10,26 @@ from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from gsr_booking.api_wrapper import LibCalWrapper, WhartonLibWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
-from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials, UserSearchIndex
+from gsr_booking.models import (
+    GSR,
+    Group,
+    GroupMembership,
+    GSRBooking,
+    GSRBookingCredentials,
+    UserSearchIndex,
+)
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
     GroupSerializer,
     GSRBookingCredentialsSerializer,
+    GSRBookingSerializer,
+    GSRSerializer,
     UserSerializer,
 )
 
@@ -323,3 +336,130 @@ class GroupViewSet(viewsets.ModelViewSet):
         )
 
         return Response(result_json)
+
+
+LCW = LibCalWrapper()
+WLW = WhartonLibWrapper()
+
+
+class Locations(generics.ListAPIView):
+    serializer_class = GSRSerializer
+    queryset = GSR.objects.all()
+    permission_classes = [IsAuthenticated]
+
+
+class Availability(APIView):
+    """
+    Returns JSON containing all rooms for a given building.
+    Usage:
+        /studyspaces/availability/<building> gives all rooms for the next 24 hours
+        /studyspaces/availability/<building>?start=2018-25-01 gives all rooms in the start date
+        /studyspaces/availability/<building>?start=...&end=... gives all rooms between the two days
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, lid):
+        start = request.GET.get("start")
+        end = request.GET.get("end")
+        is_wharton = GSR.objects.filter(lid=lid).first().kind == GSR.KIND_WHARTON
+        if is_wharton:
+            response = []
+            gsr = GSR.objects.get(lid=lid)
+            response.append(
+                {
+                    "name": gsr.name,
+                    "gid": gsr.gid,
+                    "rooms": WLW.get_availability(lid, start, end, request.user.username),
+                }
+            )
+            return Response(response)
+        else:
+            response = []
+            rooms = LCW.get_availability(lid, start, end)
+            for category in rooms["categories"]:
+                for room in category["rooms"]:
+                    for availability in room["availability"]:
+                        availability["start_time"] = availability["from"]
+                        availability["end_time"] = availability["to"]
+                        del availability["from"]
+                        del availability["to"]
+            for room in rooms["categories"]:
+                context = {}
+                context["name"] = room["name"]
+                context["gid"] = room["cid"]
+                context["rooms"] = [
+                    {"room_name": x["name"], "id": x["id"], "availability": x["availability"]}
+                    for x in room["rooms"]
+                ]
+                response.append(context)
+            return Response(response)
+
+
+class BookRoom(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        start = request.data["start_time"]
+        end = request.data["end_time"]
+        is_wharton = GSR.objects.filter(gid=request.data["gid"]).first().kind == GSR.KIND_WHARTON
+        room_id = request.data["id"]
+        room_name = request.data["room_name"]
+        if is_wharton:
+            booking_id = WLW.book_room(room_id, start, end, request.user.username)["booking_id"]
+        else:
+            booking_id = LCW.book_room(room_id, start, end, request.user)["booking_id"]
+        GSRBooking.objects.create(
+            user=request.user,
+            booking_id=booking_id,
+            gsr=GSR.objects.get(gid=request.data["gid"]),
+            room_id=room_id,
+            room_name=room_name,
+            start=datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z"),
+            end=datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z"),
+        )
+        return Response({"detail": "success"})
+
+
+class CancelRoom(APIView):
+    """
+    Cancels  a room for a given user
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        booking_id = request.data["booking_id"]
+        gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
+
+        if request.user != gsr_booking.user:
+            return Response(
+                {"detail": "Unauthorized: This reservation was booked by someone else."}, status=400
+            )
+        is_wharton = gsr_booking.gsr.kind == GSR.KIND_WHARTON
+        if is_wharton:
+            response = WLW.cancel_room(request.user, booking_id)
+            if "detail" in response:
+                return Response(response, status=400)
+
+        else:
+            response = LCW.cancel_room(booking_id)
+            if "error" in response[0]:
+                return Response({"detail": response[0]["error"]}, status=400)
+
+        gsr_booking.is_cancelled = True
+        gsr_booking.save()
+        return Response({"detail": "success"})
+
+
+class ReservationsView(generics.ListAPIView):
+    """
+    Gets reservations for a User
+    """
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = GSRBookingSerializer
+
+    def get_queryset(self):
+        return GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
