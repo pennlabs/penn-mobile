@@ -4,7 +4,7 @@
             "venue": [
                 {
                     "dailyMenuURL": "http://www.cafebonappetit.com/feeds/daily/593",
-                    "facilityURL": "http://university-of-pennsylvania.cafebonappetit.com/cafe/***REMOVED***0-commons/",
+                    "facilityURL": "http://university-of-pennsylvania.cafebonappetit.com/cafe/1920-commons/",
                     "venueType": "residential",
                     "dateHours": [
                         {
@@ -28,7 +28,7 @@
                             ]
                         }
                     ],
-                    "name": "***REMOVED***0 Commons",
+                    "name": "1920 Commons",
                     "weeklyMenuURL": "http://www.cafebonappetit.com/feeds/weekly/593",
                     "id": 593
                 }

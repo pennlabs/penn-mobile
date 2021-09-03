@@ -184,7 +184,7 @@ class HomePage(APIView):
         else:
             cells.append(self.Cell("laundry", {"room_id": 0}, 5))
 
-        # adds dining preference to home with high priority, defaults to ***REMOVED***0's, Hill, NCH
+        # adds dining preference to home with high priority, defaults to 1920's, Hill, NCH
         dining_preferences = [
             x for x in profile.dining_preferences.values_list("venue_id", flat=True)
         ]

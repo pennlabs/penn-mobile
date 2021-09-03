@@ -61,7 +61,7 @@ class TestHours(TestCase):
     def test_get(self):
         response = self.client.get(reverse("hours", args=["593"]))
         commons = json.loads(response.content)["cafes"]["593"]
-        self.assertEquals("***REMOVED***0 Commons", commons["name"])
+        self.assertEquals("1920 Commons", commons["name"])
         self.assertTrue(len(commons["days"]) > 2)
 
 

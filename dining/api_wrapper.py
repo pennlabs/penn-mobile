@@ -13,7 +13,7 @@ V2_ENDPOINTS = {
 }
 
 VENUE_NAMES = {
-    "593": "***REMOVED***0 Commons",
+    "593": "1920 Commons",
     "636": "Hill House",
     "637": "Kings Court English House",
     "638": "Kosher Dining at Falk",

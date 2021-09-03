@@ -22,7 +22,7 @@ class TestAllStatus(TestCase):
             hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=2, name="Class of ***REMOVED***8 Fisher", location="Quad", total_washers=8, total_dryers=8
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
         )
         LaundryRoom.objects.get_or_create(
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
@@ -65,7 +65,7 @@ class TestHallStatus(TestCase):
             hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=2, name="Class of ***REMOVED***8 Fisher", location="Quad", total_washers=8, total_dryers=8
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
         )
         LaundryRoom.objects.get_or_create(
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
@@ -97,7 +97,7 @@ class TestSaveData(TestCase):
             hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=2, name="Class of ***REMOVED***8 Fisher", location="Quad", total_washers=8, total_dryers=8
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
         )
         LaundryRoom.objects.get_or_create(
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
