@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from portal.models import Poll, PollOption
+from portal.models import Poll, PollOption, PollVote
 
 
 class UserPollSerializer(serializers.ModelSerializer):
@@ -17,7 +17,7 @@ class UserPollSerializer(serializers.ModelSerializer):
 class AdminPollSerializer(serializers.ModelSerializer):
     class Meta:
         model = Poll
-        fields = ("approved",)
+        fields = "__all__"
 
 
 class PollOptionSerializer(serializers.ModelSerializer):
@@ -35,4 +35,29 @@ class RetrievePollSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Poll
-        fields = ("id", "source", "question", "expire_date", "options")
+        fields = ("id", "source", "created_date", "question", "expire_date", "options")
+
+
+class CreatePollVoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PollVote
+        fields = ("poll_option",)
+
+    def create(self, validated_data):
+        instance = PollVote(
+            **validated_data,
+            user=self.context["request"].user,
+            poll=validated_data["poll_option"].poll
+        )
+        instance.save()
+        return instance
+
+
+class RetrievePollVoteSerializer(serializers.ModelSerializer):
+
+    poll = RetrievePollSerializer()
+    poll_option = PollOptionSerializer()
+
+    class Meta:
+        model = PollVote
+        fields = ("poll", "poll_option")

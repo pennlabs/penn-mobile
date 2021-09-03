@@ -21,12 +21,6 @@ class PollOption(models.Model):
 
 
 class PollVote(models.Model):
-    poll_option = models.ForeignKey(PollOption, on_delete=models.CASCADE)
-    school = models.CharField(max_length=255)
-    year = models.IntegerField()
-
-
-class PollStatus(models.Model):
-    poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    answered = models.BooleanField(default=False)
+    poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
+    poll_option = models.ForeignKey(PollOption, on_delete=models.CASCADE)
