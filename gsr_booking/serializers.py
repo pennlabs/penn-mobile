@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from gsr_booking.models import Group, GroupMembership, GSRBookingCredentials
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRBookingCredentials
 
 
 User = get_user_model()
@@ -108,3 +108,18 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["username", "booking_groups"]
+
+
+class GSRSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GSR
+        fields = "__all__"
+
+
+class GSRBookingSerializer(serializers.ModelSerializer):
+
+    gsr = GSRSerializer(read_only=False, required=False)
+
+    class Meta:
+        model = GSRBooking
+        fields = ("booking_id", "gsr", "room_id", "room_name", "start", "end")
