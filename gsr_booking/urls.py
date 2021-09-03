@@ -23,9 +23,9 @@ router.register(r"groups", GroupViewSet)
 urlpatterns = [
     path("", include(router.urls)),
     path("credentials/", GSRBookingCredentialsViewSet.as_view()),
-    path("locations/", Locations.as_view()),
-    path("availability/<lid>", Availability.as_view()),
-    path("book/", BookRoom.as_view()),
-    path("cancel/", CancelRoom.as_view()),
-    path("reservations/", ReservationsView.as_view()),
+    path("locations/", Locations.as_view(), name="locations"),
+    path("availability/<lid>", Availability.as_view(), name="availability"),
+    path("book/", BookRoom.as_view(), name="book"),
+    path("cancel/", CancelRoom.as_view(), name="cancel"),
+    path("reservations/", ReservationsView.as_view(), name="reservations"),
 ]
