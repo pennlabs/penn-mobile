@@ -7,6 +7,7 @@ User = get_user_model()
 
 
 class Poll(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
     question = models.CharField(max_length=255)
     created_date = models.DateTimeField(default=timezone.now)
@@ -23,7 +24,6 @@ class PollVote(models.Model):
     poll_option = models.ForeignKey(PollOption, on_delete=models.CASCADE)
     school = models.CharField(max_length=255)
     year = models.IntegerField()
-    email = models.CharField(max_length=255)
 
 
 class PollStatus(models.Model):
