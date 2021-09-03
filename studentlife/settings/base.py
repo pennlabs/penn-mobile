@@ -157,3 +157,4 @@ LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
 # Dining API Credentials
 DINING_USERNAME = os.environ.get("DINING_USERNAME", None)
 DINING_PASSWORD = os.environ.get("DINING_PASSWORD", None)
+ 
