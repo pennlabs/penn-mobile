@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from portal.models import Poll, PollOption, PollVote
 from portal.serializers import (
     AdminPollSerializer,
-    CreatePollVoteSerializer,
+    CreateUpdatePollVoteSerializer,
     PollOptionSerializer,
     RetrievePollSerializer,
     RetrievePollVoteSerializer,
@@ -25,9 +25,9 @@ class RetrievePolls(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"])
     def browse(self, request):
         polls_available = Poll.objects.filter(expire_date__gte=timezone.localtime(), approved=True)
-        polls_answered = PollVote.objects.filter(user=request.user, poll__in=polls_available).values_list(
-            "poll", flat=True
-        )
+        polls_answered = PollVote.objects.filter(
+            user=request.user, poll__in=polls_available
+        ).values_list("poll", flat=True)
         return Response(
             self.serializer_class(polls_available.exclude(id__in=polls_answered), many=True).data
         )
@@ -96,6 +96,7 @@ class RetrievePollVotes(APIView):
         else:
             return "Other"
 
+
 class CreatePoll(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserPollSerializer
@@ -111,7 +112,8 @@ class UpdatePoll(generics.UpdateAPIView):
             return UserPollSerializer
 
     def get_queryset(self):
-        return Poll.objects.filter(user=self.request.user)
+        return Poll.objects.all()
+
 
 class CreatePollOptions(generics.CreateAPIView):
     serializer_class = PollOptionSerializer
@@ -127,17 +129,17 @@ class UpdatePollOption(generics.UpdateAPIView):
     serializer_class = PollOptionSerializer
 
     def get_queryset(self):
-        return PollOption.objects.all( )
+        return PollOption.objects.all()
 
 
 class CreatePollVote(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = CreatePollVoteSerializer
+    serializer_class = CreateUpdatePollVoteSerializer
 
 
 class UpdatePollVote(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = CreatePollVoteSerializer
+    serializer_class = CreateUpdatePollVoteSerializer
 
     def get_queryset(self):
         return PollVote.objects.filter(user=self.request.user)

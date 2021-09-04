@@ -13,11 +13,23 @@ class UserPollSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+    def update(self, instance, validated_data):
+        user = self.context["request"].user
+        if user != instance.user:
+            raise serializers.ValidationError(detail={"detail": "User not allowed to update."})
+        return super().update(instance, validated_data)
+
 
 class AdminPollSerializer(serializers.ModelSerializer):
     class Meta:
         model = Poll
         fields = "__all__"
+
+    def update(self, instance, validated_data):
+        user = self.context["request"].user
+        if user != instance.user:
+            raise serializers.ValidationError(detail={"detail": "User not allowed to update."})
+        return super().update(instance, validated_data)
 
 
 class PollOptionSerializer(serializers.ModelSerializer):
@@ -29,6 +41,12 @@ class PollOptionSerializer(serializers.ModelSerializer):
             "choice",
         )
 
+    def update(self, instance, validated_data):
+        user = self.context["request"].user
+        if user != instance.poll.user:
+            raise serializers.ValidationError(detail={"detail": "User not allowed to update."})
+        return super().update(instance, validated_data)
+
 
 class RetrievePollSerializer(serializers.ModelSerializer):
 
@@ -39,7 +57,7 @@ class RetrievePollSerializer(serializers.ModelSerializer):
         fields = ("id", "source", "created_date", "question", "expire_date", "options")
 
 
-class CreatePollVoteSerializer(serializers.ModelSerializer):
+class CreateUpdatePollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
         fields = ("poll_option",)
@@ -52,6 +70,12 @@ class CreatePollVoteSerializer(serializers.ModelSerializer):
         )
         instance.save()
         return instance
+
+    def update(self, instance, validated_data):
+        user = self.context["request"].user
+        if user != instance.user:
+            raise serializers.ValidationError(detail={"detail": "User not allowed to update."})
+        return super().update(instance, validated_data)
 
 
 class RetrievePollVoteSerializer(serializers.ModelSerializer):
