@@ -59,7 +59,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "accounts.middleware.OAuth2TokenMiddleware",
 ]
 
 ROOT_URLCONF = "studentlife.urls"
@@ -79,6 +78,14 @@ TEMPLATES = [
         },
     }
 ]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+        "accounts.authentication.PlatformAuthentication",
+    ],
+}
 
 WSGI_APPLICATION = "studentlife.wsgi.application"
 
