@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, viewsets
 from rest_framework.authentication import BasicAuthentication
@@ -471,13 +472,36 @@ class CancelRoom(APIView):
         return Response({"detail": "success"})
 
 
-class ReservationsView(generics.ListAPIView):
+class ReservationsView(APIView):
     """
     Gets reservations for a User
     """
 
     permission_classes = [IsAuthenticated]
-    serializer_class = GSRBookingSerializer
 
-    def get_queryset(self):
-        return GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
+    def get(self, request):
+        serializer = GSRBookingSerializer(
+            GSRBooking.objects.filter(
+                user=self.request.user, end__gte=timezone.localtime(), is_cancelled=False
+            ),
+            many=True,
+        )
+        response = serializer.data
+        try:
+            # ignore this because this route is used by everyone
+            wharton_reservations = WLW.get_reservations(request.user)["bookings"]
+            for reservation in wharton_reservations:
+                # filtering for lid here works because Wharton buildings have distinct lid's
+                context = {
+                    "booking_id": str(reservation["booking_id"]),
+                    "gsr": GSRSerializer(GSR.objects.get(lid=reservation["lid"])).data,
+                    "room_id": reservation["rid"],
+                    "room_name": reservation["room"],
+                    "start": reservation["start"],
+                    "end": reservation["end"],
+                }
+                if context not in response:
+                    response.append(context)
+        except APIError:
+            pass
+        return Response(response)
