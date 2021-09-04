@@ -290,7 +290,7 @@ class TestProjection(TestCase):
             guest_swipes=2,
         )
         DiningBalance.objects.create(
-            profie=self.test_user.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime() - datetime.timedelta(days=3),
             dining_dollars=3,
             swipes=3,
