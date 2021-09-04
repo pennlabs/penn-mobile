@@ -60,7 +60,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "accounts.middleware.OAuth2TokenMiddleware",
 ]
 
 ROOT_URLCONF = "studentlife.urls"
@@ -118,7 +117,6 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
 
@@ -148,6 +146,14 @@ PLATFORM_ACCOUNTS = {
     "CLIENT_SECRET": "supersecretclientsecret",
     "PLATFORM_URL": "https://platform-dev.pennlabs.org",
     "CUSTOM_ADMIN": False,
+}
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+        "accounts.authentication.PlatformAuthentication",
+    ],
 }
 
 # Laundry API URL

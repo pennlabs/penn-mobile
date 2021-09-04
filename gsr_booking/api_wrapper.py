@@ -29,20 +29,26 @@ class WhartonLibWrapper:
         kwargs["headers"] = headers
 
         response = requests.request(*args, **kwargs)
-        if response.status_code == 403:
-            raise APIError("Disallowed")
+
+        # only wharton students can access these routes
+        if response.status_code == 403 or response.status_code == 401:
+            raise APIError("Wharton: User is not allowed to perform this action")
         return response
 
     def get_availability(self, lid, start, end, username):
+        """Returns a list of rooms and their availabilities"""
         current_time = timezone.localtime()
         search_date = (
             datetime.datetime.strptime(start, "%Y-%m-%d").date()
             if start is not None
             else current_time.date()
         )
+
+        # hits availability route for a given lid and date
         url = WHARTON_URL + username + "/availability/" + lid + "/" + str(search_date)
         rooms = self.request("GET", url).json()
 
+        # presets end date as end midnight of next day
         end_date = (
             datetime.datetime.strptime(end + "T00:00:00-04:00", "%Y-%m-%dT%H:%M:%S%z")
             if end is not None
@@ -54,6 +60,7 @@ class WhartonLibWrapper:
         for room in rooms:
             valid_slots = []
             for slot in room["availability"]:
+                # checks if the available slots are within the current time and midnight of next day
                 start_time = datetime.datetime.strptime(slot["start_time"], "%Y-%m-%dT%H:%M:%S%z")
                 end_time = datetime.datetime.strptime(slot["end_time"], "%Y-%m-%dT%H:%M:%S%z")
                 if start_time >= current_time and end_time <= end_date and not slot["reserved"]:
@@ -63,6 +70,7 @@ class WhartonLibWrapper:
         return rooms
 
     def book_room(self, rid, start, end, username):
+        """Books room if pennkey is valid"""
         payload = {
             "start": start,
             "end": end,
@@ -72,7 +80,7 @@ class WhartonLibWrapper:
         url = WHARTON_URL + username + "/student_reserve"
         response = self.request("POST", url, json=payload).json()
         if "error" in response:
-            raise APIError(response["error"])
+            raise APIError("Wharton " + response["error"])
         return response
 
     def get_reservations(self, user):
@@ -80,8 +88,12 @@ class WhartonLibWrapper:
         return self.request("GET", url).json()
 
     def cancel_room(self, user, booking_id):
+        """Cancels reservation given booking id"""
         url = WHARTON_URL + user.username + "/reservations/" + booking_id + "/cancel"
-        return self.request("DELETE", url).json()
+        response = self.request("DELETE", url).json()
+        if "detail" in response:
+            raise APIError(response["detail"])
+        return response
 
 
 class LibCalWrapper:
@@ -102,11 +114,8 @@ class LibCalWrapper:
 
         if "error" in response:
             raise APIError(
-                "LibCal Auth Failed: {}, {}".format(
-                    response["error"], response.get("error_description")
-                )
+                f"LibCal Auth Failed: {response['error']}, {response.get('error_description')}"
             )
-
         self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
         self.token = response["access_token"]
 
@@ -125,30 +134,10 @@ class LibCalWrapper:
 
         return requests.request(*args, **kwargs)
 
-    def get_buildings(self):
-        """Returns a list of location IDs and names."""
-        response = self.request("GET", "{}/1.1/space/locations".format(API_URL))
-        out = []
-        for x in response.json():
-            if x["lid"] in LOCATION_BLACKLIST:
-                continue
-            if x["public"] == 1:
-                del x["public"]
-                if "formid" in x:
-                    del x["formid"]
-                out.append(x)
-        return out
-
     def get_availability(self, lid, start=None, end=None):
-        """Returns a list of rooms and their availabilities within the data ranges, grouped by category.
-        :param lid: The ID of the location to retrieve rooms for.
-        :type lid: int
-        :param start: The start range for the availabilities to retrieve, in YYYY-MM-DD format.
-        :type start: str
-        :param end: The end range for the availabilities to retrieve, in YYYY-MM-DD format.
-        :type end: str
-        """
+        """Returns a list of rooms and their availabilities"""
 
+        # adjusts url based on start and end times
         range_str = "availability"
         if start:
             start_datetime = datetime.datetime.combine(
@@ -162,7 +151,7 @@ class LibCalWrapper:
 
         response = self.request("GET", "{}/1.1/space/categories/{}".format(API_URL, lid)).json()
         if "error" in response:
-            raise APIError(response["error"])
+            raise APIError("LibCal: " + response["error"])
         output = {"id": lid, "categories": []}
 
         # if there aren't any rooms associated with this location, return
@@ -170,11 +159,12 @@ class LibCalWrapper:
             return output
 
         if "error" in response[0]:
-            raise APIError(response[0]["error"])
+            raise APIError("LibCal: " + response[0]["error"])
 
         if "categories" not in response[0]:
             return output
 
+        # filters categories and then gets extra information on each room
         categories = response[0]["categories"]
         id_to_category = {i["cid"]: i["name"] for i in categories}
         categories = ",".join([str(x["cid"]) for x in categories])
@@ -190,6 +180,7 @@ class LibCalWrapper:
 
             items = category["items"]
             items = ",".join([str(x) for x in items])
+            # hits this route for extra information
             response = self.request(
                 "GET", "{}/1.1/space/item/{}?{}".format(API_URL, items, range_str)
             )
@@ -254,10 +245,11 @@ class LibCalWrapper:
                 ).text.strip()
                 del response["errors"]
         if "error" in response:
-            raise APIError(response["error"])
+            raise APIError("LibCal: " + response["error"])
         return response
 
     def get_affiliation(self, email):
+        """Gets school from email"""
         if "wharton" in email:
             return "Wharton"
         elif "seas" in email:
@@ -268,64 +260,8 @@ class LibCalWrapper:
             return "Other"
 
     def cancel_room(self, booking_id):
-        return self.request("POST", "{}/1.1/space/cancel/{}".format(API_URL, booking_id)).json()
-
-    def get_reservations(self, booking_ids):
-        try:
-            reservations = self.request(
-                "GET", "{}/1.1/space/booking/{}".format(API_URL, booking_ids)
-            )
-
-            if reservations.status_code == 404:
-                return []
-
-            # cleans response values
-            for reservation in reservations.json():
-                reservation["service"] = "libcal"
-                reservation["booking_id"] = reservation["bookId"]
-                reservation["room_id"] = reservation["eid"]
-                reservation["gid"] = reservation["cid"]
-                del reservation["bookId"]
-                del reservation["eid"]
-                del reservation["cid"]
-                del reservation["status"]
-                del reservation["email"]
-                del reservation["firstName"]
-                del reservation["lastName"]
-
-            room_ids = ",".join(
-                list(set([str(reservation["room_id"]) for reservation in reservations]))
-            )
-            # cleans response values and adds room info to reservations
-            if room_ids:
-                rooms = self.get_room_info(room_ids)
-                for room in rooms:
-                    room["thumbnail"] = room["image"]
-                    del room["image"]
-                    del room["formid"]
-
-                for res in reservations:
-                    room = [x for x in rooms if x["id"] == res["room_id"]][0]
-                    res["name"] = room["name"]
-                    res["info"] = room
-                    del res["room_id"]
-
-            return reservations
-
-        except (requests.exceptions.HTTPError) as error:
-            raise APIError("Server Error: {}".format(error))
-
-    def get_room_info(self, room_ids):
-        """Gets room information for a given list of ids."""
-        try:
-            response = self.request("GET", "{}/1.1/space/item/{}".format(API_URL, room_ids))
-            rooms = response.json()
-            for room in rooms:
-                if not room["image"].startswith("http"):
-                    room["image"] = "https:" + room["image"]
-                if "description" in room:
-                    description = room["description"].replace("\xa0", " ")
-                    room["description"] = BeautifulSoup(description, "html.parser").text.strip()
-        except requests.exceptions.HTTPError as error:
-            raise APIError("Server Error: {}".format(error))
-        return rooms
+        """Cancels room"""
+        response = self.request("POST", "{}/1.1/space/cancel/{}".format(API_URL, booking_id)).json()
+        if "error" in response[0]:
+            raise APIError(response[0]["error"])
+        return response
