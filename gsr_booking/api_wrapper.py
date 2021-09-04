@@ -83,6 +83,10 @@ class WhartonLibWrapper:
             raise APIError("Wharton " + response["error"])
         return response
 
+    def get_reservations(self, user):
+        url = WHARTON_URL + user.username + "/reservations"
+        return self.request("GET", url).json()
+
     def cancel_room(self, user, booking_id):
         """Cancels reservation given booking id"""
         url = WHARTON_URL + user.username + "/reservations/" + booking_id + "/cancel"
