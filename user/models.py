@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from laundry.models import LaundryRoom
 
@@ -33,3 +35,12 @@ class Profile(models.Model):
 
     def __str__(self):
         return str(self.user.username)
+
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    """
+    This post_save hook triggers automatically when a User object is saved, and if no Profile
+    object exists for that User, it will create one
+    """
+    _, created = Profile.objects.get_or_create(user=instance)
