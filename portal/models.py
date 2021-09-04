@@ -13,6 +13,7 @@ class Poll(models.Model):
     created_date = models.DateTimeField(default=timezone.now)
     expire_date = models.DateTimeField()
     approved = models.BooleanField(default=False)
+    admin_comment = models.CharField(max_length=255, null=True)
 
 
 class PollOption(models.Model):
