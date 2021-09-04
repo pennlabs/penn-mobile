@@ -48,15 +48,16 @@ class TestPolls(TestCase):
         self.assertEqual("", Poll.objects.get(id=res_json["id"]).admin_comment)
 
 
-#     def test_update_poll(self):
-#         payload = {
-#             "source": "New Test Source 1",
-#         }
-#         response = self.client.patch(reverse("update-poll", args=["1"]), payload)
-#         res_json = json.loads(response.content)
-#         # asserts that the update worked
-#         self.assertEqual(1, res_json["id"])
-#         self.assertEqual("New Test Source 1", Poll.objects.get(id=1).source)
+    def test_update_poll(self):
+        payload = {
+            "source": "New Test Source 3",
+        }
+        response = self.client.patch(reverse("update-poll", args=["1"]), payload)
+        res_json = json.loads(response.content)
+        print(res_json)
+        # asserts that the update worked
+        self.assertEqual(1, res_json["id"])
+        self.assertEqual("New Test Source 3", Poll.objects.get(id=1).source)
 
 #     def test_browse(self):
 #         payload = {
