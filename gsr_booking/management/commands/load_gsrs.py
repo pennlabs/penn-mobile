@@ -14,7 +14,11 @@ class Command(BaseCommand):
             for i, row in enumerate(reader):
                 if i == 0:
                     continue
+
+                # collects room information from csv
                 lid, gid, name, service = row
+
+                # gets image from s3 given the lid and gid
                 image_url = (
                     f"https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-{lid}-gid-{gid}.jpg"
                 )
