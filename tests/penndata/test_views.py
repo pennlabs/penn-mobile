@@ -107,13 +107,13 @@ class TestHomePage(TestCase):
         self.assertEqual(res_json[3]["type"], "laundry")
         self.assertEqual(res_json[3]["info"]["room_id"], 0)
 
-        self.profile.dining_preferences.add(Venue.objects.get(venue_id=747))
-        self.profile.dining_preferences.add(Venue.objects.get(venue_id=1733))
-        self.profile.dining_preferences.add(Venue.objects.get(venue_id=638))
+        self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=747))
+        self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=1733))
+        self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=638))
 
-        self.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=3))
-        self.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=4))
-        self.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=5))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=3))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=4))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=5))
 
         new_response = self.client.get(reverse("homepage"))
         new_res_json = json.loads(new_response.content)["cells"]
