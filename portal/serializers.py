@@ -11,6 +11,8 @@ class UserPollSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # adds user to the Poll
         instance = Poll(**validated_data, user=self.context["request"].user)
+        # ensuring user cannot create an admin comment upon creation
+        instance.admin_comment = ""
         instance.save()
         return instance
 

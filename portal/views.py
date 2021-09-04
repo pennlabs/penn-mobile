@@ -66,7 +66,7 @@ class RetrievePollVotes(APIView):
         ).data
         # puts remaining_list in the same format of history_list, then appends them
         for entry in remaining_list:
-            context = {"poll": entry, "poll_option": {}}
+            context = {"id": entry["id"], "poll": entry, "poll_option": {}}
             history_list.append(context)
         # calculates statistics for each poll
         for entry in history_list:
