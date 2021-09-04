@@ -11,7 +11,6 @@ from rest_framework.test import APIClient
 from dining.models import Venue
 from laundry.models import LaundryRoom
 from penndata.models import Event
-from user.models import Profile
 
 
 User = get_user_model()
@@ -93,7 +92,6 @@ class TestHomePage(TestCase):
         call_command("load_laundry_rooms")
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
     def test_first_response(self):
         self.client.force_authenticate(user=self.test_user)

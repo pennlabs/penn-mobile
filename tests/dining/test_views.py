@@ -10,7 +10,6 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from dining.models import DiningBalance, DiningTransaction, Venue
-from user.models import Profile
 
 
 User = get_user_model()
@@ -101,7 +100,6 @@ class TestPreferences(TestCase):
         self.client = APIClient()
 
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
         preference = self.profile.dining_preferences
         preference.add(Venue.objects.get(venue_id=593))
@@ -147,7 +145,6 @@ class TestTransactions(TestCase):
         self.client = APIClient()
 
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
         DiningTransaction.objects.create(
             profile=self.profile,
@@ -190,7 +187,6 @@ class TestBalance(TestCase):
         self.client = APIClient()
 
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
         DiningBalance.objects.create(
             profile=self.profile,
@@ -234,7 +230,6 @@ class TestAverageBalance(TestCase):
         self.client = APIClient()
 
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
         self.date = timezone.localtime().strftime("%Y-%m-%d")
 
@@ -279,7 +274,6 @@ class TestProjection(TestCase):
         self.client = APIClient()
 
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
         DiningBalance.objects.create(
             profile=self.profile,
