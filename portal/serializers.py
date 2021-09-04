@@ -24,6 +24,7 @@ class PollOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollOption
         fields = (
+            "id",
             "poll",
             "choice",
         )
@@ -60,4 +61,4 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PollVote
-        fields = ("poll", "poll_option")
+        fields = ("id", "poll", "poll_option")
