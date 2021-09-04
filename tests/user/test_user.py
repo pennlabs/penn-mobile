@@ -48,7 +48,7 @@ class UserTestCase(TestCase):
         user = auth.authenticate(remote_user=self.user2)
         self.assertEqual(1, Profile.objects.all().count())
         self.assertEqual(user, Profile.objects.all().first().user)
-        user.name="New Name"
+        user.name = "New Name"
         user.save()
         self.assertEqual(1, Profile.objects.all().count())
         self.assertEqual(user, Profile.objects.all().first().user)

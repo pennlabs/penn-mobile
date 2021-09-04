@@ -43,4 +43,4 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
     This post_save hook triggers automatically when a User object is saved, and if no Profile
     object exists for that User, it will create one
     """
-    _, created = Profile.objects.get_or_create(user=instance)
+    Profile.objects.get_or_create(user=instance)
