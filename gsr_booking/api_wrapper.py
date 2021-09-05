@@ -167,9 +167,7 @@ class LibCalWrapper:
         categories = response[0]["categories"]
         id_to_category = {i["cid"]: i["name"] for i in categories}
         categories = ",".join([str(x["cid"]) for x in categories])
-        response = self.request(
-            "GET", f"{API_URL}/1.1/space/category/{categories}"
-        ).json()
+        response = self.request("GET", f"{API_URL}/1.1/space/category/{categories}").json()
         for category in response:
             cat_out = {"cid": category["cid"], "name": id_to_category[category["cid"]], "rooms": []}
 
@@ -180,9 +178,7 @@ class LibCalWrapper:
             items = category["items"]
             items = ",".join([str(x) for x in items])
             # hits this route for extra information
-            response = self.request(
-                "GET", f"{API_URL}/1.1/space/item/{items}?{range_str}"
-            )
+            response = self.request("GET", f"{API_URL}/1.1/space/item/{items}?{range_str}")
 
             if response.ok:
                 for room in response.json():
