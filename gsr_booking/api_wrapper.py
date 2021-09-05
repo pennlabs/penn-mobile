@@ -53,7 +53,7 @@ class WhartonLibWrapper:
             datetime.datetime.strptime(end + "T00:00:00-04:00", "%Y-%m-%dT%H:%M:%S%z")
             if end is not None
             else datetime.datetime.strptime(
-                str(current_time.date() + datetime.timedelta(days=1)) + "T00:00:00-04:00",
+                str(search_date + datetime.timedelta(days=1)) + "T00:00:00-04:00",
                 "%Y-%m-%dT%H:%M:%S%z",
             )
         )
@@ -101,7 +101,7 @@ class LibCalWrapper:
         self.token = None
         self.expiration = timezone.localtime()
 
-    def get_token(self):
+    def update_token(self):
         # does not get new token if the current one is still usable
         if self.expiration > timezone.localtime():
             return
@@ -110,7 +110,7 @@ class LibCalWrapper:
             "client_secret": settings.LIBCAL_SECRET,
             "grant_type": "client_credentials",
         }
-        response = requests.post("{}/1.1/oauth/token".format(API_URL), body).json()
+        response = requests.post(f"{API_URL}/1.1/oauth/token", body).json()
 
         if "error" in response:
             raise APIError(
@@ -121,8 +121,7 @@ class LibCalWrapper:
 
     def request(self, *args, **kwargs):
         """Make a signed request to the libcal API."""
-        if not self.token:
-            self.get_token()
+        self.update_token()
 
         headers = {"Authorization": f"Bearer {self.token}"}
 
@@ -149,7 +148,7 @@ class LibCalWrapper:
         else:
             start_datetime = None
 
-        response = self.request("GET", "{}/1.1/space/categories/{}".format(API_URL, lid)).json()
+        response = self.request("GET", f"{API_URL}/1.1/space/categories/{lid}").json()
         if "error" in response:
             raise APIError("LibCal: " + response["error"])
         output = {"id": lid, "categories": []}
@@ -168,9 +167,7 @@ class LibCalWrapper:
         categories = response[0]["categories"]
         id_to_category = {i["cid"]: i["name"] for i in categories}
         categories = ",".join([str(x["cid"]) for x in categories])
-        response = self.request(
-            "GET", "{}/1.1/space/category/{}".format(API_URL, categories)
-        ).json()
+        response = self.request("GET", f"{API_URL}/1.1/space/category/{categories}").json()
         for category in response:
             cat_out = {"cid": category["cid"], "name": id_to_category[category["cid"]], "rooms": []}
 
@@ -181,9 +178,7 @@ class LibCalWrapper:
             items = category["items"]
             items = ",".join([str(x) for x in items])
             # hits this route for extra information
-            response = self.request(
-                "GET", "{}/1.1/space/item/{}?{}".format(API_URL, items, range_str)
-            )
+            response = self.request("GET", f"{API_URL}/1.1/space/item/{items}?{range_str}")
 
             if response.ok:
                 for room in response.json():
@@ -232,7 +227,7 @@ class LibCalWrapper:
             "q3699": self.get_affiliation(user.email),
         }
 
-        response = self.request("POST", "{}/1.1/space/reserve".format(API_URL), json=data).json()
+        response = self.request("POST", "{API_URL}/1.1/space/reserve", json=data).json()
 
         # corrects keys in response
         if "error" not in response:
@@ -261,7 +256,7 @@ class LibCalWrapper:
 
     def cancel_room(self, booking_id):
         """Cancels room"""
-        response = self.request("POST", "{}/1.1/space/cancel/{}".format(API_URL, booking_id)).json()
+        response = self.request("POST", f"{API_URL}/1.1/space/cancel/{booking_id}").json()
         if "error" in response[0]:
             raise APIError(response[0]["error"])
         return response
