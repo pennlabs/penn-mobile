@@ -59,7 +59,7 @@ class RetrievePollSerializer(serializers.ModelSerializer):
 class CreateUpdatePollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
-        fields = ("poll_option",)
+        fields = ("id", "poll_option")
 
     def create(self, validated_data):
         # adds poll and user to the vote
