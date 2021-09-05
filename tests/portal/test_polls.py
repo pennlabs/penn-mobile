@@ -93,7 +93,7 @@ class TestPolls(TestCase):
         payload_2 = {"poll": self.id, "choice": "no!"}
         # checks that poll's option was changed
         self.client.patch(reverse("update-option", args=[self.id]), payload_2)
-        self.assertEqual("no!", PollOption.objects.get(id=res_json["id"]).choice)
+        self.assertEqual("no!", PollOption.objects.get(id=self.id).choice)
 
     def test_review_poll(self):
         Poll.objects.create(
