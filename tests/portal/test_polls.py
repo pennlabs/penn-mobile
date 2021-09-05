@@ -17,6 +17,7 @@ class TestPolls(TestCase):
     """Tests Create/Update/Retrieve for Polls and Poll Options"""
 
     def setUp(self):
+        print("HELLO WENT HERE")
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
         self.client.force_authenticate(user=self.test_user)
@@ -47,69 +48,68 @@ class TestPolls(TestCase):
         self.assertEqual("Test Source 2", res_json["source"])
         self.assertEqual("", Poll.objects.get(id=res_json["id"]).admin_comment)
 
-    def test_update_poll(self):
+    # def test_update_poll(self):
+    #     payload = {
+    #         "source": "New Test Source 3",
+    #     }
+    #     response = self.client.patch(reverse("update-poll", args=["1"]), payload)
+    #     res_json = json.loads(response.content)
+    #     print(res_json)
+    #     # asserts that the update worked
+    #     self.assertEqual(1, res_json["id"])
+    #     self.assertEqual("New Test Source 3", Poll.objects.get(id=1).source)
+
+    def test_browse(self):
         payload = {
-            "source": "New Test Source 3",
+            "source": "Test Source 2",
+            "question": "How is this question? 2",
+            "expire_date": timezone.localtime() + datetime.timedelta(days=1),
+            "admin_comment": "asdfs 2",
         }
-        response = self.client.patch(reverse("update-poll", args=["1"]), payload)
+        self.client.post(reverse("create-poll"), payload)
+        # asserts that you can only see approved polls
+        response = self.client.get("/portal/polls/view/browse/")
         res_json = json.loads(response.content)
-        print(res_json)
-        # asserts that the update worked
-        self.assertEqual(1, res_json["id"])
-        self.assertEqual("New Test Source 3", Poll.objects.get(id=1).source)
+        self.assertEqual(1, len(res_json))
+        self.assertEqual(2, Poll.objects.all().count())
 
+    #     def test_create_option(self):
+    #         payload_1 = {"poll": 1, "choice": "yes!"}
+    #         payload_2 = {"poll": 1, "choice": "no!"}
+    #         self.client.post(reverse("create-option"), payload_1)
+    #         self.client.post(reverse("create-option"), payload_2)
+    #         self.assertEqual(2, PollOption.objects.all().count())
+    #         # asserts options were created and were placed to right poll
+    #         for poll_option in PollOption.objects.all():
+    #             self.assertEqual(Poll.objects.get(id=1), poll_option.poll)
+    #         response = self.client.get("/portal/polls/view/browse/")
+    #         res_json = json.loads(response.content)
+    #         self.assertEqual(2, len(res_json[0]["options"]))
 
-#     def test_browse(self):
-#         payload = {
-#             "source": "Test Source 2",
-#             "question": "How is this question? 2",
-#             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
-#             "admin_comment": "asdfs 2",
-#         }
-#         self.client.post(reverse("create-poll"), payload)
-#         # asserts that you can only see approved polls
-#         response = self.client.get("/portal/polls/view/browse/")
-#         res_json = json.loads(response.content)
-#         self.assertEqual(1, len(res_json))
-#         self.assertEqual(2, Poll.objects.all().count())
+    #     def test_update_option(self):
+    #         payload_1 = {"poll": 1, "choice": "yes!"}
+    #         response = self.client.post(reverse("create-option"), payload_1)
+    #         res_json = json.loads(response.content)
+    #         self.assertEqual("yes!", PollOption.objects.get(id=res_json["id"]).choice)
+    #         payload_2 = {"poll": 1, "choice": "no!"}
+    #         # checks that poll's option was changed
+    #         self.client.patch(reverse("update-option", args=["1"]), payload_2)
+    #         self.assertEqual("no!", PollOption.objects.get(id=res_json["id"]).choice)
 
-#     def test_create_option(self):
-#         payload_1 = {"poll": 1, "choice": "yes!"}
-#         payload_2 = {"poll": 1, "choice": "no!"}
-#         self.client.post(reverse("create-option"), payload_1)
-#         self.client.post(reverse("create-option"), payload_2)
-#         self.assertEqual(2, PollOption.objects.all().count())
-#         # asserts options were created and were placed to right poll
-#         for poll_option in PollOption.objects.all():
-#             self.assertEqual(Poll.objects.get(id=1), poll_option.poll)
-#         response = self.client.get("/portal/polls/view/browse/")
-#         res_json = json.loads(response.content)
-#         self.assertEqual(2, len(res_json[0]["options"]))
-
-#     def test_update_option(self):
-#         payload_1 = {"poll": 1, "choice": "yes!"}
-#         response = self.client.post(reverse("create-option"), payload_1)
-#         res_json = json.loads(response.content)
-#         self.assertEqual("yes!", PollOption.objects.get(id=res_json["id"]).choice)
-#         payload_2 = {"poll": 1, "choice": "no!"}
-#         # checks that poll's option was changed
-#         self.client.patch(reverse("update-option", args=["1"]), payload_2)
-#         self.assertEqual("no!", PollOption.objects.get(id=res_json["id"]).choice)
-
-#     def test_review_poll(self):
-#         Poll.objects.create(
-#             user=self.test_user,
-#             source="hi",
-#             question="hello?",
-#             expire_date=timezone.now() + datetime.timedelta(days=3),
-#         )
-#         admin = User.objects.create_superuser("admin@example.com", "admin", "admin")
-#         self.client.force_authenticate(user=admin)
-#         response = self.client.get("/portal/polls/view/review/")
-#         res_json = json.loads(response.content)
-#         # checks that admin can see unapproved polls
-#         self.assertEqual(1, len(res_json))
-#         self.assertEqual(2, Poll.objects.all().count())
+    def test_review_poll(self):
+        Poll.objects.create(
+            user=self.test_user,
+            source="hi",
+            question="hello?",
+            expire_date=timezone.now() + datetime.timedelta(days=3),
+        )
+        admin = User.objects.create_superuser("admin@example.com", "admin", "admin")
+        self.client.force_authenticate(user=admin)
+        response = self.client.get("/portal/polls/view/review/")
+        res_json = json.loads(response.content)
+        # checks that admin can see unapproved polls
+        self.assertEqual(1, len(res_json))
+        self.assertEqual(2, Poll.objects.all().count())
 
 
 # class TestPollVotes(TestCase):
