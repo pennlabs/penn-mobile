@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
@@ -25,14 +26,17 @@ class RetrievePolls(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
-        # filters for all possible available polls, then filters for all polls answered
-        # by user, and finally returns the difference in poll sets
-        polls_available = Poll.objects.filter(expire_date__gte=timezone.localtime(), approved=True)
-        polls_answered = PollVote.objects.filter(
-            user=request.user, poll__in=polls_available
-        ).values_list("poll", flat=True)
+        # filters for all polls that haven't expired, that are approved, and
+        # that the user has not voted for
         return Response(
-            self.serializer_class(polls_available.exclude(id__in=polls_answered), many=True).data
+            self.serializer_class(
+                Poll.objects.filter(
+                    ~Q(id__in=PollVote.objects.filter(user=request.user).values_list("poll_id")),
+                    expire_date__gte=timezone.localtime(),
+                    approved=True,
+                ),
+                many=True,
+            ).data
         )
 
     @action(detail=False, methods=["get"], permission_classes=[IsAdminUser])

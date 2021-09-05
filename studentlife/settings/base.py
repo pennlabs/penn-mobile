@@ -148,13 +148,13 @@ PLATFORM_ACCOUNTS = {
     "CUSTOM_ADMIN": False,
 }
 
-# REST_FRAMEWORK = {
-#     "DEFAULT_AUTHENTICATION_CLASSES": [
-#         "rest_framework.authentication.SessionAuthentication",
-#         "rest_framework.authentication.BasicAuthentication",
-#         "accounts.authentication.PlatformAuthentication",
-#     ],
-# }
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+        "accounts.authentication.PlatformAuthentication",
+    ],
+}
 
 # Laundry API URL
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
