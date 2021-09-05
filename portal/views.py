@@ -1,8 +1,7 @@
-from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -23,7 +22,6 @@ class RetrievePolls(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = Poll.objects.all()
     serializer_class = RetrievePollSerializer
-    
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
@@ -131,7 +129,12 @@ class UpdatePoll(generics.UpdateAPIView):
             return UserPollSerializer
 
     def get_queryset(self):
-        return Poll.objects.all()
+        # if user is admin, they can update anything
+        # if user is not admin, they can only update their own polls
+        if self.request.user.is_superuser:
+            return Poll.objects.all()
+        else:
+            return Poll.objects.filter(user=self.request.user)
 
 
 class CreatePollOptions(generics.CreateAPIView):
@@ -153,7 +156,12 @@ class UpdatePollOption(generics.UpdateAPIView):
     serializer_class = PollOptionSerializer
 
     def get_queryset(self):
-        return PollOption.objects.all()
+        # if user is admin, they can update anything
+        # if user is not admin, they can only update their own options
+        if self.request.user.is_superuser:
+            return PollOption.objects.all()
+        else:
+            return PollOption.objects.filter(poll__in=Poll.objects.filter(user=self.request.user))
 
 
 class CreatePollVote(generics.CreateAPIView):
@@ -170,4 +178,9 @@ class UpdatePollVote(generics.UpdateAPIView):
     serializer_class = CreateUpdatePollVoteSerializer
 
     def get_queryset(self):
-        return PollVote.objects.filter(user=self.request.user)
+        # if user is admin, they can update anything
+        # if user is not admin, they can only update their own polls
+        if self.request.user.is_superuser:
+            return PollVote.objects.all()
+        else:
+            return PollVote.objects.filter(user=self.request.user)
