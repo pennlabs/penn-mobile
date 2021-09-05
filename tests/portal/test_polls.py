@@ -32,6 +32,7 @@ class TestPolls(TestCase):
         poll_1 = Poll.objects.all().first()
         poll_1.approved = True
         poll_1.save()
+        self.id = poll_1.id
 
     def test_create_poll(self):
         # creates an unapproved poll
@@ -48,16 +49,16 @@ class TestPolls(TestCase):
         self.assertEqual("Test Source 2", res_json["source"])
         self.assertEqual("", Poll.objects.get(id=res_json["id"]).admin_comment)
 
-    # def test_update_poll(self):
-    #     payload = {
-    #         "source": "New Test Source 3",
-    #     }
-    #     response = self.client.patch(reverse("update-poll", args=["1"]), payload)
-    #     res_json = json.loads(response.content)
-    #     print(res_json)
-    #     # asserts that the update worked
-    #     self.assertEqual(1, res_json["id"])
-    #     self.assertEqual("New Test Source 3", Poll.objects.get(id=1).source)
+    def test_update_poll(self):
+        payload = {
+            "source": "New Test Source 3",
+        }
+        response = self.client.patch(reverse("update-poll", args=[self.id]), payload)
+        res_json = json.loads(response.content)
+        print(res_json)
+        # asserts that the update worked
+        self.assertEqual(1, res_json["id"])
+        self.assertEqual("New Test Source 3", Poll.objects.get(id=1).source)
 
     def test_browse(self):
         payload = {
