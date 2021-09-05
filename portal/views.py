@@ -2,7 +2,7 @@ from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -23,6 +23,7 @@ class RetrievePolls(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = Poll.objects.all()
     serializer_class = RetrievePollSerializer
+    
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
@@ -36,11 +37,8 @@ class RetrievePolls(viewsets.ReadOnlyModelViewSet):
             self.serializer_class(polls_available.exclude(id__in=polls_answered), many=True).data
         )
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], permission_classes=[IsAdminUser])
     def review(self, request):
-        # checks if user is admin
-        if not request.user.is_superuser:
-            raise PermissionDenied()
         # returns list of polls that still need to be approved
         return Response(self.serializer_class(Poll.objects.filter(approved=False), many=True).data)
 
@@ -48,9 +46,10 @@ class RetrievePolls(viewsets.ReadOnlyModelViewSet):
 class RetrievePollVotes(APIView):
     """Retrieve history of polls and their statistics"""
 
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        if not request.user.is_authenticated:
-            raise PermissionDenied()
+
         # filters for all polls that user voted in
         serializer = RetrievePollVoteSerializer(
             PollVote.objects.filter(user=request.user), many=True

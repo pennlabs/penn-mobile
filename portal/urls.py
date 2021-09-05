@@ -14,9 +14,9 @@ from portal.views import (
 
 
 router = routers.DefaultRouter()
-
 router.register(r"polls/view", RetrievePolls)
-urlpatterns = [
+
+additional_urls = [
     path("", include(router.urls)),
     path("polls/create/poll/", CreatePoll.as_view(), name="create-poll"),
     path("polls/update/poll/<pk>/", UpdatePoll.as_view(), name="update-poll"),
@@ -26,3 +26,5 @@ urlpatterns = [
     path("polls/update/vote/<pk>/", UpdatePollVote.as_view(), name="update-vote"),
     path("polls/history/", RetrievePollVotes.as_view(), name="poll-history"),
 ]
+
+urlpatterns = router.urls + additional_urls
