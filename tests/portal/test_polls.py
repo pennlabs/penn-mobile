@@ -175,6 +175,7 @@ class TestPollVotes(TestCase):
             reverse("update-vote", args=[res_json_1["poll_option"]]), payload_2
         )
         res_json_2 = json.loads(response_2.content)
+        print(res_json_2)
         # test that updating vote works
         self.assertEqual(self.p1_op3_id, res_json_2["poll_option"])
         self.assertEqual(1, PollVote.objects.all().count())
