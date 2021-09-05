@@ -446,15 +446,26 @@ class CancelRoom(APIView):
 
     def post(self, request):
         booking_id = request.data["booking_id"]
-        gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
 
-        # only person who books it can cancel it
-        if request.user != gsr_booking.user:
-            return Response(
-                {"detail": "Unauthorized: This reservation was booked by someone else."}, status=400
-            )
-        # checks which GSR class to use
-        is_wharton = gsr_booking.gsr.kind == GSR.KIND_WHARTON
+        # gets list of all reservations from wharton
+        wharton_bookings = WLW.get_reservations(request.user)["bookings"]
+        wharton_booking_ids = [str(x["booking_id"]) for x in wharton_bookings]
+        # checks if the booking_id is a wharton booking_id
+        if booking_id not in wharton_booking_ids:
+            gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
+            if request.user != gsr_booking.user:
+                return Response(
+                    {"detail": "Unauthorized: This reservation was booked by someone else."},
+                    status=400,
+                )
+            else:
+                # checks which GSR class to use
+                is_wharton = False
+        else:
+            # defaults to wharton because it is in wharton_booking_ids
+            gsr_booking = None
+            is_wharton = True
+
         if is_wharton:
             try:
                 WLW.cancel_room(request.user, booking_id)
@@ -466,9 +477,10 @@ class CancelRoom(APIView):
             except APIError as e:
                 return Response({"error": str(e)}, status=400)
 
-        # updates GSR booking after done
-        gsr_booking.is_cancelled = True
-        gsr_booking.save()
+        if gsr_booking:
+            # updates GSR booking after done
+            gsr_booking.is_cancelled = True
+            gsr_booking.save()
         return Response({"detail": "success"})
 
 
