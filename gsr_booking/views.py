@@ -504,7 +504,10 @@ class ReservationsView(APIView):
             wharton_reservations = WLW.get_reservations(request.user)["bookings"]
             for reservation in wharton_reservations:
                 # checks if reservation is within time range
-                if datetime.datetime.strptime(reservation['end'], "%Y-%m-%dT%H:%M:%S%z") >= timezone.localtime():
+                if (
+                    datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
+                    >= timezone.localtime()
+                ):
                     # filtering for lid here works because Wharton buildings have distinct lid's
                     context = {
                         "booking_id": str(reservation["booking_id"]),
