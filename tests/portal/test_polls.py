@@ -168,12 +168,15 @@ class TestPollVotes(TestCase):
 
     def test_update_vote(self):
         payload_1 = {"poll_option": self.p1_op1_id}
-        self.client.post(reverse("create-vote"), payload_1)
+        response_1 = self.client.post(reverse("create-vote"), payload_1)
+        res_json_1 = json.loads(response_1.content)
         payload_2 = {"poll_option": self.p1_op3_id}
-        response = self.client.patch(reverse("update-vote", args=[self.p1_id]), payload_2)
-        res_json = json.loads(response.content)
+        response_2 = self.client.patch(
+            reverse("update-vote", args=[res_json_1["poll_option"]]), payload_2
+        )
+        res_json_2 = json.loads(response_2.content)
         # test that updating vote works
-        self.assertEqual(self.p1_op3_id, res_json["poll_option"])
+        self.assertEqual(self.p1_op3_id, res_json_2["poll_option"])
         self.assertEqual(1, PollVote.objects.all().count())
         self.assertEqual(self.test_user, PollVote.objects.all().first().user)
 
