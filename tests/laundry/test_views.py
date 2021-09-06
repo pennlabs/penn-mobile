@@ -100,13 +100,13 @@ class MultipleHallInfoViewTestCase(TestCase):
 
             for room in rooms:
                 self.assertTrue(LaundryRoom.objects.filter(hall_id=room["id"]))
-                self.assertTrue("machines" in room)
-                self.assertTrue("washers" in room["machines"])
-                self.assertTrue("dryers" in room["machines"])
-                self.assertTrue("usage_data" in room)
-                self.assertTrue("hall_name" in room["usage_data"])
-                self.assertTrue("day_of_week" in room["usage_data"])
-                self.assertTrue("washer_data" in room["usage_data"])
+                self.assertIn("machines", room)
+                self.assertIn("washers", room["machines"])
+                self.assertIn("dryers", room["machines"])
+                self.assertIn("usage_data", room)
+                self.assertIn("hall_name", room["usage_data"])
+                self.assertIn("day_of_week", room["usage_data"])
+                self.assertIn("washer_data", room["usage_data"])
 
         elif response.status_code == 503:
             self.assertEqual("The laundry api is currently unavailable.", res_json["error"])
@@ -176,7 +176,7 @@ class PreferencesTestCase(TestCase):
         response = self.client.get(reverse("preferences"))
         res_json = json.loads(response.content)
 
-        self.assertTrue(self.laundry_room.hall_id in res_json["rooms"])
+        self.assertIn(self.laundry_room.hall_id, res_json["rooms"])
 
     def test_post(self):
         self.client.force_authenticate(user=self.test_user)
@@ -185,4 +185,4 @@ class PreferencesTestCase(TestCase):
         response = self.client.get(reverse("preferences"))
         res_json = json.loads(response.content)
 
-        self.assertTrue(self.other_laundry_room.hall_id in res_json["rooms"])
+        self.assertIn(self.other_laundry_room.hall_id, res_json["rooms"])

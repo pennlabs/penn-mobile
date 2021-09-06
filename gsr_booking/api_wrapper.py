@@ -227,7 +227,7 @@ class LibCalWrapper:
             "q3699": self.get_affiliation(user.email),
         }
 
-        response = self.request("POST", "{API_URL}/1.1/space/reserve", json=data).json()
+        response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=data).json()
 
         # corrects keys in response
         if "error" not in response:

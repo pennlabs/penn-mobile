@@ -20,31 +20,31 @@ class TestNews(TestCase):
     def test_response(self):
         response = self.client.get(reverse("news"))
         res_json = json.loads(response.content)
-        self.assertTrue("article" in res_json)
+        self.assertIn("article", res_json)
         self.assertEqual(len(res_json), 1)
 
         article = res_json["article"]
         self.assertEqual(len(article), 5)
-        self.assertTrue("link" in article)
-        self.assertTrue("title" in article)
-        self.assertTrue("subtitle" in article)
-        self.assertTrue("timestamp" in article)
-        self.assertTrue("imageurl" in article)
+        self.assertIn("link", article)
+        self.assertIn("title", article)
+        self.assertIn("subtitle", article)
+        self.assertIn("timestamp", article)
+        self.assertIn("imageurl", article)
 
 
 class TestCalender(TestCase):
     def test_response(self):
         response = self.client.get(reverse("calendar"))
         res_json = json.loads(response.content)
-        self.assertTrue("calendar" in res_json)
+        self.assertIn("calendar", res_json)
         self.assertEqual(len(res_json), 1)
 
         calendar = res_json["calendar"]
         for event in calendar:
             self.assertEqual(len(event), 3)
-            self.assertTrue("start" in event)
-            self.assertTrue("end" in event)
-            self.assertTrue("name" in event)
+            self.assertIn("start", event)
+            self.assertIn("end", event)
+            self.assertIn("name", event)
 
             end_date = datetime.datetime.strptime(event["end"], "%Y-%m-%d").date()
             time_diff = (end_date - timezone.localtime().date()).total_seconds()
@@ -100,9 +100,9 @@ class TestHomePage(TestCase):
 
         self.assertEqual(res_json[0]["type"], "dining")
         dining_info = res_json[0]["info"]["venues"]
-        self.assertTrue(593 in dining_info)
-        self.assertTrue(1442 in dining_info)
-        self.assertTrue(636 in dining_info)
+        self.assertIn(593, dining_info)
+        self.assertIn(1442, dining_info)
+        self.assertIn(636, dining_info)
 
         self.assertEqual(res_json[3]["type"], "laundry")
         self.assertEqual(res_json[3]["info"]["room_id"], 0)
@@ -120,9 +120,9 @@ class TestHomePage(TestCase):
 
         new_dining_info = new_res_json[0]["info"]["venues"]
 
-        self.assertTrue(747 in new_dining_info)
-        self.assertTrue(1733 in new_dining_info)
-        self.assertTrue(638 in new_dining_info)
+        self.assertIn(747, new_dining_info)
+        self.assertIn(1733, new_dining_info)
+        self.assertIn(638, new_dining_info)
 
         self.assertEqual(new_res_json[3]["info"]["room_id"], 3)
 
