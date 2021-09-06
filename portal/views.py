@@ -1,6 +1,6 @@
 from django.db.models import Q
 from django.utils import timezone
-from rest_framework import generics, viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
@@ -8,41 +8,74 @@ from rest_framework.views import APIView
 
 from portal.models import Poll, PollOption, PollVote
 from portal.serializers import (
-    AdminPollSerializer,
-    CreateUpdatePollVoteSerializer,
     PollOptionSerializer,
+    PollSerializer,
+    PollVoteSerializer,
     RetrievePollSerializer,
     RetrievePollVoteSerializer,
-    UserPollSerializer,
 )
 
 
-class RetrievePolls(viewsets.ReadOnlyModelViewSet):
-    """Viewset for browsing polls for user, and reviewing polls for admins"""
+class Polls(viewsets.ModelViewSet):
+    """
+    browse:
+    returns a list of Polls that are valid and
+    haven't been filled out by user
+
+    review:
+    returns a list of unapproved Polls for admin
+
+    create:
+    Create a Poll
+
+    partial_update:
+    Update certain fields in the Poll.
+    Only user who creates Poll can edit it
+
+    destroy:
+    Delete a Poll.
+    """
 
     permission_classes = [IsAuthenticated]
     queryset = Poll.objects.all()
-    serializer_class = RetrievePollSerializer
+
+    def get_serializer_class(self):
+        if self.action in ["browse", "review"]:
+            return RetrievePollSerializer
+        else:
+            return PollSerializer
+
+    def get_queryset(self):
+        if self.action == "browse":
+            # return list of votes that haven't been answered
+            # by user, and that are valid
+            return Poll.objects.filter(
+                ~Q(id__in=PollVote.objects.filter(user=self.request.user).values_list("poll_id")),
+                expire_date__gte=timezone.localtime(),
+                approved=True,
+            )
+        elif self.action == "review":
+            # return list of polls that need to be approved
+            return Poll.objects.filter(approved=False)
+        elif self.action == "partial_update":
+            # if user is admin, they can update anything
+            # if user is not admin, they can only update their own polls
+            if self.request.user.is_superuser:
+                return Poll.objects.all()
+            else:
+                return Poll.objects.filter(user=self.request.user)
+        elif self.action == "destroy":
+            if self.request.user.is_superuser:
+                return Poll.objects.all()
+        return None
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
-        # filters for all polls that haven't expired, that are approved, and
-        # that the user has not voted for
-        return Response(
-            self.serializer_class(
-                Poll.objects.filter(
-                    ~Q(id__in=PollVote.objects.filter(user=request.user).values_list("poll_id")),
-                    expire_date__gte=timezone.localtime(),
-                    approved=True,
-                ),
-                many=True,
-            ).data
-        )
+        return super().list(request)
 
     @action(detail=False, methods=["get"], permission_classes=[IsAdminUser])
     def review(self, request):
-        # returns list of polls that still need to be approved
-        return Response(self.serializer_class(Poll.objects.filter(approved=False), many=True).data)
+        return super().list(request)
 
 
 class RetrievePollVotes(APIView):
@@ -67,7 +100,7 @@ class RetrievePollVotes(APIView):
         ).data
         # puts remaining_list in the same format of history_list, then appends them
         for entry in remaining_list:
-            context = {"id": entry["id"], "poll": entry, "poll_option": {}}
+            context = {"id": None, "poll": entry, "poll_option": {}}
             history_list.append(context)
         # calculates statistics for each poll
         for entry in history_list:
@@ -113,51 +146,22 @@ class RetrievePollVotes(APIView):
             return "Other"
 
 
-class CreatePoll(generics.CreateAPIView):
-    """Creates a Poll"""
+class PollOptions(viewsets.ModelViewSet):
+    """
+    create:
+    Create a Poll Option.
 
-    permission_classes = [IsAuthenticated]
-    serializer_class = UserPollSerializer
+    partial_update:
+    Update certain fields in the membership.
+    Only specify the fields that you want to change.
 
-
-class UpdatePoll(generics.UpdateAPIView):
-    """Updates a Poll, only admin or user that created poll can update"""
-
-    permission_classes = [IsAuthenticated]
-
-    def get_serializer_class(self):
-        """Returns different serializer based on user status"""
-        if self.request.user.is_superuser:
-            return AdminPollSerializer
-        else:
-            return UserPollSerializer
-
-    def get_queryset(self):
-        # if user is admin, they can update anything
-        # if user is not admin, they can only update their own polls
-        if self.request.user.is_superuser:
-            return Poll.objects.all()
-        else:
-            return Poll.objects.filter(user=self.request.user)
-
-
-class CreatePollOptions(generics.CreateAPIView):
-    """Creates Poll Options for a poll"""
-
-    serializer_class = PollOptionSerializer
-
-    def get_serializer(self, *args, **kwargs):
-        # bulk creates options
-        if isinstance(kwargs.get("data", {}), list):
-            kwargs["many"] = True
-        return super(CreatePollOptions, self).get_serializer(*args, **kwargs)
-
-
-class UpdatePollOption(generics.UpdateAPIView):
-    """Updates Poll Option. Only user that created poll can edit this"""
+    destroy:
+    Delete a Poll Option.
+    """
 
     permission_classes = [IsAuthenticated]
     serializer_class = PollOptionSerializer
+    queryset = PollOption.objects.all()
 
     def get_queryset(self):
         # if user is admin, they can update anything
@@ -168,18 +172,22 @@ class UpdatePollOption(generics.UpdateAPIView):
             return PollOption.objects.filter(poll__in=Poll.objects.filter(user=self.request.user))
 
 
-class CreatePollVote(generics.CreateAPIView):
-    """Used to cast vote, can only vote once"""
+class PollVotes(viewsets.ModelViewSet):
+    """
+    create:
+    Create a Poll Vote.
+
+    partial_update:
+    Update certain fields in the Poll Vote.
+    Only specify the fields that you want to change.
+
+    destroy:
+    Delete a Poll Vote.
+    """
 
     permission_classes = [IsAuthenticated]
-    serializer_class = CreateUpdatePollVoteSerializer
-
-
-class UpdatePollVote(generics.UpdateAPIView):
-    """Used to update vote, only user that voted can adjust vote"""
-
-    permission_classes = [IsAuthenticated]
-    serializer_class = CreateUpdatePollVoteSerializer
+    serializer_class = PollVoteSerializer
+    queryset = PollVote.objects.all()
 
     def get_queryset(self):
         # if user is admin, they can update anything

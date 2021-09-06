@@ -27,7 +27,7 @@ class TestPolls(TestCase):
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "admin_comment": "asdfs 1",
         }
-        self.client.post(reverse("create-poll"), payload)
+        self.client.post("/portal/polls/", payload)
         poll_1 = Poll.objects.all().first()
         poll_1.approved = True
         poll_1.save()
@@ -41,7 +41,7 @@ class TestPolls(TestCase):
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "admin_comment": "asdfs 2",
         }
-        response = self.client.post(reverse("create-poll"), payload)
+        response = self.client.post("/portal/polls/", payload)
         res_json = json.loads(response.content)
         # asserts that poll was created and that the admin comment cannot be made
         self.assertEqual(2, Poll.objects.all().count())
@@ -52,7 +52,7 @@ class TestPolls(TestCase):
         payload = {
             "source": "New Test Source 3",
         }
-        response = self.client.patch(reverse("update-poll", args=[self.id]), payload)
+        response = self.client.patch(f"/portal/polls/{self.id}/", payload)
         res_json = json.loads(response.content)
         # asserts that the update worked
         self.assertEqual(self.id, res_json["id"])
@@ -65,9 +65,9 @@ class TestPolls(TestCase):
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "admin_comment": "asdfs 2",
         }
-        self.client.post(reverse("create-poll"), payload)
+        self.client.post("/portal/polls/", payload)
         # asserts that you can only see approved polls
-        response = self.client.get("/portal/polls/view/browse/")
+        response = self.client.get("/portal/polls/browse/")
         res_json = json.loads(response.content)
         self.assertEqual(1, len(res_json))
         self.assertEqual(2, Poll.objects.all().count())
@@ -75,24 +75,24 @@ class TestPolls(TestCase):
     def test_create_option(self):
         payload_1 = {"poll": self.id, "choice": "yes!"}
         payload_2 = {"poll": self.id, "choice": "no!"}
-        self.client.post(reverse("create-option"), payload_1)
-        self.client.post(reverse("create-option"), payload_2)
+        self.client.post("/portal/options/", payload_1)
+        self.client.post("/portal/options/", payload_2)
         self.assertEqual(2, PollOption.objects.all().count())
         # asserts options were created and were placed to right poll
         for poll_option in PollOption.objects.all():
             self.assertEqual(Poll.objects.get(id=self.id), poll_option.poll)
-        response = self.client.get("/portal/polls/view/browse/")
+        response = self.client.get("/portal/polls/browse/")
         res_json = json.loads(response.content)
         self.assertEqual(2, len(res_json[0]["options"]))
 
     def test_update_option(self):
         payload_1 = {"poll": self.id, "choice": "yes!"}
-        response = self.client.post(reverse("create-option"), payload_1)
+        response = self.client.post("/portal/options/", payload_1)
         res_json = json.loads(response.content)
         self.assertEqual("yes!", PollOption.objects.get(id=res_json["id"]).choice)
         payload_2 = {"poll": self.id, "choice": "no!"}
         # checks that poll's option was changed
-        self.client.patch(reverse("update-option", args=[res_json["id"]]), payload_2)
+        self.client.patch(f'/portal/options/{res_json["id"]}/', payload_2)
         self.assertEqual("no!", PollOption.objects.get(id=res_json["id"]).choice)
 
     def test_review_poll(self):
@@ -104,7 +104,7 @@ class TestPolls(TestCase):
         )
         admin = User.objects.create_superuser("admin@example.com", "admin", "admin")
         self.client.force_authenticate(user=admin)
-        response = self.client.get("/portal/polls/view/review/")
+        response = self.client.get("/portal/polls/review/")
         res_json = json.loads(response.content)
         # checks that admin can see unapproved polls
         self.assertEqual(1, len(res_json))
@@ -159,7 +159,7 @@ class TestPollVotes(TestCase):
 
     def test_create_vote(self):
         payload_1 = {"poll_option": self.p1_op1_id}
-        response = self.client.post(reverse("create-vote"), payload_1)
+        response = self.client.post("/portal/votes/", payload_1)
         res_json = json.loads(response.content)
         # tests that voting works
         self.assertEqual(self.p1_op1_id, res_json["poll_option"])
@@ -168,10 +168,10 @@ class TestPollVotes(TestCase):
 
     def test_update_vote(self):
         payload_1 = {"poll_option": self.p1_op1_id}
-        response_1 = self.client.post(reverse("create-vote"), payload_1)
+        response_1 = self.client.post("/portal/votes/", payload_1)
         res_json_1 = json.loads(response_1.content)
         payload_2 = {"poll_option": self.p1_op3_id}
-        response_2 = self.client.patch(reverse("update-vote", args=[res_json_1["id"]]), payload_2)
+        response_2 = self.client.patch(f'/portal/votes/{res_json_1["id"]}/', payload_2)
         res_json_2 = json.loads(response_2.content)
         # test that updating vote works
         self.assertEqual(self.p1_op3_id, res_json_2["poll_option"])
@@ -180,7 +180,7 @@ class TestPollVotes(TestCase):
 
     def test_history(self):
         payload_1 = {"poll_option": self.p1_op1_id}
-        self.client.post(reverse("create-vote"), payload_1)
+        self.client.post("/portal/votes/", payload_1)
         response = self.client.get(reverse("poll-history"))
         res_json = json.loads(response.content)
         # asserts that history works, can see expired posts and posts that
