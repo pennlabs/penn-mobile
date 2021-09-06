@@ -53,7 +53,7 @@ class WhartonLibWrapper:
             datetime.datetime.strptime(end + "T00:00:00-04:00", "%Y-%m-%dT%H:%M:%S%z")
             if end is not None
             else datetime.datetime.strptime(
-                str(current_time.date() + datetime.timedelta(days=1)) + "T00:00:00-04:00",
+                str(search_date + datetime.timedelta(days=1)) + "T00:00:00-04:00",
                 "%Y-%m-%dT%H:%M:%S%z",
             )
         )
@@ -227,7 +227,7 @@ class LibCalWrapper:
             "q3699": self.get_affiliation(user.email),
         }
 
-        response = self.request("POST", "{API_URL}/1.1/space/reserve", json=data).json()
+        response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=data).json()
 
         # corrects keys in response
         if "error" not in response:

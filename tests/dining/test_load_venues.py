@@ -15,7 +15,7 @@ class TestLoadVenues(TestCase):
 
         list_of_ids = []
         for venue in Venue.objects.all():
-            self.assertTrue(venue.venue_id not in list_of_ids)
+            self.assertNotIn(venue.venue_id, list_of_ids)
             list_of_ids.append(venue.venue_id)
 
         call_command("load_venues", stdout=out)

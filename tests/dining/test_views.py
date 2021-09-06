@@ -10,7 +10,6 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from dining.models import DiningBalance, DiningTransaction, Venue
-from user.models import Profile
 
 
 User = get_user_model()
@@ -101,9 +100,8 @@ class TestPreferences(TestCase):
         self.client = APIClient()
 
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
-        preference = self.profile.dining_preferences
+        preference = self.test_user.profile.dining_preferences
         preference.add(Venue.objects.get(venue_id=593))
         preference.add(Venue.objects.get(venue_id=593))
         preference.add(Venue.objects.get(venue_id=593))
@@ -133,12 +131,12 @@ class TestPreferences(TestCase):
             content_type="application/json",
         )
 
-        preference = self.profile.dining_preferences
+        preference = self.test_user.profile.dining_preferences
 
         self.assertEqual(preference.count(), 2)
 
-        self.assertTrue(Venue.objects.get(venue_id=641) in preference.all())
-        self.assertTrue(Venue.objects.get(venue_id=1733) in preference.all())
+        self.assertIn(Venue.objects.get(venue_id=641), preference.all())
+        self.assertIn(Venue.objects.get(venue_id=1733), preference.all())
 
 
 class TestTransactions(TestCase):
@@ -147,24 +145,23 @@ class TestTransactions(TestCase):
         self.client = APIClient()
 
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
         DiningTransaction.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime(),
             description="test1",
             amount=321,
             balance=123,
         )
         DiningTransaction.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime(),
             description="test2",
             amount=3211,
             balance=1223,
         )
         DiningTransaction.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime(),
             description="test3",
             amount=321,
@@ -190,24 +187,23 @@ class TestBalance(TestCase):
         self.client = APIClient()
 
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime(),
             dining_dollars=1,
             swipes=1,
             guest_swipes=1,
         )
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime(),
             dining_dollars=2,
             swipes=2,
             guest_swipes=2,
         )
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime(),
             dining_dollars=3,
             swipes=3,
@@ -234,26 +230,25 @@ class TestAverageBalance(TestCase):
         self.client = APIClient()
 
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
         self.date = timezone.localtime().strftime("%Y-%m-%d")
 
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime(),
             dining_dollars=2,
             swipes=1,
             guest_swipes=1,
         )
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime(),
             dining_dollars=4,
             swipes=2,
             guest_swipes=2,
         )
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime(),
             dining_dollars=6,
             swipes=3,
@@ -279,52 +274,51 @@ class TestProjection(TestCase):
         self.client = APIClient()
 
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime() - datetime.timedelta(days=1),
             dining_dollars=1,
             swipes=1,
             guest_swipes=1,
         )
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime() - datetime.timedelta(days=2),
             dining_dollars=2,
             swipes=2,
             guest_swipes=2,
         )
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime() - datetime.timedelta(days=3),
             dining_dollars=3,
             swipes=3,
             guest_swipes=3,
         )
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime() - datetime.timedelta(days=4),
             dining_dollars=4,
             swipes=4,
             guest_swipes=4,
         )
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime() - datetime.timedelta(days=5),
             dining_dollars=5,
             swipes=5,
             guest_swipes=5,
         )
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime() - datetime.timedelta(days=6),
             dining_dollars=6,
             swipes=6,
             guest_swipes=6,
         )
         DiningBalance.objects.create(
-            profile=self.profile,
+            profile=self.test_user.profile,
             date=timezone.localtime() - datetime.timedelta(days=7),
             dining_dollars=7,
             swipes=7,

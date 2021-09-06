@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.utils import timezone
-from requests.exceptions import HTTPError
+from requests.exceptions import ConnectTimeout, HTTPError, ReadTimeout
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 
@@ -43,13 +43,18 @@ def parse_a_hall(hall_link):
     Return names, hall numbers, and the washers/dryers available for a certain hall_id
     """
 
-    page = requests.get(hall_link, timeout=60)
-    soup = BeautifulSoup(page.content, "html.parser")
-    soup.prettify()
     washers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
     dryers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
 
     detailed = []
+
+    try:
+        page = requests.get(hall_link, timeout=60)
+    except (ConnectTimeout, ReadTimeout):
+        return {"washers": washers, "dryers": dryers, "details": detailed}
+
+    soup = BeautifulSoup(page.content, "html.parser")
+    soup.prettify()
 
     rows = soup.find_all("tr")
     for row in rows:

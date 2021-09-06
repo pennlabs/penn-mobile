@@ -1,3 +1,5 @@
+from json.decoder import JSONDecodeError
+
 import requests
 from django.conf import settings
 from requests.exceptions import ReadTimeout
@@ -48,7 +50,10 @@ def dining_request(url):
     if response.status_code != 200:
         raise APIError("Request to {} returned {}".format(response.url, response.status_code))
 
-    response = response.json()
+    try:
+        response = response.json()
+    except JSONDecodeError as e:
+        raise APIError("Error in venue ID: " + str(e))
 
     error_text = response["service_meta"]["error_text"]
     if error_text:
