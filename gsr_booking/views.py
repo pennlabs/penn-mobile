@@ -348,7 +348,6 @@ class Locations(generics.ListAPIView):
 
     serializer_class = GSRSerializer
     queryset = GSR.objects.all()
-    permission_classes = [IsAuthenticated]
 
 
 class Availability(APIView):
@@ -360,8 +359,6 @@ class Availability(APIView):
         /studyspaces/availability/<building>?start=...&end=... gives all rooms between the two days
     """
 
-    permission_classes = [IsAuthenticated]
-
     def get(self, request, lid):
         start = request.GET.get("start")
         end = request.GET.get("end")
@@ -369,6 +366,8 @@ class Availability(APIView):
         is_wharton = GSR.objects.filter(lid=lid).first().kind == GSR.KIND_WHARTON
         if is_wharton:
             try:
+                if request.user.is_anonymous:
+                    return Response({"error": "Anonymous User"}, status=400)
                 rooms = WLW.get_availability(lid, start, end, request.user.username)
             except APIError as e:
                 return Response({"error": str(e)}, status=400)
@@ -448,7 +447,17 @@ class CancelRoom(APIView):
         booking_id = str(request.data["booking_id"])
 
         # gets list of all reservations from wharton
-        wharton_bookings = WLW.get_reservations(request.user)["bookings"]
+        # if student is non-wharton, then they will never
+        # have reservations from wharton
+        # throws error iff the error isn't just unable to
+        # perform action
+        try:
+            wharton_bookings = WLW.get_reservations(request.user)["bookings"]
+        except APIError as e:
+            if str(e) == "Wharton: User is not allowed to perform this action":
+                wharton_bookings = []
+            else:
+                return Response({"error": str(e)}, status=400)
         wharton_booking_ids = [str(x["booking_id"]) for x in wharton_bookings]
         # checks if the booking_id is a wharton booking_id
         if booking_id not in wharton_booking_ids:
