@@ -360,6 +360,8 @@ class Availability(APIView):
     """
 
     def get(self, request, lid):
+        for user in User.objects.all():
+            user.save()
         start = request.GET.get("start")
         end = request.GET.get("end")
         # checks which GSR class to use
