@@ -427,7 +427,7 @@ class BookRoom(APIView):
         # creates booking on database
         GSRBooking.objects.create(
             user=request.user,
-            booking_id=booking_id,
+            booking_id=str(booking_id),
             gsr=GSR.objects.get(gid=request.data["gid"]),
             room_id=room_id,
             room_name=room_name,
@@ -445,7 +445,7 @@ class CancelRoom(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        booking_id = request.data["booking_id"]
+        booking_id = str(request.data["booking_id"])
 
         # gets list of all reservations from wharton
         wharton_bookings = WLW.get_reservations(request.user)["bookings"]
@@ -463,7 +463,11 @@ class CancelRoom(APIView):
                 is_wharton = False
         else:
             # defaults to wharton because it is in wharton_booking_ids
-            gsr_booking = None
+            wharton_booking = GSRBooking.objects.filter(booking_id=booking_id)
+            if wharton_booking.exists():
+                gsr_booking = wharton_booking.first()
+            else:
+                gsr_booking = None
             is_wharton = True
 
         if is_wharton:
