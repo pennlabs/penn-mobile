@@ -9,7 +9,6 @@ from rest_framework.test import APIClient
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 from tests.laundry.test_commands import fakeLaundryGet
-from user.models import Profile
 
 
 User = get_user_model()
@@ -170,8 +169,7 @@ class PreferencesTestCase(TestCase):
         self.other_laundry_room = LaundryRoom.objects.get(
             hall_id=1, name="Chestnut Butcher", location="Quad"
         )
-        self.profile = Profile.objects.create(user=self.test_user)
-        self.profile.laundry_preferences.add(self.laundry_room)
+        self.test_user.profile.laundry_preferences.add(self.laundry_room)
 
     def test_get(self):
         self.client.force_authenticate(user=self.test_user)

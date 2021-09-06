@@ -11,7 +11,6 @@ from rest_framework.test import APIClient
 from dining.models import Venue
 from laundry.models import LaundryRoom
 from penndata.models import Event
-from user.models import Profile
 
 
 User = get_user_model()
@@ -93,7 +92,6 @@ class TestHomePage(TestCase):
         call_command("load_laundry_rooms")
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@a.com", "user")
-        self.profile = Profile.objects.create(user=self.test_user)
 
     def test_first_response(self):
         self.client.force_authenticate(user=self.test_user)
@@ -109,13 +107,13 @@ class TestHomePage(TestCase):
         self.assertEqual(res_json[3]["type"], "laundry")
         self.assertEqual(res_json[3]["info"]["room_id"], 0)
 
-        self.profile.dining_preferences.add(Venue.objects.get(venue_id=747))
-        self.profile.dining_preferences.add(Venue.objects.get(venue_id=1733))
-        self.profile.dining_preferences.add(Venue.objects.get(venue_id=638))
+        self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=747))
+        self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=1733))
+        self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=638))
 
-        self.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=3))
-        self.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=4))
-        self.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=5))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=3))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=4))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=5))
 
         new_response = self.client.get(reverse("homepage"))
         new_res_json = json.loads(new_response.content)["cells"]
