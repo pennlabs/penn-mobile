@@ -411,7 +411,7 @@ class BookRoom(APIView):
     def post(self, request):
         start = request.data["start_time"]
         end = request.data["end_time"]
-        if not GSR.objects.filter(lid=request.data["gid"]).exists():
+        if not GSR.objects.filter(gid=request.data["gid"]).exists():
             return Response({"error": "Unknown GSR"}, status=404)
         is_wharton = GSR.objects.filter(gid=request.data["gid"]).first().kind == GSR.KIND_WHARTON
         room_id = request.data["id"]
