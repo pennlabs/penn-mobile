@@ -137,8 +137,8 @@ class TestPreferences(TestCase):
 
         self.assertEqual(preference.count(), 2)
 
-        self.assertTrue(Venue.objects.get(venue_id=641) in preference.all())
-        self.assertTrue(Venue.objects.get(venue_id=1733) in preference.all())
+        self.assertIn(Venue.objects.get(venue_id=641), preference.all())
+        self.assertIn(Venue.objects.get(venue_id=1733), preference.all())
 
 
 class TestTransactions(TestCase):

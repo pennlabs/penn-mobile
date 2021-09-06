@@ -9,5 +9,5 @@ class TestHeaders(TestCase):
         response = headers()
 
         self.assertEqual(len(response), 2)
-        self.assertTrue("Authorization-Bearer" in response.keys())
-        self.assertTrue("Authorization-Token" in response.keys())
+        self.assertIn("Authorization-Bearer", response.keys())
+        self.assertIn("Authorization-Token", response.keys())

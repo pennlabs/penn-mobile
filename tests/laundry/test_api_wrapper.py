@@ -35,23 +35,23 @@ class TestAllStatus(TestCase):
         self.assertEqual(len(data), 4)
 
         for room in LaundryRoom.objects.all():
-            self.assertTrue(room.name in data)
+            self.assertIn(room.name, data)
 
         # asserts fields are present and are positive numbers
         for hall_name, hall in data.items():
             for machine in ["washers", "dryers"]:
                 data = hall[machine]
 
-                self.assertTrue("running" in data)
+                self.assertIn("running", data)
                 self.assertTrue(hall[machine]["running"] >= 0)
 
-                self.assertTrue("open" in data)
+                self.assertIn("open", data)
                 self.assertTrue(hall[machine]["open"] >= 0)
 
-                self.assertTrue("out_of_order" in data)
+                self.assertIn("out_of_order", data)
                 self.assertTrue(hall[machine]["out_of_order"] >= 0)
 
-                self.assertTrue("offline" in data)
+                self.assertIn("offline", data)
                 self.assertTrue(hall[machine]["offline"] >= 0)
 
 
@@ -78,13 +78,13 @@ class TestHallStatus(TestCase):
             # asserts fields are present
             status = hall_status(room)
             machines = status["machines"]
-            self.assertTrue("washers" in machines)
-            self.assertTrue("dryers" in machines)
+            self.assertIn("washers", machines)
+            self.assertIn("dryers", machines)
 
             for machine in machines["details"]:
-                self.assertTrue("id" in machine)
-                self.assertTrue("type" in machine)
-                self.assertTrue("status" in machine)
+                self.assertIn("id", machine)
+                self.assertIn("type", machine)
+                self.assertIn("status", machine)
 
 
 @mock.patch("requests.get", fakeLaundryGet)
@@ -120,7 +120,7 @@ class TestSaveData(TestCase):
         # asserts that fields are correct, and that all snapshots
         # have been accounted for
         for snapshot in LaundrySnapshot.objects.all():
-            self.assertTrue(snapshot.room.hall_id in hall_ids)
+            self.assertIn(snapshot.room.hall_id, hall_ids)
             self.assertTrue(snapshot.available_washers >= 0)
             self.assertTrue(snapshot.available_dryers >= 0)
 
