@@ -3,6 +3,7 @@ import json
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -184,16 +185,15 @@ class TestPollVotes(TestCase):
         self.assertEqual(1, PollVote.objects.all().count())
         self.assertEqual(self.test_user, PollVote.objects.all().first().user)
 
-    # from django.urls import reverse
-    # def test_history(self):
-    #     payload_1 = {"poll_options": [self.p1_op1_id]}
-    #     self.client.post("/portal/votes/", payload_1)
-    #     response = self.client.get(reverse("poll-history"))
-    #     res_json = json.loads(response.content)
-    #     # asserts that history works, can see expired posts and posts that
-    #     # user voted for
-    #     # also asserts that data collection works
-    #     self.assertEqual(3, len(res_json[0]["poll"]["options"]))
-    #     self.assertEqual(1, res_json[0]["poll_statistics"][0]["choice 1"]["schools"]["SEAS"])
-    #     self.assertEqual(3, len(res_json[1]["poll"]["options"]))
-    #     self.assertEqual({}, res_json[1]["poll_statistics"][0]["choice 7"]["schools"])
+    def test_history(self):
+        payload_1 = {"poll_options": [self.p1_op1_id]}
+        self.client.post("/portal/votes/", payload_1)
+        response = self.client.get(reverse("poll-history"))
+        res_json = json.loads(response.content)
+        # asserts that history works, can see expired posts and posts that
+        # user voted for
+        # also asserts that data collection works
+        self.assertEqual(3, len(res_json[0]["poll"]["options"]))
+        self.assertEqual(1, res_json[0]["poll_statistics"][0]["breakdown"]["SEAS"])
+        self.assertEqual(3, len(res_json[1]["poll"]["options"]))
+        self.assertEqual({}, res_json[1]["poll_statistics"][0]["breakdown"])

@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 
-from portal.models import PollVote, TargetPopulation
+from portal.models import Poll, PollOption, PollVote, TargetPopulation
 
 
 User = get_user_model()
@@ -39,14 +39,26 @@ def get_affiliation(email):
         return "Other"
 
 
-def get_demographic_breakdown(poll):
+def get_demographic_breakdown(poll_id):
     """Collects Poll statistics on school and graduation year demographics"""
-    votes = PollVote.objects.filter(poll=poll)
-    for vote in votes:
-        for poll_option in votes.poll_options:
-            print("hi")
 
+    # passing in id is necessary because
+    # poll info is already serialized
+    poll = Poll.objects.get(id=poll_id)
+    data = []
+    breakdown = {}
+    for target_population in poll.target_populations.all():
+        breakdown[target_population.population] = 0
 
-def vote_patterns(poll):
-    """Collects Poll statistics on voting patterns wrt time"""
-    pass
+    options = PollOption.objects.filter(poll=poll)
+    for option in options:
+        context = {"option": option.choice, "breakdown": breakdown.copy()}
+        votes = PollVote.objects.filter(poll_options__in=[option])
+        for vote in votes:
+            user_populations = get_user_populations(vote.user)
+            for user_population in user_populations:
+                if user_population != -1:
+                    population = TargetPopulation.objects.get(id=user_population).population
+                    context["breakdown"][population] += 1
+        data.append(context)
+    return data

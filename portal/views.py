@@ -1,4 +1,5 @@
-from django.db.models import Q
+from django.db.models import Count, Q
+from django.db.models.functions import Trunc
 from django.utils import timezone
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
@@ -6,7 +7,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from portal.logic import get_user_populations
+from portal.logic import get_demographic_breakdown, get_user_populations
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from portal.serializers import (
     PollOptionSerializer,
@@ -85,8 +86,6 @@ class Polls(viewsets.ModelViewSet):
         )
 
 
-# TODO: fix this!
-# TODO: add admin analytics in addition to user history
 class RetrievePollVotes(APIView):
     """Retrieve history of polls and their statistics"""
 
@@ -117,36 +116,25 @@ class RetrievePollVotes(APIView):
                 ).data,
             }
             history_list.append(context)
-        return Response(history_list)
+        for entry in history_list:
+            entry["poll_statistics"] = get_demographic_breakdown(entry["poll"]["id"])
+        return Response(sorted(history_list, key=lambda i: i["poll"]["expire_date"], reverse=True))
 
-    # # calculates statistics for each poll
-    # for entry in history_list:
-    #     context = {"poll_statistics": self.calculate_statistics(entry["poll"]["id"])}  # stat
-    #     entry.update(context)
-    # return Response(sorted(history_list, key=lambda i: i["poll"]["expire_date"], reverse=True))
 
-    # def calculate_statistics(self, id):
-    #     """Returns the statistics of school and year for each poll"""
-    #     poll = Poll.objects.get(id=id)
-    #     options = PollOption.objects.filter(poll=poll)
-    #     statistic_list = []
-    #     # loops through each option and aggregates votes
-    #     for option in options:
-    #         votes = PollVote.objects.filter(poll_option=option)
-    #         context = {"schools": {}, "years": {}}
-    #         for vote in votes:
-    #             year = 2024  # arbitrary for now, don't know how to get this yet
-    #             school = self.get_affiliation(vote.user.email)
-    #             if year not in context["years"].keys():
-    #                 context["years"][year] = 1
-    #             else:
-    #                 context["years"][year] += 1
-    #             if school not in context["schools"].keys():
-    #                 context["schools"][school] = 1
-    #             else:
-    #                 context["schools"][school] += 1
-    #         statistic_list.append({option.choice: context})
-    #     return statistic_list
+class PollVoteTimeSeries(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        return Response(
+            {
+                "time_series": PollVote.objects.filter(poll__id=id)
+                .annotate(date=Trunc("created_date", "day"))
+                .values("date")
+                .annotate(votes=Count("date"))
+                .order_by("date")
+            }
+        )
 
 
 class PollOptions(viewsets.ModelViewSet):
