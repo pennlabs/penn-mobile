@@ -10,12 +10,14 @@ def get_user_populations(user):
     """Returns the target populations that the user belongs to"""
 
     school = get_affiliation(user.email)
+    # checks if school is in the target population
     school_id = (
         TargetPopulation.objects.get(population=school).id
         if TargetPopulation.objects.filter(population=school).exists()
         else -1
     )
     year = user.profile.expected_graduation.year if user.profile.expected_graduation else None
+    # checks if year is in the target population
     year_id = (
         TargetPopulation.objects.get(population=year).id
         if TargetPopulation.objects.filter(population=year).exists()
@@ -47,14 +49,19 @@ def get_demographic_breakdown(poll_id):
     poll = Poll.objects.get(id=poll_id)
     data = []
     breakdown = {}
+    # adds all targeted populations into breakdown
     for target_population in poll.target_populations.all():
         breakdown[target_population.population] = 0
 
+    # gets all options for the poll
     options = PollOption.objects.filter(poll=poll)
     for option in options:
         context = {"option": option.choice, "breakdown": breakdown.copy()}
+        # gets all votes for the option
         votes = PollVote.objects.filter(poll_options__in=[option])
         for vote in votes:
+            # goes through each vote and adds +1 to the
+            # populations the user belongs to
             user_populations = get_user_populations(vote.user)
             for user_population in user_populations:
                 if user_population != -1:

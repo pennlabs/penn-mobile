@@ -20,6 +20,8 @@ from portal.serializers import (
 
 
 class TargetPopulations(generics.ListAPIView):
+    """List view to see which populations a poll can select"""
+
     serializer_class = TargetPopulationSerializer
     queryset = TargetPopulation.objects.all()
 
@@ -57,9 +59,7 @@ class Polls(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
-
-        # return list of valid votes that user was targeted for
-        # but has yet to answer
+        """Returns list of all possible polls user can answer but has yet to"""
         return Response(
             RetrievePollSerializer(
                 Poll.objects.filter(
@@ -78,7 +78,7 @@ class Polls(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAdminUser])
     def review(self, request):
-        # returns list of unapproved polls where admin hasn't left comment
+        """Returns list of all Polls that admins still need to approve of"""
         return Response(
             RetrievePollSerializer(
                 Poll.objects.filter(approved=False, admin_comment=None), many=True
@@ -122,6 +122,7 @@ class RetrievePollVotes(APIView):
 
 
 class PollVoteTimeSeries(APIView):
+    """Returns time series of all votes for a particular poll"""
 
     permission_classes = [IsAuthenticated]
 
