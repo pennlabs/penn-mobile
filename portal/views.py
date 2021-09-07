@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 
 from portal.logic import get_demographic_breakdown, get_user_populations
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
+from portal.permissions import OwnerPermission, TimeSeriesPermission
 from portal.serializers import (
     PollOptionSerializer,
     PollSerializer,
@@ -22,6 +23,7 @@ from portal.serializers import (
 class TargetPopulations(generics.ListAPIView):
     """List view to see which populations a poll can select"""
 
+    permission_classes = [IsAuthenticated]
     serializer_class = TargetPopulationSerializer
     queryset = TargetPopulation.objects.all()
 
@@ -46,7 +48,7 @@ class Polls(viewsets.ModelViewSet):
     Delete a Poll.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [OwnerPermission]
     queryset = Poll.objects.all()
     serializer_class = PollSerializer
 
@@ -121,23 +123,6 @@ class RetrievePollVotes(APIView):
         return Response(sorted(history_list, key=lambda i: i["poll"]["expire_date"], reverse=True))
 
 
-class PollVoteTimeSeries(APIView):
-    """Returns time series of all votes for a particular poll"""
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, id):
-        return Response(
-            {
-                "time_series": PollVote.objects.filter(poll__id=id)
-                .annotate(date=Trunc("created_date", "day"))
-                .values("date")
-                .annotate(votes=Count("date"))
-                .order_by("date")
-            }
-        )
-
-
 class PollOptions(viewsets.ModelViewSet):
     """
     create:
@@ -151,7 +136,7 @@ class PollOptions(viewsets.ModelViewSet):
     Delete a Poll Option.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [OwnerPermission]
     serializer_class = PollOptionSerializer
     queryset = PollOption.objects.all()
 
@@ -178,10 +163,27 @@ class PollVotes(viewsets.ModelViewSet):
     Delete a Poll Vote.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [OwnerPermission]
     serializer_class = PollVoteSerializer
     queryset = PollVote.objects.all()
 
     def get_queryset(self):
         # only user can see, create, update, and/or destroy their own votes
         return PollVote.objects.filter(user=self.request.user)
+
+
+class PollVoteTimeSeries(APIView):
+    """Returns time series of all votes for a particular poll"""
+
+    permission_classes = [TimeSeriesPermission]
+
+    def get(self, request, id):
+        return Response(
+            {
+                "time_series": PollVote.objects.filter(poll__id=id)
+                .annotate(date=Trunc("created_date", "day"))
+                .values("date")
+                .annotate(votes=Count("date"))
+                .order_by("date")
+            }
+        )
