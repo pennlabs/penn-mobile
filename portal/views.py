@@ -1,19 +1,26 @@
 from django.db.models import Q
 from django.utils import timezone
-from rest_framework import viewsets
+from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from portal.models import Poll, PollOption, PollVote
+from portal.logic import get_affiliation
+from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from portal.serializers import (
     PollOptionSerializer,
     PollSerializer,
     PollVoteSerializer,
     RetrievePollSerializer,
     RetrievePollVoteSerializer,
+    TargetPopulationSerializer,
 )
+
+
+class TargetPopulations(generics.ListAPIView):
+    serializer_class = TargetPopulationSerializer
+    queryset = TargetPopulation.objects.all()
 
 
 class Polls(viewsets.ModelViewSet):
@@ -38,46 +45,65 @@ class Polls(viewsets.ModelViewSet):
 
     permission_classes = [IsAuthenticated]
     queryset = Poll.objects.all()
-
-    def get_serializer_class(self):
-        if self.action in ["browse", "review"]:
-            return RetrievePollSerializer
-        else:
-            return PollSerializer
+    serializer_class = PollSerializer
 
     def get_queryset(self):
-        if self.action == "browse":
-            # return list of votes that haven't been answered
-            # by user, and that are valid
-            return Poll.objects.filter(
-                ~Q(id__in=PollVote.objects.filter(user=self.request.user).values_list("poll_id")),
-                expire_date__gte=timezone.localtime(),
-                approved=True,
-            )
-        elif self.action == "review":
-            # return list of polls that need to be approved
-            return Poll.objects.filter(approved=False)
-        elif self.action == "partial_update":
-            # if user is admin, they can update anything
-            # if user is not admin, they can only update their own polls
-            if self.request.user.is_superuser:
-                return Poll.objects.all()
-            else:
-                return Poll.objects.filter(user=self.request.user)
-        elif self.action == "destroy":
-            if self.request.user.is_superuser:
-                return Poll.objects.all()
-        return None
+        return (
+            Poll.objects.all()
+            if self.request.user.is_superuser
+            else Poll.objects.filter(user=self.request.user)
+        )
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
-        return super().list(request)
+        # filters to see if user belongs to target population, either school or graduation year
+        school = get_affiliation(request.user.email)
+        school_id = (
+            TargetPopulation.objects.get(population=school).id
+            if TargetPopulation.objects.filter(population=school).exists()
+            else -1
+        )
+        year = (
+            request.user.profile.expected_graduation.year
+            if request.user.profile.expected_graduation
+            else None
+        )
+        year_id = (
+            TargetPopulation.objects.get(population=year).id
+            if TargetPopulation.objects.filter(population=year).exists()
+            else -1
+        )
+
+        # return list of valid votes that user was targeted for
+        # but has yet to answer
+        return Response(
+            RetrievePollSerializer(
+                Poll.objects.filter(
+                    ~Q(
+                        id__in=PollVote.objects.filter(user=self.request.user).values_list(
+                            "poll_id"
+                        )
+                    ),
+                    Q(target_populations__in=[school_id, year_id]),
+                    expire_date__gte=timezone.localtime(),
+                    approved=True,
+                ),
+                many=True,
+            ).data
+        )
 
     @action(detail=False, methods=["get"], permission_classes=[IsAdminUser])
     def review(self, request):
-        return super().list(request)
+        # returns list of unapproved polls where admin hasn't left comment
+        return Response(
+            RetrievePollSerializer(
+                Poll.objects.filter(approved=False, admin_comment=None), many=True
+            ).data
+        )
 
 
+# TODO: fix this!
+# TODO: add admin analytics in addition to user history
 class RetrievePollVotes(APIView):
     """Retrieve history of polls and their statistics"""
 
@@ -131,20 +157,6 @@ class RetrievePollVotes(APIView):
             statistic_list.append({option.choice: context})
         return statistic_list
 
-    def get_affiliation(self, email):
-        """Gets the school based on user's email"""
-
-        if "wharton" in email:
-            return "Wharton"
-        elif "seas" in email:
-            return "SEAS"
-        elif "sas" in email:
-            return "SAS"
-        elif "nursing" in email:
-            return "Nursing"
-        else:
-            return "Other"
-
 
 class PollOptions(viewsets.ModelViewSet):
     """
@@ -166,10 +178,11 @@ class PollOptions(viewsets.ModelViewSet):
     def get_queryset(self):
         # if user is admin, they can update anything
         # if user is not admin, they can only update their own options
-        if self.request.user.is_superuser:
-            return PollOption.objects.all()
-        else:
-            return PollOption.objects.filter(poll__in=Poll.objects.filter(user=self.request.user))
+        return (
+            PollOption.objects.all()
+            if self.request.user.is_superuser
+            else PollOption.objects.filter(poll__in=Poll.objects.filter(user=self.request.user))
+        )
 
 
 class PollVotes(viewsets.ModelViewSet):
@@ -190,9 +203,5 @@ class PollVotes(viewsets.ModelViewSet):
     queryset = PollVote.objects.all()
 
     def get_queryset(self):
-        # if user is admin, they can update anything
-        # if user is not admin, they can only update their own polls
-        if self.request.user.is_superuser:
-            return PollVote.objects.all()
-        else:
-            return PollVote.objects.filter(user=self.request.user)
+        # only user can see, create, update, and/or destroy their own votes
+        return PollVote.objects.filter(user=self.request.user)
