@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from portal.logic import get_user_populations
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 
 
@@ -91,14 +92,22 @@ class PollVoteSerializer(serializers.ModelSerializer):
         # check if user can multiselect or not
         if len(options) > 1 and not poll.multiselect:
             raise serializers.ValidationError(
-                detail={"error": "You cannot select multiple choices for this Poll"}
+                detail={"detail": "You cannot select multiple choices for this Poll"}
             )
         # check if poll options are all from same Poll
         for option in options:
             if option.poll != poll:
                 raise serializers.ValidationError(
-                    detail={"error": "Voting options are from different Polls"}
+                    detail={"detail": "Voting options are from different Polls"}
                 )
+        # checks if user belongs to target population
+        if not any(
+            i in list(poll.target_populations.all().values_list("id", flat=True))
+            for i in get_user_populations(self.context["request"].user)
+        ):
+            raise serializers.ValidationError(
+                detail={"detail": "You cannot vote for this poll (not in any target population)"}
+            )
         # adds poll and user to the vote
         validated_data["user"] = self.context["request"].user
         validated_data["poll"] = poll
@@ -108,8 +117,8 @@ class PollVoteSerializer(serializers.ModelSerializer):
 class RetrievePollVoteSerializer(serializers.ModelSerializer):
 
     poll = RetrievePollSerializer()
-    poll_option = PollOptionSerializer()
+    poll_options = PollOptionSerializer(many=True)
 
     class Meta:
         model = PollVote
-        fields = ("id", "poll", "poll_options")
+        fields = ("id", "poll", "poll_options", "created_date")

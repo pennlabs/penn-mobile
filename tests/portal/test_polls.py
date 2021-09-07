@@ -119,6 +119,7 @@ class TestPollVotes(TestCase):
 
     def setUp(self):
         self.client = APIClient()
+        self.target_id = TargetPopulation.objects.create(population="SEAS").id
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client.force_authenticate(user=self.test_user)
 
@@ -131,6 +132,8 @@ class TestPollVotes(TestCase):
             expire_date=timezone.now() + datetime.timedelta(days=1),
             approved=True,
         )
+        p1.target_populations.add(self.target_id)
+        p1.save()
         self.p1_id = p1.id
         p1_op1 = PollOption.objects.create(poll=p1, choice="choice 1")
         self.p1_op1_id = p1_op1.id

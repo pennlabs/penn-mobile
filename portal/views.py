@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from portal.logic import get_affiliation
+from portal.logic import get_user_populations
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from portal.serializers import (
     PollOptionSerializer,
@@ -56,23 +56,6 @@ class Polls(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
-        # filters to see if user belongs to target population, either school or graduation year
-        school = get_affiliation(request.user.email)
-        school_id = (
-            TargetPopulation.objects.get(population=school).id
-            if TargetPopulation.objects.filter(population=school).exists()
-            else -1
-        )
-        year = (
-            request.user.profile.expected_graduation.year
-            if request.user.profile.expected_graduation
-            else None
-        )
-        year_id = (
-            TargetPopulation.objects.get(population=year).id
-            if TargetPopulation.objects.filter(population=year).exists()
-            else -1
-        )
 
         # return list of valid votes that user was targeted for
         # but has yet to answer
@@ -84,7 +67,7 @@ class Polls(viewsets.ModelViewSet):
                             "poll_id"
                         )
                     ),
-                    Q(target_populations__in=[school_id, year_id]),
+                    Q(target_populations__in=get_user_populations(request.user)),
                     expire_date__gte=timezone.localtime(),
                     approved=True,
                 ),
@@ -126,36 +109,44 @@ class RetrievePollVotes(APIView):
         ).data
         # puts remaining_list in the same format of history_list, then appends them
         for entry in remaining_list:
-            context = {"id": None, "poll": entry, "poll_option": {}}
+            context = {
+                "id": None,
+                "poll": entry,
+                "poll_options": PollOptionSerializer(
+                    PollOption.objects.filter(poll__id=entry["id"]), many=True
+                ).data,
+            }
             history_list.append(context)
-        # calculates statistics for each poll
-        for entry in history_list:
-            context = {"poll_statistics": self.calculate_statistics(entry["poll"]["id"])}  # stat
-            entry.update(context)
-        return Response(sorted(history_list, key=lambda i: i["poll"]["expire_date"], reverse=True))
+        return Response(history_list)
 
-    def calculate_statistics(self, id):
-        """Returns the statistics of school and year for each poll"""
-        poll = Poll.objects.get(id=id)
-        options = PollOption.objects.filter(poll=poll)
-        statistic_list = []
-        # loops through each option and aggregates votes
-        for option in options:
-            votes = PollVote.objects.filter(poll_option=option)
-            context = {"schools": {}, "years": {}}
-            for vote in votes:
-                year = 2024  # arbitrary for now, don't know how to get this yet
-                school = self.get_affiliation(vote.user.email)
-                if year not in context["years"].keys():
-                    context["years"][year] = 1
-                else:
-                    context["years"][year] += 1
-                if school not in context["schools"].keys():
-                    context["schools"][school] = 1
-                else:
-                    context["schools"][school] += 1
-            statistic_list.append({option.choice: context})
-        return statistic_list
+    # # calculates statistics for each poll
+    # for entry in history_list:
+    #     context = {"poll_statistics": self.calculate_statistics(entry["poll"]["id"])}  # stat
+    #     entry.update(context)
+    # return Response(sorted(history_list, key=lambda i: i["poll"]["expire_date"], reverse=True))
+
+    # def calculate_statistics(self, id):
+    #     """Returns the statistics of school and year for each poll"""
+    #     poll = Poll.objects.get(id=id)
+    #     options = PollOption.objects.filter(poll=poll)
+    #     statistic_list = []
+    #     # loops through each option and aggregates votes
+    #     for option in options:
+    #         votes = PollVote.objects.filter(poll_option=option)
+    #         context = {"schools": {}, "years": {}}
+    #         for vote in votes:
+    #             year = 2024  # arbitrary for now, don't know how to get this yet
+    #             school = self.get_affiliation(vote.user.email)
+    #             if year not in context["years"].keys():
+    #                 context["years"][year] = 1
+    #             else:
+    #                 context["years"][year] += 1
+    #             if school not in context["schools"].keys():
+    #                 context["schools"][school] = 1
+    #             else:
+    #                 context["schools"][school] += 1
+    #         statistic_list.append({option.choice: context})
+    #     return statistic_list
 
 
 class PollOptions(viewsets.ModelViewSet):
