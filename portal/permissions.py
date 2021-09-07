@@ -15,6 +15,12 @@ class OwnerPermission(permissions.BasePermission):
         return True
 
     def has_permission(self, request, view):
+        # ensures that only author of Poll can create its Poll Options
+        if view.action == "create" and request.get_full_path() == "/portal/options/":
+            poll = Poll.objects.get(id=request.data["poll"])
+            return (
+                request.user.is_authenticated and poll.user == request.user
+            ) or request.user.is_superuser
         return request.user.is_authenticated
 
 
