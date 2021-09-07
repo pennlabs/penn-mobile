@@ -51,6 +51,14 @@ class PollOptionSerializer(serializers.ModelSerializer):
             "choice",
         )
 
+    def create(self, validated_data):
+        # write permission here because it cannot be stopped in permission
+        if self.context["request"].user != validated_data["poll"].user:
+            raise serializers.ValidationError(
+                detail={"detail": "You cannot create an Option to a Poll you do not own"}
+            )
+        return super().create(validated_data)
+
     def update(self, instance, validated_data):
         # if Poll Option is updated, then corresponding Poll approval should be false
         instance.poll.approved = False

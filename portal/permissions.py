@@ -7,7 +7,7 @@ class OwnerPermission(permissions.BasePermission):
     """Permission that checks authentication and only permits owner to update/destroy objects"""
 
     def has_object_permission(self, request, view, obj):
-        # only Poll creator can edit Poll
+        # only creator can edit
         if view.action in ["partial_update", "update", "destroy"]:
             if type(obj) == PollOption:
                 return request.user == obj.poll.user or request.user.is_superuser
