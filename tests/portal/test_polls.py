@@ -28,7 +28,8 @@ class TestPolls(TestCase):
             "admin_comment": "asdfs 1",
             "target_populations": [1],
         }
-        self.client.post("/portal/polls/", payload)
+        x = self.client.post("/portal/polls/", payload)
+        print(x.json())
         poll_1 = Poll.objects.all().first()
         poll_1.approved = True
         poll_1.save()
