@@ -16,7 +16,7 @@ class TestPolls(TestCase):
     """Tests Create/Update/Retrieve for Polls and Poll Options"""
 
     def setUp(self):
-        TargetPopulation.objects.create(population="SEAS")
+        self.target_id = TargetPopulation.objects.create(population="SEAS").id
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client.force_authenticate(user=self.test_user)
@@ -26,10 +26,9 @@ class TestPolls(TestCase):
             "question": "How is this question? 1",
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "admin_comment": "asdfs 1",
-            "target_populations": [1],
+            "target_populations": [self.target_id],
         }
-        x = self.client.post("/portal/polls/", payload)
-        print(x.json())
+        self.client.post("/portal/polls/", payload)
         poll_1 = Poll.objects.all().first()
         poll_1.approved = True
         poll_1.save()
@@ -42,7 +41,7 @@ class TestPolls(TestCase):
             "question": "How is this question? 2",
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "admin_comment": "asdfs 2",
-            "target_populations": [1],
+            "target_populations": [self.target_id],
         }
         response = self.client.post("/portal/polls/", payload)
         res_json = json.loads(response.content)
@@ -67,7 +66,7 @@ class TestPolls(TestCase):
             "question": "How is this question? 2",
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "admin_comment": "asdfs 2",
-            "target_populations": [1],
+            "target_populations": [self.target_id],
         }
         self.client.post("/portal/polls/", payload)
         # asserts that you can only see approved polls
