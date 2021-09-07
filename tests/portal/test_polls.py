@@ -3,7 +3,6 @@ import json
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-# from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -182,6 +181,7 @@ class TestPollVotes(TestCase):
         self.assertEqual(1, PollVote.objects.all().count())
         self.assertEqual(self.test_user, PollVote.objects.all().first().user)
 
+    # from django.urls import reverse
     # def test_history(self):
     #     payload_1 = {"poll_options": [self.p1_op1_id]}
     #     self.client.post("/portal/votes/", payload_1)
