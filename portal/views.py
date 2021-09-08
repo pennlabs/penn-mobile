@@ -73,7 +73,9 @@ class Polls(viewsets.ModelViewSet):
                     Q(target_populations__in=get_user_populations(request.user)),
                     expire_date__gte=timezone.localtime(),
                     approved=True,
-                ),
+                )
+                .distinct()
+                .order_by("-created_date"),
                 many=True,
             ).data
         )
@@ -83,7 +85,8 @@ class Polls(viewsets.ModelViewSet):
         """Returns list of all Polls that admins still need to approve of"""
         return Response(
             RetrievePollSerializer(
-                Poll.objects.filter(approved=False, admin_comment=None), many=True
+                Poll.objects.filter(Q(admin_comment=None) | Q(admin_comment=""), approved=False),
+                many=True,
             ).data
         )
 

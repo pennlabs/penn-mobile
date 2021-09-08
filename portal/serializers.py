@@ -38,7 +38,8 @@ class PollSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         # if Poll is updated, then approve should be false
-        validated_data["approved"] = False
+        if not self.context["request"].user.is_superuser:
+            validated_data["approved"] = False
         return super().update(instance, validated_data)
 
 
@@ -89,6 +90,12 @@ class PollVoteSerializer(serializers.ModelSerializer):
 
         options = validated_data["poll_options"]
         poll = options[0].poll
+        # checks if user has already voted
+        if PollVote.objects.filter(user=self.context["request"].user, poll=poll).exists():
+            print(PollVote.objects.filter(user=self.context["request"].user))
+            raise serializers.ValidationError(
+                detail={"detail": "You have already voted for this Poll"}
+            )
         # check if user can multiselect or not
         if len(options) > 1 and not poll.multiselect:
             raise serializers.ValidationError(

@@ -34,7 +34,7 @@ def get_affiliation(email):
     elif "seas" in email:
         return "SEAS"
     elif "sas" in email:
-        return "SAS"
+        return "College"
     elif "nursing" in email:
         return "Nursing"
     else:

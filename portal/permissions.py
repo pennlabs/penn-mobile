@@ -11,16 +11,21 @@ class OwnerPermission(permissions.BasePermission):
         if view.action in ["partial_update", "update", "destroy"]:
             if type(obj) == PollOption:
                 return request.user == obj.poll.user or request.user.is_superuser
-            return request.user == obj.user
+            return request.user == obj.user or request.user.is_superuser
         return True
 
     def has_permission(self, request, view):
         # ensures that only author of Poll can create its Poll Options
         if view.action == "create" and request.get_full_path() == "/portal/options/":
-            poll = Poll.objects.get(id=request.data["poll"])
-            return (
-                request.user.is_authenticated and poll.user == request.user
-            ) or request.user.is_superuser
+            try:
+                poll = Poll.objects.get(id=request.data["poll"])
+                return (
+                    request.user.is_authenticated and poll.user == request.user
+                ) or request.user.is_superuser
+            except KeyError:
+                # sometimes sends list then immediate create when
+                # rendering DRF HTML, so catching this for testing
+                pass
         return request.user.is_authenticated
 
 
@@ -29,7 +34,9 @@ class TimeSeriesPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
         poll = Poll.objects.filter(id=view.kwargs["id"])
+        # checks if poll exists
         if poll.exists():
+            # only poll creator and admin can access
             return (
                 poll.first().user == request.user and request.user.is_authenticated
             ) or request.user.is_superuser
