@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.utils import timezone
+from requests.exceptions import ConnectTimeout, ReadTimeout
 
 
 BASE_URL = "https://libcal.library.upenn.edu"
@@ -28,7 +29,10 @@ class WhartonLibWrapper:
         # add authorization headers
         kwargs["headers"] = headers
 
-        response = requests.request(*args, **kwargs)
+        try:
+            response = requests.request(*args, **kwargs)
+        except (ConnectTimeout, ReadTimeout):
+            raise APIError("Wharton: Connection timeout")
 
         # only wharton students can access these routes
         if response.status_code == 403 or response.status_code == 401:
@@ -131,7 +135,10 @@ class LibCalWrapper:
         else:
             kwargs["headers"] = headers
 
-        return requests.request(*args, **kwargs)
+        try:
+            return requests.request(*args, **kwargs)
+        except (ConnectTimeout, ReadTimeout):
+            raise APIError("LibCal: Connection timeout")
 
     def get_availability(self, lid, start=None, end=None):
         """Returns a list of rooms and their availabilities"""
