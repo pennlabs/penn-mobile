@@ -3,13 +3,18 @@ from django.db.models.functions import Trunc
 from django.utils import timezone
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from portal.logic import get_demographic_breakdown, get_user_populations
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
-from portal.permissions import OwnerPermission, TimeSeriesPermission
+from portal.permissions import (
+    IsSuperUser,
+    OptionOwnerPermission,
+    PollOwnerPermission,
+    TimeSeriesPermission,
+)
 from portal.serializers import (
     PollOptionSerializer,
     PollSerializer,
@@ -48,8 +53,7 @@ class Polls(viewsets.ModelViewSet):
     Delete a Poll.
     """
 
-    permission_classes = [OwnerPermission]
-    queryset = Poll.objects.all()
+    permission_classes = [PollOwnerPermission | IsSuperUser]
     serializer_class = PollSerializer
 
     def get_queryset(self):
@@ -80,7 +84,7 @@ class Polls(viewsets.ModelViewSet):
             ).data
         )
 
-    @action(detail=False, methods=["get"], permission_classes=[IsAdminUser])
+    @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
     def review(self, request):
         """Returns list of all Polls that admins still need to approve of"""
         return Response(
@@ -94,7 +98,7 @@ class Polls(viewsets.ModelViewSet):
 class RetrievePollVotes(APIView):
     """Retrieve history of polls and their statistics"""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated | IsSuperUser]
 
     def get(self, request):
 
@@ -139,9 +143,8 @@ class PollOptions(viewsets.ModelViewSet):
     Delete a Poll Option.
     """
 
-    permission_classes = [OwnerPermission]
+    permission_classes = [OptionOwnerPermission | IsSuperUser]
     serializer_class = PollOptionSerializer
-    queryset = PollOption.objects.all()
 
     def get_queryset(self):
         # if user is admin, they can update anything
@@ -166,9 +169,8 @@ class PollVotes(viewsets.ModelViewSet):
     Delete a Poll Vote.
     """
 
-    permission_classes = [OwnerPermission]
+    permission_classes = [PollOwnerPermission | IsSuperUser]
     serializer_class = PollVoteSerializer
-    queryset = PollVote.objects.all()
 
     def get_queryset(self):
         # only user can see, create, update, and/or destroy their own votes
@@ -178,7 +180,7 @@ class PollVotes(viewsets.ModelViewSet):
 class PollVoteTimeSeries(APIView):
     """Returns time series of all votes for a particular poll"""
 
-    permission_classes = [TimeSeriesPermission]
+    permission_classes = [TimeSeriesPermission | IsSuperUser]
 
     def get(self, request, id):
         return Response(

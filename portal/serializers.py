@@ -92,7 +92,6 @@ class PollVoteSerializer(serializers.ModelSerializer):
         poll = options[0].poll
         # checks if user has already voted
         if PollVote.objects.filter(user=self.context["request"].user, poll=poll).exists():
-            print(PollVote.objects.filter(user=self.context["request"].user))
             raise serializers.ValidationError(
                 detail={"detail": "You have already voted for this Poll"}
             )
