@@ -249,7 +249,6 @@ class LibCalWrapper:
                 ).text.strip()
                 del response["errors"]
         if "error" in response:
-            print('went here')
             raise APIError("LibCal: " + response["error"])
         return response
 
