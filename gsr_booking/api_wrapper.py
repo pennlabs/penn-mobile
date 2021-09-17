@@ -227,10 +227,12 @@ class LibCalWrapper:
             "fname": user.first_name,
             "lname": user.last_name,
             "email": user.email,
-            "nickname": "hi",
+            "nickname": "GSR Booking",
+            "q43": "GSR Booking",
             "bookings": [{"id": rid, "to": end}],
             "test": test,
             "q2555": "1",
+            "q2537": "1",
             "q3699": self.get_affiliation(user.email),
         }
 
@@ -247,6 +249,7 @@ class LibCalWrapper:
                 ).text.strip()
                 del response["errors"]
         if "error" in response:
+            print('went here')
             raise APIError("LibCal: " + response["error"])
         return response
 
