@@ -227,12 +227,12 @@ class LibCalWrapper:
             "fname": user.first_name,
             "lname": user.last_name,
             "email": user.email,
-            "nickname": "GSR Booking",
-            "q43": "GSR Booking",
+            "nickname": f"{user.username} GSR Booking",
+            "q43": f"{user.username} GSR Booking",
             "bookings": [{"id": rid, "to": end}],
             "test": test,
-            "q2555": "1",
-            "q2537": "1",
+            "q2555": "3",
+            "q2537": "3",
             "q3699": self.get_affiliation(user.email),
         }
 
