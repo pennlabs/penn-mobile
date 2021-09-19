@@ -25,7 +25,7 @@ class News(APIView):
         except ConnectionError:
             return None
 
-        article = {}
+        article = {"source": "The Daily Pennsylvanian"}
 
         html = resp.content.decode("utf8")
 
@@ -46,7 +46,10 @@ class News(APIView):
 
         timestamp_html = frontpage.find("div", {"class": "timestamp"})
         if timestamp_html:
-            article["timestamp"] = timestamp_html.get_text()
+            timestamp = datetime.datetime.strptime(
+                timestamp_html.get_text().strip(), "%m/%d/%y %I:%M%p"
+            )
+            article["timestamp"] = timestamp.isoformat()
 
         image_html = frontpage.find("img")
         if image_html:
@@ -61,7 +64,7 @@ class News(APIView):
     def get(self, request):
         article = self.get_article()
         if article:
-            return Response({"article": article})
+            return Response(article)
         else:
             return Response({"error": "Site could not be reached or could not be parsed."})
 
