@@ -46,10 +46,7 @@ class News(APIView):
 
         timestamp_html = frontpage.find("div", {"class": "timestamp"})
         if timestamp_html:
-            timestamp = datetime.datetime.strptime(
-                timestamp_html.get_text().strip(), "%m/%d/%y %I:%M%p"
-            )
-            article["timestamp"] = timestamp.isoformat()
+            article["timestamp"] = timestamp_html.get_text().strip()
 
         image_html = frontpage.find("img")
         if image_html:

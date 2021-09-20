@@ -177,7 +177,7 @@ class PollVotes(viewsets.ModelViewSet):
         return PollVote.objects.filter(user=self.request.user)
 
 
-class PollVoteTimeSeries(APIView):
+class PollVoteStatistics(APIView):
     """Returns time series of all votes for a particular poll"""
 
     permission_classes = [TimeSeriesPermission | IsSuperUser]
@@ -189,6 +189,7 @@ class PollVoteTimeSeries(APIView):
                 .annotate(date=Trunc("created_date", "day"))
                 .values("date")
                 .annotate(votes=Count("date"))
-                .order_by("date")
+                .order_by("date"),
+                "poll-statistics": get_demographic_breakdown(id),
             }
         )
