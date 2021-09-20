@@ -521,6 +521,9 @@ class ReservationsView(APIView):
             # ignore this because this route is used by everyone
             wharton_reservations = WLW.get_reservations(request.user)["bookings"]
             for reservation in wharton_reservations:
+                # NOTE: hard code fix until ARB can be booked
+                if reservation["lid"] == 6:
+                    continue
                 # checks if reservation is within time range
                 if (
                     datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
