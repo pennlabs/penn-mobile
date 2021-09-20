@@ -10,6 +10,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from gsr_booking.models import GSR, GSRBooking
+from gsr_booking.serializers import GSRSerializer
 from penndata.models import Event
 from penndata.serializers import EventSerializer
 
@@ -20,12 +22,11 @@ class News(APIView):
     """
 
     def get_article(self):
+        article = {"source": "The Daily Pennsylvanian"}
         try:
             resp = requests.get("https://www.thedp.com/")
         except ConnectionError:
             return None
-
-        article = {"source": "The Daily Pennsylvanian"}
 
         html = resp.content.decode("utf8")
 
@@ -119,7 +120,31 @@ class Calendar(APIView):
         events.sort(key=lambda d: d["start"])
         return events
 
+        # def get_calendar(self):
+        #     try:
+        #         resp = requests.get("https://almanac.upenn.edu/penn-academic-calendar")
+        #     except ConnectionError:
+        #         return None
+        #     soup = BeautifulSoup(resp.content.decode("utf8"), "html5lib")
+        #     table = soup.find("table", {"class": "table table-bordered table-striped
+        #    table-condensed table-responsive calendar-table"})
+        #     rows = table.find_all('tr')
+        #     calendar = []
+        #     current_year = 0
+
+        #     # collect end dates on all events and filter based on that
+        #     print(rows[1])
+        #     for i in range(3):
+        #         header = rows[i].find_all('th')
+        #         if len(header) > 0:
+        #             current_year = header[0].get_text().split(' ')[0]
+        #         else:
+        #             data = rows[i].find_all('td')
+        #             calendar.append({'event': data[0].get_text(), 'date': data[1].get_text()})
+        # print(calendar)
+
     def get(self, request):
+        self.get_calendar()
         return Response({"calendar": self.get_events()})
 
 
@@ -134,6 +159,22 @@ class Events(generics.ListAPIView):
 
     def get_queryset(self):
         return Event.objects.filter(event_type=self.kwargs.get("type", ""))
+
+
+class GSRView(generics.ListAPIView):
+    """Gets list of two most recent rooms booked by User"""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = GSRSerializer
+
+    def get_queryset(self):
+        return GSR.objects.filter(
+            id__in=list(
+                GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
+                .order_by("-end")
+                .values_list("gsr", flat=True)
+            )[:2]
+        )
 
 
 class HomePage(APIView):
