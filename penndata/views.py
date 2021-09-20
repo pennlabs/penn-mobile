@@ -144,7 +144,7 @@ class Calendar(APIView):
         # print(calendar)
 
     def get(self, request):
-        self.get_calendar()
+        # self.get_calendar()
         return Response({"calendar": self.get_events()})
 
 
