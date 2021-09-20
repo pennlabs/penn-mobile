@@ -190,6 +190,6 @@ class PollVoteStatistics(APIView):
                 .values("date")
                 .annotate(votes=Count("date"))
                 .order_by("date"),
-                "poll-statistics": get_demographic_breakdown(id),
+                "poll_statistics": get_demographic_breakdown(id),
             }
         )
