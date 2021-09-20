@@ -1,5 +1,4 @@
 import datetime
-import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -10,6 +9,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from gsr_booking.models import GSR, GSRBooking
+from gsr_booking.serializers import GSRSerializer
 from penndata.models import Event
 from penndata.serializers import EventSerializer
 
@@ -20,12 +21,11 @@ class News(APIView):
     """
 
     def get_article(self):
+        article = {"source": "The Daily Pennsylvanian"}
         try:
             resp = requests.get("https://www.thedp.com/")
         except ConnectionError:
             return None
-
-        article = {}
 
         html = resp.content.decode("utf8")
 
@@ -46,7 +46,10 @@ class News(APIView):
 
         timestamp_html = frontpage.find("div", {"class": "timestamp"})
         if timestamp_html:
-            article["timestamp"] = timestamp_html.get_text()
+            timestamp = datetime.datetime.strptime(
+                timestamp_html.get_text().strip(), "%m/%d/%y %I:%M%p"
+            )
+            article["timestamp"] = timestamp.isoformat()
 
         image_html = frontpage.find("img")
         if image_html:
@@ -61,7 +64,7 @@ class News(APIView):
     def get(self, request):
         article = self.get_article()
         if article:
-            return Response({"article": article})
+            return Response(article)
         else:
             return Response({"error": "Site could not be reached or could not be parsed."})
 
@@ -71,53 +74,75 @@ class Calendar(APIView):
     GET: Returns upcoming university events (within 2 weeks away)
     """
 
-    def get_events(self):
-        base_url = "https://www.stanza.co/api/schedules/almanacacademiccalendar/"
-        events = []
-        for term in ["fall", "summer", "spring"]:
-            # aggregates events based on term and year
-            url = "{}{}{}term.ics".format(base_url, timezone.localtime().year, term)
-            response = requests.get(url)
-            response.raise_for_status()
-            lines = response.text.split("\n")
-            event = {}
+    def get_calendar(self):
+        # scapes almanac from upenn website
+        try:
+            resp = requests.get("https://almanac.upenn.edu/penn-academic-calendar")
+        except ConnectionError:
+            return None
+        soup = BeautifulSoup(resp.content.decode("utf8"), "html5lib")
+        # finds table with all information and gets the rows
+        table = soup.find(
+            "table",
+            {
+                "class": (
+                    "table table-bordered table-striped "
+                    "table-condensed table-responsive calendar-table"
+                )
+            },
+        )
+        rows = table.find_all("tr")
+        calendar = []
+        current_year = timezone.localtime().year
+        row_year = 0
 
-            # adds individual events if and only if it's within 2 weeks from current day
-            for line in lines:
-                if line == "BEGIN:VEVENT":
-                    event = {}
-                elif line.startswith("DTSTART"):
-                    raw_date = line.split(":")[1][0:8]
-                    start_date = datetime.datetime.strptime(raw_date, "%Y%m%d").date()
-                    event["start"] = start_date.strftime("%Y-%m-%d")
-                elif line.startswith("DTEND"):
-                    raw_date = line.split(":")[1][0:8]
-                    end_date = datetime.datetime.strptime(raw_date, "%Y%m%d").date()
-                    event["end"] = end_date.strftime("%Y-%m-%d")
-                elif line.startswith("SUMMARY"):
-                    name = line.split(":")[1]
-                    event["name"] = str(name).strip()
-                elif line == "END:VEVENT":
-                    time_diff = (end_date - timezone.localtime().date()).total_seconds()
+        # collect end dates on all events and filter based on that
+        for row in rows:
+            header = row.find_all("th")
+            if len(header) > 0:
+                row_year = header[0].get_text().split(" ")[0]
+            # skips calculation if years don't align
+            if int(row_year) != current_year:
+                continue
+            if len(header) == 0:
+                data = row.find_all("td")
+                date_info = data[1].get_text()
+                date = None
+                try:
+                    # handles case for date ex. August 31
+                    date = datetime.datetime.strptime(
+                        date_info + str(current_year) + "-04:00", "%B %d%Y%z"
+                    )
+                except ValueError:
+                    try:
+                        # handles case for date ex. August 1-3
+                        month = date_info.split(" ")[0]
+                        day = date_info.split("-")[1]
+                        date = datetime.datetime.strptime(
+                            month + day + str(current_year) + "-04:00", "%B%d%Y%z"
+                        )
+                    except (ValueError, IndexError):
+                        try:
+                            # handles case for date ex. August 1-September 31
+                            last_date = date_info.split("-")[0].split(" ")
+                            month = last_date[0]
+                            day = last_date[1]
+                            date = datetime.datetime.strptime(
+                                month + day + str(current_year) + "-04:00", "%B%d%Y%z"
+                            )
+                        except (ValueError, IndexError):
+                            pass
 
-                    # checks for within 2 weeks
-                    if time_diff > 0 and time_diff <= 1209600:
-                        # simplifies text
-                        event["name"] = re.split(
-                            "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday",
-                            event["name"],
-                        )[0].strip()
-                        event["name"] = re.split(r"\($", event["name"])[0].strip()
-                        event["name"] = event["name"].replace("\\", "")
-                        if "Advance Registration" in event["name"]:
-                            event["name"] = "Advance Registration"
-                        events.append(event)
-
-        events.sort(key=lambda d: d["start"])
-        return events
+                # TODO: add this: and date < timezone.localtime() + datetime.timedelta(days=14)
+                if date and date > timezone.localtime():
+                    calendar.append({"event": data[0].get_text(), "date": data[1].get_text()})
+                # only returns the 3 most recent events
+                if len(calendar) == 3:
+                    break
+        return calendar
 
     def get(self, request):
-        return Response({"calendar": self.get_events()})
+        return Response({"calendar": self.get_calendar()})
 
 
 class Events(generics.ListAPIView):
@@ -131,6 +156,22 @@ class Events(generics.ListAPIView):
 
     def get_queryset(self):
         return Event.objects.filter(event_type=self.kwargs.get("type", ""))
+
+
+class GSRView(generics.ListAPIView):
+    """Gets list of two most recent rooms booked by User"""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = GSRSerializer
+
+    def get_queryset(self):
+        return GSR.objects.filter(
+            id__in=list(
+                GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
+                .order_by("-end")
+                .values_list("gsr", flat=True)
+            )[:2]
+        )
 
 
 class HomePage(APIView):
@@ -192,7 +233,7 @@ class HomePage(APIView):
             cells.append(self.Cell("new-version-released", None, 10000))
 
         # adds events up to 2 weeks
-        cells.append(self.Cell("calendar", {"calendar": Calendar.get_events(self)}, 40))
+        cells.append(self.Cell("calendar", {"calendar": Calendar.get_calendar(self)}, 40))
 
         # adds front page article of DP
         cells.append(self.Cell("news", {"article": News.get_article(self)}, 50))

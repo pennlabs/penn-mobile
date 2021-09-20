@@ -1,4 +1,3 @@
-import datetime
 import json
 
 from django.contrib.auth import get_user_model
@@ -20,16 +19,12 @@ class TestNews(TestCase):
     def test_response(self):
         response = self.client.get(reverse("news"))
         res_json = json.loads(response.content)
-        self.assertIn("article", res_json)
-        self.assertEqual(len(res_json), 1)
-
-        article = res_json["article"]
-        self.assertEqual(len(article), 5)
-        self.assertIn("link", article)
-        self.assertIn("title", article)
-        self.assertIn("subtitle", article)
-        self.assertIn("timestamp", article)
-        self.assertIn("imageurl", article)
+        self.assertEqual(len(res_json), 6)
+        self.assertIn("link", res_json)
+        self.assertIn("title", res_json)
+        self.assertIn("subtitle", res_json)
+        self.assertIn("timestamp", res_json)
+        self.assertIn("imageurl", res_json)
 
 
 class TestCalender(TestCase):
@@ -41,14 +36,9 @@ class TestCalender(TestCase):
 
         calendar = res_json["calendar"]
         for event in calendar:
-            self.assertEqual(len(event), 3)
-            self.assertIn("start", event)
-            self.assertIn("end", event)
-            self.assertIn("name", event)
-
-            end_date = datetime.datetime.strptime(event["end"], "%Y-%m-%d").date()
-            time_diff = (end_date - timezone.localtime().date()).total_seconds()
-            self.assertTrue(time_diff <= 1209600)
+            self.assertEqual(len(event), 2)
+            self.assertIn("event", event)
+            self.assertIn("date", event)
 
 
 class TestEvent(TestCase):
