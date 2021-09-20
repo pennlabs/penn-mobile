@@ -107,10 +107,9 @@ class PollVoteSerializer(serializers.ModelSerializer):
                     detail={"detail": "Voting options are from different Polls"}
                 )
         # checks if user belongs to target population
-        if not any(
-            i in list(poll.target_populations.all().values_list("id", flat=True))
-            for i in get_user_populations(self.context["request"].user)
-        ):
+        if not poll.target_populations.filter(
+            id__in=get_user_populations(self.context["request"].user)
+        ).exists():
             raise serializers.ValidationError(
                 detail={"detail": "You cannot vote for this poll (not in any target population)"}
             )
