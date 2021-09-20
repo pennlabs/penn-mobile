@@ -1,4 +1,3 @@
-import datetime
 import json
 
 from django.contrib.auth import get_user_model
@@ -37,14 +36,9 @@ class TestCalender(TestCase):
 
         calendar = res_json["calendar"]
         for event in calendar:
-            self.assertEqual(len(event), 3)
-            self.assertIn("start", event)
-            self.assertIn("end", event)
-            self.assertIn("name", event)
-
-            end_date = datetime.datetime.strptime(event["end"], "%Y-%m-%d").date()
-            time_diff = (end_date - timezone.localtime().date()).total_seconds()
-            self.assertTrue(time_diff <= 1209600)
+            self.assertEqual(len(event), 2)
+            self.assertIn("event", event)
+            self.assertIn("date", event)
 
 
 class TestEvent(TestCase):

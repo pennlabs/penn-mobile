@@ -135,7 +135,7 @@ class Calendar(APIView):
 
                 # TODO: add this: and date < timezone.localtime() + datetime.timedelta(days=14)
                 if date and date > timezone.localtime():
-                    calendar.append({"event": data[0].get_text(), "date": date.isoformat()})
+                    calendar.append({"event": data[0].get_text(), "date": data[1].get_text()})
                 # only returns the 3 most recent events
                 if len(calendar) == 3:
                     break
@@ -233,7 +233,7 @@ class HomePage(APIView):
             cells.append(self.Cell("new-version-released", None, 10000))
 
         # adds events up to 2 weeks
-        cells.append(self.Cell("calendar", {"calendar": Calendar.get_events(self)}, 40))
+        cells.append(self.Cell("calendar", {"calendar": Calendar.get_calendar(self)}, 40))
 
         # adds front page article of DP
         cells.append(self.Cell("news", {"article": News.get_article(self)}, 50))
