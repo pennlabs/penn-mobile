@@ -188,7 +188,7 @@ class TestPollVotes(TestCase):
     def test_history(self):
         payload_1 = {"poll_options": [self.p1_op1_id]}
         self.client.post("/portal/votes/", payload_1)
-        response = self.client.get(reverse("poll-history"))
+        response = self.client.get(reverse("portal:poll-history"))
         res_json = json.loads(response.content)
         # asserts that history works, can see expired posts and posts that
         # user voted for
