@@ -7,7 +7,6 @@ from gsr_booking.views import (
     CancelRoom,
     GroupMembershipViewSet,
     GroupViewSet,
-    GSRBookingCredentialsViewSet,
     Locations,
     ReservationsView,
     UserViewSet,
@@ -22,7 +21,6 @@ router.register(r"groups", GroupViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("credentials/", GSRBookingCredentialsViewSet.as_view()),
     path("locations/", Locations.as_view(), name="locations"),
     path("availability/<lid>", Availability.as_view(), name="availability"),
     path("book/", BookRoom.as_view(), name="book"),

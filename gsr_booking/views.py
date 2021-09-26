@@ -15,20 +15,17 @@ from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, LibCalWrapper, WhartonLibWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
-from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
 from gsr_booking.models import (
     GSR,
     Group,
     GroupMembership,
     GSRBooking,
-    GSRBookingCredentials,
     UserSearchIndex,
 )
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
     GroupSerializer,
-    GSRBookingCredentialsSerializer,
     GSRBookingSerializer,
     GSRSerializer,
     UserSerializer,
@@ -49,7 +46,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
     lookup_field = "username"
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = (BasicAuthentication)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["username", "first_name", "last_name"]
 
@@ -115,50 +112,12 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response({"success": True})
 
-    @action(detail=False, methods=["get"])
-    def search(self, request):
-        """
-        Search the database of registered users by name or pennkey. Deprecated in favor
-        of the platform route.
-        """
-        query = request.query_params.get("q", "")
-        results = UserSearchIndex.objects.filter(
-            Q(full_name__istartswith=query) | Q(pennkey__istartswith=query)
-        ).select_related("user")
-
-        return Response(UserSerializer([entry.user for entry in results], many=True).data)
-
-
-class GSRBookingCredentialsViewSet(generics.RetrieveUpdateAPIView, generics.DestroyAPIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
-    serializer_class = GSRBookingCredentialsSerializer
-
-    def get_object(self):
-        if not self.request.user.is_authenticated:
-            return GSRBookingCredentials.objects.none()
-        try:
-            return GSRBookingCredentials.objects.get(user=self.request.user)
-        except GSRBookingCredentials.DoesNotExist:
-            if self.request.method == "PUT":
-                return GSRBookingCredentials(user=self.request.user)
-            else:
-                raise Http404("detail not found")
-
-    def update(self, *args, **kwargs):
-        supplied_username = args[0].data.get("user")
-        if supplied_username is None:
-            return Response(data={"user": "not supplied"}, status=404)
-        if self.request.user.username != supplied_username:
-            return HttpResponseForbidden()
-        return super().update(*args, **kwargs)
-
-
+   
 class GroupMembershipViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["user", "group"]
     permission_classes = [IsAuthenticated]
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = (BasicAuthentication)
     queryset = GroupMembership.objects.all()
     serializer_class = GroupMembershipSerializer
 
@@ -288,7 +247,7 @@ class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = (BasicAuthentication)
 
     def get_queryset(self):
         if not self.request.user.is_authenticated:

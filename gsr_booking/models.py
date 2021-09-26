@@ -102,27 +102,6 @@ class UserSearchIndex(models.Model):
         super().save(*args, **kwargs)
 
 
-# Model to store credentials necessary for booking GSRs.
-class GSRBookingCredentials(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-
-    # Session ID is used for Wharton GSR booking
-    session_id = models.CharField("Session ID", max_length=50, unique=False, null=True)
-
-    # Expiration date of the Session ID
-    expiration_date = models.DateTimeField("Session ID expiration date", null=True)
-
-    # When Session ID or email was last updated
-    date_updated = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.user.username
-
-    class Meta:
-        verbose_name = "GSR Booking Credentials"
-        verbose_name_plural = "GSR Booking Credentials"
-
-
 class GSR(models.Model):
 
     KIND_WHARTON = "WHARTON"
