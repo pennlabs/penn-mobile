@@ -7,11 +7,6 @@ from django.utils import timezone
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 
 
-# black -l100 .
-# isort .
-# flake8
-
-
 def populate():
     User = get_user_model()
     user1 = User.objects.create_user("user1", "user@seas.upenn.edu", "user")
