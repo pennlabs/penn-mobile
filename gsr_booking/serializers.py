@@ -76,6 +76,7 @@ class GroupField(serializers.RelatedField):
     def to_internal_value(self, data):
         return None  # TODO: If you want to update based on BookingField, implement this.
 
+
 class UserSerializer(serializers.ModelSerializer):
     booking_groups = serializers.SerializerMethodField()
 

@@ -2,7 +2,7 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
-from django.http import Http404, HttpResponseForbidden
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -15,13 +15,7 @@ from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, LibCalWrapper, WhartonLibWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
-from gsr_booking.models import (
-    GSR,
-    Group,
-    GroupMembership,
-    GSRBooking,
-    UserSearchIndex,
-)
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, UserSearchIndex
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
@@ -46,7 +40,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
     lookup_field = "username"
-    authentication_classes = (BasicAuthentication)
+    authentication_classes = BasicAuthentication
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["username", "first_name", "last_name"]
 
@@ -112,12 +106,12 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response({"success": True})
 
-   
+
 class GroupMembershipViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["user", "group"]
     permission_classes = [IsAuthenticated]
-    authentication_classes = (BasicAuthentication)
+    authentication_classes = BasicAuthentication
     queryset = GroupMembership.objects.all()
     serializer_class = GroupMembershipSerializer
 
@@ -247,7 +241,7 @@ class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = (BasicAuthentication)
+    authentication_classes = BasicAuthentication
 
     def get_queryset(self):
         if not self.request.user.is_authenticated:

@@ -6,11 +6,9 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('gsr_booking', '0003_gsr_gsrbooking'),
+        ("gsr_booking", "0003_gsr_gsrbooking"),
     ]
 
     operations = [
-        migrations.DeleteModel(
-            name='GSRBookingCredentials',
-        ),
+        migrations.DeleteModel(name="GSRBookingCredentials",),
     ]
