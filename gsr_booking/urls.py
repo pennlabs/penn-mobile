@@ -28,4 +28,9 @@ urlpatterns = [
     path("book/", BookRoom.as_view(), name="book"),
     path("cancel/", CancelRoom.as_view(), name="cancel"),
     path("reservations/", ReservationsView.as_view(), name="reservations"),
+    path("gsr/locations/", Locations.as_view(), name="locations"),
+    path("gsr/availability/<lid>", Availability.as_view(), name="availability"),
+    path("gsr/book/", BookRoom.as_view(), name="book"),
+    path("gsr/cancel/", CancelRoom.as_view(), name="cancel"),
+    path("gsr/reservations/", ReservationsView.as_view(), name="reservations"),
 ]
