@@ -11,7 +11,7 @@ This repository will hopefully be the Django-based successor to `labs-api-server
 
 - `git clone https://github.com/pennlabs/student-life.git`
 - `cd student-life`
-- `pipenv install`
+- `pipenv install --dev`
 - `pipenv run python manage.py migrate`
 - `pipenv run python manage.py runserver 8000`
 
