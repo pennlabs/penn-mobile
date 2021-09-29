@@ -36,7 +36,7 @@ class WhartonLibWrapper:
 
         # only wharton students can access these routes
         if response.status_code == 403 or response.status_code == 401:
-            raise APIError("Wharton: User is not allowed to perform this action")
+            raise APIError("Wharton: GSR view restricted to Wharton Pennkeys")
         return response
 
     def get_availability(self, lid, start, end, username):
@@ -84,7 +84,7 @@ class WhartonLibWrapper:
         url = WHARTON_URL + username + "/student_reserve"
         response = self.request("POST", url, json=payload).json()
         if "error" in response:
-            raise APIError("Wharton " + response["error"])
+            raise APIError("Wharton: " + response["error"])
         return response
 
     def get_reservations(self, user):
@@ -96,7 +96,7 @@ class WhartonLibWrapper:
         url = WHARTON_URL + user.username + "/reservations/" + booking_id + "/cancel"
         response = self.request("DELETE", url).json()
         if "detail" in response:
-            raise APIError(response["detail"])
+            raise APIError("Wharton: " + response["detail"])
         return response
 
 
@@ -117,9 +117,7 @@ class LibCalWrapper:
         response = requests.post(f"{API_URL}/1.1/oauth/token", body).json()
 
         if "error" in response:
-            raise APIError(
-                f"LibCal Auth Failed: {response['error']}, {response.get('error_description')}"
-            )
+            raise APIError(f"LibCal: {response['error']}, {response.get('error_description')}")
         self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
         self.token = response["access_token"]
 
@@ -267,5 +265,5 @@ class LibCalWrapper:
         """Cancels room"""
         response = self.request("POST", f"{API_URL}/1.1/space/cancel/{booking_id}").json()
         if "error" in response[0]:
-            raise APIError(response[0]["error"])
+            raise APIError("LibCal: " + response[0]["error"])
         return response
