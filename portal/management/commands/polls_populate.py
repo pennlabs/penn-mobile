@@ -9,29 +9,46 @@ from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from user.models import Profile
 
 
+User = get_user_model()
+
+
 class Command(BaseCommand):
-    def populate(self):
-        User = get_user_model()
-        user1 = User.objects.create_user("user1", "user@seas.upenn.edu", "user")
+    def handle(self, *args, **kwargs):
+
+        # Define graduation years
         df_2022 = datetime.date(2022, 5, 15)
         df_2023 = datetime.date(2023, 5, 16)
-        df_2024 = datetime.date(2023, 5, 15)
-        df_2025 = datetime.date(2023, 5, 17)
-        Profile.objects.create(user=user1, expected_graduation=df_2022)
-        user2 = User.objects.create_user("user2", "user2@seas.upenn.edu", "user2")
-        Profile.objects.create(user=user2, expected_graduation=df_2023)
+        df_2024 = datetime.date(2024, 5, 15)
+        df_2025 = datetime.date(2025, 5, 17)
 
+        # Create users and set graduation years
+        user1 = User.objects.create_user("user1", "user@seas.upenn.edu", "user")
+        user1_profile = Profile.objects.get(user=user1)
+        user1_profile.expected_graduation = df_2022
+        user1_profile.save()
+        user2 = User.objects.create_user("user2", "user2@seas.upenn.edu", "user2")
+        user2_profile = Profile.objects.get(user=user2)
+        user2_profile.expected_graduation = df_2023
+        user2_profile.save()
         user3 = User.objects.create_user("user3", "user3@seas.upenn.edu", "user3")
-        Profile.objects.create(user=user3, expected_graduation=df_2024)
-        admin = User.objects.create_superuser("admin@example.com", "admin", "admin")
+        user3_profile = Profile.objects.get(user=user3)
+        user3_profile.expected_graduation = df_2024
+        user3_profile.save()
+        admin = User.objects.create_superuser("admin", "admin@seas.upenn.edu", "admin")
         user_cas = User.objects.create_user("user_cas", "user@sas.upenn.edu", "user_cas")
-        Profile.objects.create(user=user_cas, expected_graduation=df_2025)
+        user_cas_profile = Profile.objects.get(user=user_cas)
+        user_cas_profile.expected_graduation = df_2025
+        user_cas_profile.save()
         user_wh = User.objects.create_user("user_wh", "user@wharton.upenn.edu", "user_wh")
-        Profile.objects.create(user=user_wh, expected_graduation=df_2024)
+        user_wh_profile = Profile.objects.get(user=user_wh)
+        user_wh_profile.expected_graduation = df_2024
+        user_wh_profile.save()
         user_nursing = User.objects.create_user(
             "user_nursing", "user@nursing.upenn.edu", "user_nursing"
         )
-        Profile.objects.create(user=user_nursing, expected_graduation=df_2023)
+        user_nursing_profile = Profile.objects.get(user=user_nursing)
+        user_nursing_profile.expected_graduation = df_2023
+        user_nursing_profile.save()
 
         # Create target populations
         call_command("load_target_populations")
@@ -104,16 +121,16 @@ class Command(BaseCommand):
         option_2 = PollOption.objects.create(poll=poll_targeting_seas_sas, choice="choice 2")
 
         # Unapproved post
-        unapproved_post = Poll.objects.create(
+        unapproved_poll = Poll.objects.create(
             user=user1,
             source="poll 1",
             question="poll question 1",
             expire_date=timezone.now() + datetime.timedelta(days=1),
             approved=False,
         )
-        unapproved_post.target_populations.add(target_pop_sas)
-        option_1 = PollOption.objects.create(poll=unapproved_post, choice="choice 1")
-        option_2 = PollOption.objects.create(poll=unapproved_post, choice="choice 2")
+        unapproved_poll.target_populations.add(target_pop_sas)
+        option_1 = PollOption.objects.create(poll=unapproved_poll, choice="choice 1")
+        option_2 = PollOption.objects.create(poll=unapproved_poll, choice="choice 2")
 
         # Poll with image link
         poll_with_img = Poll.objects.create(
@@ -164,15 +181,19 @@ class Command(BaseCommand):
         option_2_for_votes_admin = PollOption.objects.create(poll=poll_admin, choice="choice 2")
         poll_admin.save()
         vote_1 = PollVote.objects.create(
-            user=user_cas, poll=poll_admin, created_date=datetime.now()
+            user=user_cas, poll=poll_admin, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1_for_votes_admin)
-        vote_2 = PollVote.objects.create(user=user_wh, poll=poll_admin, created_date=datetime.now())
+        vote_2 = PollVote.objects.create(
+            user=user_wh, poll=poll_admin, created_date=timezone.localtime()
+        )
         vote_2.poll_options.add(option_2_for_votes_admin)
-        vote_3 = PollVote.objects.create(user=user1, poll=poll_admin, created_date=datetime.now())
+        vote_3 = PollVote.objects.create(
+            user=user1, poll=poll_admin, created_date=timezone.localtime()
+        )
         vote_3.poll_options.add(option_2_for_votes_admin)
         vote_4 = PollVote.objects.create(
-            user=user_nursing, poll=poll_admin, created_date=datetime.now()
+            user=user_nursing, poll=poll_admin, created_date=timezone.localtime()
         )
         vote_4.poll_options.add(option_2_for_votes_admin)
 
@@ -194,12 +215,12 @@ class Command(BaseCommand):
             poll=poll_with_options_and_votes_multi, choice="choice 2"
         )
         vote_1 = PollVote.objects.create(
-            user=user1, poll=poll_with_options_and_votes_multi, created_date=datetime.now()
+            user=user1, poll=poll_with_options_and_votes_multi, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1_for_votes_multi)
         vote_1.poll_options.add(option_2_for_votes_multi)
         vote_2 = PollVote.objects.create(
-            user=user2, poll=poll_with_options_and_votes_multi, created_date=datetime.now()
+            user=user2, poll=poll_with_options_and_votes_multi, created_date=timezone.localtime()
         )
         vote_2.poll_options.add(option_1_for_votes_multi)
 
@@ -214,16 +235,16 @@ class Command(BaseCommand):
         )
         poll_targeting_wh_nur.target_populations.add(target_pop_wh)
         poll_targeting_wh_nur.target_populations.add(target_pop_nursing)
-        option_1 = PollOption.objects.create(poll_targeting_wh_nur, choice="wharton")
-        option_2 = PollOption.objects.create(poll_targeting_wh_nur, choice="nursing")
+        option_1 = PollOption.objects.create(poll=poll_targeting_wh_nur, choice="wharton")
+        option_2 = PollOption.objects.create(poll=poll_targeting_wh_nur, choice="nursing")
         poll_targeting_wh_nur.save()
         vote_1 = PollVote.objects.create(
-            user=user_wh, poll=poll_targeting_wh_nur, created_date=datetime.now()
+            user=user_wh, poll=poll_targeting_wh_nur, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1)
         vote_1.poll_options.add(option_2)
         vote_2 = PollVote.objects.create(
-            user=user_nursing, poll=poll_targeting_wh_nur, created_date=datetime.now()
+            user=user_nursing, poll=poll_targeting_wh_nur, created_date=timezone.localtime()
         )
         vote_2.poll_options.add(option_1)
 
@@ -241,19 +262,19 @@ class Command(BaseCommand):
         poll_targeting_wh_nur_22_23.target_populations.add(target_pop_2023)
         poll_targeting_wh_nur_22_23.target_populations.add(target_pop_2022)
         poll_targeting_wh_nur_22_23.save()
-        option_1 = PollOption.objects.create(poll_targeting_wh_nur_22_23, choice="wharton")
-        option_2 = PollOption.objects.create(poll_targeting_wh_nur_22_23, choice="nursing")
+        option_1 = PollOption.objects.create(poll=poll_targeting_wh_nur_22_23, choice="wharton")
+        option_2 = PollOption.objects.create(poll=poll_targeting_wh_nur_22_23, choice="nursing")
         vote_1 = PollVote.objects.create(
-            user=user_wh, poll=poll_targeting_wh_nur_22_23, created_date=datetime.now()
+            user=user_wh, poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1)
         vote_1.poll_options.add(option_2)
         vote_2 = PollVote.objects.create(
-            user=user_nursing, poll=poll_targeting_wh_nur_22_23, created_date=datetime.now()
+            user=user_nursing, poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
         )
         vote_3.poll_options.add(option_1)
         vote_3 = PollVote.objects.create(
-            user=user2, poll=poll_targeting_wh_nur_22_23, created_date=datetime.now()
+            user=user2, poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
         )
         vote_3.poll_options.add(option_1)
 
@@ -267,10 +288,10 @@ class Command(BaseCommand):
             multiselect=True,
         )
         poll_targeting_25.target_populations.add(target_pop_2025)
-        option_1 = PollOption.objects.create(poll_targeting_25, choice="wharton")
-        option_2 = PollOption.objects.create(poll_targeting_25, choice="nursing")
+        option_1 = PollOption.objects.create(poll=poll_targeting_25, choice="wharton")
+        option_2 = PollOption.objects.create(poll=poll_targeting_25, choice="nursing")
         vote_1 = PollVote.objects.create(
-            user=user_cas, poll=poll_targeting_25, created_date=datetime.now()
+            user=user_cas, poll=poll_targeting_25, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1)
         vote_1.poll_options.add(option_2)
@@ -287,18 +308,15 @@ class Command(BaseCommand):
         poll_targeting_wh_24.target_populations.add(target_pop_wh)
         poll_targeting_wh_24.target_populations.add(target_pop_2024)
         poll_targeting_wh_24.save()
-        option_1 = PollOption.objects.create(poll_targeting_wh_24, choice="investment banking")
-        option_2 = PollOption.objects.create(poll_targeting_wh_24, choice="trading")
+        option_1 = PollOption.objects.create(poll=poll_targeting_wh_24, choice="investment banking")
+        option_2 = PollOption.objects.create(poll=poll_targeting_wh_24, choice="trading")
         vote_1 = PollVote.objects.create(
-            user=user_wh, poll=poll_targeting_wh_24, created_date=datetime.now()
+            user=user_wh, poll=poll_targeting_wh_24, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1)
         vote_2.poll_options.add(option_2)
         vote_2 = PollVote.objects.create(
-            user=user3, poll=poll_targeting_wh_24, created_date=datetime.now()
+            user=user3, poll=poll_targeting_wh_24, created_date=timezone.localtime()
         )
         vote_2.poll_options.add(option_1)
         vote_2.poll_options.add(option_2)
-
-    def handle(self, *args, **kwargs):
-        self.populate()
