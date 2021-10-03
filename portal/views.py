@@ -65,23 +65,27 @@ class Polls(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
-        """Returns list of all possible polls user can answer but has yet to"""
+        """Returns list of all possible polls user can answer but has yet to
+        For admins, returns list of all polls they have not voted for and have yet to expire
+        """
+
+        polls = (
+            Poll.objects.filter(
+                ~Q(id__in=PollVote.objects.filter(user=self.request.user).values_list("poll_id")),
+                expire_date__gte=timezone.localtime(),
+            )
+            if request.user.is_superuser
+            else Poll.objects.filter(
+                ~Q(id__in=PollVote.objects.filter(user=self.request.user).values_list("poll_id")),
+                Q(target_populations__in=get_user_populations(request.user)),
+                start_date__lte=timezone.localtime(),
+                expire_date__gte=timezone.localtime(),
+                approved=True,
+            )
+        )
+
         return Response(
-            RetrievePollSerializer(
-                Poll.objects.filter(
-                    ~Q(
-                        id__in=PollVote.objects.filter(user=self.request.user).values_list(
-                            "poll_id"
-                        )
-                    ),
-                    Q(target_populations__in=get_user_populations(request.user)),
-                    expire_date__gte=timezone.localtime(),
-                    approved=True,
-                )
-                .distinct()
-                .order_by("-created_date"),
-                many=True,
-            ).data
+            RetrievePollSerializer(polls.distinct().order_by("start_date"), many=True,).data
         )
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])

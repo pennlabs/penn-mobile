@@ -14,8 +14,8 @@ class Poll(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
     question = models.CharField(max_length=255)
-    image_url = models.URLField(null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now)
+    start_date = models.DateTimeField()
     expire_date = models.DateTimeField()
     approved = models.BooleanField(default=False)
     multiselect = models.BooleanField(default=False)
@@ -27,6 +27,7 @@ class Poll(models.Model):
 class PollOption(models.Model):
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
     choice = models.CharField(max_length=255)
+    vote_count = models.IntegerField(default=0)
 
 
 class PollVote(models.Model):
