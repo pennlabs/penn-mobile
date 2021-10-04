@@ -137,7 +137,6 @@ class Command(BaseCommand):
             user=user1,
             source="options",
             question="poll option 2",
-            image_url="https://pbs.twimg.com/media/B3hTc0kIUAA0mzA.jpg",
             expire_date=timezone.now() + datetime.timedelta(days=1),
             approved=True,
         )
@@ -320,3 +319,5 @@ class Command(BaseCommand):
         )
         vote_2.poll_options.add(option_1)
         vote_2.poll_options.add(option_2)
+
+        self.stdout.write("Uploaded Poll Objects!")

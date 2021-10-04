@@ -138,15 +138,14 @@ class RetrievePollVotes(viewsets.ModelViewSet):
                 ).data,
             }
             history_list.append(context)
-        for entry in history_list:
-            entry["poll_statistics"] = get_demographic_breakdown(entry["poll"]["id"])
         return Response(sorted(history_list, key=lambda i: i["poll"]["expire_date"], reverse=True))
 
     @action(detail=False, methods=["get"])
-    def recent_poll(self, request, pk=None):
+    def recent(self, request, pk=None):
         recent_poll_vote = PollVote.objects.filter(user=request.user).latest("created_date")
         recent_poll = recent_poll_vote.poll
         return Response(RetrievePollSerializer(recent_poll).data)
+
 
 class PollOptions(viewsets.ModelViewSet):
     """

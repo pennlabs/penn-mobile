@@ -113,7 +113,7 @@ class TestPolls(TestCase):
         # checks that admin can see unapproved polls
         self.assertEqual(1, len(res_json))
         self.assertEqual(2, Poll.objects.all().count())
-    
+
     def test_more_than_five_options(self):
         payload_1 = {"poll": self.id, "choice": "1"}
         payload_2 = {"poll": self.id, "choice": "2"}
@@ -136,6 +136,7 @@ class TestPolls(TestCase):
         payload_6 = {"poll": self.id, "choice": "6"}
         response = self.client.post("/portal/options/", payload_6)
         self.assertEqual(5, PollOption.objects.all().count())
+
 
 class TestPollVotes(TestCase):
     """Tests Create/Update Polls and History"""
@@ -231,22 +232,20 @@ class TestPollVotes(TestCase):
         # user voted for
         # also asserts that data collection works
         self.assertEqual(3, len(res_json[0]["poll"]["options"]))
-        self.assertEqual(1, res_json[0]["poll_statistics"][0]["breakdown"]["SEAS"])
         self.assertEqual(3, len(res_json[1]["poll"]["options"]))
-        self.assertEqual({}, res_json[1]["poll_statistics"][0]["breakdown"])
 
     def test_recent_poll(self):
         # answer poll
         payload_1 = {"poll_options": [self.p1_op1_id]}
         self.client.post("/portal/votes/", payload_1)
-        response = self.client.get(reverse("portal:poll-history-recent-poll"))
+        response = self.client.get(reverse("portal:poll-history-recent"))
         res_json = json.loads(response.content)
         # assert that payload1 poll answered is most recent
         self.assertEquals(1, res_json["id"])
         # answer another poll
         payload_2 = {"poll_options": [self.p4_op1_id]}
         self.client.post("/portal/votes/", payload_2)
-        response2 = self.client.get(reverse("portal:poll-history-recent-poll"))
+        response2 = self.client.get(reverse("portal:poll-history-recent"))
         res_json2 = json.loads(response2.content)
         # assert newly answered poll is most recent
         self.assertEquals(4, res_json2["id"])
