@@ -17,8 +17,8 @@ class PollSerializer(serializers.ModelSerializer):
             "id",
             "source",
             "question",
-            "image_url",
             "created_date",
+            "start_date",
             "expire_date",
             "multiselect",
             "user_comment",
@@ -32,14 +32,19 @@ class PollSerializer(serializers.ModelSerializer):
         # adds user to the Poll
         validated_data["user"] = self.context["request"].user
         # ensuring user cannot create an admin comment upon creation
-        validated_data["admin_comment"] = ""
+        validated_data["admin_comment"] = None
         validated_data["approved"] = False
+        if len(validated_data["target_populations"]) == 0:
+            validated_data["target_populations"] = list(TargetPopulation.objects.all())
+
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         # if Poll is updated, then approve should be false
         if not self.context["request"].user.is_superuser:
             validated_data["approved"] = False
+        if "approved" in validated_data and validated_data["approved"]:
+            instance.admin_comment = None
         return super().update(instance, validated_data)
 
 
@@ -50,7 +55,9 @@ class PollOptionSerializer(serializers.ModelSerializer):
             "id",
             "poll",
             "choice",
+            "vote_count",
         )
+        read_only_fields = ("id", "vote_count")
 
     def create(self, validated_data): 
         poll_options_count = len(PollOption.objects.filter(poll=validated_data["poll"]))
@@ -78,8 +85,8 @@ class RetrievePollSerializer(serializers.ModelSerializer):
             "id",
             "source",
             "question",
-            "image_url",
             "created_date",
+            "start_date",
             "expire_date",
             "multiselect",
             "user_comment",
@@ -97,6 +104,7 @@ class PollVoteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
 
         options = validated_data["poll_options"]
+
         poll = options[0].poll
         # checks if user has already voted
         if PollVote.objects.filter(user=self.context["request"].user, poll=poll).exists():
@@ -115,15 +123,24 @@ class PollVoteSerializer(serializers.ModelSerializer):
                     detail={"detail": "Voting options are from different Polls"}
                 )
         # checks if user belongs to target population
-        if not poll.target_populations.filter(
-            id__in=get_user_populations(self.context["request"].user)
-        ).exists():
+        if (
+            not poll.target_populations.filter(
+                id__in=get_user_populations(self.context["request"].user)
+            ).exists()
+            and not self.context["request"].user.is_superuser
+        ):
             raise serializers.ValidationError(
                 detail={"detail": "You cannot vote for this poll (not in any target population)"}
             )
         # adds poll and user to the vote
         validated_data["user"] = self.context["request"].user
         validated_data["poll"] = poll
+
+        # increments poll options vote count from the vote
+        for option in options:
+            option.vote_count += 1
+            option.save()
+
         return super().create(validated_data)
 
 

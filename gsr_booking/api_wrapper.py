@@ -229,9 +229,14 @@ class LibCalWrapper:
             "q43": f"{user.username} GSR Booking",
             "bookings": [{"id": rid, "to": end}],
             "test": test,
-            "q2555": "3",
-            "q2537": "3",
+            "q2555": "5",
+            "q2537": "5",
             "q3699": self.get_affiliation(user.email),
+            "q2533": "000-000-0000",
+            "q16801": "5",
+            "q16802": "5",
+            "q16805": "Yes",
+            "q16804": "Yes",
         }
 
         response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=data).json()
