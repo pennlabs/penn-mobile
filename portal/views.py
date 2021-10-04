@@ -72,6 +72,7 @@ class Polls(viewsets.ModelViewSet):
         polls = (
             Poll.objects.filter(
                 ~Q(id__in=PollVote.objects.filter(user=self.request.user).values_list("poll_id")),
+                Q(approved=True) | Q(admin_comment=None),
                 expire_date__gte=timezone.localtime(),
             )
             if request.user.is_superuser
