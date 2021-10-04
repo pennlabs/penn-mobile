@@ -49,7 +49,7 @@ class TestPolls(TestCase):
         # asserts that poll was created and that the admin comment cannot be made
         self.assertEqual(2, Poll.objects.all().count())
         self.assertEqual("Test Source 2", res_json["source"])
-        self.assertEqual("", Poll.objects.get(id=res_json["id"]).admin_comment)
+        self.assertEqual(None, Poll.objects.get(id=res_json["id"]).admin_comment)
 
     def test_update_poll(self):
         payload = {
