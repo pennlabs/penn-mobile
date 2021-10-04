@@ -52,6 +52,14 @@ class PollOptionSerializer(serializers.ModelSerializer):
             "choice",
         )
 
+    def create(self, validated_data): 
+        poll_options_count = len(PollOption.objects.filter(poll=validated_data["poll"]))
+        if poll_options_count >= 5:
+            raise serializers.ValidationError(
+                detail={"detail": "You cannot have more than 5 poll options for a poll"}
+            )
+        return super().create(validated_data)
+
     def update(self, instance, validated_data):
         # if Poll Option is updated, then corresponding Poll approval should be false
         instance.poll.approved = False
