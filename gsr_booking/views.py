@@ -543,3 +543,8 @@ class ReservationsView(APIView):
         except APIError:
             pass
         return Response(response)
+
+
+class CheckWharton(APIView):
+    def get(self, request):
+        return Response({"is_wharton": WLW.is_wharton(request.user.username)})

@@ -39,6 +39,14 @@ class WhartonLibWrapper:
             raise APIError("Wharton: GSR view restricted to Wharton Pennkeys")
         return response
 
+    def is_wharton(self, username):
+        url = f"{WHARTON_URL}{username}/privileges"
+        try:
+            response = self.request("GET", url).json()
+            return response["type"] != "None"
+        except APIError:
+            return False
+
     def get_availability(self, lid, start, end, username):
         """Returns a list of rooms and their availabilities"""
         current_time = timezone.localtime()
