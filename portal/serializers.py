@@ -99,7 +99,10 @@ class PollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
         fields = ("id", "poll_options", "created_date")
-        read_only_fields = ("id", "created_date",)
+        read_only_fields = (
+            "id",
+            "created_date",
+        )
 
     def create(self, validated_data):
 
