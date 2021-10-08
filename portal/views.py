@@ -86,7 +86,9 @@ class Polls(viewsets.ModelViewSet):
         )
 
         return Response(
-            RetrievePollSerializer(polls.distinct().order_by("start_date"), many=True,).data
+            RetrievePollSerializer(
+                polls.distinct().order_by("approved", "start_date"), many=True,
+            ).data
         )
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])

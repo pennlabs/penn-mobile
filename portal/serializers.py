@@ -90,6 +90,7 @@ class RetrievePollSerializer(serializers.ModelSerializer):
             "expire_date",
             "multiselect",
             "user_comment",
+            "approved",
             "options",
             "target_populations",
         )
