@@ -172,8 +172,23 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ("id", "source", "title", "subtitle", "time_label", "post_url", "image_url", "image_url_cropped",
-                  "filters", "start_date", "end_date", "approved", "testers", "emails", "created_at")
+        fields = (
+            "id",
+            "source",
+            "title",
+            "subtitle",
+            "time_label",
+            "post_url",
+            "image_url",
+            "image_url_cropped",
+            "filters",
+            "start_date",
+            "end_date",
+            "approved",
+            "testers",
+            "emails",
+            "created_at",
+        )
 
     def create(self, validated_data):
         # adds the creator to the post
