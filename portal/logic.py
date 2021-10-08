@@ -16,7 +16,8 @@ def get_user_populations(user):
         if TargetPopulation.objects.filter(population=school).exists()
         else -1
     )
-    year = user.profile.expected_graduation.year if user.profile.expected_graduation else None
+    # year = user.profile.expected_graduation.year if user.profile.expected_graduation else None
+    year = None
     # checks if year is in the target population
     year_id = (
         TargetPopulation.objects.get(population=year).id

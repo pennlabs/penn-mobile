@@ -412,7 +412,7 @@ class CancelRoom(APIView):
         try:
             wharton_bookings = WLW.get_reservations(request.user)["bookings"]
         except APIError as e:
-            if str(e) == "Wharton: User is not allowed to perform this action":
+            if str(e) == "Wharton: GSR view restricted to Wharton Pennkeys":
                 wharton_bookings = []
             else:
                 return Response({"error": str(e)}, status=400)
@@ -422,7 +422,7 @@ class CancelRoom(APIView):
             gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
             if request.user != gsr_booking.user:
                 return Response(
-                    {"detail": "Unauthorized: This reservation was booked by someone else."},
+                    {"error": "Unauthorized: This reservation was booked by someone else."},
                     status=400,
                 )
             else:
@@ -496,3 +496,8 @@ class ReservationsView(APIView):
         except APIError:
             pass
         return Response(response)
+
+
+class CheckWharton(APIView):
+    def get(self, request):
+        return Response({"is_wharton": WLW.is_wharton(request.user.username)})
