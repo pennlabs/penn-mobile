@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from portal.models import Poll, PollOption, PollVote, TargetPopulation
+from portal.logic import get_user_populations
+from portal.models import Poll, PollOption, PollVote, Post, PostAccount, TargetPopulation
 
 
 class TargetPopulationSerializer(serializers.ModelSerializer):
@@ -166,3 +167,29 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
         fields = ("id", "poll", "poll_options", "created_date")
+
+
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ("id", "source", "title", "subtitle", "time_label", "post_url", "image_url", "image_url_cropped",
+                  "filters", "start_date", "end_date", "approved", "testers", "emails", "created_at")
+
+    def create(self, validated_data):
+        # adds the creator to the post
+        validated_data["account"] = self.context["request"].user
+        # ensuring user cannot create an admin comment upon creation
+        validated_data["approved"] = False
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # if post is updated, then approved should be false
+        if not self.context["request"].user.is_superuser:
+            validated_data["approved"] = False
+        return super().update(instance, validated_data)
+
+
+class PostAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostAccount
+        fields = "__all__"
