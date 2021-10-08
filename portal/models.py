@@ -59,7 +59,7 @@ class Post(models.Model):
     image_url_cropped = models.CharField()
     filters = models.BooleanField(default=False)
     start_date = models.DateTimeField()
-    end_date = models.DateTimeField(nullable=False)
+    end_date = models.DateTimeField(null=False)
     approved = models.BooleanField(default=False)
     testers = models.BooleanField(default=False)
     emails = models.BooleanField(default=False)
