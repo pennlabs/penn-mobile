@@ -1,5 +1,3 @@
-import datetime
-
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
@@ -58,9 +56,9 @@ class PostAccount(models.Model):
     reset_password_token = models.CharField(max_length=255, null=True, unique=True)
     reset_password_token_sent_at = models.DateTimeField(null=True)
     sign_in_count = models.IntegerField(default=1)
-    last_sign_in_at = models.DateTimeField(default=datetime.now)
-    created_at = models.DateTimeField(default=datetime.now)
-    updated_at = models.DateTimeField(default=datetime.now)
+    last_sign_in_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
 
 
 class Post(models.Model):
