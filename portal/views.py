@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from portal.logic import get_demographic_breakdown, get_user_populations
+from portal.logic import get_demographic_breakdown
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from portal.permissions import (
     IsSuperUser,
@@ -78,7 +78,7 @@ class Polls(viewsets.ModelViewSet):
             if request.user.is_superuser
             else Poll.objects.filter(
                 ~Q(id__in=PollVote.objects.filter(user=self.request.user).values_list("poll_id")),
-                Q(target_populations__in=get_user_populations(request.user)),
+                # Q(target_populations__in=get_user_populations(request.user)),
                 start_date__lte=timezone.localtime(),
                 expire_date__gte=timezone.localtime(),
                 approved=True,
