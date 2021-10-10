@@ -238,8 +238,8 @@ class TestPollVotes(TestCase):
         response = self.client.get(reverse("portal:poll-history-recent"))
         res_json = json.loads(response.content)
         # recent polls returns default empty poll
-        self.assertEquals(None, res_json['created_date'])
-        self.assertEquals(None, res_json['poll']['created_date'])
+        self.assertEquals(None, res_json["created_date"])
+        self.assertEquals(None, res_json["poll"]["created_date"])
 
     def test_recent_poll(self):
         # answer poll
