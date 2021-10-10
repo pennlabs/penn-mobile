@@ -10,9 +10,9 @@ applications:
         - host: studentlife.pennlabs.org
           paths: ["/"]
         - host: portal.pennmobile.org
-          paths: ["/api"]
+          paths: ["/api", "/assets"]
         - host: pennmobile.org
-          paths: ["/api"]
+          paths: ["/api", "/assets"]
     extraEnv:
       - name: DOMAINS
         value: studentlife.pennlabs.org,pennmobile.org,portal.pennmobile.org
