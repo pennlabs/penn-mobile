@@ -11,6 +11,7 @@ export class MobileStack extends Stack {
     });
 
     const mobileJob = new DjangoProject(workflow, {
+      path: 'backend',
       projectName: 'studentlife',
       imageName: 'student-life',
     });
