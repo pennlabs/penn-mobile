@@ -60,7 +60,7 @@ class PollOptionSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "vote_count")
 
     def create(self, validated_data):
-        poll_options_count = len(PollOption.objects.filter(poll=validated_data["poll"]))
+        poll_options_count = PollOption.objects.filter(poll=validated_data["poll"]).count()
         if poll_options_count >= 5:
             raise serializers.ValidationError(
                 detail={"detail": "You cannot have more than 5 poll options for a poll"}
