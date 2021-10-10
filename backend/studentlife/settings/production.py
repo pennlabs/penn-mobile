@@ -4,7 +4,7 @@ import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
 from studentlife.settings.base import *  # noqa: F401, F403
-from studentlife.settings.base import DOMAIN
+from studentlife.settings.base import DOMAINS
 
 
 DEBUG = False
@@ -13,7 +13,7 @@ DEBUG = False
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Allow production host headers
-ALLOWED_HOSTS = [DOMAIN]
+ALLOWED_HOSTS = DOMAINS.split(",")
 
 # Make sure SECRET_KEY is set to a secret in production
 SECRET_KEY = os.environ.get("SECRET_KEY", None)
