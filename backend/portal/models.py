@@ -10,7 +10,13 @@ class TargetPopulation(models.Model):
     KIND_SCHOOL = "SCHOOL"
     KIND_YEAR = "YEAR"
     KIND_MAJOR = "MAJOR"
-    KIND_OPTIONS = ((KIND_SCHOOL, "School"), (KIND_YEAR, "Year"), (KIND_MAJOR, "Major"))
+    KIND_DEGREE = "DEGREE"
+    KIND_OPTIONS = (
+        (KIND_SCHOOL, "School"),
+        (KIND_YEAR, "Year"),
+        (KIND_MAJOR, "Major"),
+        (KIND_DEGREE, "Degree"),
+    )
 
     kind = models.CharField(max_length=10, choices=KIND_OPTIONS, default=KIND_SCHOOL)
     population = models.CharField(max_length=255)

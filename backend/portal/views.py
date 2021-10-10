@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from portal.logic import get_demographic_breakdown, get_user_populations
+from portal.logic import get_demographic_breakdown
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from portal.permissions import (
     IsSuperUser,
@@ -78,7 +78,7 @@ class Polls(viewsets.ModelViewSet):
             if request.user.is_superuser
             else Poll.objects.filter(
                 ~Q(id__in=PollVote.objects.filter(user=self.request.user).values_list("poll_id")),
-                Q(target_populations__in=get_user_populations(request.user)),
+                # Q(target_populations__in=get_user_populations(request.user)),
                 start_date__lte=timezone.localtime(),
                 expire_date__gte=timezone.localtime(),
                 approved=True,
@@ -86,7 +86,9 @@ class Polls(viewsets.ModelViewSet):
         )
 
         return Response(
-            RetrievePollSerializer(polls.distinct().order_by("start_date"), many=True,).data
+            RetrievePollSerializer(
+                polls.distinct().order_by("approved", "start_date"), many=True,
+            ).data
         )
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
@@ -100,12 +102,20 @@ class Polls(viewsets.ModelViewSet):
         )
 
 
-class RetrievePollVotes(APIView):
+class RetrievePollVotes(viewsets.ModelViewSet):
     """Retrieve history of polls and their statistics"""
 
     permission_classes = [IsAuthenticated | IsSuperUser]
+    serializer_class = RetrievePollSerializer
 
-    def get(self, request):
+    def get_queryset(self):
+        return (
+            Poll.objects.all()
+            if self.request.user.is_superuser
+            else Poll.objects.filter(user=self.request.user)
+        )
+
+    def list(self, request):
 
         # filters for all polls that user voted in
         serializer = RetrievePollVoteSerializer(
@@ -130,9 +140,14 @@ class RetrievePollVotes(APIView):
                 ).data,
             }
             history_list.append(context)
-        for entry in history_list:
-            entry["poll_statistics"] = get_demographic_breakdown(entry["poll"]["id"])
         return Response(sorted(history_list, key=lambda i: i["poll"]["expire_date"], reverse=True))
+
+    @action(detail=False, methods=["get"])
+    def recent(self, request, pk=None):
+        user_poll_votes = (
+            PollVote.objects.filter(user=request.user).order_by("-created_date").first()
+        )
+        return Response(RetrievePollVoteSerializer(user_poll_votes).data)
 
 
 class PollOptions(viewsets.ModelViewSet):

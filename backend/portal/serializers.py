@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-from portal.logic import get_user_populations
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 
 
@@ -59,6 +58,14 @@ class PollOptionSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "vote_count")
 
+    def create(self, validated_data):
+        poll_options_count = PollOption.objects.filter(poll=validated_data["poll"]).count()
+        if poll_options_count >= 5:
+            raise serializers.ValidationError(
+                detail={"detail": "You cannot have more than 5 poll options for a poll"}
+            )
+        return super().create(validated_data)
+
     def update(self, instance, validated_data):
         # if Poll Option is updated, then corresponding Poll approval should be false
         instance.poll.approved = False
@@ -82,6 +89,7 @@ class RetrievePollSerializer(serializers.ModelSerializer):
             "expire_date",
             "multiselect",
             "user_comment",
+            "approved",
             "options",
             "target_populations",
         )
@@ -91,7 +99,10 @@ class PollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
         fields = ("id", "poll_options", "created_date")
-        read_only_fields = ("created_date",)
+        read_only_fields = (
+            "id",
+            "created_date",
+        )
 
     def create(self, validated_data):
 
@@ -115,15 +126,16 @@ class PollVoteSerializer(serializers.ModelSerializer):
                     detail={"detail": "Voting options are from different Polls"}
                 )
         # checks if user belongs to target population
-        if (
-            not poll.target_populations.filter(
-                id__in=get_user_populations(self.context["request"].user)
-            ).exists()
-            and not self.context["request"].user.is_superuser
-        ):
-            raise serializers.ValidationError(
-                detail={"detail": "You cannot vote for this poll (not in any target population)"}
-            )
+        # TODO: fix when Platform updates grad year + school
+        # if (
+        #     not poll.target_populations.filter(
+        #         id__in=get_user_populations(self.context["request"].user)
+        #     ).exists()
+        #     and not self.context["request"].user.is_superuser
+        # ):
+        #     raise serializers.ValidationError(
+        #         detail={"detail": "You cannot vote for this poll (not in any target population)"}
+        #     )
         # adds poll and user to the vote
         validated_data["user"] = self.context["request"].user
         validated_data["poll"] = poll
@@ -134,6 +146,16 @@ class PollVoteSerializer(serializers.ModelSerializer):
             option.save()
 
         return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # update poll options count
+        for option in instance.poll_options.all():
+            option.vote_count -= 1
+            option.save()
+        for option in validated_data["poll_options"]:
+            option.vote_count += 1
+            option.save()
+        return super().update(instance, validated_data)
 
 
 class RetrievePollVoteSerializer(serializers.ModelSerializer):
