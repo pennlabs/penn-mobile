@@ -53,6 +53,8 @@ def get_demographic_breakdown(poll_id):
     # adds all targeted populations into breakdown
     for target_population in poll.target_populations.all():
         breakdown[target_population.population] = 0
+    print(poll.target_populations.all())
+    print(breakdown)
 
     # gets all options for the poll
     options = PollOption.objects.filter(poll=poll)
@@ -67,6 +69,9 @@ def get_demographic_breakdown(poll_id):
             for user_population in user_populations:
                 if user_population != -1:
                     population = TargetPopulation.objects.get(id=user_population).population
-                    context["breakdown"][population] += 1
+                    if population in context["breakdown"]:
+                        context["breakdown"][population] += 1
+                    else:
+                        print(f"target population {population} doesn't exist in context")
         data.append(context)
     return data

@@ -234,6 +234,13 @@ class TestPollVotes(TestCase):
         self.assertEqual(3, len(res_json[0]["poll"]["options"]))
         self.assertEqual(3, len(res_json[1]["poll"]["options"]))
 
+    def test_recent_poll_empty(self):
+        response = self.client.get(reverse("portal:poll-history-recent"))
+        res_json = json.loads(response.content)
+        # recent polls returns default empty poll
+        self.assertEquals(None, res_json['created_date'])
+        self.assertEquals(None, res_json['poll']['created_date'])
+
     def test_recent_poll(self):
         # answer poll
         payload_1 = {"poll_options": [self.p1_op1_id]}
@@ -241,11 +248,11 @@ class TestPollVotes(TestCase):
         response = self.client.get(reverse("portal:poll-history-recent"))
         res_json = json.loads(response.content)
         # assert that payload1 poll answered is most recent
-        self.assertEquals(self.p1_op1_id, res_json["id"])
+        self.assertEquals(self.p1_id, res_json["poll"]["id"])
         # answer another poll
         payload_2 = {"poll_options": [self.p4_op1_id]}
         self.client.post("/portal/votes/", payload_2)
         response2 = self.client.get(reverse("portal:poll-history-recent"))
         res_json2 = json.loads(response2.content)
         # assert newly answered poll is most recent
-        self.assertEquals(self.p4_op1_id, res_json2["id"])
+        self.assertEquals(self.p4_id, res_json2["poll"]["id"])

@@ -144,9 +144,8 @@ class RetrievePollVotes(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def recent(self, request, pk=None):
-        recent_poll_vote = PollVote.objects.filter(user=request.user).latest("created_date")
-        recent_poll = recent_poll_vote.poll
-        return Response(RetrievePollSerializer(recent_poll).data)
+        user_poll_votes = PollVote.objects.filter(user=request.user).order_by("-created_date").first()
+        return Response(RetrievePollVoteSerializer(user_poll_votes).data)
 
 
 class PollOptions(viewsets.ModelViewSet):
