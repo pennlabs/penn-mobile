@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-from portal.logic import get_user_populations
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 
 
@@ -127,15 +126,16 @@ class PollVoteSerializer(serializers.ModelSerializer):
                     detail={"detail": "Voting options are from different Polls"}
                 )
         # checks if user belongs to target population
-        if (
-            not poll.target_populations.filter(
-                id__in=get_user_populations(self.context["request"].user)
-            ).exists()
-            and not self.context["request"].user.is_superuser
-        ):
-            raise serializers.ValidationError(
-                detail={"detail": "You cannot vote for this poll (not in any target population)"}
-            )
+        # TODO: fix when Platform updates grad year + school
+        # if (
+        #     not poll.target_populations.filter(
+        #         id__in=get_user_populations(self.context["request"].user)
+        #     ).exists()
+        #     and not self.context["request"].user.is_superuser
+        # ):
+        #     raise serializers.ValidationError(
+        #         detail={"detail": "You cannot vote for this poll (not in any target population)"}
+        #     )
         # adds poll and user to the vote
         validated_data["user"] = self.context["request"].user
         validated_data["poll"] = poll
