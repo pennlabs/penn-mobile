@@ -30,6 +30,11 @@ urlpatterns = [
     path("penndata/", include("penndata.urls")),
 ]
 
+urlpatterns = [
+    path("api/", include(urlpatterns)),
+    path("", include((urlpatterns, "apex"))),
+]
+
 if settings.DEBUG:
     import debug_toolbar
 
