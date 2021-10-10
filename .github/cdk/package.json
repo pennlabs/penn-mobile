@@ -13,13 +13,13 @@
     "upgrade-cdk": "yarn upgrade cdkactions@latest cdkactions-cli@latest"
   },
   "dependencies": {
-    "@pennlabs/kraken": "^0.6.3",
+    "@pennlabs/kraken": "^0.6.4",
     "cdkactions": "^0.2.3",
-    "constructs": "^3.3.141"
+    "constructs": "^3.3.161"
   },
   "devDependencies": {
-    "@types/node": "^16.7.10",
+    "@types/node": "^16.10.3",
     "cdkactions-cli": "^0.2.3",
-    "typescript": "^4.4.2"
+    "typescript": "^4.4.3"
   }
 }

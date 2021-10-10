@@ -9,9 +9,13 @@ applications:
       hosts:
         - host: studentlife.pennlabs.org
           paths: ["/"]
+        - host: portal.pennmobile.org
+          paths: ["/api", "/assets"]
+        - host: pennmobile.org
+          paths: ["/api", "/assets"]
     extraEnv:
-      - name: DOMAIN
-        value: studentlife.pennlabs.org
+      - name: DOMAINS
+        value: studentlife.pennlabs.org,pennmobile.org,portal.pennmobile.org
       - name: DJANGO_SETTINGS_MODULE
         value: studentlife.settings.production
 
