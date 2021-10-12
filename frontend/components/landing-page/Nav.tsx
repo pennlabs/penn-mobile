@@ -53,7 +53,11 @@ const Nav = () => {
           <NavLink title="Tutorial" />
           <NavLink title="Team" />
           {user ? (
-            <Button color={colors.MEDIUM_BLUE}>Logout</Button>
+            <Link href={`/api/accounts/logout/?next=${router.pathname}`}>
+              <a>
+                <Button color={colors.MEDIUM_BLUE}>Logout</Button>
+              </a>
+            </Link>
           ) : (
             <Link href={`/api/accounts/login/?next=${router.pathname}`}>
               <a>

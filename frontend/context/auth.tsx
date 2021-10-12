@@ -27,14 +27,14 @@ export function withAuth<T>(
       headers: ctx.req ? { cookie: ctx.req.headers.cookie } : undefined,
     }
 
-    const res = await doApiRequest('/api/accounts/me/', headers)
+    const res = await doApiRequest('/api/users/me/', headers)
     let user: User | undefined
     if (res.ok) {
       user = await res.json()
     } else {
       nextRedirect(
         ctx,
-        (url) => url !== '/',
+        // (url) => url !== '/',
         `/api/accounts/login/?next=${ctx.asPath}`
       )
     }
