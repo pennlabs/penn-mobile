@@ -7,14 +7,13 @@ import { Text } from '../styles/Text'
 import { Button } from '../styles/Buttons'
 import { colors } from '../../utils/colors'
 import { Group } from '../styles/Layout'
-
-const NAV_HEIGHT = '4.25rem'
+import { NAV_HEIGHT } from '../styles/sizes'
 
 const NavStyle = s.nav`
   padding: 1rem 1.5rem 0rem 1.5rem;
   display: flex;
   width: 100%;
-  min-height: ${NAV_HEIGHT};
+  max-height: ${NAV_HEIGHT};
   position: fixed;
   top: 0;
   left: 0;
@@ -32,9 +31,7 @@ const NavLink = ({ title }: { title: string }) => {
   return (
     <Link href={`/${title}`}>
       <a>
-        <Text size={'1rem'} style={{ marginRight: '4rem' }}>
-          {title}
-        </Text>
+        <Text style={{ marginRight: '4rem' }}>{title}</Text>
       </a>
     </Link>
   )
@@ -45,7 +42,7 @@ const Nav = () => {
     <>
       <NavStyle>
         <Logo />
-        <Group>
+        <Group horizontal>
           <NavLink title="Home" />
           <NavLink title="About" />
           <NavLink title="Tutorial" />
@@ -53,7 +50,7 @@ const Nav = () => {
           <Button color={colors.MEDIUM_BLUE}>Login</Button>
         </Group>
       </NavStyle>
-      {/* <NavSpace /> */}
+      <NavSpace />
     </>
   )
 }

@@ -1,6 +1,4 @@
-import React from 'react'
 import s from 'styled-components'
-import { colors } from '../../utils/colors'
 
 interface iButtonProps {
   color: string

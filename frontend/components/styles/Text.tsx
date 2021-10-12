@@ -7,8 +7,8 @@ interface ITextProps {
 }
 
 export const Title = s.h1<ITextProps>`
-  font-size: 2rem;
-  font-weight: bold;
+  font-size: 6rem;
+  font-weight: normal;
   margin-bottom: ${({ marginBottom }) => marginBottom || '0.5rem'};
   line-height: 1.25;
 `
@@ -21,7 +21,7 @@ export const Subtitle = s.h2<ITextProps>`
 `
 
 export const Text = s.p<ITextProps>`
-  font-size: ${({ size }) => size || '0.75rem'};
+  font-size: ${({ size }) => size || '1rem'};
   font-weight: ${({ bold }) => (bold ? 'bold' : 'normal')};
   margin-bottom: ${({ marginBottom }) => marginBottom || '0.5rem'};
   line-height: 1.25;
