@@ -354,10 +354,11 @@ class RecentGSRs(generics.ListAPIView):
     """Lists 2 most recent GSR rooms for Home page"""
 
     serializer_class = GSRSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return GSR.objects.filter(
-            id__in=GSRBooking.objects.filter(user=self.request.user)
+            id__in=GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
             .order_by("-end")[:2]
             .values_list("gsr", flat=True)
         )
