@@ -1,26 +1,32 @@
 {
   "parser": "@typescript-eslint/parser",
   "plugins": ["prettier"],
-  "extends": ["airbnb", "react-app", "prettier", "prettier/react"],
+  "extends": ["airbnb", "react-app", "prettier"],
   "env": {
       "browser": true
   },
   "rules": {
       "prettier/prettier": "error",
       "import/extensions": 0,
-      "quotes": ["error", "double", "avoid-escape"],
+      "quotes": ["error", "single", "avoid-escape"],
       "no-unused-vars": [
           "error",
           {
               "args": "none"
           }
       ],
+      "react/jsx-props-no-spreading": "off",
       "import/prefer-default-export": 0,
       "react/jsx-filename-extension": 0,
       "react/prop-types": 0,
       "react/react-in-jsx-scope": 0,
       "jsx-a11y/click-events-have-key-events": 0,
       "jsx-a11y/interactive-supports-focus": 0,
+      "jsx-a11y/anchor-is-valid": [ "error", {
+        "components": [ "Link" ],
+        "specialLink": [ "hrefLeft", "hrefRight" ],
+        "aspects": [ "invalidHref", "preferButton" ]
+      }],
       "react/require-default-props": 0,
       "react/jsx-boolean-value": 0,
       "no-bitwise": "off",

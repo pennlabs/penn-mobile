@@ -16,34 +16,27 @@ const LogoImageStyle = s.img`
   margin-right: 1rem;
 `
 
-const Logo = () => {
-  return (
-    <LogoStyle>
-      <Link href={HOME_ROUTE}>
-        <a style={{ height: LOGO_SIZE }}>
-          <LogoImageStyle
-            src="/penn-mobile.svg"
-            alt="Penn Mobile Logo"
-            width={LOGO_SIZE}
-            height={LOGO_SIZE}
-          ></LogoImageStyle>
-        </a>
-      </Link>
-      <Link href={HOME_ROUTE}>
-        <a>
-          <Text
-            size={'1.5rem'}
-            style={{
-              display: 'inline-block',
-              transform: 'translateY(-0.5rem)',
-            }}
-          >
-            Penn Mobile Portal
-          </Text>
-        </a>
-      </Link>
-    </LogoStyle>
-  )
-}
+const Logo = () => (
+  <LogoStyle>
+    <Link href={HOME_ROUTE}>
+      <a style={{ height: LOGO_SIZE }}>
+        <LogoImageStyle src="/penn-mobile.svg" alt="Penn Mobile Logo" />
+      </a>
+    </Link>
+    <Link href={HOME_ROUTE}>
+      <a>
+        <Text
+          size="1.5rem"
+          style={{
+            display: 'inline-block',
+            transform: 'translateY(-0.5rem)',
+          }}
+        >
+          Penn Mobile Portal
+        </Text>
+      </a>
+    </Link>
+  </LogoStyle>
+)
 
 export default Logo

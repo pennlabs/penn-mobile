@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import s from 'styled-components'
 import Link from 'next/link'
+import { useRouter, NextRouter } from 'next/router'
 
 import Logo from '../header/Logo'
 import { Text } from '../styles/Text'
@@ -8,6 +9,7 @@ import { Button } from '../styles/Buttons'
 import { colors } from '../../utils/colors'
 import { Group } from '../styles/Layout'
 import { NAV_HEIGHT } from '../styles/sizes'
+import { AuthUserContext } from '../../context/auth'
 
 const NavStyle = s.nav`
   padding: 1rem 1.5rem 0rem 1.5rem;
@@ -27,17 +29,20 @@ const NavSpace = s.div`
   height: ${NAV_HEIGHT};
 `
 
-const NavLink = ({ title }: { title: string }) => {
-  return (
-    <Link href={`/${title}`}>
-      <a>
-        <Text style={{ marginRight: '4rem' }}>{title}</Text>
-      </a>
-    </Link>
-  )
-}
+const NavLink = ({ title }: { title: string }) => (
+  <Link href={`/${title}`}>
+    <a>
+      <Text style={{ marginRight: '4rem' }}>{title}</Text>
+    </a>
+  </Link>
+)
 
 const Nav = () => {
+  const { user } = useContext(AuthUserContext)
+  const router: NextRouter = useRouter()
+  console.log(router.pathname)
+  console.log(user)
+
   return (
     <>
       <NavStyle>
@@ -47,7 +52,15 @@ const Nav = () => {
           <NavLink title="About" />
           <NavLink title="Tutorial" />
           <NavLink title="Team" />
-          <Button color={colors.MEDIUM_BLUE}>Login</Button>
+          {user ? (
+            <Button color={colors.MEDIUM_BLUE}>Logout</Button>
+          ) : (
+            <Link href={`/api/accounts/login/?next=${router.pathname}`}>
+              <a>
+                <Button color={colors.MEDIUM_BLUE}>Login</Button>
+              </a>
+            </Link>
+          )}
         </Group>
       </NavStyle>
       <NavSpace />

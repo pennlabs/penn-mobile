@@ -8,13 +8,15 @@ const IPhoneImg = s.img`
   z-index: 1;
 `
 
-const Wireframes = () => {
-  return (
-    <div style={{ position: 'relative' }}>
-      <img style={{ zIndex: 3 }} src="/browser-wireframe.svg" />
-      <IPhoneImg src="/iphone-wireframe.svg" />
-    </div>
-  )
-}
+const Wireframes = () => (
+  <div style={{ position: 'relative' }}>
+    <img
+      style={{ zIndex: 3 }}
+      src="/browser-wireframe.svg"
+      alt="browser wireframe"
+    />
+    <IPhoneImg src="/iphone-wireframe.svg" alt="iphone wireframe" />
+  </div>
+)
 
 export default Wireframes

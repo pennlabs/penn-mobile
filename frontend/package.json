@@ -3,22 +3,34 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_ENV=development node server.js",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "NODE_ENV=production node server.js",
+    "lint": "eslint . --ext .tsx --ext .ts && tsc -b tsconfig.json"
   },
   "dependencies": {
+    "babel-plugin-styled-components": "^1.13.2",
+    "express": "^4.17.1",
+    "file-loader": "^6.2.0",
+    "http-proxy-middleware": "^2.0.1",
     "next": "11.1.2",
     "react": "17.0.2",
     "react-dom": "17.0.2",
-    "styled-components": "^5.3.1"
+    "styled-components": "^5.3.1",
+    "url-loader": "^4.1.1"
   },
   "devDependencies": {
     "@types/react": "17.0.27",
     "@types/styled-components": "^5.1.15",
-    "eslint": "8.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb": "^18.2.1",
     "eslint-config-next": "11.1.2",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-react-app": "^6.0.0",
+    "eslint-plugin-flowtype": "^6.1.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "prettier": "^2.4.1",
     "typescript": "4.4.3"
   }
 }
