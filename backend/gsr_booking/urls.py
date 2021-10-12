@@ -10,6 +10,7 @@ from gsr_booking.views import (
     GroupViewSet,
     GSRBookingCredentialsViewSet,
     Locations,
+    RecentGSRs,
     ReservationsView,
     UserViewSet,
 )
@@ -35,4 +36,5 @@ urlpatterns = [
     path("gsr/cancel/", CancelRoom.as_view(), name="cancel"),
     path("gsr/reservations/", ReservationsView.as_view(), name="reservations"),
     path("gsr/wharton/", CheckWharton.as_view(), name="is-wharton"),
+    path("gsr/recent/", RecentGSRs.as_view(), name="recent-gsrs"),
 ]

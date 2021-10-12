@@ -350,6 +350,19 @@ class Locations(generics.ListAPIView):
     queryset = GSR.objects.all()
 
 
+class RecentGSRs(generics.ListAPIView):
+    """Lists 2 most recent GSR rooms for Home page"""
+
+    serializer_class = GSRSerializer
+
+    def get_queryset(self):
+        return GSR.objects.filter(
+            id__in=GSRBooking.objects.filter(user=self.request.user)
+            .order_by("-end")[:2]
+            .values_list("gsr", flat=True)
+        )
+
+
 class Availability(APIView):
     """
     Returns JSON containing all rooms for a given building.
