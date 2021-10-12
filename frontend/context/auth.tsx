@@ -27,6 +27,7 @@ export function withAuth<T>(
       headers: ctx.req ? { cookie: ctx.req.headers.cookie } : undefined,
     }
 
+    // TODO: add accounts/me backend route
     const res = await doApiRequest('/api/users/me/', headers)
     let user: User | undefined
     if (res.ok) {

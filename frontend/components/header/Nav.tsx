@@ -3,7 +3,7 @@ import s from 'styled-components'
 import Link from 'next/link'
 import { useRouter, NextRouter } from 'next/router'
 
-import Logo from '../header/Logo'
+import Logo from './Logo'
 import { Text } from '../styles/Text'
 import { Button } from '../styles/Buttons'
 import { colors } from '../../utils/colors'
@@ -39,32 +39,37 @@ const NavLink = ({ title }: { title: string }) => (
 
 const Nav = () => {
   const { user } = useContext(AuthUserContext)
+  const isLoggedIn = user
   const router: NextRouter = useRouter()
   console.log(router.pathname)
   console.log(user)
+
+  const LandingPageNav = () => (
+    <>
+      <NavLink title="Home" />
+      <NavLink title="About" />
+      <NavLink title="Tutorial" />
+      <NavLink title="Team" />
+    </>
+  )
 
   return (
     <>
       <NavStyle>
         <Logo />
         <Group horizontal>
-          <NavLink title="Home" />
-          <NavLink title="About" />
-          <NavLink title="Tutorial" />
-          <NavLink title="Team" />
-          {user ? (
-            <Link href={`/api/accounts/logout/?next=${router.pathname}`}>
-              <a>
-                <Button color={colors.MEDIUM_BLUE}>Logout</Button>
-              </a>
-            </Link>
-          ) : (
-            <Link href={`/api/accounts/login/?next=${router.pathname}`}>
-              <a>
-                <Button color={colors.MEDIUM_BLUE}>Login</Button>
-              </a>
-            </Link>
-          )}
+          {!isLoggedIn && <LandingPageNav />}
+          <Link
+            href={`/api/accounts/${isLoggedIn ? 'logout' : 'login'}/?next=${
+              router.pathname
+            }`}
+          >
+            <a>
+              <Button color={colors.MEDIUM_BLUE}>
+                {isLoggedIn ? 'Logout' : 'Login'}
+              </Button>
+            </a>
+          </Link>
         </Group>
       </NavStyle>
       <NavSpace />

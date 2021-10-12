@@ -1,13 +1,11 @@
 import React from 'react'
 
-import Nav from './Nav'
 import { Row, Col, Group } from '../styles/Layout'
 import { Title, Text } from '../styles/Text'
 import Wireframes from './Wireframes'
 
 const LandingPage = () => (
   <>
-    <Nav />
     <Row>
       <Col sm={12} md={12} lg={5} fullHeight padding="0 0 0 3rem">
         <Group style={{ marginTop: '6rem' }}>
