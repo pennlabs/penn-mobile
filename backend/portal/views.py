@@ -13,12 +13,14 @@ from portal.permissions import (
     IsSuperUser,
     OptionOwnerPermission,
     PollOwnerPermission,
+    PostOwnerPermission,
     TimeSeriesPermission,
 )
 from portal.serializers import (
     PollOptionSerializer,
     PollSerializer,
     PollVoteSerializer,
+    PostSerializer,
     RetrievePollSerializer,
     RetrievePollVoteSerializer,
     TargetPopulationSerializer,
@@ -212,4 +214,16 @@ class PollVoteStatistics(APIView):
                 .order_by("date"),
                 "poll_statistics": get_demographic_breakdown(id),
             }
+        )
+
+
+class Post(viewsets.ModelViewSet):
+    serializer_class = PostSerializer
+    permission_classes = [PostOwnerPermission | IsSuperUser]
+
+    def get_queryset(self):
+        return (
+            Post.objects.all()
+            if self.request.user.is_superuser
+            else Poll.objects.filter(user=self.request.user)
         )
