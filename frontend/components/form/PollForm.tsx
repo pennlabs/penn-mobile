@@ -9,6 +9,7 @@ import { FormField } from '../styles/Form'
 import { updateStateType } from '../../pages/polls/create'
 import { InfoSpan, IconPlus, IconTimes } from '../styles/Icons'
 import { Group } from '../styles/Layout'
+import DatePickerForm from './DatePicker'
 
 interface PollFormProps {
   state: Poll
@@ -68,6 +69,7 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
               value={value}
               placeholder="e.g. poll option"
               updateState={updatePollOptions}
+              paddingRight={Number(key) >= 2}
             />
             {Number(key) >= 2 && (
               <div onClick={() => removePollOption(Number(key))} role="button">
@@ -82,8 +84,17 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
         </Button>
       </Card>
 
-      <Heading3>Dates</Heading3>
-      {/* <Card></Card> */}
+      <Heading3>Visibility</Heading3>
+      <Card>
+        <Text bold>Dates</Text>
+        <DatePickerForm
+          updateState={updateState}
+          startDate={state.startDate}
+          endDate={state.endDate}
+        />
+
+        <Text bold>Filters</Text>
+      </Card>
 
       <Heading3>
         Notes

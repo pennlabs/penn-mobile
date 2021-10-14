@@ -36,7 +36,7 @@ export const InfoSpan = ({ infoText }: { infoText: string }) => (
       size="1x"
       style={{ marginRight: '1rem' }}
     />
-    {infoText}
+    {infoText || ''}
   </IconWrapper>
 )
 

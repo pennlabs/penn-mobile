@@ -54,7 +54,7 @@ const Nav = () => {
     <>
       <NavStyle>
         <Logo />
-        <Group horizontal>
+        <Group horizontal margin="0 0 0.5rem 0">
           {!isLoggedIn && <LandingPageNav />}
           <Link
             href={`/api/accounts/${isLoggedIn ? 'logout' : 'login'}/?next=${

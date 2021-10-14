@@ -2,10 +2,14 @@ import s from 'styled-components'
 import { Text } from './Text'
 import { updateStateType } from '../../pages/polls/create'
 
-const FormInputStyle = s.input<{ marginBottom?: boolean }>`
+const FormInputStyle = s.input<{
+  marginBottom?: boolean
+  paddingRight?: boolean
+}>`
   width: 100%;
   border-radius: 5px;
   padding: 0.75rem;
+  padding-right: ${(props) => (props.paddingRight ? '2.5rem' : '0.75rem')};
   background-color: #f7f7f7;
   font-family: inherit;
   border: 1px solid #e6e6e6;
@@ -37,6 +41,7 @@ interface iFormFieldProps {
   placeholder?: string
   marginBottom?: boolean
   textArea?: boolean
+  paddingRight?: boolean
 }
 
 export const FormField = ({
@@ -47,6 +52,7 @@ export const FormField = ({
   placeholder,
   marginBottom,
   textArea,
+  paddingRight,
 }: iFormFieldProps) => {
   return (
     <>
@@ -67,6 +73,7 @@ export const FormField = ({
           placeholder={placeholder}
           onChange={(e) => updateState({ [name]: e.target.value })}
           marginBottom={marginBottom}
+          paddingRight={paddingRight}
         />
       )}
     </>

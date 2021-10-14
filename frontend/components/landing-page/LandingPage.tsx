@@ -1,4 +1,5 @@
 import React from 'react'
+import { colors } from '../../utils/colors'
 
 import { Row, Col, Group } from '../styles/Layout'
 import { Title, Text } from '../styles/Text'
@@ -6,7 +7,7 @@ import Wireframes from './Wireframes'
 
 const LandingPage = () => (
   <>
-    <Row>
+    <Row style={{ backgroundColor: colors.WHITE }}>
       <Col sm={12} md={12} lg={5} fullHeight padding="0 0 0 3rem">
         <Group style={{ marginTop: '6rem' }}>
           <Title>

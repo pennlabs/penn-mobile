@@ -45,8 +45,7 @@ const CreatePoll = () => {
               <Button color={colors.GREEN}>Submit</Button>
             </Group>
           </Group>
-          {/* TODO: change this to state's status */}
-          <StatusBar status={Status.APPROVED} />
+          <StatusBar status={state.status} />
           <PollForm state={state} updateState={updateState} />
         </Col>
         <Col sm={12} md={12} lg={5}>
