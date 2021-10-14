@@ -9,6 +9,9 @@
     "lint": "eslint . --ext .tsx --ext .ts && tsc -b tsconfig.json"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.36",
+    "@fortawesome/free-solid-svg-icons": "^5.15.4",
+    "@fortawesome/react-fontawesome": "^0.1.15",
     "babel-plugin-styled-components": "^1.13.2",
     "express": "^4.17.1",
     "file-loader": "^6.2.0",

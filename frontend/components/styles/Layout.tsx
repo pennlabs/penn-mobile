@@ -147,9 +147,20 @@ export const Spacer = s.div`
 `
 
 interface iGroupProps {
-  horizontal?: boolean
+  horizontal?: boolean // defaults to vertical
+  alignItems?: string
+  justifyContent?: string
+  margin?: string
 }
-// defaults to vertical group
-export const Group = s.div<iGroupProps>`
- display: ${(props) => (props.horizontal ? 'flex' : 'inline-block')};
-`
+
+/**
+ * Div wrapper for a group of elements.
+ */
+export const Group = s.div<iGroupProps>(
+  ({ horizontal, alignItems, justifyContent, margin }) => css`
+    display: ${horizontal ? 'flex' : 'inline-block'};
+    ${justifyContent && `justify-content: ${justifyContent};`}
+    ${alignItems && `align-items: ${alignItems};`}
+    ${margin && `margin: ${margin};`}
+  `
+)

@@ -15,7 +15,7 @@ export const Title = s.h1<ITextProps>`
 
 export const Subtitle = s.h2<ITextProps>`
   font-size: 1.75rem;
-  font-weight: bold;
+  font-weight: normal;
   margin-bottom: ${({ marginBottom }) => marginBottom || '0.5rem'};
   line-height: 1.25;
 `

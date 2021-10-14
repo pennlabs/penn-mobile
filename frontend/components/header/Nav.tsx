@@ -38,11 +38,8 @@ const NavLink = ({ title }: { title: string }) => (
 )
 
 const Nav = () => {
-  const { user } = useContext(AuthUserContext)
-  const isLoggedIn = user
+  const { user: isLoggedIn } = useContext(AuthUserContext)
   const router: NextRouter = useRouter()
-  console.log(router.pathname)
-  console.log(user)
 
   const LandingPageNav = () => (
     <>
