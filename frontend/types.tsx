@@ -22,3 +22,14 @@ export enum Status {
   EXPIRED,
   REJECTED,
 }
+
+export interface Poll {
+  id?: number
+  question: string
+  source: string
+  pollOptions: { [key: number]: string }
+  startDate: Date | null
+  endDate: Date | null
+  userComments: string
+  status: Status
+}
