@@ -50,7 +50,8 @@ export const IconPlus = ({ margin }: { margin: string }) => (
 const TimesWrapper = s.span`
   position: absolute;
   right: 0.75rem;
-  line-height: 2.5rem;
+  bottom: 0.5rem;
+  line-height: 2rem;
   border-left: 1px solid ${colors.LIGHT_GRAY};
   cursor: pointer;
   color: ${colors.GRAY}
