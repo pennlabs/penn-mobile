@@ -1,8 +1,10 @@
 import s from 'styled-components'
+import { colors } from '../../utils/colors'
 
 interface ITextProps {
   size?: string
   bold?: boolean
+  color?: string
   marginBottom?: string
 }
 
@@ -32,4 +34,6 @@ export const Text = s.p<ITextProps>`
   font-weight: ${({ bold }) => (bold ? 'bold' : 'normal')};
   margin-bottom: ${({ marginBottom }) => marginBottom || '0.5rem'};
   line-height: 1.25;
+  overflow-wrap: break-word;
+  color: ${({ color }) => color || '#4a4a4a'};
 `

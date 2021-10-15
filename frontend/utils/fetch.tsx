@@ -15,6 +15,12 @@ export function getApiUrl(path: string): string {
   return API_BASE_URL + path
 }
 
+/**
+ * perform a fetch request to the API
+ * @param path e.g. /api/portal/polls/
+ * @param data
+ * @returns
+ */
 export function doApiRequest(path: string, data?: any): Promise<Response> {
   let formattedData = data
   if (!formattedData) {

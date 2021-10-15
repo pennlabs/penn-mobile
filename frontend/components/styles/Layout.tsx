@@ -20,7 +20,6 @@ export const Row = s.div<IRow>(
     flex-direction: row;
     width: 100%;
     flex-wrap: wrap;
-    justify-content: space-between;
     max-height: ${maxHeight || 'none'};
     overflow-y: ${overflowY || 'hidden'};
 
