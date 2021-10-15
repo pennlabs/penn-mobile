@@ -6,6 +6,7 @@ import {
   faPlus,
   faTimes,
   faInfoCircle,
+  faArrowCircleRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { colors } from '../../utils/colors'
 
@@ -63,4 +64,10 @@ export const IconTimes = () => (
       style={{ marginLeft: '0.75rem' }}
     />
   </TimesWrapper>
+)
+
+export const IconArrowRight = () => (
+  <IconWrapper color={colors.MEDIUM_BLUE} margin="0 0.5rem">
+    <FontAwesomeIcon icon={faArrowCircleRight} size="1x" />
+  </IconWrapper>
 )

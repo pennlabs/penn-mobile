@@ -29,8 +29,8 @@ const NavSpace = s.div`
   height: ${NAV_HEIGHT};
 `
 
-const NavLink = ({ title }: { title: string }) => (
-  <Link href={`/${title}`}>
+const NavLink = ({ title, link }: { title: string; link?: string }) => (
+  <Link href={link || `/${title}`}>
     <a>
       <Text style={{ marginRight: '4rem' }}>{title}</Text>
     </a>
@@ -55,7 +55,11 @@ const Nav = () => {
       <NavStyle>
         <Logo />
         <Group horizontal margin="0 0 0.5rem 0">
-          {!isLoggedIn && <LandingPageNav />}
+          {!isLoggedIn ? (
+            <LandingPageNav />
+          ) : (
+            <NavLink title="Create" link="/polls/create" />
+          )}
           <Link
             href={`/api/accounts/${isLoggedIn ? 'logout' : 'login'}/?next=${
               router.pathname
