@@ -25,16 +25,13 @@ const CreatePoll = () => {
     userComments: '',
     status: Status.DRAFT,
   })
-  const [id, setId] = useState('')
   console.log(state)
 
-  // helper function to set state
   const updateState = useCallback((newState) => {
     setState((currentState) => ({ ...currentState, ...newState }))
   }, [])
 
   const onSubmit = () => {
-    // TODO: refactor this shit
     doApiRequest('/api/portal/polls/', {
       method: 'POST',
       body: {
@@ -50,14 +47,16 @@ const CreatePoll = () => {
     })
       .then((res) => res.json())
       .then((res) => {
-        setId(res.id)
-        doApiRequest('/api/portal/options', {
-          method: 'POST',
-          body: {
-            poll_id: res.id,
-            options: state.pollOptions,
-          },
-        })
+        const options = Object.values(state.pollOptions)
+        options.map((option) =>
+          doApiRequest('/api/portal/options/', {
+            method: 'POST',
+            body: {
+              poll: res.id,
+              choice: option,
+            },
+          })
+        )
       })
   }
 
