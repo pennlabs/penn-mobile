@@ -77,7 +77,8 @@ const Preview = ({ state }: { state: Poll }) => {
               <Group
                 horizontal
                 justifyContent="space-between"
-                style={{ textAlign: 'center', marginBottom: '0.5rem' }}
+                style={{ marginBottom: '0.5rem' }}
+                key={key}
               >
                 <PhonePollOption
                   key={key}
@@ -86,7 +87,7 @@ const Preview = ({ state }: { state: Poll }) => {
                 <Text
                   bold
                   color={colors.DARK_GRAY}
-                  style={{ position: 'absolute', marginLeft: '0.75rem' }}
+                  style={{ position: 'absolute', marginLeft: '0.5rem' }}
                 >
                   {value || 'Example Poll Option'}
                 </Text>

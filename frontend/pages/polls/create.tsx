@@ -25,7 +25,6 @@ const CreatePoll = () => {
     userComments: '',
     status: Status.DRAFT,
   })
-  console.log(state)
 
   const updateState = useCallback((newState) => {
     setState((currentState) => ({ ...currentState, ...newState }))

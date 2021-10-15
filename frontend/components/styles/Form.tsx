@@ -13,7 +13,7 @@ const FormInputStyle = s.input<{
   background-color: #f7f7f7;
   font-family: inherit;
   border: 1px solid #e6e6e6;
-  marginBottom: ${(props) => (props.marginBottom ? '1rem' : '0')};
+  margin-bottom: ${(props) => (props.marginBottom ? '1rem' : '0')};
   &:focus {
     outline: none;
     border: 2px solid rgb(50 115 220 / 25%);

@@ -1,5 +1,4 @@
 import s from 'styled-components'
-import { colors } from '../../utils/colors'
 
 interface ITextProps {
   size?: string

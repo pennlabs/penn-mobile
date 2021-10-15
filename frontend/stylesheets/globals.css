@@ -24,3 +24,23 @@ input {
   font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
     Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
+
+/* this is hacky but these override the ant css styles since `next build` can 
+   have inconsistent CSS import orders... */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-top: 1.5rem;
+}
+
+p {
+  margin-top: 1rem;
+}
+
+img {
+  vertical-align: initial;
+}
