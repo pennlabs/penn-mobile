@@ -3,8 +3,8 @@ import os
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
-from studentlife.settings.base import *  # noqa: F401, F403
-from studentlife.settings.base import DOMAINS
+from pennmobile.settings.base import *  # noqa: F401, F403
+from pennmobile.settings.base import DOMAINS
 
 
 DEBUG = False

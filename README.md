@@ -1,7 +1,7 @@
-# student-life
+# penn-mobile
 
-[![CircleCI](https://circleci.com/gh/pennlabs/student-life.svg?style=shield)](https://circleci.com/gh/pennlabs/student-life)
-[![Coverage Status](https://codecov.io/gh/pennlabs/student-life/branch/master/graph/badge.svg)](https://codecov.io/gh/pennlabs/student-life)
+[![Build and Deploy](https://github.com/pennlabs/penn-mobile/actions/workflows/cdkactions_build-and-deploy.yaml/badge.svg)](https://github.com/pennlabs/penn-mobile/actions/workflows/cdkactions_build-and-deploy.yaml)
+[![Coverage Status](https://codecov.io/gh/pennlabs/penn-mobile/branch/master/graph/badge.svg)](https://codecov.io/gh/pennlabs/penn-mobile)
 
 This repository will hopefully be the Django-based successor to `labs-api-server`, containing API routes to help students manage keep track of things around campus that matter to them. Currently, this repo contains:
 
@@ -9,8 +9,8 @@ This repository will hopefully be the Django-based successor to `labs-api-server
 
 ## Install
 
-- `git clone https://github.com/pennlabs/student-life.git`
-- `cd student-life`
+- `git clone https://github.com/pennlabs/penn-mobile.git`
+- `cd penn-mobile/backend`
 - `pipenv install --dev`
 - `pipenv run python manage.py migrate`
 - `pipenv run python manage.py runserver 8000`
@@ -30,7 +30,7 @@ To create users, you first have to create a main superuser.
 
 ## Rudimentary API Documentation
 
-Also see the [auto-generated documentation](https://studentlife.pennlabs.org/documentation/)
+Also see the [auto-generated documentation](https://pennmobile.org/api/documentation/)
 
 - `GET /users/`
   - List all users, with their pennkey and the groups they are members of.
