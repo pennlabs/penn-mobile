@@ -130,7 +130,7 @@ class GSR(models.Model):
     KIND_OPTIONS = ((KIND_WHARTON, "Wharton"), (KIND_LIBCAL, "Libcal"))
 
     kind = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_LIBCAL)
-    lid = models.IntegerField()
+    lid = models.CharField(max_length=255)
     gid = models.IntegerField(null=True)
     name = models.CharField(max_length=255)
     image_url = models.URLField()

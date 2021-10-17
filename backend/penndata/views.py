@@ -9,8 +9,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from gsr_booking.models import GSR, GSRBooking
-from gsr_booking.serializers import GSRSerializer
 from penndata.models import Event
 from penndata.serializers import EventSerializer
 
@@ -153,22 +151,6 @@ class Events(generics.ListAPIView):
 
     def get_queryset(self):
         return Event.objects.filter(event_type=self.kwargs.get("type", ""))
-
-
-class GSRView(generics.ListAPIView):
-    """Gets list of two most recent rooms booked by User"""
-
-    permission_classes = [IsAuthenticated]
-    serializer_class = GSRSerializer
-
-    def get_queryset(self):
-        return GSR.objects.filter(
-            id__in=list(
-                GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
-                .order_by("-end")
-                .values_list("gsr", flat=True)
-            )[:2]
-        )
 
 
 class HomePage(APIView):
