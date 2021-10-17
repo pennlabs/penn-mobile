@@ -29,7 +29,7 @@ jobs:
       - name: Test (run in parallel)
         run: |-
           cd backend
-          pipenv run coverage run --concurrency=multiprocessing manage.py test --settings=studentlife.settings.ci --parallel
+          pipenv run coverage run --concurrency=multiprocessing manage.py test --settings=pennmobile.settings.ci --parallel
           pipenv run coverage combine
       - name: Upload Code Coverage
         run: |-
@@ -70,9 +70,9 @@ jobs:
           context: backend
           file: backend/Dockerfile
           push: ${{ github.ref == 'refs/heads/master' }}
-          cache-from: type=local,src=/tmp/.buildx-cache,type=registry,ref=pennlabs/student-life:latest
+          cache-from: type=local,src=/tmp/.buildx-cache,type=registry,ref=pennlabs/penn-mobile-backend:latest
           cache-to: type=local,dest=/tmp/.buildx-cache
-          tags: pennlabs/student-life:latest,pennlabs/student-life:${{ github.sha }}
+          tags: pennlabs/penn-mobile-backend:latest,pennlabs/penn-mobile-backend:${{ github.sha }}
     needs: django-check
   deploy:
     runs-on: ubuntu-latest
