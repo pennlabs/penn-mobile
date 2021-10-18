@@ -373,7 +373,7 @@ class Availability(APIView):
         /studyspaces/availability/<building>?start=...&end=... gives all rooms between the two days
     """
 
-    def get(self, request, lid):
+    def get(self, request, lid, gid):
 
         start = request.GET.get("start")
         end = request.GET.get("end")
@@ -385,37 +385,34 @@ class Availability(APIView):
             try:
                 if request.user.is_anonymous:
                     return Response({"error": "Anonymous User"}, status=400)
+                # no need for gid under Wharton API
                 rooms = WLW.get_availability(lid, start, end, request.user.username)
             except APIError as e:
                 return Response({"error": str(e)}, status=400)
-            response = []
             gsr = GSR.objects.get(lid=lid)
-            response.append({"name": gsr.name, "gid": gsr.gid, "rooms": rooms})
-            return Response(response)
+            return Response({"name": gsr.name, "gid": gsr.gid, "rooms": rooms})
         else:
-            response = []
             try:
                 rooms = LCW.get_availability(lid, start, end)
             except APIError as e:
                 return Response({"error": str(e)}, status=400)
+
             # cleans data to match Wharton wrapper
-            for category in rooms["categories"]:
-                for room in category["rooms"]:
-                    for availability in room["availability"]:
-                        availability["start_time"] = availability["from"]
-                        availability["end_time"] = availability["to"]
-                        del availability["from"]
-                        del availability["to"]
-            for room in rooms["categories"]:
-                context = {}
-                context["name"] = room["name"]
-                context["gid"] = room["cid"]
-                context["rooms"] = [
-                    {"room_name": x["name"], "id": x["id"], "availability": x["availability"]}
-                    for x in room["rooms"]
-                ]
-                response.append(context)
-            return Response(response)
+            gsr = [x for x in rooms["categories"] if x["cid"] == int(gid)][0]
+            for room in gsr["rooms"]:
+                for availability in room["availability"]:
+                    availability["start_time"] = availability["from"]
+                    availability["end_time"] = availability["to"]
+                    del availability["from"]
+                    del availability["to"]
+            context = {}
+            context["name"] = gsr["name"]
+            context["gid"] = gsr["cid"]
+            context["rooms"] = [
+                {"room_name": x["name"], "id": x["id"], "availability": x["availability"]}
+                for x in gsr["rooms"]
+            ]
+            return Response(context)
 
 
 class BookRoom(APIView):
