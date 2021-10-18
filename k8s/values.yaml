@@ -4,7 +4,7 @@ image_tag: latest
 applications:
   - name: django
     image: pennlabs/penn-mobile-backend
-    secret: student-life
+    secret: penn-mobile
     ingress:
       hosts:
         - host: studentlife.pennlabs.org
@@ -23,7 +23,7 @@ cronjobs:
   - name: get-laundry-snapshots
     schedule: "*/15 * * * *"
     image: pennlabs/penn-mobile-backend
-    secret: student-life
+    secret: penn-mobile
     cmd: ["python", "manage.py", "get_snapshot"]
     extraEnv:
       - name: DJANGO_SETTINGS_MODULE
