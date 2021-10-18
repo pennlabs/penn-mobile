@@ -6,7 +6,8 @@
     "dev": "NODE_ENV=development node server.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
-    "lint": "eslint . --ext .tsx --ext .ts && tsc -b tsconfig.json"
+    "lint": "eslint . --ext .tsx --ext .ts && tsc -b tsconfig.json",
+    "test": "echo no tests yet"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.36",
