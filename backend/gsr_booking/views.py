@@ -398,7 +398,11 @@ class Availability(APIView):
                 return Response({"error": str(e)}, status=400)
 
             # cleans data to match Wharton wrapper
-            gsr = [x for x in rooms["categories"] if x["cid"] == int(gid)][0]
+            try:
+                gsr = [x for x in rooms["categories"] if x["cid"] == int(gid)][0]
+            except IndexError:
+                return Response({"error": "Unknown GSR"}, status=404)
+
             for room in gsr["rooms"]:
                 for availability in room["availability"]:
                     availability["start_time"] = availability["from"]
@@ -532,6 +536,8 @@ class ReservationsView(APIView):
             # ignore this because this route is used by everyone
             wharton_reservations = WLW.get_reservations(request.user)["bookings"]
             for reservation in wharton_reservations:
+                if reservation["lid"] == 1:
+                    reservation["lid"] = "JMHH"
                 # NOTE: hard code fix until ARB can be booked
                 if reservation["lid"] == 6:
                     continue
