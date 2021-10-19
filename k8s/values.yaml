@@ -18,6 +18,17 @@ applications:
         value: studentlife.pennlabs.org,pennmobile.org,portal.pennmobile.org
       - name: DJANGO_SETTINGS_MODULE
         value: pennmobile.settings.production
+  - name: react
+    image: pennlabs/penn-mobile-frontend
+    ingress:
+      hosts:
+        - host: portal.pennmobile.org
+          paths: ["/"]
+    extraEnv:
+      - name: PORT
+        value: 80
+      - name: DOMAIN
+        value: portal.pennmobile.org
 
 cronjobs:
   - name: get-laundry-snapshots
