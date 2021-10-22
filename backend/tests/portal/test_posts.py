@@ -6,8 +6,7 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from backend.portal.models import TargetPopulation
-from portal.models import Post
+from portal.models import Post, TargetPopulation
 
 
 User = get_user_model()
