@@ -29,7 +29,7 @@ class TestPosts(TestCase):
             "target_populations": [self.target_id],
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "created_at": timezone.localtime(),
-            "admin_comment": "comment 1"
+            "admin_comment": "comment 1",
         }
         self.client.post("/portal/posts", payload)
         post_1 = Post.objects.all().first()
@@ -46,7 +46,7 @@ class TestPosts(TestCase):
             "target_populations": [self.target_id],
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "created_at": timezone.localtime(),
-            "admin_comment": "comment 2"
+            "admin_comment": "comment 2",
         }
         response = self.client.post("/portal/posts/", payload)
         res_json = json.loads(response.content)
