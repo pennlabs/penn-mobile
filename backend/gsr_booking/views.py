@@ -538,9 +538,8 @@ class ReservationsView(APIView):
             for reservation in wharton_reservations:
                 if reservation["lid"] == 1:
                     reservation["lid"] = "JMHH"
-                # NOTE: hard code fix until ARB can be booked
                 if reservation["lid"] == 6:
-                    continue
+                    reservation["lid"] = "ARB"
                 # checks if reservation is within time range
                 if (
                     datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
