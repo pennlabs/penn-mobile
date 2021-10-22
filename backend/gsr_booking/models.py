@@ -10,7 +10,11 @@ class GroupMembership(models.Model):
     # INVARIANT: either user or username should always be set. if user is not None, then the
     # username should the be username of the associated user.
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="memberships", blank=True, null=True,
+        User,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+        blank=True,
+        null=True,
     )
     username = models.CharField(max_length=127, blank=True, null=True, default=None)
 
@@ -137,6 +141,14 @@ class GSR(models.Model):
 
     def __str__(self):
         return f"{self.lid}-{self.gid}"
+
+
+class Reservation(models.Model):
+    gsr = models.ForeignKey(GSR, on_delete=models.CASCADE)
+    start = models.DateTimeField(default=timezone.now)
+    end = models.DateTimeField(default=timezone.now)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
 
 
 class GSRBooking(models.Model):
