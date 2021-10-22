@@ -1,7 +1,7 @@
 import os
 
-from studentlife.settings.base import *  # noqa: F401, F403
-from studentlife.settings.base import INSTALLED_APPS, MIDDLEWARE
+from pennmobile.settings.base import *  # noqa: F401, F403
+from pennmobile.settings.base import INSTALLED_APPS, MIDDLEWARE
 
 
 # Development extensions
