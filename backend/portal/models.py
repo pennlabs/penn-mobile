@@ -58,7 +58,7 @@ class Post(models.Model):
     image_url = models.URLField()
     target_populations = models.ManyToManyField(TargetPopulation, blank=True)
     start_date = models.DateTimeField(default=timezone.now)
-    end_date = models.DateTimeField()
+    expire_date = models.DateTimeField()
     approved = models.BooleanField(default=False)
     created_at = models.DateTimeField()
     admin_comment = models.CharField(max_length=255, null=True, blank=True)
