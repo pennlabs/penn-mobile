@@ -30,7 +30,7 @@ class TestPosts(TestCase):
             "created_at": timezone.localtime(),
             "admin_comment": "comment 1",
         }
-        self.client.post("/portal/posts", payload)
+        self.client.post("/portal/posts/", payload)
         post_1 = Post.objects.all().first()
         post_1.approved = True
         post_1.save()
