@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from portal.models import Poll, PollOption, PollVote, TargetPopulation
+from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
 
 
 class TargetPopulationSerializer(serializers.ModelSerializer):
@@ -166,3 +166,39 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
         fields = ("id", "poll", "poll_options", "created_date")
+
+
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = (
+            "id",
+            "source",
+            "title",
+            "subtitle",
+            "post_url",
+            "image_url",
+            "target_populations",
+            "start_date",
+            "end_date",
+            "approved",
+            "created_at",
+        )
+
+    def create(self, validated_data):
+        # adds the creator to the post
+        validated_data["user"] = self.context["request"].user
+        # ensuring user cannot create an admin comment upon creation
+        validated_data["approved"] = False
+        validated_data["admin_comment"] = None
+        if len(validated_data["target_populations"]) == 0:
+            validated_data["target_populations"] = list(TargetPopulation.objects.all())
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # if post is updated, then approved should be false
+        if not self.context["request"].user.is_superuser:
+            validated_data["approved"] = False
+        if "approved" in validated_data and validated_data["approved"]:
+            instance.admin_comment = None
+        return super().update(instance, validated_data)
