@@ -374,6 +374,9 @@ class Availability(APIView):
     """
 
     def get(self, request, lid, gid):
+        from gsr_booking.api_wrapper import BookingWrapper
+        b = BookingWrapper()
+        b.check_credits(lid, gid, request.user)
 
         start = request.GET.get("start")
         end = request.GET.get("end")

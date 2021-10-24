@@ -80,6 +80,38 @@ class BookingWrapper:
         # TODO
         pass
 
+
+    # Check credits function here
+    # Implement two hour limit
+    def check_credits(self, lid, gid, user):
+        gsr = GSR.objects.filter(lid=lid, gid=gid)
+        if not gsr.exists():
+            raise APIError(f"Unknown GSR LID {lid}")
+        total_minutes = 0
+        if gsr.first().kind == GSR.KIND_WHARTON:
+            wharton_reservations = self.WLW.get_reservations(user)['bookings']
+            for reservation in wharton_reservations:
+                if reservation["lid"] == 1:
+                    reservation["lid"] = "JMHH"
+                if reservation["lid"] == 6:
+                    reservation["lid"] = "ARB"
+                if reservation['lid'] == lid:
+                    start = datetime.datetime.strptime(reservation["start"], "%Y-%m-%dT%H:%M:%S%z")
+                    end = datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
+                    total_minutes += int((end.timestamp() - start.timestamp()) / 60)
+            return 90 - total_minutes
+
+        else:
+            
+            start = timezone.now().date()
+            dt = datetime.datetime.combine(start, datetime.datetime.min.time())
+            print(start)
+            # end = timezone.now().date() + 1
+            
+            libcal_reservations = GSRBooking.objects.filter(gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL), is_cancelled=False)
+
+       
+
 class WhartonLibWrapper:
     def request(self, *args, **kwargs):
         """Make a signed request to the libcal API."""
