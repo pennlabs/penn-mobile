@@ -7,19 +7,19 @@ from django.contrib.auth import get_user_model
 def create_single_user_group(apps, schema_editor):
     User = get_user_model()
     Group = apps.get_model("gsr_booking", "Group")
-    GroupMembership = apps.get_model("gsr_booking", "GroupMembership")
+    # GroupMembership = apps.get_model("gsr_booking", "GroupMembership")
     for user in User.objects.all():
-        new_group = Group.objects.create(
+        Group.objects.create(
             owner=user,
             name="my_group",
             color="",
         )
-        GroupMembership.objects.create(
-            user=user,
-            group=new_group,
-            accepted=True,
-            type="A",
-        )
+        # GroupMembership.objects.create(
+        #     user=user,
+        #     group=new_group,
+        #     accepted=True,
+        #     type="A",
+        # )
 
 
 class Migration(migrations.Migration):
