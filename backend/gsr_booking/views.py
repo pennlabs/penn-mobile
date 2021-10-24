@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from gsr_booking.api_wrapper import APIError, LibCalWrapper, WhartonLibWrapper
+from gsr_booking.api_wrapper import APIError, BookingWrapper, LibCalWrapper, WhartonLibWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
 from gsr_booking.models import (
@@ -341,7 +341,7 @@ class GroupViewSet(viewsets.ModelViewSet):
 # classes used for accessing GSR API's (needed for token authentication)
 LCW = LibCalWrapper()
 WLW = WhartonLibWrapper()
-
+booker = BookingWrapper()
 
 class Locations(generics.ListAPIView):
     """Lists all available locations to book from"""
@@ -425,24 +425,38 @@ class BookRoom(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        start = request.data["start_time"]
-        end = request.data["end_time"]
-        if not GSR.objects.filter(gid=request.data["gid"]).exists():
-            return Response({"error": "Unknown GSR"}, status=404)
-        is_wharton = GSR.objects.filter(gid=request.data["gid"]).first().kind == GSR.KIND_WHARTON
-        room_id = request.data["id"]
-        room_name = request.data["room_name"]
-        # checks which GSR class to use
-        if is_wharton:
-            try:
-                booking_id = WLW.book_room(room_id, start, end, request.user.username)["booking_id"]
-            except APIError as e:
-                return Response({"error": str(e)}, status=400)
-        else:
-            try:
-                booking_id = LCW.book_room(room_id, start, end, request.user)["booking_id"]
-            except APIError as e:
-                return Response({"error": str(e)}, status=400)
+        # start = request.data["start_time"]
+        # end = request.data["end_time"]
+        # if not GSR.objects.filter(gid=request.data["gid"]).exists():
+        #     return Response({"error": "Unknown GSR"}, status=404)
+        # is_wharton = GSR.objects.filter(gid=request.data["gid"]).first().kind == GSR.KIND_WHARTON
+        # room_id = request.data["id"]
+        # room_name = request.data["room_name"]
+        # # checks which GSR class to use
+        # if is_wharton:
+        #     try:
+        #         booking_id = WLW.book_room(room_id, start, end, request.user.username)["booking_id"]
+        #     except APIError as e:
+        #         return Response({"error": str(e)}, status=400)
+        # else:
+        #     try:
+        #         booking_id = LCW.book_room(room_id, start, end, request.user)["booking_id"]
+        #     except APIError as e:
+        #         return Response({"error": str(e)}, status=400)
+
+        start = request.data.get("start_time")
+        end = request.data.get("end_time")
+        gid = request.data.get("gid")
+        room_id = request.data.get("id")
+        room_name = request.data.get("room_name")
+
+        # check if all the fields are not None
+        if not (start and end and gid and room_id and room_name):
+            return Response({"error": "missing required fields"}, status=400)
+        try:
+            booking_id = booker.book_room(gid, room_id, start, end, request.user)
+        except APIError as e:
+            return Response({"error": str(e)}, status=400)
         # creates booking on database
         GSRBooking.objects.create(
             user=request.user,

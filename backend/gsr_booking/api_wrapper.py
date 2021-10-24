@@ -5,6 +5,14 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.utils import timezone
 from requests.exceptions import ConnectTimeout, ReadTimeout
+from gsr_booking.models import (
+    GSR,
+    Group,
+    GroupMembership,
+    GSRBooking,
+    GSRBookingCredentials,
+    UserSearchIndex,
+)
 
 
 BASE_URL = "https://libcal.library.upenn.edu"
@@ -19,6 +27,58 @@ ROOM_BLACKLIST = {7176, 16970, 16998, 17625}
 class APIError(ValueError):
     pass
 
+class BookingWrapper:
+    def __init__(self):
+        self.WLW = WhartonLibWrapper()
+        self.LCW = LibCalWrapper()
+
+    def book_room(self, gid, rid, start, end, user):
+        gsr = GSR.objects.filter(gid=gid)
+        if not gsr.exists():
+            raise APIError(f"Unknown GSR GID {gid}")
+
+        # error catching on view side
+        if gsr.kind == GSR.KIND_WHARTON:
+            return self.WLW.book_room(rid, start, end, user.username).get("booking_id")
+        else:
+            return self.LCW.book_room(rid, start, end, user).get("booking_id")
+
+    def get_availability(self, lid, gid, start, end, user):
+        # checks which GSR class to use
+        gsr = GSR.objects.filter(lid=lid)
+        if not gsr.exists():
+            raise APIError(f"Unknown GSR LID {lid}")
+        
+        if gsr.kind == GSR.KIND_WHARTON:
+            rooms = self.WLW.get_availability(lid, start, end, user.username)
+        else:
+            rooms = self.LCW.get_availability(lid, start, end)
+        
+        # cleans data to match Wharton wrapper
+        try:
+            gsr = [x for x in rooms["categories"] if x["cid"] == int(gid)][0]
+        except IndexError:
+            raise APIError("Unknown GSR")
+
+        for room in gsr["rooms"]:
+            for availability in room["availability"]:
+                availability["start_time"] = availability["from"]
+                availability["end_time"] = availability["to"]
+                del availability["from"]
+                del availability["to"]
+        context = {}
+        context["name"] = gsr["name"]
+        context["gid"] = gsr["cid"]
+        context["rooms"] = [
+            {"room_name": x["name"], "id": x["id"], "availability": x["availability"]}
+            for x in gsr["rooms"]
+        ]
+        return context
+        
+
+    def cancel_room():
+        # TODO
+        pass
 
 class WhartonLibWrapper:
     def request(self, *args, **kwargs):
