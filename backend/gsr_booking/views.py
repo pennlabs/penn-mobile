@@ -343,6 +343,7 @@ LCW = LibCalWrapper()
 WLW = WhartonLibWrapper()
 booker = BookingWrapper()
 
+
 class Locations(generics.ListAPIView):
     """Lists all available locations to book from"""
 
@@ -374,9 +375,6 @@ class Availability(APIView):
     """
 
     def get(self, request, lid, gid):
-        from gsr_booking.api_wrapper import BookingWrapper
-        b = BookingWrapper()
-        b.check_credits(lid, gid, request.user)
 
         start = request.GET.get("start")
         end = request.GET.get("end")
@@ -438,7 +436,7 @@ class BookRoom(APIView):
         # # checks which GSR class to use
         # if is_wharton:
         #     try:
-        #         booking_id = WLW.book_room(room_id, start, end, request.user.username)["booking_id"]
+        #      booking_id = WLW.book_room(room_id, start, end, request.user.username)["booking_id"]
         #     except APIError as e:
         #         return Response({"error": str(e)}, status=400)
         # else:
