@@ -47,3 +47,19 @@ class PollVote(models.Model):
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
     poll_options = models.ManyToManyField(PollOption)
     created_date = models.DateTimeField(default=timezone.now)
+
+
+class Post(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    source = models.CharField(max_length=255)
+    title = models.CharField(max_length=255)
+    subtitle = models.CharField(max_length=255)
+    post_url = models.URLField(null=True)
+    image_url = models.URLField(null=True)
+    target_populations = models.ManyToManyField(TargetPopulation, blank=True)
+    start_date = models.DateTimeField(default=timezone.now)
+    expire_date = models.DateTimeField()
+    approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    admin_comment = models.CharField(max_length=255, null=True, blank=True)
+    user_comment = models.CharField(max_length=255, null=True, blank=True)

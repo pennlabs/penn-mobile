@@ -10,11 +10,7 @@ class GroupMembership(models.Model):
     # INVARIANT: either user or username should always be set. if user is not None, then the
     # username should the be username of the associated user.
     user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="memberships",
-        blank=True,
-        null=True,
+        User, on_delete=models.CASCADE, related_name="memberships", blank=True, null=True,
     )
     username = models.CharField(max_length=127, blank=True, null=True, default=None)
 
@@ -90,7 +86,7 @@ class Group(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        GroupMembership.objects.create(
+        GroupMembership.objects.get_or_create(
             group=self, user=self.owner, type=GroupMembership.ADMIN, accepted=True
         )
 
