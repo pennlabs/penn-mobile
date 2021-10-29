@@ -17,6 +17,7 @@ const StatusBarLine = s.hr<iStatusBarLineProps>`
   width: ${(props) => `${props.width}%`};
   height: 6px;
   display: inline-block;
+  box-sizing: border-box;
 `
 
 interface iStatusBarProps {
