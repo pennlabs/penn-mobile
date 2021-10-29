@@ -53,3 +53,30 @@ class TestPosts(TestCase):
         self.assertEqual(2, Post.objects.all().count())
         self.assertEqual("Test Source 2", res_json["source"])
         self.assertEqual(None, Post.objects.get(id=res_json["id"]).admin_comment)
+
+    """
+    def test_update_post(self):
+        payload = {
+            "source": "New Test Source 3"
+        }
+        response = self.client.patch(f"/portal/polls/{self.id}/", payload)
+        res_json = json.loads(response.content)
+        self.assertEqual(self.id, res_json["id"])
+        self.assertEqual("New Test Source 3", Post.objects.get(id=self.id).source)
+    """
+
+    def test_browse(self):
+        payload = {
+            "source": "Test Source 2",
+            "title": "Test Title 2",
+            "subtitle": "Test Subtitle 2",
+            "target_populations": [self.target_id],
+            "expire_date": timezone.localtime() + datetime.timedelta(days=1),
+            "created_at": timezone.localtime(),
+            "admin_comment": "comment 2",
+        }
+        self.client.post("/portal/posts/", payload)
+        response = self.client.get("/portal/posts/")
+        res_json = json.loads(response.content)
+        self.assertEqual(2, len(res_json))
+        self.assertEqual(2, Post.objects.all().count())
