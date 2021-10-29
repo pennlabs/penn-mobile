@@ -7,13 +7,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from backend.portal.logic import get_user_populations
 from portal.logic import get_demographic_breakdown
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from portal.permissions import (
     IsSuperUser,
     OptionOwnerPermission,
     PollOwnerPermission,
-    PostOwnerPermission,
     TimeSeriesPermission,
 )
 from portal.serializers import (
@@ -218,12 +218,42 @@ class PollVoteStatistics(APIView):
 
 
 class Post(viewsets.ModelViewSet):
+    """
+    browse:
+    returns a list of Posts that are targeted at the current user.
+    Admins sees all the posts(?)
+
+    create:
+    Create a Post
+
+    partial_update:
+    Update certain fields in the Post.
+    Need to be the admin or the creator.
+
+    destroy:
+    Delete a Post.
+    Need to be the admin or the creator.
+    """
+
     serializer_class = PostSerializer
-    permission_classes = [PostOwnerPermission | IsSuperUser]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return (
+        return Post.objects.all()
+
+    @action(detail=False, methods=["get"])
+    def browse(self, request):
+        """
+        Returns a list of all posts that are targeted at the current user
+        Admins sees all the posts(?)
+        """
+        posts = (
             Post.objects.all()
-            if self.request.user.is_superuser
-            else Poll.objects.filter(user=self.request.user)
+            if request.user.is_superuser
+            else Post.objects.filter(
+                Q(target_populations__in=get_user_populations(request.user)),
+                start_date__lte=timezone.localtime(),
+                expire_date__gte=timezone.localtime(),
+            )
         )
+        return Response(PostSerializer(posts.distinct().order_by("start_date"), many=True).data)
