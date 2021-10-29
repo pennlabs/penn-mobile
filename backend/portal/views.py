@@ -7,8 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from backend.portal.logic import get_user_populations
-from portal.logic import get_demographic_breakdown
+from portal.logic import get_demographic_breakdown, get_user_populations
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from portal.permissions import (
     IsSuperUser,
@@ -218,7 +217,7 @@ class PollVoteStatistics(APIView):
         )
 
 
-class Post(viewsets.ModelViewSet):
+class Posts(viewsets.ModelViewSet):
     """
     browse:
     returns a list of Posts that are targeted at the current user.
