@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from portal.logic import get_demographic_breakdown, get_user_populations
-from portal.models import Poll, PollOption, PollVote, TargetPopulation
+from portal.models import Poll, PollOption, PollVote, TargetPopulation, Post
 from portal.permissions import (
     IsSuperUser,
     OptionOwnerPermission,
