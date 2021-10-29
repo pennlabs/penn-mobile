@@ -19,9 +19,10 @@ const NavStyle = s.nav`
   position: fixed;
   top: 0;
   left: 0;
-  background: ${colors.WHITE};
+  background: rgba(255, 255, 255, 0.9);
   align-items: center;
   justify-content: space-between;
+  z-index: 100;
 `
 
 const NavSpace = s.div`
