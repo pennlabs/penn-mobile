@@ -14,6 +14,7 @@ from portal.permissions import (
     IsSuperUser,
     OptionOwnerPermission,
     PollOwnerPermission,
+    PostOwnerPermission,
     TimeSeriesPermission,
 )
 from portal.serializers import (
@@ -236,7 +237,7 @@ class Post(viewsets.ModelViewSet):
     """
 
     serializer_class = PostSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [PostOwnerPermission | IsSuperUser]
 
     def get_queryset(self):
         return Post.objects.all()
