@@ -8,9 +8,7 @@ def create_single_user_group(apps, schema_editor):
     Group = apps.get_model("gsr_booking", "Group")
     for user in User.objects.all():
         Group.objects.create(
-            owner=user,
-            name="my_group",
-            color="",
+            owner=user, name="my_group", color="",
         )
 
 
