@@ -54,16 +54,12 @@ class TestPosts(TestCase):
         self.assertEqual("Test Source 2", res_json["source"])
         self.assertEqual(None, Post.objects.get(id=res_json["id"]).admin_comment)
 
-    """
     def test_update_post(self):
-        payload = {
-            "source": "New Test Source 3"
-        }
-        response = self.client.patch(f"/portal/polls/{self.id}/", payload)
+        payload = {"source": "New Test Source 3"}
+        response = self.client.patch(f"/portal/posts/{self.id}/", payload)
         res_json = json.loads(response.content)
         self.assertEqual(self.id, res_json["id"])
         self.assertEqual("New Test Source 3", Post.objects.get(id=self.id).source)
-    """
 
     def test_browse(self):
         payload = {
