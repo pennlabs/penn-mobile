@@ -23,6 +23,7 @@ from gsr_booking.models import (
     GSRBooking,
     GSRBookingCredentials,
     UserSearchIndex,
+    Reservation,
 )
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
@@ -88,7 +89,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(
-                    user=user, accepted=False, group__in=self.request.user.booking_groups.all(),
+                    user=user,
+                    accepted=False,
+                    group__in=self.request.user.booking_groups.all(),
                 ),
                 many=True,
             ).data
@@ -443,8 +446,20 @@ class BookRoom(APIView):
                 booking_id = LCW.book_room(room_id, start, end, request.user)["booking_id"]
             except APIError as e:
                 return Response({"error": str(e)}, status=400)
+
+        # create reservation with single-person-group containing user
+        # TODO: create reservation with group that frontend passes in
+        try:
+            single_person_group = Group.objects.get(owner=request.user)
+        except Group.DoesNotExist as e:
+            return Response({"error": str(e)}, status=400)
+        reservation = Reservation.objects.create(
+            start=start, end=end, creator=request.user, group=single_person_group
+        )
         # creates booking on database
+        # TODO: break start / end time into smaller chunks and pool credit for group booking
         GSRBooking.objects.create(
+            reservation=reservation,
             user=request.user,
             booking_id=str(booking_id),
             gsr=GSR.objects.get(gid=request.data["gid"]),
