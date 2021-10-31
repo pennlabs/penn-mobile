@@ -2,7 +2,7 @@ import React from 'react'
 import { colors } from '../../utils/colors'
 
 import { Row, Col, Group } from '../styles/Layout'
-import { Title, Text } from '../styles/Text'
+import { Title } from '../styles/Text'
 import Wireframes from './Wireframes'
 
 const LandingPage = () => (
@@ -13,7 +13,7 @@ const LandingPage = () => (
           <Title>
             Welcome <br /> to Portal.
           </Title>
-          <Text>ah, there will be some text here...</Text>
+          {/* <Text>ah, there will be some text here...</Text> */}
         </Group>
       </Col>
       <Col sm={12} md={12} lg={7} style={{ overflow: 'hidden' }}>

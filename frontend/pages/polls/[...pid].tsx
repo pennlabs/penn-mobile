@@ -1,30 +1,26 @@
 import React, { useState, useCallback } from 'react'
+import { NextPageContext } from 'next'
 
-import Nav from '../../components/header/Nav'
-import { Row, Col, Group } from '../../components/styles/Layout'
 import { withAuth } from '../../context/auth'
-import PollForm from '../../components/form/PollForm'
+import { doApiRequest } from '../../utils/fetch'
+import { PageType, PollType, Status } from '../../types'
+import Nav from '../../components/header/Nav'
+import { Col, Group, Row } from '../../components/styles/Layout'
 import { Button, ToggleButton } from '../../components/styles/Buttons'
-import { Poll, PageType, Status } from '../../types'
 import { Subtitle } from '../../components/styles/Text'
 import { colors } from '../../utils/colors'
 import StatusBar from '../../components/form/StatusBar'
-import { doApiRequest } from '../../utils/fetch'
+import PollForm from '../../components/form/poll/PollForm'
 import Preview from '../../components/form/Preview'
 
-export type updateStateType = (newState: Object) => void
+interface iPollPageProps {
+  // true if creating a new poll, false if editing an existing poll
+  createMode: boolean
+  poll: PollType
+}
 
-// TODO: maybe move this to /polls instead?
-const CreatePoll = () => {
-  const [state, setState] = useState<Poll>({
-    question: '',
-    source: '',
-    startDate: null,
-    endDate: null,
-    pollOptions: { 0: '', 1: '' },
-    userComments: '',
-    status: Status.DRAFT,
-  })
+const PollPage = ({ poll, createMode }: iPollPageProps) => {
+  const [state, setState] = useState<PollType>(poll)
 
   const updateState = useCallback((newState) => {
     setState((currentState) => ({ ...currentState, ...newState }))
@@ -75,7 +71,7 @@ const CreatePoll = () => {
             <Subtitle>Poll Details</Subtitle>
             {/* TODO: add functionality to these buttons... */}
             <Group horizontal alignItems="center">
-              <Button color={colors.RED}>Delete</Button>
+              {!createMode && <Button color={colors.RED}>Delete</Button>}
               <Button color={colors.GRAY}>Save</Button>
               <Button color={colors.GREEN} onClick={onSubmit}>
                 Submit
@@ -93,4 +89,49 @@ const CreatePoll = () => {
   )
 }
 
-export default withAuth(CreatePoll)
+// TODO: types
+export const getServerSideProps = async (context: any) => {
+  const { req, params } = context
+  const { pid } = params
+
+  const res = await doApiRequest(`/api/portal/polls/${pid}`, {
+    method: 'GET',
+    // TODO: auth?
+    headers: req ? { cookie: req.headers.cookie } : undefined,
+  })
+  const poll = await res.json()
+
+  // poll with pid exists, render poll to edit or delete
+  if (poll.id) {
+    // fetch poll options for poll
+    const pollOptions = await doApiRequest(`/api/portal/options/${pid}`, {
+      method: 'GET',
+      headers: req ? { cookie: req.headers.cookie } : undefined,
+    })
+    poll.pollOptions = await pollOptions.json()
+
+    return {
+      props: { poll, createMode: false },
+    }
+  } else {
+    // for any poll where pid does not exist, render poll create form
+    const initPollState = {
+      question: '',
+      source: '',
+      startDate: null,
+      endDate: null,
+      pollOptions: { 0: '', 1: '' },
+      userComments: '',
+      status: Status.DRAFT,
+    }
+
+    return {
+      props: {
+        poll: initPollState,
+        createMode: true,
+      },
+    }
+  }
+}
+
+export default PollPage

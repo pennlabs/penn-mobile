@@ -1,6 +1,6 @@
 import s from 'styled-components'
 import { Text } from './Text'
-import { updateStateType } from '../../pages/polls/create'
+import { updateStateType } from '../../types'
 
 const FormInputStyle = s.input<{
   marginBottom?: boolean

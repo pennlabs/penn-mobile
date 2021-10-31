@@ -23,7 +23,7 @@ export enum Status {
   REJECTED,
 }
 
-export interface Poll {
+export interface PollType {
   id?: number
   question: string
   source: string
@@ -33,3 +33,5 @@ export interface Poll {
   userComments: string
   status: Status
 }
+
+export type updateStateType = (newState: Object) => void
