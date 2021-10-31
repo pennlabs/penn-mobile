@@ -140,7 +140,6 @@ class GSR(models.Model):
 
 
 class Reservation(models.Model):
-    gsr = models.ForeignKey(GSR, on_delete=models.CASCADE)
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(default=timezone.now)
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -148,6 +147,8 @@ class Reservation(models.Model):
 
 
 class GSRBooking(models.Model):
+    # TODO: change to non-null after reservations are created for current bookings
+    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     booking_id = models.CharField(max_length=255, null=True, blank=True)
     gsr = models.ForeignKey(GSR, on_delete=models.CASCADE)
