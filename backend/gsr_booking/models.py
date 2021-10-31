@@ -86,7 +86,7 @@ class Group(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        GroupMembership.objects.create(
+        GroupMembership.objects.get_or_create(
             group=self, user=self.owner, type=GroupMembership.ADMIN, accepted=True
         )
 
@@ -137,6 +137,14 @@ class GSR(models.Model):
 
     def __str__(self):
         return f"{self.lid}-{self.gid}"
+
+
+class Reservation(models.Model):
+    gsr = models.ForeignKey(GSR, on_delete=models.CASCADE)
+    start = models.DateTimeField(default=timezone.now)
+    end = models.DateTimeField(default=timezone.now)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
 
 
 class GSRBooking(models.Model):

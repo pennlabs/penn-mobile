@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRBookingCredentials
+from gsr_booking.models import (
+    GSR,
+    Group,
+    GroupMembership,
+    GSRBooking,
+    GSRBookingCredentials,
+    Reservation,
+)
 
 
 class GSRBookingCredentialsAdmin(admin.ModelAdmin):
@@ -19,3 +26,4 @@ admin.site.register(GroupMembership)
 admin.site.register(GSRBookingCredentials, GSRBookingCredentialsAdmin)
 admin.site.register(GSR)
 admin.site.register(GSRBooking)
+admin.site.register(Reservation)
