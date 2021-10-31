@@ -60,6 +60,18 @@ class TestPosts(TestCase):
         res_json = json.loads(response.content)
         self.assertEqual(self.id, res_json["id"])
         self.assertEqual("New Test Source 3", Post.objects.get(id=self.id).source)
+        # since the user is not an admin, approved should be set to false after update
+        self.assertFalse(res_json["approved"])
+
+    def test_update_post_admin(self):
+        admin = User.objects.create_superuser("admin@upenn.edu", "admin", "admin")
+        self.client.force_authenticate(user=admin)
+        payload = {"source": "New Test Source 3"}
+        response = self.client.patch(f"/portal/posts/{self.id}/", payload)
+        res_json = json.loads(response.content)
+        self.assertEqual(self.id, res_json["id"])
+        self.assertTrue(res_json["approved"])
+        self.assertFalse("admin_comment" in res_json)
 
     def test_browse(self):
         payload = {

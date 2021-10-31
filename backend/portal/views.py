@@ -245,15 +245,19 @@ class Posts(viewsets.ModelViewSet):
     def browse(self, request):
         """
         Returns a list of all posts that are targeted at the current user
-        Admins sees all the posts(?)
+        For admins, returns list of posts that they have not approved and have yet to expire
         """
         posts = (
-            Post.objects.all()
-            if request.user.is_superuser
-            else Post.objects.filter(
-                Q(target_populations__in=get_user_populations(request.user)),
-                start_date__lte=timezone.localtime(),
+            Post.objects.filter(
+                Q(approved=True) | Q(admin_comment=None),
                 expire_date__gte=timezone.localtime(),
             )
+            if request.user.is_superuser
+            else Post.objects.filter(
+                # Q(target_populations__in=get_user_populations(request.user)),
+                start_date__lte=timezone.localtime(),
+                expire_date__gte=timezone.localtime(),
+                approved=True,
+            )
         )
-        return Response(PostSerializer(posts.distinct().order_by("start_date"), many=True).data)
+        return Response(PostSerializer(posts.distinct().order_by("approved", "start_date"), many=True).data)
