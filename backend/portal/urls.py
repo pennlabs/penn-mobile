@@ -3,10 +3,10 @@ from rest_framework import routers
 
 from portal.views import (
     PollOptions,
-    Posts,
     Polls,
     PollVotes,
     PollVoteStatistics,
+    Posts,
     RetrievePollVotes,
     TargetPopulations,
 )
