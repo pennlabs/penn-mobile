@@ -56,3 +56,16 @@ class TimeSeriesPermission(permissions.BasePermission):
             # only poll creator and admin can access
             return poll.first().user == request.user
         return False
+
+
+class PostOwnerPermission(permissions.BasePermission):
+    """checks authentication and only permits owner to update/destroy posts"""
+
+    def has_object_permission(self, request, view, obj):
+        # only creator can edit
+        if view.action in ["partial_update", "update", "destroy"]:
+            return request.user == obj.user
+        return True
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated

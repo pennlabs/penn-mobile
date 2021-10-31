@@ -6,6 +6,7 @@ from portal.views import (
     Polls,
     PollVotes,
     PollVoteStatistics,
+    Posts,
     RetrievePollVotes,
     TargetPopulations,
 )
@@ -18,6 +19,7 @@ router.register(r"polls", Polls, basename="poll")
 router.register(r"options", PollOptions, basename="polloption")
 router.register(r"votes", PollVotes, basename="pollvote")
 router.register(r"poll-history", RetrievePollVotes, basename="poll-history")
+router.register(r"posts", Posts, basename="posts")
 
 additional_urls = [
     path("populations/", TargetPopulations.as_view(), name="target-populations"),
