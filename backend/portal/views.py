@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from portal.logic import get_demographic_breakdown, get_user_populations
+from portal.logic import get_demographic_breakdown
 from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
 from portal.permissions import (
     IsSuperUser,
@@ -249,8 +249,7 @@ class Posts(viewsets.ModelViewSet):
         """
         posts = (
             Post.objects.filter(
-                Q(approved=True) | Q(admin_comment=None),
-                expire_date__gte=timezone.localtime(),
+                Q(approved=True) | Q(admin_comment=None), expire_date__gte=timezone.localtime(),
             )
             if request.user.is_superuser
             else Post.objects.filter(
@@ -260,4 +259,6 @@ class Posts(viewsets.ModelViewSet):
                 approved=True,
             )
         )
-        return Response(PostSerializer(posts.distinct().order_by("approved", "start_date"), many=True).data)
+        return Response(
+            PostSerializer(posts.distinct().order_by("approved", "start_date"), many=True).data
+        )
