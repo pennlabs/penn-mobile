@@ -180,7 +180,7 @@ class PostSerializer(serializers.ModelSerializer):
             "image_url",
             "target_populations",
             "start_date",
-            "end_date",
+            "expire_date",
             "approved",
             "created_at",
         )

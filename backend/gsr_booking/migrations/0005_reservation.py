@@ -37,6 +37,12 @@ class Migration(migrations.Migration):
                         on_delete=django.db.models.deletion.CASCADE, to="gsr_booking.group"
                     ),
                 ),
+                (
+                    "gsr",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="gsr_booking.gsr"
+                    ),
+                ),
             ],
         ),
     ]

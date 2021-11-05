@@ -15,16 +15,13 @@ def create_reservation_for_booking(apps, schema_editor):
     Group = apps.get_model("gsr_booking", "Group")
 
     for booking in GSRBooking.objects.all():
-        try:
-            single_person_group = Group.objects.get(owner=booking.user)
-        except Group.DoesNotExist:
-            print(f"ERR: user {booking.user.username} isn't in any group")
-
-        reservation = Reservation.objects.create(
-            start=booking.start, end=booking.end, creator=booking.user, group=single_person_group
-        )
-        booking.reservation = reservation
-        booking.save()
+        single_person_group = Group.objects.filter(owner=booking.user).first()
+        if single_person_group:
+            reservation = Reservation.objects.create(
+                start=booking.start, end=booking.end, creator=booking.user, group=single_person_group
+            )
+            booking.reservation = reservation
+            booking.save()
 
 
 class Migration(migrations.Migration):
