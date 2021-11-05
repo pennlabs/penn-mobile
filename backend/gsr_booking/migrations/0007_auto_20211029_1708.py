@@ -18,7 +18,10 @@ def create_reservation_for_booking(apps, schema_editor):
         single_person_group = Group.objects.filter(owner=booking.user).first()
         if single_person_group:
             reservation = Reservation.objects.create(
-                start=booking.start, end=booking.end, creator=booking.user, group=single_person_group
+                start=booking.start,
+                end=booking.end,
+                creator=booking.user,
+                group=single_person_group,
             )
             booking.reservation = reservation
             booking.save()

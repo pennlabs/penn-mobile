@@ -22,8 +22,8 @@ from gsr_booking.models import (
     GroupMembership,
     GSRBooking,
     GSRBookingCredentials,
-    UserSearchIndex,
     Reservation,
+    UserSearchIndex,
 )
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
@@ -89,9 +89,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(
-                    user=user,
-                    accepted=False,
-                    group__in=self.request.user.booking_groups.all(),
+                    user=user, accepted=False, group__in=self.request.user.booking_groups.all(),
                 ),
                 many=True,
             ).data
@@ -449,10 +447,9 @@ class BookRoom(APIView):
 
         # create reservation with single-person-group containing user
         # TODO: create reservation with group that frontend passes in
-        try:
-            single_person_group = Group.objects.get(owner=request.user)
-        except Group.DoesNotExist as e:
-            return Response({"error": str(e)}, status=400)
+        single_person_group = Group.objects.filter(owner=request.user).first()
+        if not single_person_group:
+            return Response({"error": "Unknown User"}, status=400)
         reservation = Reservation.objects.create(
             start=start, end=end, creator=request.user, group=single_person_group
         )
@@ -529,6 +526,19 @@ class CancelRoom(APIView):
             # updates GSR booking after done
             gsr_booking.is_cancelled = True
             gsr_booking.save()
+
+            reservation = gsr_booking.reservation
+            all_cancelled = True
+            # loops through all reservation bookings and checks if all
+            # corresponding bookings are cancelled
+            for booking in GSRBooking.objects.filter(reservation=reservation):
+                if not booking.is_cancelled:
+                    all_cancelled = False
+                    break
+            if all_cancelled:
+                reservation.is_cancelled = True
+                reservation.save()
+
         return Response({"detail": "success"})
 
 
