@@ -41,5 +41,8 @@ class Migration(migrations.Migration):
                 null=True, on_delete=django.db.models.deletion.CASCADE, to="gsr_booking.reservation"
             ),
         ),
+        migrations.AddField(
+            model_name="reservation", name="is_cancelled", field=models.BooleanField(default=False),
+        ),
         migrations.RunPython(create_reservation_for_booking),
     ]
