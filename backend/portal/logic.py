@@ -56,3 +56,21 @@ def get_demographic_breakdown(poll_id):
                     context["breakdown"][population] += 1
         data.append(context)
     return data
+
+'''
+import tinify
+
+    source_data = file.read()
+    read_image = tinify.from_buffer(source_data)  # .resize(method='cover', width=600, height=300)
+    aws_url = read_image.store(
+        service="s3",
+        aws_access_key_id=os.environ.get("AWS_KEY"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET"),
+        region="us-east-1",
+        path="penn.mobile.portal/images/{}/{}-{}".format(account.name, timestamp, file.filename),
+    ).location
+
+    return jsonify({"image_url": aws_url})
+
+NOTE: get the file from request.FILES
+'''
