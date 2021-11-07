@@ -8,7 +8,6 @@ from gsr_booking.views import (
     CheckWharton,
     GroupMembershipViewSet,
     GroupViewSet,
-    GSRBookingCredentialsViewSet,
     Locations,
     RecentGSRs,
     ReservationsView,
@@ -24,7 +23,6 @@ router.register(r"groups", GroupViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("credentials/", GSRBookingCredentialsViewSet.as_view()),
     path("gsr/locations/", Locations.as_view(), name="locations"),
     path("gsr/availability/<lid>/<gid>", Availability.as_view(), name="availability"),
     path("gsr/book/", BookRoom.as_view(), name="book"),
