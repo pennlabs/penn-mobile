@@ -7,7 +7,6 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, viewsets
-from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -40,7 +39,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
     lookup_field = "username"
-    authentication_classes = BasicAuthentication
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["username", "first_name", "last_name"]
 
@@ -111,7 +109,6 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["user", "group"]
     permission_classes = [IsAuthenticated]
-    authentication_classes = BasicAuthentication
     queryset = GroupMembership.objects.all()
     serializer_class = GroupMembershipSerializer
 
@@ -241,7 +238,6 @@ class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = BasicAuthentication
 
     def get_queryset(self):
         if not self.request.user.is_authenticated:
