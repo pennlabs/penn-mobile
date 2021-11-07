@@ -57,7 +57,8 @@ def get_demographic_breakdown(poll_id):
         data.append(context)
     return data
 
-'''
+
+"""
 import tinify
 
     source_data = file.read()
@@ -73,4 +74,4 @@ import tinify
     return jsonify({"image_url": aws_url})
 
 NOTE: get the file from request.FILES
-'''
+"""
