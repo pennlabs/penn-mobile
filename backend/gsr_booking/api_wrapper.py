@@ -8,14 +8,7 @@ from django.utils import timezone
 from django.utils.timezone import make_aware
 from requests.exceptions import ConnectTimeout, ReadTimeout
 
-<<<<<<< HEAD
-from gsr_booking.models import (
-    GSR,
-    GSRBooking,
-)
-=======
 from gsr_booking.models import GSR, GSRBooking
->>>>>>> 792ae3d5b61d61cb322404ecd0a3b01f9fa1637b
 
 
 BASE_URL = "https://libcal.library.upenn.edu"
@@ -108,7 +101,6 @@ class BookingWrapper:
                 self.LCW.cancel_room(user, booking_id)
         except APIError as e:
             raise APIError(f"Error: {str(e)}")
-
 
     def check_credits(self, lid, gid, user, date):
         """
