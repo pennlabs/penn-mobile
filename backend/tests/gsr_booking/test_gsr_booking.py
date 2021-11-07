@@ -36,12 +36,12 @@ class UserViewTestCase(TestCase):
     def test_user_detail_in_group(self):
         response = self.client.get("/users/user1/")
         self.assertTrue(200, response.status_code)
-        self.assertEqual(1, len(response.data["booking_groups"]))
+        self.assertEqual(2, len(response.data["booking_groups"]))
 
     def test_me_user_detail_in_group(self):
         response = self.client.get("/users/me/")
         self.assertTrue(200, response.status_code)
-        self.assertEqual(1, len(response.data["booking_groups"]))
+        self.assertEqual(2, len(response.data["booking_groups"]))
 
     def test_user_detail_invited(self):
         self.group.members.add(self.user2)
@@ -50,7 +50,7 @@ class UserViewTestCase(TestCase):
         memship.save()
         response = self.client.get("/users/user2/")
         self.assertTrue(200, response.status_code)
-        self.assertEqual(0, len(response.data["booking_groups"]))
+        self.assertEqual(1, len(response.data["booking_groups"]))
 
     def test_user_invites(self):
         self.group.members.add(self.user2)
@@ -63,8 +63,6 @@ class UserViewTestCase(TestCase):
 
     def test_actualize_nouser_invite(self):
         mem = GroupMembership.objects.create(username="user4", group=self.group, accepted=False)
-        self.assertTrue(mem.user is None)
-
         user4 = User.objects.create_user(username="user4", password="password")
         self.client.logout()
         self.client.login(username="user4", password="password")
@@ -261,7 +259,7 @@ class GroupTestCase(TestCase):
     def test_get_groups(self):
         response = self.client.get("/groups/")
         self.assertEqual(200, response.status_code)
-        self.assertEqual(1, len(response.data))
+        self.assertEqual(2, len(response.data))
 
     def test_get_groups_includes_invites(self):
         GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=False)
@@ -275,7 +273,7 @@ class GroupTestCase(TestCase):
     def test_make_group(self):
         response = self.client.post("/groups/", {"name": "gx", "color": "blue"})
         self.assertEqual(201, response.status_code, response.data)
-        self.assertEqual(3, Group.objects.count())
+        self.assertEqual(5, Group.objects.count())
         self.assertEqual("user1", Group.objects.get(name="gx").owner.username)
 
     def test_only_accepted_memberships(self):

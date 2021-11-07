@@ -9,7 +9,8 @@ User = get_user_model()
 def get_user_populations(user):
     """Returns the target populations that the user belongs to"""
 
-    school = get_affiliation(user.email)
+    school = None
+    # school = get_affiliation(user.email)
     # checks if school is in the target population
     school_id = (
         TargetPopulation.objects.get(population=school).id
@@ -25,21 +26,6 @@ def get_user_populations(user):
         else -1
     )
     return (school_id, year_id)
-
-
-def get_affiliation(email):
-    """Gets the school based on user's email"""
-
-    if "wharton" in email:
-        return "Wharton"
-    elif "seas" in email:
-        return "SEAS"
-    elif "sas" in email:
-        return "College"
-    elif "nursing" in email:
-        return "Nursing"
-    else:
-        return "Other"
 
 
 def get_demographic_breakdown(poll_id):

@@ -48,7 +48,7 @@ class PollPermissions(TestCase):
             "poll-list",
             "polloption-list",
             "pollvote-list",
-            "poll-history",
+            "poll-history-list",
             "target-populations",
         ]
         for url in list_urls:
