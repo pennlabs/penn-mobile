@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react'
-import { NextPageContext } from 'next'
+import { GetServerSidePropsContext } from 'next'
 
-import { withAuth } from '../../context/auth'
+import { AuthUserContext, withAuth } from '../../context/auth'
 import { doApiRequest } from '../../utils/fetch'
-import { PageType, PollType, Status } from '../../types'
+import { PageType, PollType, Status, User } from '../../types'
 import Nav from '../../components/header/Nav'
 import { Col, Group, Row } from '../../components/styles/Layout'
 import { Button, ToggleButton } from '../../components/styles/Buttons'
@@ -12,14 +12,15 @@ import { colors } from '../../utils/colors'
 import StatusBar from '../../components/form/StatusBar'
 import PollForm from '../../components/form/poll/PollForm'
 import Preview from '../../components/form/Preview'
+import { camelizeSnakeKeys } from '../../utils/utils'
 
 interface iPollPageProps {
-  // true if creating a new poll, false if editing an existing poll
-  createMode: boolean
+  user: User
+  createMode: boolean // true if creating a poll, false if editing an existing poll
   poll: PollType
 }
 
-const PollPage = ({ poll, createMode }: iPollPageProps) => {
+const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
   const [state, setState] = useState<PollType>(poll)
 
   const updateState = useCallback((newState) => {
@@ -33,7 +34,7 @@ const PollPage = ({ poll, createMode }: iPollPageProps) => {
         question: state.question,
         source: state.source,
         start_date: state.startDate,
-        expire_date: state.endDate,
+        expire_date: state.expireDate,
         user_comments: state.userComments,
         // TODO: add target populations and multiselect
         target_populations: [],
@@ -56,7 +57,7 @@ const PollPage = ({ poll, createMode }: iPollPageProps) => {
   }
 
   return (
-    <>
+    <AuthUserContext.Provider value={{ user }}>
       <Nav />
       <Row style={{ padding: '2.5rem 0 0 4rem' }}>
         <ToggleButton currPage={PageType.POLL} />
@@ -85,19 +86,18 @@ const PollPage = ({ poll, createMode }: iPollPageProps) => {
           <Preview state={state} />
         </Col>
       </Row>
-    </>
+    </AuthUserContext.Provider>
   )
 }
 
-// TODO: types
-export const getServerSideProps = async (context: any) => {
-  const { req, params } = context
-  const { pid } = params
+export const getServerSidePropsInner = async (
+  context: GetServerSidePropsContext
+) => {
+  const pid = context.params?.pid
 
   const res = await doApiRequest(`/api/portal/polls/${pid}`, {
     method: 'GET',
-    // TODO: auth?
-    headers: req ? { cookie: req.headers.cookie } : undefined,
+    headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
   })
   const poll = await res.json()
 
@@ -106,20 +106,21 @@ export const getServerSideProps = async (context: any) => {
     // fetch poll options for poll
     const pollOptions = await doApiRequest(`/api/portal/options/${pid}`, {
       method: 'GET',
-      headers: req ? { cookie: req.headers.cookie } : undefined,
+      headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
     })
     poll.pollOptions = await pollOptions.json()
 
     return {
-      props: { poll, createMode: false },
+      props: { poll: camelizeSnakeKeys(poll), createMode: false },
     }
   } else {
-    // for any poll where pid does not exist, render poll create form
+    // for any poll where pid does not exist, render create poll form with
+    // empty initial state
     const initPollState = {
       question: '',
       source: '',
       startDate: null,
-      endDate: null,
+      expireDate: null,
       pollOptions: { 0: '', 1: '' },
       userComments: '',
       status: Status.DRAFT,
@@ -133,5 +134,7 @@ export const getServerSideProps = async (context: any) => {
     }
   }
 }
+
+export const getServerSideProps = withAuth(getServerSidePropsInner)
 
 export default PollPage
