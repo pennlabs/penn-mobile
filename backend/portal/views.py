@@ -8,17 +8,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from portal.logic import get_demographic_breakdown
-from portal.models import Poll, PollOption, PollVote, TargetPopulation
+from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
 from portal.permissions import (
     IsSuperUser,
     OptionOwnerPermission,
     PollOwnerPermission,
+    PostOwnerPermission,
     TimeSeriesPermission,
 )
 from portal.serializers import (
     PollOptionSerializer,
     PollSerializer,
     PollVoteSerializer,
+    PostSerializer,
     RetrievePollSerializer,
     RetrievePollVoteSerializer,
     TargetPopulationSerializer,
@@ -100,6 +102,11 @@ class Polls(viewsets.ModelViewSet):
                 many=True,
             ).data
         )
+
+    @action(detail=True, methods=["get"])
+    def edit_view(self, request, pk=None):
+        """Returns information on specific post to allow for editing"""
+        return Response(RetrievePollSerializer(Poll.objects.filter(id=pk).first(), many=False).data)
 
 
 class RetrievePollVotes(viewsets.ModelViewSet):
@@ -212,4 +219,61 @@ class PollVoteStatistics(APIView):
                 .order_by("date"),
                 "poll_statistics": get_demographic_breakdown(id),
             }
+        )
+
+
+class Posts(viewsets.ModelViewSet):
+    """
+    browse:
+    returns a list of Posts that are targeted at the current user.
+    Admins sees all the posts(?)
+
+    create:
+    Create a Post
+
+    partial_update:
+    Update certain fields in the Post.
+    Need to be the admin or the creator.
+
+    destroy:
+    Delete a Post.
+    Need to be the admin or the creator.
+    """
+
+    serializer_class = PostSerializer
+    permission_classes = [PostOwnerPermission | IsSuperUser]
+
+    def get_queryset(self):
+        return Post.objects.all()
+
+    @action(detail=False, methods=["get"])
+    def browse(self, request):
+        """
+        Returns a list of all posts that are targeted at the current user
+        For admins, returns list of posts that they have not approved and have yet to expire
+        """
+        posts = (
+            Post.objects.filter(
+                Q(approved=True) | Q(admin_comment=None), expire_date__gte=timezone.localtime(),
+            )
+            if request.user.is_superuser
+            else Post.objects.filter(
+                # Q(target_populations__in=get_user_populations(request.user)),
+                start_date__lte=timezone.localtime(),
+                expire_date__gte=timezone.localtime(),
+                approved=True,
+            )
+        )
+        return Response(
+            PostSerializer(posts.distinct().order_by("approved", "start_date"), many=True).data
+        )
+
+    @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
+    def review(self, request):
+        """Returns a list of all Posts that admins still need to approve of"""
+        return Response(
+            PostSerializer(
+                Post.objects.filter(Q(admin_comment=None) | Q(admin_comment=""), approved=False),
+                many=True,
+            ).data
         )

@@ -86,7 +86,7 @@ class Group(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        GroupMembership.objects.create(
+        GroupMembership.objects.get_or_create(
             group=self, user=self.owner, type=GroupMembership.ADMIN, accepted=True
         )
 
@@ -100,27 +100,6 @@ class UserSearchIndex(models.Model):
         self.full_name = f"{self.user.first_name} {self.user.last_name}"
         self.pennkey = self.user.username
         super().save(*args, **kwargs)
-
-
-# Model to store credentials necessary for booking GSRs.
-class GSRBookingCredentials(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-
-    # Session ID is used for Wharton GSR booking
-    session_id = models.CharField("Session ID", max_length=50, unique=False, null=True)
-
-    # Expiration date of the Session ID
-    expiration_date = models.DateTimeField("Session ID expiration date", null=True)
-
-    # When Session ID or email was last updated
-    date_updated = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.user.username
-
-    class Meta:
-        verbose_name = "GSR Booking Credentials"
-        verbose_name_plural = "GSR Booking Credentials"
 
 
 class GSR(models.Model):
@@ -137,6 +116,14 @@ class GSR(models.Model):
 
     def __str__(self):
         return f"{self.lid}-{self.gid}"
+
+
+class Reservation(models.Model):
+    gsr = models.ForeignKey(GSR, on_delete=models.CASCADE)
+    start = models.DateTimeField(default=timezone.now)
+    end = models.DateTimeField(default=timezone.now)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
 
 
 class GSRBooking(models.Model):

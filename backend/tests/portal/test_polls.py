@@ -137,6 +137,13 @@ class TestPolls(TestCase):
         response = self.client.post("/portal/options/", payload_6)
         self.assertEqual(5, PollOption.objects.all().count())
 
+    def test_edit_vote_view(self):
+        response = self.client.get(f"/portal/polls/{self.id}/edit_view/")
+        res_json = json.loads(response.content)
+        self.assertEqual("Test Source 1", res_json["source"])
+        # test that options key is in response
+        self.assertIn("options", res_json)
+
 
 class TestPollVotes(TestCase):
     """Tests Create/Update Polls and History"""
