@@ -262,3 +262,13 @@ class Posts(viewsets.ModelViewSet):
         return Response(
             PostSerializer(posts.distinct().order_by("approved", "start_date"), many=True).data
         )
+
+    @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
+    def review(self, request):
+        """Returns a list of all Posts that admins still need to approve of"""
+        return Response(
+            PostSerializer(
+                Post.objects.filter(Q(admin_comment=None) | Q(admin_comment=""), approved=False),
+                many=True,
+            ).data
+        )
