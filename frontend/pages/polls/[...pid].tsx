@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { GetServerSidePropsContext } from 'next'
+import { useRouter } from 'next/router'
 
 import { AuthUserContext, withAuth } from '../../context/auth'
 import { doApiRequest } from '../../utils/fetch'
@@ -22,6 +23,7 @@ interface iPollPageProps {
 
 const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
   const [state, setState] = useState<PollType>(poll)
+  const router = useRouter()
 
   const updateState = useCallback((newState) => {
     setState((currentState) => ({ ...currentState, ...newState }))
@@ -53,6 +55,7 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
             },
           })
         )
+        router.push(`/polls/${res.id}`)
       })
   }
 
