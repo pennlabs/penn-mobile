@@ -103,6 +103,11 @@ class Polls(viewsets.ModelViewSet):
             ).data
         )
 
+    @action(detail=True, methods=["get"])
+    def edit_view(self, request, pk=None):
+        """Returns information on specific post to allow for editing"""
+        return Response(RetrievePollSerializer(Poll.objects.filter(id=pk).first(), many=False).data)
+
 
 class RetrievePollVotes(viewsets.ModelViewSet):
     """Retrieve history of polls and their statistics"""
