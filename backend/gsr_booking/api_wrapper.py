@@ -3,15 +3,13 @@ import datetime
 import requests
 from bs4 import BeautifulSoup
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from requests.exceptions import ConnectTimeout, ReadTimeout
+
 from gsr_booking.models import (
     GSR,
-    Group,
-    GroupMembership,
     GSRBooking,
-    GSRBookingCredentials,
-    UserSearchIndex,
 )
 
 
@@ -27,18 +25,23 @@ ROOM_BLACKLIST = {7176, 16970, 16998, 17625}
 class APIError(ValueError):
     pass
 
+
 class BookingWrapper:
     def __init__(self):
         self.WLW = WhartonLibWrapper()
         self.LCW = LibCalWrapper()
 
     def book_room(self, gid, rid, start, end, user):
+        # check if all the fields are not None
+        if not (gid and rid and start and end and user):
+            raise APIError("missing required fields")
+
         gsr = GSR.objects.filter(gid=gid)
         if not gsr.exists():
             raise APIError(f"Unknown GSR GID {gid}")
 
         # error catching on view side
-        if gsr.kind == GSR.KIND_WHARTON:
+        if gsr.first().kind == GSR.KIND_WHARTON:
             return self.WLW.book_room(rid, start, end, user.username).get("booking_id")
         else:
             return self.LCW.book_room(rid, start, end, user).get("booking_id")
@@ -48,12 +51,12 @@ class BookingWrapper:
         gsr = GSR.objects.filter(lid=lid)
         if not gsr.exists():
             raise APIError(f"Unknown GSR LID {lid}")
-        
-        if gsr.kind == GSR.KIND_WHARTON:
+
+        if gsr.first().kind == GSR.KIND_WHARTON:
             rooms = self.WLW.get_availability(lid, start, end, user.username)
         else:
             rooms = self.LCW.get_availability(lid, start, end)
-        
+
         # cleans data to match Wharton wrapper
         try:
             gsr = [x for x in rooms["categories"] if x["cid"] == int(gid)][0]
@@ -74,11 +77,33 @@ class BookingWrapper:
             for x in gsr["rooms"]
         ]
         return context
-        
 
-    def cancel_room():
-        # TODO
-        pass
+    def cancel_room(self, booking_id, user):
+        # gets list of all reservations from wharton
+        # if student is non-wharton, then they will never
+        # have reservations from wharton
+        # throws error iff the error isn't just unable to
+        # perform action
+        if not (booking_id):
+            raise APIError("missing required fields")
+        try:
+            wharton_bookings = self.WLW.get_reservations(user)["bookings"]
+        except APIError as e:
+            if str(e) == "Wharton: GSR view restricted to Wharton Pennkeys":
+                wharton_bookings = []
+            else:
+                raise APIError(f"Error: {str(e)}")
+        wharton_booking_ids = [str(x["booking_id"]) for x in wharton_bookings]
+        try:
+            # checks if the booking_id is a wharton booking_id
+            if booking_id in wharton_booking_ids:
+                self.WLW.cancel_room(user, booking_id)
+            else:
+                # defaults to wharton because it is in wharton_booking_ids
+                self.LCW.cancel_room(user, booking_id)
+        except APIError as e:
+            raise APIError(f"Error: {str(e)}")
+
 
 class WhartonLibWrapper:
     def request(self, *args, **kwargs):
@@ -161,6 +186,11 @@ class WhartonLibWrapper:
 
     def cancel_room(self, user, booking_id):
         """Cancels reservation given booking id"""
+        wharton_booking = GSRBooking.objects.filter(booking_id=booking_id)
+        if wharton_booking.exists():
+            gsr_booking = wharton_booking.first()
+            gsr_booking.is_cancelled = True
+            gsr_booking.save()
         url = WHARTON_URL + user.username + "/reservations/" + booking_id + "/cancel"
         response = self.request("DELETE", url).json()
         if "detail" in response:
@@ -334,8 +364,14 @@ class LibCalWrapper:
         else:
             return "Other"
 
-    def cancel_room(self, booking_id):
+    def cancel_room(self, user, booking_id):
         """Cancels room"""
+        gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
+        if gsr_booking:
+            gsr_booking.is_cancelled = True
+            gsr_booking.save()
+        if user != gsr_booking.user:
+            raise APIError("Error: Unauthorized: This reservation was booked by someone else.")
         response = self.request("POST", f"{API_URL}/1.1/space/cancel/{booking_id}").json()
         if "error" in response[0]:
             raise APIError("LibCal: " + response[0]["error"])
