@@ -39,7 +39,7 @@ const NavLink = ({ title, link }: { title: string; link?: string }) => (
 )
 
 const Nav = () => {
-  const { user: isLoggedIn } = useContext(AuthUserContext)
+  const { user } = useContext(AuthUserContext)
   const router: NextRouter = useRouter()
 
   const LandingPageNav = () => (
@@ -56,19 +56,19 @@ const Nav = () => {
       <NavStyle>
         <Logo />
         <Group horizontal margin="0 0 0.5rem 0">
-          {!isLoggedIn ? (
+          {!user ? (
             <LandingPageNav />
           ) : (
             <NavLink title="Create" link="/polls/create" />
           )}
           <Link
-            href={`/api/accounts/${isLoggedIn ? 'logout' : 'login'}/?next=${
+            href={`/api/accounts/${user ? 'logout' : 'login'}/?next=${
               router.pathname
             }`}
           >
             <a>
               <Button color={colors.MEDIUM_BLUE}>
-                {isLoggedIn ? 'Logout' : 'Login'}
+                {user ? 'Logout' : 'Login'}
               </Button>
             </a>
           </Link>

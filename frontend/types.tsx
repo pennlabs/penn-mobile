@@ -29,7 +29,7 @@ export interface PollType {
   source: string
   pollOptions: { [key: number]: string }
   startDate: Date | null
-  endDate: Date | null
+  expireDate: Date | null
   userComments: string
   status: Status
 }

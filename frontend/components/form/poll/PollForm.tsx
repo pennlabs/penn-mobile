@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
 
-import { PollType } from '../../../types'
+import { PollType, updateStateType } from '../../../types'
 import { Button } from '../../styles/Buttons'
 import { Heading3, Text } from '../../styles/Text'
 import { colors } from '../../../utils/colors'
 import { Card } from '../../styles/Card'
 import { FormField } from '../../styles/Form'
-import { updateStateType } from '../../../types'
 import { InfoSpan, IconPlus, IconTimes } from '../../styles/Icons'
 import { Group } from '../../styles/Layout'
 import DatePickerForm from '../DatePicker'
@@ -90,7 +89,7 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
         <DatePickerForm
           updateState={updateState}
           startDate={state.startDate}
-          endDate={state.endDate}
+          expireDate={state.expireDate}
         />
 
         <Text bold>Filters</Text>
