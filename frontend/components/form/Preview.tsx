@@ -1,7 +1,7 @@
 import React from 'react'
 
 import s from 'styled-components'
-import { Poll } from '../../types'
+import { PollType } from '../../types'
 import { colors } from '../../utils/colors'
 import { Group } from '../styles/Layout'
 import { Text } from '../styles/Text'
@@ -24,7 +24,7 @@ const PhonePollOption = s.div<{ width: number }>`
   position: relative;
 `
 
-const Preview = ({ state }: { state: Poll }) => {
+const Preview = ({ state }: { state: PollType }) => {
   return (
     <div
       className="phone-preview"
@@ -73,26 +73,26 @@ const Preview = ({ state }: { state: Poll }) => {
             <Text size="1rem" bold>
               {state.question}
             </Text>
-            {Object.entries(state.options).map(([key, value]) => (
+            {state.options.map((option) => (
               <Group
                 horizontal
                 justifyContent="space-between"
                 style={{ marginBottom: '0.5rem' }}
-                key={key}
+                key={`preview-group-${option.id}`}
               >
                 <PhonePollOption
-                  key={key}
-                  width={100 / Object.entries(state.options).length}
+                  key={`preview-opt-${option.id}`}
+                  width={100 / state.options.length}
                 />
                 <Text
                   bold
                   color={colors.DARK_GRAY}
                   style={{ position: 'absolute', marginLeft: '0.5rem' }}
                 >
-                  {value || 'Example Poll Option'}
+                  {option.choice || 'Example Poll Option'}
                 </Text>
                 <Text size="1rem" bold color={colors.LIGHT_GRAY}>{`${Math.floor(
-                  100 / Object.entries(state.options).length
+                  100 / state.options.length
                 )}%`}</Text>
               </Group>
             ))}

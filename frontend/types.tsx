@@ -12,7 +12,8 @@ export enum PageType {
 
 export enum Status {
   DRAFT,
-  PENDING,
+  PENDING, // pending review
+  REVISION, // under revision
   APPROVED,
   LIVE,
   EXPIRED,
@@ -23,7 +24,7 @@ export interface PollType {
   id?: number
   question: string
   source: string
-  options: { [key: number]: string }
+  options: { id: number; choice: string }[]
   startDate: Date | null
   expireDate: Date | null
   userComments: string

@@ -28,7 +28,10 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
       source: '',
       startDate: null,
       expireDate: null,
-      options: { 0: '', 1: '' },
+      options: [
+        { id: 0, choice: '' },
+        { id: 1, choice: '' },
+      ],
       userComments: '',
       status: Status.DRAFT,
       targetPopulations: [],
@@ -66,8 +69,26 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
     doApiRequest(`/api/portal/polls/${state.id}`, {
       method: 'DELETE',
     })
-      .then((res) => router.push('/'))
-      .catch((err) => console.log(err))
+    router.push('/')
+  }
+
+  const onSave = () => {
+    doApiRequest(`/api/portal/polls/${state.id}/`, {
+      method: 'PATCH',
+      body: convertCamelCase(state),
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        state.options.map((option) =>
+          doApiRequest(`/api/portal/options/${state.id}/`, {
+            method: 'PATCH',
+            body: {
+              poll: res.id,
+              choice: option.choice,
+            },
+          })
+        )
+      })
   }
 
   return (
@@ -86,11 +107,15 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
             <Subtitle>Poll Details</Subtitle>
             <Group horizontal alignItems="center">
               {!createMode && (
-                <Button color={colors.RED} onClick={onDelete}>
-                  Delete
-                </Button>
+                <>
+                  <Button color={colors.RED} onClick={onDelete}>
+                    Delete
+                  </Button>
+                  <Button color={colors.GRAY} onClick={onSave}>
+                    Save
+                  </Button>
+                </>
               )}
-              <Button color={colors.GRAY}>Save</Button>
               <Button color={colors.GREEN} onClick={onSubmit}>
                 Submit
               </Button>
@@ -119,11 +144,11 @@ export const getServerSidePropsInner = async (
     })
     const poll = await res.json()
     if (res.ok && poll.id) {
-      const pollOptionsObj: PollType['options'] = {}
-      poll.options.forEach((option: any, index: number) => {
-        pollOptionsObj[index] = option.choice
-      })
-      poll.options = pollOptionsObj
+      // const pollOptionsObj: PollType['options'] = {}
+      // poll.options.forEach((option: any, index: number) => {
+      //   pollOptionsObj[index] = option.choice
+      // })
+      // poll.options = pollOptionsObj
       poll.status = poll.approved ? Status.APPROVED : Status.PENDING
 
       return {

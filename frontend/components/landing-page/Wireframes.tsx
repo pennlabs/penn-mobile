@@ -3,19 +3,20 @@ import s from 'styled-components'
 
 const IPhoneImg = s.img`
   position: absolute;
-  left: 20%;
-  bottom: -30%;
+  left: -10%;
+  bottom: 0%;
   z-index: 1;
+  width: 420px;
 `
 
 const Wireframes = () => (
-  <div style={{ position: 'relative' }}>
+  <div style={{ position: 'relative', top: '-10%' }}>
     <img
-      style={{ zIndex: 3 }}
-      src="/browser-wireframe.svg"
-      alt="browser wireframe"
+      style={{ zIndex: 3, width: '1150px' }}
+      src="/web-mockup4x.png"
+      alt="web-mockup"
     />
-    <IPhoneImg src="/iphone-wireframe.svg" alt="iphone wireframe" />
+    <IPhoneImg src="/phone-mockup4x.png" alt="phone-mockup" />
   </div>
 )
 

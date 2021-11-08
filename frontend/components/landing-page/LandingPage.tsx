@@ -7,16 +7,21 @@ import Wireframes from './Wireframes'
 
 const LandingPage = () => (
   <>
-    <Row style={{ backgroundColor: colors.WHITE }}>
-      <Col sm={12} md={12} lg={5} fullHeight padding="0 0 0 3rem">
-        <Group style={{ marginTop: '6rem' }}>
+    <Row
+      style={{
+        backgroundColor: colors.WHITE,
+        overflow: 'hidden',
+      }}
+    >
+      <Col sm={12} md={12} lg={5} padding="0 0 0 3rem">
+        <Group style={{ marginTop: '25%' }}>
           <Title>
             Welcome <br /> to Portal.
           </Title>
           {/* <Text>ah, there will be some text here...</Text> */}
         </Group>
       </Col>
-      <Col sm={12} md={12} lg={7} style={{ overflow: 'hidden' }}>
+      <Col sm={12} md={12} lg={7} style={{ height: '92vh' }}>
         <Wireframes />
       </Col>
     </Row>

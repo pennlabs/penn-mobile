@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 
 import { PollType, updateStateType } from '../../../types'
 import { Button } from '../../styles/Buttons'
@@ -18,28 +18,44 @@ interface PollFormProps {
 const MAX_NUM_OPTIONS = 6
 
 const PollForm = ({ state, updateState }: PollFormProps) => {
-  const [numOptions, setNumOptions] = useState(2)
+  const updatePollOptions = (newOption: any) => {
+    let modified = false
+    const key = Number(Object.keys(newOption)[0])
+    const newOptions = state.options.map((option) => {
+      if (option.id === key) {
+        modified = true
+        return { id: option.id, choice: newOption[key] }
+      }
+      return option
+    })
 
-  const updatePollOptions = (newOption: Object) => {
+    if (!modified) {
+      newOptions.push({ id: key, choice: newOption[key] })
+    }
+
     updateState({
       ...state,
-      options: { ...state.options, ...newOption },
+      options: newOptions,
     })
   }
 
   const addPollOption = () => {
-    if (Object.keys(state.options).length < MAX_NUM_OPTIONS) {
+    const maxId = Math.max(...state.options.map((opt) => opt.id), 0)
+
+    if (state.options.length < MAX_NUM_OPTIONS) {
       updatePollOptions({
-        [numOptions]: '',
+        [maxId + 1]: '',
       })
-      setNumOptions(numOptions + 1)
     }
   }
 
   const removePollOption = (pollIndex: number) => {
-    const oldOptions = state.options
-    delete oldOptions[pollIndex]
-    updatePollOptions(oldOptions)
+    updateState({
+      ...state,
+      options: state.options.filter((_, index) => {
+        return index !== pollIndex
+      }),
+    })
   }
 
   return (
@@ -61,17 +77,25 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
           updateState={updateState}
         />
         <Text bold>Poll Options</Text>
-        {Object.entries(state.options).map(([key, value]) => (
-          <Group horizontal style={{ position: 'relative' }} key={key}>
+        {state.options.map((obj, i) => (
+          <Group
+            horizontal
+            style={{ position: 'relative' }}
+            key={`group-${obj.id}`}
+          >
             <FormField
-              name={key}
-              value={value}
+              name={obj.id.toString()}
+              value={obj.choice}
               placeholder="e.g. poll option"
               updateState={updatePollOptions}
-              paddingRight={Number(key) >= 2}
+              paddingRight={i >= 2}
             />
-            {Number(key) >= 2 && (
-              <div onClick={() => removePollOption(Number(key))} role="button">
+            {i >= 2 && (
+              <div
+                onClick={() => removePollOption(i)}
+                role="button"
+                key={`remove-${obj.id}`}
+              >
                 <IconTimes />
               </div>
             )}
