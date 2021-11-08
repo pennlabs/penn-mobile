@@ -10,12 +10,8 @@ export enum PageType {
   POLL,
 }
 
-/**
- * the lifecycle of a post/poll :)
- */
 export enum Status {
   DRAFT,
-  SUBMITTED,
   PENDING,
   APPROVED,
   LIVE,

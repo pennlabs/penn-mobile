@@ -34,6 +34,7 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
       targetPopulations: [],
     }
   )
+
   const router = useRouter()
 
   const updateState = useCallback((newState) => {
@@ -57,9 +58,16 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
           })
         )
 
-        // redirect to dashboard after submitting
-        router.push('/')
+        router.push('/') // redirect to dashboard after submitting
       })
+  }
+
+  const onDelete = () => {
+    doApiRequest(`/api/portal/polls/${state.id}`, {
+      method: 'DELETE',
+    })
+      .then((res) => router.push('/'))
+      .catch((err) => console.log(err))
   }
 
   return (
@@ -76,9 +84,12 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
             margin="0 0 1.5rem 0"
           >
             <Subtitle>Poll Details</Subtitle>
-            {/* TODO: add functionality to these buttons... */}
             <Group horizontal alignItems="center">
-              {!createMode && <Button color={colors.RED}>Delete</Button>}
+              {!createMode && (
+                <Button color={colors.RED} onClick={onDelete}>
+                  Delete
+                </Button>
+              )}
               <Button color={colors.GRAY}>Save</Button>
               <Button color={colors.GREEN} onClick={onSubmit}>
                 Submit
@@ -106,13 +117,14 @@ export const getServerSidePropsInner = async (
       method: 'GET',
       headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
     })
-    if (res.ok) {
-      const poll = await res.json()
+    const poll = await res.json()
+    if (res.ok && poll.id) {
       const pollOptionsObj: PollType['options'] = {}
       poll.options.forEach((option: any, index: number) => {
         pollOptionsObj[index] = option.choice
       })
       poll.options = pollOptionsObj
+      poll.status = poll.approved ? Status.APPROVED : Status.PENDING
 
       return {
         props: { poll: convertSnakeCase(poll), createMode: false },
