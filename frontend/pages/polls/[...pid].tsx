@@ -13,16 +13,27 @@ import { colors } from '../../utils/colors'
 import StatusBar from '../../components/form/StatusBar'
 import PollForm from '../../components/form/poll/PollForm'
 import Preview from '../../components/form/Preview'
-import { camelizeSnakeKeys } from '../../utils/utils'
+import { convertCamelCase, convertSnakeCase } from '../../utils/utils'
 
 interface iPollPageProps {
   user: User
   createMode: boolean // true if creating a poll, false if editing an existing poll
-  poll: PollType
+  poll?: PollType
 }
 
 const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
-  const [state, setState] = useState<PollType>(poll)
+  const [state, setState] = useState<PollType>(
+    poll || {
+      question: '',
+      source: '',
+      startDate: null,
+      expireDate: null,
+      options: { 0: '', 1: '' },
+      userComments: '',
+      status: Status.DRAFT,
+      targetPopulations: [],
+    }
+  )
   const router = useRouter()
 
   const updateState = useCallback((newState) => {
@@ -32,21 +43,11 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
   const onSubmit = () => {
     doApiRequest('/api/portal/polls/', {
       method: 'POST',
-      body: {
-        question: state.question,
-        source: state.source,
-        start_date: state.startDate,
-        expire_date: state.expireDate,
-        user_comments: state.userComments,
-        // TODO: add target populations and multiselect
-        target_populations: [],
-        // multiselect: state.multiselect,
-      },
+      body: convertCamelCase(state),
     })
       .then((res) => res.json())
       .then((res) => {
-        const options = Object.values(state.pollOptions)
-        options.map((option) =>
+        Object.values(state.options).map((option) =>
           doApiRequest('/api/portal/options/', {
             method: 'POST',
             body: {
@@ -55,7 +56,9 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
             },
           })
         )
-        router.push(`/polls/${res.id}`)
+
+        // redirect to dashboard after submitting
+        router.push('/')
       })
   }
 
@@ -95,46 +98,34 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
 
 export const getServerSidePropsInner = async (
   context: GetServerSidePropsContext
-) => {
+): Promise<{ props: { poll?: PollType; createMode: boolean } }> => {
   const pid = context.params?.pid
 
-  const res = await doApiRequest(`/api/portal/polls/${pid}`, {
-    method: 'GET',
-    headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
-  })
-  const poll = await res.json()
-
-  // poll with pid exists, render poll to edit or delete
-  if (poll.id) {
-    // fetch poll options for poll
-    const pollOptions = await doApiRequest(`/api/portal/options/${pid}`, {
+  if (pid && +pid) {
+    const res = await doApiRequest(`/api/portal/polls/${pid}/edit_view`, {
       method: 'GET',
       headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
     })
-    poll.pollOptions = await pollOptions.json()
+    if (res.ok) {
+      const poll = await res.json()
+      const pollOptionsObj: PollType['options'] = {}
+      poll.options.forEach((option: any, index: number) => {
+        pollOptionsObj[index] = option.choice
+      })
+      poll.options = pollOptionsObj
 
-    return {
-      props: { poll: camelizeSnakeKeys(poll), createMode: false },
+      return {
+        props: { poll: convertSnakeCase(poll), createMode: false },
+      }
     }
-  } else {
-    // for any poll where pid does not exist, render create poll form with
-    // empty initial state
-    const initPollState = {
-      question: '',
-      source: '',
-      startDate: null,
-      expireDate: null,
-      pollOptions: { 0: '', 1: '' },
-      userComments: '',
-      status: Status.DRAFT,
-    }
+  }
 
-    return {
-      props: {
-        poll: initPollState,
-        createMode: true,
-      },
-    }
+  // for any poll where pid does not exist, render create poll form with
+  // empty initial state
+  return {
+    props: {
+      createMode: true,
+    },
   }
 }
 

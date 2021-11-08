@@ -73,7 +73,7 @@ const Preview = ({ state }: { state: Poll }) => {
             <Text size="1rem" bold>
               {state.question}
             </Text>
-            {Object.entries(state.pollOptions).map(([key, value]) => (
+            {Object.entries(state.options).map(([key, value]) => (
               <Group
                 horizontal
                 justifyContent="space-between"
@@ -82,7 +82,7 @@ const Preview = ({ state }: { state: Poll }) => {
               >
                 <PhonePollOption
                   key={key}
-                  width={100 / Object.entries(state.pollOptions).length}
+                  width={100 / Object.entries(state.options).length}
                 />
                 <Text
                   bold
@@ -92,7 +92,7 @@ const Preview = ({ state }: { state: Poll }) => {
                   {value || 'Example Poll Option'}
                 </Text>
                 <Text size="1rem" bold color={colors.LIGHT_GRAY}>{`${Math.floor(
-                  100 / Object.entries(state.pollOptions).length
+                  100 / Object.entries(state.options).length
                 )}%`}</Text>
               </Group>
             ))}

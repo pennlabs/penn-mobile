@@ -27,11 +27,12 @@ export interface PollType {
   id?: number
   question: string
   source: string
-  pollOptions: { [key: number]: string }
+  options: { [key: number]: string }
   startDate: Date | null
   expireDate: Date | null
   userComments: string
   status: Status
+  targetPopulations: number[]
 }
 
 export type updateStateType = (newState: Object) => void

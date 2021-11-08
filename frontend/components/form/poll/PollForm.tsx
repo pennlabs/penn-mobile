@@ -23,12 +23,12 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
   const updatePollOptions = (newOption: Object) => {
     updateState({
       ...state,
-      pollOptions: { ...state.pollOptions, ...newOption },
+      options: { ...state.options, ...newOption },
     })
   }
 
   const addPollOption = () => {
-    if (Object.keys(state.pollOptions).length < MAX_NUM_OPTIONS) {
+    if (Object.keys(state.options).length < MAX_NUM_OPTIONS) {
       updatePollOptions({
         [numOptions]: '',
       })
@@ -37,7 +37,7 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
   }
 
   const removePollOption = (pollIndex: number) => {
-    const oldOptions = state.pollOptions
+    const oldOptions = state.options
     delete oldOptions[pollIndex]
     updatePollOptions(oldOptions)
   }
@@ -61,7 +61,7 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
           updateState={updateState}
         />
         <Text bold>Poll Options</Text>
-        {Object.entries(state.pollOptions).map(([key, value]) => (
+        {Object.entries(state.options).map(([key, value]) => (
           <Group horizontal style={{ position: 'relative' }} key={key}>
             <FormField
               name={key}
@@ -91,8 +91,6 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
           startDate={state.startDate}
           expireDate={state.expireDate}
         />
-
-        <Text bold>Filters</Text>
       </Card>
 
       <Heading3>
