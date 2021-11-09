@@ -19,9 +19,15 @@ interface iPollPageProps {
   user: User
   createMode: boolean // true if creating a poll, false if editing an existing poll
   poll?: PollType
+  prevOptionIds?: number[] // poll option ids
 }
 
-const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
+const PollPage = ({
+  user,
+  createMode,
+  poll,
+  prevOptionIds,
+}: iPollPageProps) => {
   const [state, setState] = useState<PollType>(
     poll || {
       question: '',
@@ -51,12 +57,12 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
     })
       .then((res) => res.json())
       .then((res) => {
-        Object.values(state.options).map((option) =>
+        state.options.map((option) =>
           doApiRequest('/api/portal/options/', {
             method: 'POST',
             body: {
               poll: res.id,
-              choice: option,
+              choice: option.choice,
             },
           })
         )
@@ -73,22 +79,43 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
   }
 
   const onSave = () => {
+    // update poll fields
     doApiRequest(`/api/portal/polls/${state.id}/`, {
       method: 'PATCH',
       body: convertCamelCase(state),
     })
-      .then((res) => res.json())
-      .then((res) => {
-        state.options.map((option) =>
-          doApiRequest(`/api/portal/options/${state.id}/`, {
-            method: 'PATCH',
-            body: {
-              poll: res.id,
-              choice: option.choice,
-            },
-          })
-        )
-      })
+
+    const currOptionIds = state.options.map((option) => {
+      // post new poll option
+      if (!prevOptionIds?.includes(option.id)) {
+        doApiRequest('/api/portal/options/', {
+          method: 'POST',
+          body: {
+            poll: state.id,
+            choice: option.choice,
+          },
+        })
+      } else {
+        // update existing poll option
+        doApiRequest(`/api/portal/options/${option.id}/`, {
+          method: 'PATCH',
+          body: {
+            poll: state.id,
+            choice: option.choice,
+          },
+        })
+      }
+      return option.id
+    })
+
+    prevOptionIds?.forEach((optionId) => {
+      if (!currOptionIds.includes(optionId)) {
+        // delete existing poll option
+        doApiRequest(`/api/portal/options/${optionId}/`, {
+          method: 'DELETE',
+        })
+      }
+    })
   }
 
   return (
@@ -134,7 +161,9 @@ const PollPage = ({ user, createMode, poll }: iPollPageProps) => {
 
 export const getServerSidePropsInner = async (
   context: GetServerSidePropsContext
-): Promise<{ props: { poll?: PollType; createMode: boolean } }> => {
+): Promise<{
+  props: { poll?: PollType; prevOptionIds?: number[]; createMode: boolean }
+}> => {
   const pid = context.params?.pid
 
   if (pid && +pid) {
@@ -144,21 +173,19 @@ export const getServerSidePropsInner = async (
     })
     const poll = await res.json()
     if (res.ok && poll.id) {
-      // const pollOptionsObj: PollType['options'] = {}
-      // poll.options.forEach((option: any, index: number) => {
-      //   pollOptionsObj[index] = option.choice
-      // })
-      // poll.options = pollOptionsObj
+      const prevOptionIds = poll.options.map((opt: any) => opt.id)
       poll.status = poll.approved ? Status.APPROVED : Status.PENDING
 
       return {
-        props: { poll: convertSnakeCase(poll), createMode: false },
+        props: {
+          poll: convertSnakeCase(poll),
+          createMode: false,
+          prevOptionIds,
+        },
       }
     }
   }
 
-  // for any poll where pid does not exist, render create poll form with
-  // empty initial state
   return {
     props: {
       createMode: true,

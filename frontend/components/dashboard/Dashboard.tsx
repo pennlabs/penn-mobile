@@ -14,7 +14,7 @@ const Dashboard = () => (
     }}
   >
     <Group horizontal margin="auto">
-      <img src="/desk.svg" alt="desk svg" />
+      <img src="/desk-graphic.svg" alt="desk svg" />
       <Group margin="0 2rem" style={{ maxWidth: '24rem' }}>
         <Subtitle>Oh, hello there.</Subtitle>
         <Text>

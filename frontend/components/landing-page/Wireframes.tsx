@@ -10,7 +10,7 @@ const IPhoneImg = s.img`
 `
 
 const Wireframes = () => (
-  <div style={{ position: 'relative', top: '-10%' }}>
+  <div style={{ position: 'relative' }}>
     <img
       style={{ zIndex: 3, width: '1150px' }}
       src="/web-mockup4x.png"
