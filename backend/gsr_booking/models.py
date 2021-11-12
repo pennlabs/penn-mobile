@@ -91,17 +91,6 @@ class Group(models.Model):
         )
 
 
-class UserSearchIndex(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    full_name = models.CharField(max_length=255, db_index=True)
-    pennkey = models.CharField(max_length=255, db_index=True)
-
-    def save(self, *args, **kwargs):
-        self.full_name = f"{self.user.first_name} {self.user.last_name}"
-        self.pennkey = self.user.username
-        super().save(*args, **kwargs)
-
-
 class GSR(models.Model):
 
     KIND_WHARTON = "WHARTON"
@@ -119,14 +108,16 @@ class GSR(models.Model):
 
 
 class Reservation(models.Model):
-    gsr = models.ForeignKey(GSR, on_delete=models.CASCADE)
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(default=timezone.now)
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    is_cancelled = models.BooleanField(default=False)
 
 
 class GSRBooking(models.Model):
+    # TODO: change to non-null after reservations are created for current bookings
+    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     booking_id = models.CharField(max_length=255, null=True, blank=True)
     gsr = models.ForeignKey(GSR, on_delete=models.CASCADE)

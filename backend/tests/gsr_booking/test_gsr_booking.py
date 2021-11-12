@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from gsr_booking.models import Group, GroupMembership, UserSearchIndex
+from gsr_booking.models import Group, GroupMembership
 
 
 User = get_user_model()
@@ -16,8 +16,6 @@ class UserViewTestCase(TestCase):
         self.user2 = User.objects.create_user(
             username="user2", password="password", first_name="user", last_name="two"
         )
-        UserSearchIndex.objects.create(user=self.user1)
-        UserSearchIndex.objects.create(user=self.user2)
 
         self.group = Group.objects.create(owner=self.user1, name="g1", color="blue")
         self.group.members.add(self.user1)

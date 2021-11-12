@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, LibCalWrapper, WhartonLibWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, UserSearchIndex
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
@@ -99,9 +99,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         # Ensure that all invites for this user, even ones created before their account was in the
         # DB, are associated with the User object.
         GroupMembership.objects.filter(username=user.username).update(user=user)
-
-        UserSearchIndex.objects.get_or_create(user=user)
-
         return Response({"success": True})
 
 
@@ -392,8 +389,19 @@ class BookRoom(APIView):
                 booking_id = LCW.book_room(room_id, start, end, request.user)["booking_id"]
             except APIError as e:
                 return Response({"error": str(e)}, status=400)
+
+        # create reservation with single-person-group containing user
+        # TODO: create reservation with group that frontend passes in
+        single_person_group = Group.objects.filter(owner=request.user).first()
+        if not single_person_group:
+            return Response({"error": "Unknown User"}, status=400)
+        reservation = Reservation.objects.create(
+            start=start, end=end, creator=request.user, group=single_person_group
+        )
         # creates booking on database
+        # TODO: break start / end time into smaller chunks and pool credit for group booking
         GSRBooking.objects.create(
+            reservation=reservation,
             user=request.user,
             booking_id=str(booking_id),
             gsr=GSR.objects.get(gid=request.data["gid"]),
@@ -463,6 +471,19 @@ class CancelRoom(APIView):
             # updates GSR booking after done
             gsr_booking.is_cancelled = True
             gsr_booking.save()
+
+            reservation = gsr_booking.reservation
+            all_cancelled = True
+            # loops through all reservation bookings and checks if all
+            # corresponding bookings are cancelled
+            for booking in GSRBooking.objects.filter(reservation=reservation):
+                if not booking.is_cancelled:
+                    all_cancelled = False
+                    break
+            if all_cancelled:
+                reservation.is_cancelled = True
+                reservation.save()
+
         return Response({"detail": "success"})
 
 
