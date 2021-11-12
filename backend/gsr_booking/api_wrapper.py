@@ -29,11 +29,13 @@ class BookingWrapper:
         self.WLW = WhartonLibWrapper()
         self.LCW = LibCalWrapper()
 
+    def is_wharton(self, user):
+        return self.WLW.is_wharton(user.username)
+
     def book_room(self, gid, rid, room_name, start, end, user):
         # check if all the fields are not None
-        # any keyword
-        if not (gid and rid and start and end and user):
-            raise APIError("missing required fields")
+        if any(not gid, not rid, not start, not user):
+            raise APIError("Missing Required Fields")
 
         gsr = GSR.objects.filter(gid=gid).first()
         if not gsr:

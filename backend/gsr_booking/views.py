@@ -407,8 +407,8 @@ class ReservationsView(APIView):
         pass
 
 
-"""
+
 class CheckWharton(APIView):
     def get(self, request):
-        return Response({"is_wharton": WLW.is_wharton(request.user.username)})
-"""
+        return Response({"is_wharton": BW.is_wharton(request.user.username)})
+
