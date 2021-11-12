@@ -1,10 +1,7 @@
-import datetime
-
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
@@ -12,14 +9,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from gsr_booking.api_wrapper import APIError, BookingWrapper, LibCalWrapper, WhartonLibWrapper
+from gsr_booking.api_wrapper import APIError, BookingWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
     GroupSerializer,
-    GSRBookingSerializer,
     GSRSerializer,
     UserSerializer,
 )
@@ -284,10 +280,8 @@ class GroupViewSet(viewsets.ModelViewSet):
         return Response(result_json)
 
 
-# classes used for accessing GSR API's (needed for token authentication)
-LCW = LibCalWrapper()
-WLW = WhartonLibWrapper()
-booker = BookingWrapper()
+# umbrella class used for accessing GSR API's (needed for token authentication)
+BW = BookingWrapper()
 
 
 class Locations(generics.ListAPIView):
@@ -325,8 +319,7 @@ class Availability(APIView):
         end = request.GET.get("end")
 
         try:
-            context = booker.get_availability(lid, gid, start, end, request.user)
-            return Response(context)
+            return Response(BW.get_availability(lid, gid, start, end, request.user))
         except APIError as e:
             return Response({"error": str(e)}, status=400)
 
@@ -344,7 +337,7 @@ class BookRoom(APIView):
         room_name = request.data.get("room_name")
 
         try:
-            booker.book_room(gid, room_id, room_name, start, end, request.user)
+            BW.book_room(gid, room_id, room_name, start, end, request.user)
         except APIError as e:
             return Response({"error": str(e)}, status=400)
         return Response({"detail": "success"})
@@ -358,10 +351,10 @@ class CancelRoom(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        booking_id = str(request.data["booking_id"])
+        booking_id = request.data.get("booking_id")
 
         try:
-            booker.cancel_room(booking_id, request.user)
+            BW.cancel_room(booking_id, request.user)
         except APIError as e:
             return Response({"error": str(e)}, status=400)
         return Response({"detail": "success"})
@@ -375,6 +368,7 @@ class ReservationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        """
         serializer = GSRBookingSerializer(
             GSRBooking.objects.filter(
                 user=self.request.user, end__gte=timezone.localtime(), is_cancelled=False
@@ -409,8 +403,12 @@ class ReservationsView(APIView):
         except APIError:
             pass
         return Response(response)
+        """
+        pass
 
 
+"""
 class CheckWharton(APIView):
     def get(self, request):
         return Response({"is_wharton": WLW.is_wharton(request.user.username)})
+"""
