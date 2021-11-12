@@ -91,38 +91,6 @@ class Group(models.Model):
         )
 
 
-class UserSearchIndex(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    full_name = models.CharField(max_length=255, db_index=True)
-    pennkey = models.CharField(max_length=255, db_index=True)
-
-    def save(self, *args, **kwargs):
-        self.full_name = f"{self.user.first_name} {self.user.last_name}"
-        self.pennkey = self.user.username
-        super().save(*args, **kwargs)
-
-
-# Model to store credentials necessary for booking GSRs.
-class GSRBookingCredentials(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-
-    # Session ID is used for Wharton GSR booking
-    session_id = models.CharField("Session ID", max_length=50, unique=False, null=True)
-
-    # Expiration date of the Session ID
-    expiration_date = models.DateTimeField("Session ID expiration date", null=True)
-
-    # When Session ID or email was last updated
-    date_updated = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.user.username
-
-    class Meta:
-        verbose_name = "GSR Booking Credentials"
-        verbose_name_plural = "GSR Booking Credentials"
-
-
 class GSR(models.Model):
 
     KIND_WHARTON = "WHARTON"

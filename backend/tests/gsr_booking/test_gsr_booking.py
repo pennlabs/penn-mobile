@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from gsr_booking.models import Group, GroupMembership, UserSearchIndex
+from gsr_booking.models import Group, GroupMembership
 
 
 User = get_user_model()
@@ -16,8 +16,6 @@ class UserViewTestCase(TestCase):
         self.user2 = User.objects.create_user(
             username="user2", password="password", first_name="user", last_name="two"
         )
-        UserSearchIndex.objects.create(user=self.user1)
-        UserSearchIndex.objects.create(user=self.user2)
 
         self.group = Group.objects.create(owner=self.user1, name="g1", color="blue")
         self.group.members.add(self.user1)
@@ -70,52 +68,6 @@ class UserViewTestCase(TestCase):
         mem = GroupMembership.objects.get(pk=mem.pk)
         self.assertEqual(user4, mem.user)
         self.assertEqual("user4", mem.username)
-
-    def test_search_users_first_name(self):
-        response = self.client.get("/users/search/", {"q": "user"})
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(2, len(response.data))
-
-    def test_search_users_full_name(self):
-        response = self.client.get("/users/search/", {"q": "user one"})
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(1, len(response.data))
-
-    def test_search_users_pennkey(self):
-        response = self.client.get("/users/search/", {"q": "user1"})
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(1, len(response.data))
-
-
-class GSRCredentialsViewTestCase(TestCase):
-    def setUp(self):
-        self.user1 = User.objects.create_user(
-            username="user1", password="password", first_name="user", last_name="one"
-        )
-        self.user2 = User.objects.create_user(
-            username="user2", password="password2", first_name="user", last_name="two"
-        )
-        UserSearchIndex.objects.create(user=self.user1)
-        UserSearchIndex.objects.create(user=self.user2)
-
-        self.client = APIClient()
-        self.client.login(username="user1", password="password")
-
-    def test_credentials_create(self):
-        response = self.client.get("/credentials/")
-        self.assertEqual(404, response.status_code)
-        params = {"user": "user1", "session_id": "sid"}
-        response = self.client.put("/credentials/", params, format="json")
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(4, len(response.data))
-        response = self.client.get("/credentials/")
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(4, len(response.data))
-
-    def test_credentials_forbidden(self):
-        params = {"user": "user2", "session_id": "sid2"}
-        response = self.client.put("/credentials/", params, format="json")
-        self.assertEqual(403, response.status_code)
 
 
 class MembershipViewTestCase(TestCase):

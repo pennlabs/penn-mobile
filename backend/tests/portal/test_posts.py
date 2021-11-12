@@ -81,10 +81,48 @@ class TestPosts(TestCase):
             "target_populations": [self.target_id],
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "created_at": timezone.localtime(),
-            "admin_comment": "comment 2",
+            "admin_comment": "not approved",
         }
         self.client.post("/portal/posts/", payload)
-        response = self.client.get("/portal/posts/")
+        response = self.client.get("/portal/posts/browse/")
         res_json = json.loads(response.content)
-        self.assertEqual(2, len(res_json))
+        self.assertEqual(1, len(res_json))
+        self.assertEqual(2, Post.objects.all().count())
+
+    def test_review_post_no_admin_comment(self):
+        # No admin comment
+        Post.objects.create(
+            user=self.test_user,
+            source="Test source 2",
+            title="Test title 2",
+            subtitle="Test subtitle 2",
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+            created_at=timezone.localtime(),
+        )
+        admin = User.objects.create_superuser("admin@upenn.edu", "admin", "admin")
+        self.client.force_authenticate(user=admin)
+        response = self.client.get("/portal/posts/review/")
+        res_json = json.loads(response.content)
+        self.assertEqual(1, len(res_json))
+        self.assertEqual("Test source 2", res_json[0]["source"])
+        self.assertEqual(2, Post.objects.all().count())
+
+    def test_review_post_admin_comment_empty(self):
+        # Admin comment is empty and approved is False
+        Post.objects.create(
+            user=self.test_user,
+            source="Test source 2",
+            title="Test title 2",
+            subtitle="Test subtitle 2",
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+            created_at=timezone.localtime(),
+            approved=False,
+            admin_comment="",
+        )
+        admin = User.objects.create_superuser("admin@upenn.edu", "admin", "admin")
+        self.client.force_authenticate(user=admin)
+        response = self.client.get("/portal/posts/review/")
+        res_json = json.loads(response.content)
+        self.assertEqual(1, len(res_json))
+        self.assertEqual("Test source 2", res_json[0]["source"])
         self.assertEqual(2, Post.objects.all().count())
