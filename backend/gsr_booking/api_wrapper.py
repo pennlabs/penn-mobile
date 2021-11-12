@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.timezone import make_aware
 from requests.exceptions import ConnectTimeout, ReadTimeout
 
-from gsr_booking.models import GSR, GSRBooking
+from gsr_booking.models import GSR, GSRBooking, Group, Reservation
 
 
 BASE_URL = "https://libcal.library.upenn.edu"
@@ -29,20 +29,41 @@ class BookingWrapper:
         self.WLW = WhartonLibWrapper()
         self.LCW = LibCalWrapper()
 
-    def book_room(self, gid, rid, start, end, user):
+    def book_room(self, gid, rid, room_name, start, end, user):
         # check if all the fields are not None
         if not (gid and rid and start and end and user):
             raise APIError("missing required fields")
 
-        gsr = GSR.objects.filter(gid=gid)
-        if not gsr.exists():
+        gsr = GSR.objects.filter(gid=gid).first()
+        if not gsr:
             raise APIError(f"Unknown GSR GID {gid}")
 
         # error catching on view side
-        if gsr.first().kind == GSR.KIND_WHARTON:
-            return self.WLW.book_room(rid, start, end, user.username).get("booking_id")
+        if gsr.kind == GSR.KIND_WHARTON:
+            booking_id = self.WLW.book_room(rid, start, end, user.username).get("booking_id")
         else:
-            return self.LCW.book_room(rid, start, end, user).get("booking_id")
+            booking_id  = self.LCW.book_room(rid, start, end, user).get("booking_id")
+        
+        # create reservation with single-person-group containing user
+        # TODO: create reservation with group that frontend passes in
+        single_person_group = Group.objects.filter(owner=user).first()
+        if not single_person_group:
+            raise APIError("Unknown User")
+        reservation = Reservation.objects.create(
+            start=start, end=end, creator=user, group=single_person_group
+        )
+        # creates booking on database
+        # TODO: break start / end time into smaller chunks and pool credit for group booking
+        GSRBooking.objects.create(
+            reservation=reservation,
+            user=user,
+            booking_id=str(booking_id),
+            gsr=GSR.objects.get(gid=gid),
+            room_id=rid,
+            room_name=room_name,
+            start=datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z"),
+            end=datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z"),
+        )
 
     def get_availability(self, lid, gid, start, end, user):
         # checks which GSR class to use
@@ -82,8 +103,6 @@ class BookingWrapper:
         # have reservations from wharton
         # throws error iff the error isn't just unable to
         # perform action
-        if not (booking_id):
-            raise APIError("missing required fields")
         try:
             wharton_bookings = self.WLW.get_reservations(user)["bookings"]
         except APIError as e:
@@ -93,6 +112,7 @@ class BookingWrapper:
                 raise APIError(f"Error: {str(e)}")
         wharton_booking_ids = [str(x["booking_id"]) for x in wharton_bookings]
         try:
+            gsr_booking = GSRBooking.objects.filter(booking_id=booking_id).first()            
             # checks if the booking_id is a wharton booking_id
             if booking_id in wharton_booking_ids:
                 self.WLW.cancel_room(user, booking_id)
@@ -101,6 +121,23 @@ class BookingWrapper:
                 self.LCW.cancel_room(user, booking_id)
         except APIError as e:
             raise APIError(f"Error: {str(e)}")
+        
+        if gsr_booking:
+            # updates GSR booking after done
+            gsr_booking.is_cancelled = True
+            gsr_booking.save()
+
+            reservation = gsr_booking.reservation
+            all_cancelled = True
+            # loops through all reservation bookings and checks if all
+            # corresponding bookings are cancelled
+            for booking in GSRBooking.objects.filter(reservation=reservation):
+                if not booking.is_cancelled:
+                    all_cancelled = False
+                    break
+            if all_cancelled:
+                reservation.is_cancelled = True
+                reservation.save()
 
     def check_credits(self, lid, gid, user, date):
         """
