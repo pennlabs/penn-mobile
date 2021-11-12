@@ -22,6 +22,7 @@ def create_reservation_for_booking(apps, schema_editor):
                 end=booking.end,
                 creator=booking.user,
                 group=single_person_group,
+                is_cancelled=booking.is_cancelled,
             )
             booking.reservation = reservation
             booking.save()
@@ -34,7 +35,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="reservation", name="gsr",),
+        migrations.RemoveField(
+            model_name="reservation",
+            name="gsr",
+        ),
         migrations.AddField(
             model_name="gsrbooking",
             name="reservation",
@@ -43,8 +47,12 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AddField(
-            model_name="reservation", name="is_cancelled", field=models.BooleanField(default=False),
+            model_name="reservation",
+            name="is_cancelled",
+            field=models.BooleanField(default=False),
         ),
-        migrations.DeleteModel(name="UserSearchIndex",),
+        migrations.DeleteModel(
+            name="UserSearchIndex",
+        ),
         migrations.RunPython(create_reservation_for_booking),
     ]
