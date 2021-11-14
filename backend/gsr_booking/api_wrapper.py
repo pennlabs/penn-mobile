@@ -137,9 +137,7 @@ class BookingWrapper:
 
     def get_reservations(self, user):
         all_bookings = GSRBookingSerializer(
-            GSRBooking.objects.filter(
-                user=user, end__gte=timezone.localtime(), is_cancelled=False
-            ),
+            GSRBooking.objects.filter(user=user, end__gte=timezone.localtime(), is_cancelled=False),
             many=True,
         ).data
         # WLW edits all_bookings with reservations on Wharton website
@@ -162,7 +160,7 @@ class BookingWrapper:
             # gets all current reservations from wharton availability route
             reservations = self.WLW.get_reservations(user, [])
             for reservation in reservations:
-                if reservation['gsr']["lid"] == lid:
+                if reservation["gsr"]["lid"] == lid:
                     # accumulates total minutes
                     start = datetime.datetime.strptime(reservation["start"], "%Y-%m-%dT%H:%M:%S%z")
                     end = datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
