@@ -114,6 +114,36 @@ class TestPolls(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertEqual(2, Poll.objects.all().count())
 
+    def test_more_than_five_options(self):
+        payload_1 = {"poll": self.id, "choice": "1"}
+        payload_2 = {"poll": self.id, "choice": "2"}
+        payload_3 = {"poll": self.id, "choice": "3"}
+        payload_4 = {"poll": self.id, "choice": "4"}
+        payload_5 = {"poll": self.id, "choice": "5"}
+        self.client.post("/portal/options/", payload_1)
+        self.client.post("/portal/options/", payload_2)
+        self.client.post("/portal/options/", payload_3)
+        self.client.post("/portal/options/", payload_4)
+        self.client.post("/portal/options/", payload_5)
+        self.assertEqual(5, PollOption.objects.all().count())
+        # asserts options were created and were placed to right poll
+        for poll_option in PollOption.objects.all():
+            self.assertEqual(Poll.objects.get(id=self.id), poll_option.poll)
+        response = self.client.get("/portal/polls/browse/")
+        res_json = json.loads(response.content)
+        self.assertEqual(5, len(res_json[0]["options"]))
+        # adding more than 5 options to same poll should not be allowed
+        payload_6 = {"poll": self.id, "choice": "6"}
+        response = self.client.post("/portal/options/", payload_6)
+        self.assertEqual(5, PollOption.objects.all().count())
+
+    def test_edit_vote_view(self):
+        response = self.client.get(f"/portal/polls/{self.id}/edit_view/")
+        res_json = json.loads(response.content)
+        self.assertEqual("Test Source 1", res_json["source"])
+        # test that options key is in response
+        self.assertIn("options", res_json)
+
 
 class TestPollVotes(TestCase):
     """Tests Create/Update Polls and History"""
@@ -124,7 +154,8 @@ class TestPollVotes(TestCase):
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client.force_authenticate(user=self.test_user)
 
-        # creates 3 polls, each with 3 options
+        # creates 4 polls, each with 3 options
+        # p1, p4 user is in target population
         self.poll_user = User.objects.create_user("poll_user", "poll_user@a.com", "poll_user")
         p1 = Poll.objects.create(
             user=self.poll_user,
@@ -163,6 +194,20 @@ class TestPollVotes(TestCase):
         PollOption.objects.create(poll=p3, choice="choice 7")
         PollOption.objects.create(poll=p3, choice="choice 8")
         PollOption.objects.create(poll=p3, choice="choice 9")
+        p4 = Poll.objects.create(
+            user=self.poll_user,
+            source="poll 4",
+            question="poll question 4",
+            expire_date=timezone.now() + datetime.timedelta(days=1),
+            approved=True,
+        )
+        p4.target_populations.add(self.target_id)
+        p4.save()
+        self.p4_id = p4.id
+        p4_op1 = PollOption.objects.create(poll=p4, choice="choice 10")
+        self.p4_op1_id = p4_op1.id
+        PollOption.objects.create(poll=p4, choice="choice 11")
+        PollOption.objects.create(poll=p4, choice="choice 12")
 
     def test_create_vote(self):
         payload_1 = {"poll_options": [self.p1_op1_id]}
@@ -188,12 +233,33 @@ class TestPollVotes(TestCase):
     def test_history(self):
         payload_1 = {"poll_options": [self.p1_op1_id]}
         self.client.post("/portal/votes/", payload_1)
-        response = self.client.get(reverse("portal:poll-history"))
+        response = self.client.get(reverse("portal:poll-history-list"))
         res_json = json.loads(response.content)
         # asserts that history works, can see expired posts and posts that
         # user voted for
         # also asserts that data collection works
         self.assertEqual(3, len(res_json[0]["poll"]["options"]))
-        self.assertEqual(1, res_json[0]["poll_statistics"][0]["breakdown"]["SEAS"])
         self.assertEqual(3, len(res_json[1]["poll"]["options"]))
-        self.assertEqual({}, res_json[1]["poll_statistics"][0]["breakdown"])
+
+    def test_recent_poll_empty(self):
+        response = self.client.get(reverse("portal:poll-history-recent"))
+        res_json = json.loads(response.content)
+        # recent polls returns default empty poll
+        self.assertEquals(None, res_json["created_date"])
+        self.assertEquals(None, res_json["poll"]["created_date"])
+
+    def test_recent_poll(self):
+        # answer poll
+        payload_1 = {"poll_options": [self.p1_op1_id]}
+        self.client.post("/portal/votes/", payload_1)
+        response = self.client.get(reverse("portal:poll-history-recent"))
+        res_json = json.loads(response.content)
+        # assert that payload1 poll answered is most recent
+        self.assertEquals(self.p1_id, res_json["poll"]["id"])
+        # answer another poll
+        payload_2 = {"poll_options": [self.p4_op1_id]}
+        self.client.post("/portal/votes/", payload_2)
+        response2 = self.client.get(reverse("portal:poll-history-recent"))
+        res_json2 = json.loads(response2.content)
+        # assert newly answered poll is most recent
+        self.assertEquals(self.p4_id, res_json2["poll"]["id"])

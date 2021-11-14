@@ -2,12 +2,11 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
-from django.http import Http404, HttpResponseForbidden
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, viewsets
-from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,20 +14,11 @@ from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, LibCalWrapper, WhartonLibWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
-from gsr_booking.csrfExemptSessionAuthentication import CsrfExemptSessionAuthentication
-from gsr_booking.models import (
-    GSR,
-    Group,
-    GroupMembership,
-    GSRBooking,
-    GSRBookingCredentials,
-    UserSearchIndex,
-)
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
     GroupSerializer,
-    GSRBookingCredentialsSerializer,
     GSRBookingSerializer,
     GSRSerializer,
     UserSerializer,
@@ -49,7 +39,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
     lookup_field = "username"
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["username", "first_name", "last_name"]
 
@@ -110,55 +99,13 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         # Ensure that all invites for this user, even ones created before their account was in the
         # DB, are associated with the User object.
         GroupMembership.objects.filter(username=user.username).update(user=user)
-
-        UserSearchIndex.objects.get_or_create(user=user)
-
         return Response({"success": True})
-
-    @action(detail=False, methods=["get"])
-    def search(self, request):
-        """
-        Search the database of registered users by name or pennkey. Deprecated in favor
-        of the platform route.
-        """
-        query = request.query_params.get("q", "")
-        results = UserSearchIndex.objects.filter(
-            Q(full_name__istartswith=query) | Q(pennkey__istartswith=query)
-        ).select_related("user")
-
-        return Response(UserSerializer([entry.user for entry in results], many=True).data)
-
-
-class GSRBookingCredentialsViewSet(generics.RetrieveUpdateAPIView, generics.DestroyAPIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
-    serializer_class = GSRBookingCredentialsSerializer
-
-    def get_object(self):
-        if not self.request.user.is_authenticated:
-            return GSRBookingCredentials.objects.none()
-        try:
-            return GSRBookingCredentials.objects.get(user=self.request.user)
-        except GSRBookingCredentials.DoesNotExist:
-            if self.request.method == "PUT":
-                return GSRBookingCredentials(user=self.request.user)
-            else:
-                raise Http404("detail not found")
-
-    def update(self, *args, **kwargs):
-        supplied_username = args[0].data.get("user")
-        if supplied_username is None:
-            return Response(data={"user": "not supplied"}, status=404)
-        if self.request.user.username != supplied_username:
-            return HttpResponseForbidden()
-        return super().update(*args, **kwargs)
 
 
 class GroupMembershipViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["user", "group"]
     permission_classes = [IsAuthenticated]
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
     queryset = GroupMembership.objects.all()
     serializer_class = GroupMembershipSerializer
 
@@ -288,7 +235,6 @@ class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
 
     def get_queryset(self):
         if not self.request.user.is_authenticated:
@@ -350,6 +296,20 @@ class Locations(generics.ListAPIView):
     queryset = GSR.objects.all()
 
 
+class RecentGSRs(generics.ListAPIView):
+    """Lists 2 most recent GSR rooms for Home page"""
+
+    serializer_class = GSRSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return GSR.objects.filter(
+            id__in=GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
+            .order_by("-end")[:2]
+            .values_list("gsr", flat=True)
+        )
+
+
 class Availability(APIView):
     """
     Returns JSON containing all rooms for a given building.
@@ -359,7 +319,7 @@ class Availability(APIView):
         /studyspaces/availability/<building>?start=...&end=... gives all rooms between the two days
     """
 
-    def get(self, request, lid):
+    def get(self, request, lid, gid):
 
         start = request.GET.get("start")
         end = request.GET.get("end")
@@ -371,37 +331,38 @@ class Availability(APIView):
             try:
                 if request.user.is_anonymous:
                     return Response({"error": "Anonymous User"}, status=400)
+                # no need for gid under Wharton API
                 rooms = WLW.get_availability(lid, start, end, request.user.username)
             except APIError as e:
                 return Response({"error": str(e)}, status=400)
-            response = []
             gsr = GSR.objects.get(lid=lid)
-            response.append({"name": gsr.name, "gid": gsr.gid, "rooms": rooms})
-            return Response(response)
+            return Response({"name": gsr.name, "gid": gsr.gid, "rooms": rooms})
         else:
-            response = []
             try:
                 rooms = LCW.get_availability(lid, start, end)
             except APIError as e:
                 return Response({"error": str(e)}, status=400)
+
             # cleans data to match Wharton wrapper
-            for category in rooms["categories"]:
-                for room in category["rooms"]:
-                    for availability in room["availability"]:
-                        availability["start_time"] = availability["from"]
-                        availability["end_time"] = availability["to"]
-                        del availability["from"]
-                        del availability["to"]
-            for room in rooms["categories"]:
-                context = {}
-                context["name"] = room["name"]
-                context["gid"] = room["cid"]
-                context["rooms"] = [
-                    {"room_name": x["name"], "id": x["id"], "availability": x["availability"]}
-                    for x in room["rooms"]
-                ]
-                response.append(context)
-            return Response(response)
+            try:
+                gsr = [x for x in rooms["categories"] if x["cid"] == int(gid)][0]
+            except IndexError:
+                return Response({"error": "Unknown GSR"}, status=404)
+
+            for room in gsr["rooms"]:
+                for availability in room["availability"]:
+                    availability["start_time"] = availability["from"]
+                    availability["end_time"] = availability["to"]
+                    del availability["from"]
+                    del availability["to"]
+            context = {}
+            context["name"] = gsr["name"]
+            context["gid"] = gsr["cid"]
+            context["rooms"] = [
+                {"room_name": x["name"], "id": x["id"], "availability": x["availability"]}
+                for x in gsr["rooms"]
+            ]
+            return Response(context)
 
 
 class BookRoom(APIView):
@@ -428,8 +389,19 @@ class BookRoom(APIView):
                 booking_id = LCW.book_room(room_id, start, end, request.user)["booking_id"]
             except APIError as e:
                 return Response({"error": str(e)}, status=400)
+
+        # create reservation with single-person-group containing user
+        # TODO: create reservation with group that frontend passes in
+        single_person_group = Group.objects.filter(owner=request.user).first()
+        if not single_person_group:
+            return Response({"error": "Unknown User"}, status=400)
+        reservation = Reservation.objects.create(
+            start=start, end=end, creator=request.user, group=single_person_group
+        )
         # creates booking on database
+        # TODO: break start / end time into smaller chunks and pool credit for group booking
         GSRBooking.objects.create(
+            reservation=reservation,
             user=request.user,
             booking_id=str(booking_id),
             gsr=GSR.objects.get(gid=request.data["gid"]),
@@ -499,6 +471,19 @@ class CancelRoom(APIView):
             # updates GSR booking after done
             gsr_booking.is_cancelled = True
             gsr_booking.save()
+
+            reservation = gsr_booking.reservation
+            all_cancelled = True
+            # loops through all reservation bookings and checks if all
+            # corresponding bookings are cancelled
+            for booking in GSRBooking.objects.filter(reservation=reservation):
+                if not booking.is_cancelled:
+                    all_cancelled = False
+                    break
+            if all_cancelled:
+                reservation.is_cancelled = True
+                reservation.save()
+
         return Response({"detail": "success"})
 
 
@@ -521,9 +506,10 @@ class ReservationsView(APIView):
             # ignore this because this route is used by everyone
             wharton_reservations = WLW.get_reservations(request.user)["bookings"]
             for reservation in wharton_reservations:
-                # NOTE: hard code fix until ARB can be booked
+                if reservation["lid"] == 1:
+                    reservation["lid"] = "JMHH"
                 if reservation["lid"] == 6:
-                    continue
+                    reservation["lid"] = "ARB"
                 # checks if reservation is within time range
                 if (
                     datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
