@@ -138,10 +138,10 @@ class BookingWrapper:
     def get_reservations(self, user):
         all_bookings = GSRBookingSerializer(
             GSRBooking.objects.filter(
-                user=self.request.user, end__gte=timezone.localtime(), is_cancelled=False
+                user=user, end__gte=timezone.localtime(), is_cancelled=False
             ),
             many=True,
-        )
+        ).data
         # WLW edits all_bookings with reservations on Wharton website
         return self.WLW.get_reservations(user, all_bookings)
 
@@ -160,10 +160,9 @@ class BookingWrapper:
         total_minutes = 0
         if gsr.kind == GSR.KIND_WHARTON:
             # gets all current reservations from wharton availability route
-            reservations = self.WLW.get_reservations(user)["bookings"]
+            reservations = self.WLW.get_reservations(user, [])
             for reservation in reservations:
-                # correct because reservation['lid'] in reservations route is gid
-                if reservation["lid"] == gid:
+                if reservation['gsr']["lid"] == lid:
                     # accumulates total minutes
                     start = datetime.datetime.strptime(reservation["start"], "%Y-%m-%dT%H:%M:%S%z")
                     end = datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
@@ -275,7 +274,7 @@ class WhartonLibWrapper:
             bookings = self.request("GET", url).json()["bookings"]
             # ignore this because this route is used by everyone
             for booking in bookings:
-                booking["lid"] = GSR.objects.get(lid=booking["lid"]).gid
+                booking["lid"] = GSR.objects.get(gid=booking["lid"]).lid
                 # checks if reservation is within time range
                 if (
                     datetime.datetime.strptime(booking["end"], "%Y-%m-%dT%H:%M:%S%z")

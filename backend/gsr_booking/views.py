@@ -315,8 +315,8 @@ class Availability(APIView):
     """
 
     def get(self, request, lid, gid):
-        start = request.data["start"]
-        end = request.data["end"]
+        start = request.data.get("start")
+        end = request.data.get("end")
 
         try:
             return Response(BW.get_availability(lid, gid, start, end, request.user))
