@@ -31,6 +31,7 @@ const Logo = () => (
             display: 'inline-block',
             transform: 'translateY(-0.5rem)',
           }}
+          heading
         >
           Penn Mobile Portal
         </Text>

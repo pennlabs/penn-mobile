@@ -33,7 +33,9 @@ const NavSpace = s.div`
 const NavLink = ({ title, link }: { title: string; link?: string }) => (
   <Link href={link || `/${title}`}>
     <a>
-      <Text style={{ marginRight: '4rem' }}>{title}</Text>
+      <Text style={{ marginRight: '4rem' }} heading>
+        {title}
+      </Text>
     </a>
   </Link>
 )
