@@ -315,8 +315,8 @@ class Availability(APIView):
     """
 
     def get(self, request, lid, gid):
-        start = request.GET.get("start")
-        end = request.GET.get("end")
+        start = request.data["start"]
+        end = request.data["end"]
 
         try:
             return Response(BW.get_availability(lid, gid, start, end, request.user))
@@ -330,17 +330,17 @@ class BookRoom(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        start = request.data.get("start_time")
-        end = request.data.get("end_time")
-        gid = request.data.get("gid")
-        room_id = request.data.get("id")
-        room_name = request.data.get("room_name")
+        start = request.data["start_time"]
+        end = request.data["end_time"]
+        gid = request.data["gid"]
+        room_id = request.data["id"]
+        room_name = request.data["room_name"]
 
         try:
             BW.book_room(gid, room_id, room_name, start, end, request.user)
+            return Response({"detail": "success"})
         except APIError as e:
             return Response({"error": str(e)}, status=400)
-        return Response({"detail": "success"})
 
 
 class CancelRoom(APIView):
@@ -351,13 +351,13 @@ class CancelRoom(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        booking_id = request.data.get("booking_id")
+        booking_id = request.data["booking_id"]
 
         try:
             BW.cancel_room(booking_id, request.user)
+            return Response({"detail": "success"})
         except APIError as e:
             return Response({"error": str(e)}, status=400)
-        return Response({"detail": "success"})
 
 
 class ReservationsView(APIView):
@@ -368,47 +368,9 @@ class ReservationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """
-        serializer = GSRBookingSerializer(
-            GSRBooking.objects.filter(
-                user=self.request.user, end__gte=timezone.localtime(), is_cancelled=False
-            ),
-            many=True,
-        )
-        response = serializer.data
-        try:
-            # ignore this because this route is used by everyone
-            wharton_reservations = WLW.get_reservations(request.user)["bookings"]
-            for reservation in wharton_reservations:
-                if reservation["lid"] == 1:
-                    reservation["lid"] = "JMHH"
-                if reservation["lid"] == 6:
-                    reservation["lid"] = "ARB"
-                # checks if reservation is within time range
-                if (
-                    datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
-                    >= timezone.localtime()
-                ):
-                    # filtering for lid here works because Wharton buildings have distinct lid's
-                    context = {
-                        "booking_id": str(reservation["booking_id"]),
-                        "gsr": GSRSerializer(GSR.objects.get(lid=reservation["lid"])).data,
-                        "room_id": reservation["rid"],
-                        "room_name": reservation["room"],
-                        "start": reservation["start"],
-                        "end": reservation["end"],
-                    }
-                    if context not in response:
-                        response.append(context)
-        except APIError:
-            pass
-        return Response(response)
-        """
-        pass
-
+        return Response(BW.get_reservations(request.user))
 
 
 class CheckWharton(APIView):
     def get(self, request):
         return Response({"is_wharton": BW.is_wharton(request.user.username)})
-
