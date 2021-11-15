@@ -277,3 +277,34 @@ class Posts(viewsets.ModelViewSet):
                 many=True,
             ).data
         )
+
+    @action(detail=False, methods=["get"])
+    def status(self, request):
+        # awaiting approval: no admin comment, not approved
+        posts_awaiting_approval = PostSerializer(
+            Post.objects.filter(
+                (Q(admin_comment=None) | Q(admin_comment="")), user=request.user, approved=False,
+            ),
+            many=True,
+        ).data
+
+        # revision: have admin comment, not approved
+        posts_revision = PostSerializer(
+            Post.objects.filter(
+                ~Q(admin_comment=None), ~Q(admin_comment=""), user=request.user, approved=False
+            ),
+            many=True,
+        ).data
+
+        # approved
+        posts_approved = PostSerializer(
+            Post.objects.filter(user=request.user, approved=True), many=True
+        ).data
+
+        return Response(
+            {
+                "awaiting_approval": posts_awaiting_approval,
+                "revision": posts_revision,
+                "approved": posts_approved,
+            }
+        )

@@ -126,3 +126,40 @@ class TestPosts(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertEqual("Test source 2", res_json[0]["source"])
         self.assertEqual(2, Post.objects.all().count())
+
+    def test_posts_status(self):
+        Post.objects.create(
+            user=self.test_user,
+            source="Test Source 2",
+            title="Test Title 2",
+            subtitle="Test Subtitle 2",
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+            created_at=timezone.localtime(),
+            approved=False,
+        )
+
+        Post.objects.create(
+            user=self.test_user,
+            source="Test Source 3",
+            title="Test Title 3",
+            subtitle="Test Subtitle 3",
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+            created_at=timezone.localtime(),
+            approved=False,
+            admin_comment="Need Revision!",
+        )
+        response = self.client.get("/portal/posts/status/")
+        res_json = json.loads(response.content)
+        self.assertEqual(3, len(res_json))
+
+        approved = res_json["approved"]
+        self.assertEqual(1, len(approved))
+        self.assertEqual("Test Source 1", approved[0]["source"])
+
+        awaiting = res_json["awaiting_approval"]
+        self.assertEqual(1, len(awaiting))
+        self.assertEqual("Test Source 2", awaiting[0]["source"])
+
+        revision = res_json["revision"]
+        self.assertEqual(1, len(revision))
+        self.assertEqual("Test Source 3", revision[0]["source"])
