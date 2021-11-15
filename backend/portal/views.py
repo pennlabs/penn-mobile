@@ -283,10 +283,7 @@ class Posts(viewsets.ModelViewSet):
         # awaiting approval: no admin comment, not approved
         posts_awaiting_approval = PostSerializer(
             Post.objects.filter(
-                (Q(admin_comment=None) | Q(admin_comment="")),
-                Q(user=request.user),
-                approved=False,
-                user=request.user,
+                (Q(admin_comment=None) | Q(admin_comment="")), user=request.user, approved=False,
             ),
             many=True,
         ).data
@@ -294,14 +291,14 @@ class Posts(viewsets.ModelViewSet):
         # revision: have admin comment, not approved
         posts_revision = PostSerializer(
             Post.objects.filter(
-                ~Q(admin_comment=None), ~Q(admin_comment=""), Q(user=request.user), approved=False
+                ~Q(admin_comment=None), ~Q(admin_comment=""), user=request.user, approved=False
             ),
             many=True,
         ).data
 
         # approved
         posts_approved = PostSerializer(
-            Post.objects.filter(Q(user=request.user), approved=True), many=True
+            Post.objects.filter(user=request.user, approved=True), many=True
         ).data
 
         return Response(
