@@ -24,6 +24,8 @@ class TestGSRs(TestCase):
             if entry["id"] == 1:
                 self.assertEquals(entry["name"], "Huntsman")
             if entry["id"] == 2:
+                self.assertEquals(entry["name"], "Academic Research")
+            if entry["id"] == 3:
                 self.assertEquals(entry["name"], "Weigle")
 
     def test_get_wharton(self):
