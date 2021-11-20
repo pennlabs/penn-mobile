@@ -39,6 +39,9 @@ class BookingWrapper:
         if not gsr:
             raise APIError(f"Unknown GSR GID {gid}")
 
+        if not self.check_credits(gsr.lid, gid, user, start, end):
+            raise APIError("Not Enough Credits to Book")
+
         # error catching on view side
         if gsr.kind == GSR.KIND_WHARTON:
             booking_id = self.WLW.book_room(rid, start, end, user.username).get("booking_id")
@@ -143,7 +146,7 @@ class BookingWrapper:
         # WLW edits all_bookings with reservations on Wharton website
         return self.WLW.get_reservations(user, all_bookings)
 
-    def check_credits(self, lid, gid, user, date):
+    def check_credits(self, lid, gid, user, start, end):
         """
         Checks credits for a particular room at a particular date
         from gsr_booking.api_wrapper import BookingWrapper
@@ -151,10 +154,15 @@ class BookingWrapper:
         b.check_credits(lid, gid, request.user, "2021-10-27")
         """
 
+        start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
+        end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
+        duration = int((end.timestamp() - start.timestamp()) / 60)
+
         gsr = GSR.objects.filter(lid=lid, gid=gid).first()
         # checks if valid gsr
         if not gsr:
             raise APIError(f"Unknown GSR LID {lid}")
+
         total_minutes = 0
         if gsr.kind == GSR.KIND_WHARTON:
             # gets all current reservations from wharton availability route
@@ -166,19 +174,17 @@ class BookingWrapper:
                     end = datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
                     total_minutes += int((end.timestamp() - start.timestamp()) / 60)
             # 90 minutes at any given time
-            return 90 - total_minutes
+            return 90 - total_minutes >= duration
         else:
-            start = make_aware(
-                datetime.datetime.combine(
-                    datetime.datetime.strptime(date, "%Y-%m-%d"), datetime.datetime.min.time()
-                )
+            lc_start = make_aware(
+                datetime.datetime.combine(start.date(), datetime.datetime.min.time())
             )
-            end = start + datetime.timedelta(days=1)
+            lc_end = lc_start + datetime.timedelta(days=1)
             # filters for all reservations for the given date
             reservations = GSRBooking.objects.filter(
                 gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL),
-                start__gte=start,
-                end__lte=end,
+                start__gte=lc_start,
+                end__lte=lc_end,
                 is_cancelled=False,
             )
             total_minutes = 0
@@ -188,7 +194,7 @@ class BookingWrapper:
                     (reservation.end.timestamp() - reservation.start.timestamp()) / 60
                 )
             # 120 minutes per day
-            return 120 - total_minutes
+            return 120 - total_minutes >= duration
 
 
 class WhartonLibWrapper:
