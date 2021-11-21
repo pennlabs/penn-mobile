@@ -67,15 +67,11 @@ class TestGSRFunctions(TestCase):
         self.client.force_authenticate(user=self.user)
 
     def test_recent(self):
-        GSRBooking.objects.create(
-            user=self.user, room_id=1, room_name="Room 1", gsr=GSR.objects.get(id=1)
-        )
-        GSRBooking.objects.create(
-            user=self.user, room_id=2, room_name="Room 2", gsr=GSR.objects.get(id=2)
-        )
-        GSRBooking.objects.create(
-            user=self.user, room_id=3, room_name="Room 3", gsr=GSR.objects.get(id=3)
-        )
+        gsrs = list(GSR.objects.all())
+        GSRBooking.objects.create(user=self.user, room_id=1, room_name="Room 1", gsr=gsrs[0])
+        GSRBooking.objects.create(user=self.user, room_id=3, room_name="Room 3", gsr=gsrs[0])
+        GSRBooking.objects.create(user=self.user, room_id=2, room_name="Room 2", gsr=gsrs[1])
+        GSRBooking.objects.create(user=self.user, room_id=3, room_name="Room 3", gsr=gsrs[2])
 
         response = self.client.get(reverse("recent-gsrs"))
         res_json = json.loads(response.content)
@@ -88,6 +84,7 @@ class TestGSRFunctions(TestCase):
         self.assertIn("gid", res_json[0])
         self.assertIn("name", res_json[0])
         self.assertIn("image_url", res_json[0])
+        self.assertNotEqual(res_json[0]["id"], res_json[1]["id"])
 
     @mock.patch("gsr_booking.views.BW.is_wharton", is_wharton_false)
     def test_get_wharton_false(self):
