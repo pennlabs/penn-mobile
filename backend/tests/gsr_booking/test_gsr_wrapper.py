@@ -40,7 +40,6 @@ class TestBookingWrapper(TestCase):
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
-    
     @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get, spec=['hi'])
     def test_is_wharton(self):
         #response = self.client.get(reverse("is-wharton"))

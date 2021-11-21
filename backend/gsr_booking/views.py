@@ -300,9 +300,15 @@ class RecentGSRs(generics.ListAPIView):
     def get_queryset(self):
         return GSR.objects.filter(
             id__in=GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
+            .distinct()
             .order_by("-end")[:2]
             .values_list("gsr", flat=True)
         )
+
+
+class CheckWharton(APIView):
+    def get(self, request):
+        return Response({"is_wharton": BW.is_wharton(request.user.username)})
 
 
 class Availability(APIView):
@@ -369,8 +375,3 @@ class ReservationsView(APIView):
 
     def get(self, request):
         return Response(BW.get_reservations(request.user))
-
-
-class CheckWharton(APIView):
-    def get(self, request):
-        return Response({"is_wharton": BW.is_wharton(request.user.username)})
