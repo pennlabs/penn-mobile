@@ -27,8 +27,3 @@ class TestGSRs(TestCase):
                 self.assertEquals(entry["name"], "Academic Research")
             if entry["id"] == 3:
                 self.assertEquals(entry["name"], "Weigle")
-
-    def test_get_wharton(self):
-        response = self.client.get(reverse("is-wharton"))
-        res_json = json.loads(response.content)
-        self.assertFalse(res_json["is_wharton"])
