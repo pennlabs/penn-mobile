@@ -126,14 +126,14 @@ const PollPage = ({
       </Row>
       <Row>
         <Col sm={12} md={12} lg={7} padding="0.5rem 4rem">
-          <Group
-            horizontal
-            justifyContent="space-between"
-            margin="0 0 1.5rem 0"
-          >
+          <Group horizontal justifyContent="space-between" margin="0 0 2rem 0">
             <Subtitle>Poll Details</Subtitle>
             <Group horizontal alignItems="center">
-              {!createMode && (
+              {createMode ? (
+                <Button color={colors.GREEN} onClick={onSubmit}>
+                  Submit
+                </Button>
+              ) : (
                 <>
                   <Button color={colors.RED} onClick={onDelete}>
                     Delete
@@ -143,9 +143,6 @@ const PollPage = ({
                   </Button>
                 </>
               )}
-              <Button color={colors.GREEN} onClick={onSubmit}>
-                Submit
-              </Button>
             </Group>
           </Group>
           <StatusBar status={state.status} />

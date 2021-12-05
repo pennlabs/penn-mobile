@@ -4,6 +4,7 @@ import Link from 'next/link'
 
 import { Text } from '../styles/Text'
 import { HOME_ROUTE } from '../../utils/routes'
+import { maxWidth, TABLET } from '../styles/sizes'
 
 const LogoStyle = s.div`
   display: inline-block;
@@ -16,25 +17,24 @@ const LogoImageStyle = s.img`
   margin-right: 1rem;
 `
 
+const LogoTextWrapper = s.div`
+  display: inline-block;
+  transform: translateY(-0.5rem);
+  ${maxWidth(TABLET)} {
+    display: none;
+  }
+`
+
 const Logo = () => (
   <LogoStyle>
     <Link href={HOME_ROUTE}>
       <a style={{ height: LOGO_SIZE }}>
         <LogoImageStyle src="/penn-mobile.svg" alt="Penn Mobile Logo" />
-      </a>
-    </Link>
-    <Link href={HOME_ROUTE}>
-      <a>
-        <Text
-          size="1.5rem"
-          style={{
-            display: 'inline-block',
-            transform: 'translateY(-0.5rem)',
-          }}
-          heading
-        >
-          Penn Mobile Portal
-        </Text>
+        <LogoTextWrapper>
+          <Text size="1.5rem" heading>
+            Portal
+          </Text>
+        </LogoTextWrapper>
       </a>
     </Link>
   </LogoStyle>

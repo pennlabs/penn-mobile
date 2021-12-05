@@ -12,7 +12,6 @@ const PhoneCard = s.div`
   padding: 0.5rem 1rem;
   background-color: ${colors.WHITE};
   margin: 0.5rem;
-  font-family: -apple-system, BlinkMacSystemFont;
 `
 
 const PhonePollOption = s.div<{ width: number }>`

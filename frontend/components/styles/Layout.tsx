@@ -1,6 +1,13 @@
 import React from 'react'
 import s, { css, FlattenSimpleInterpolation } from 'styled-components'
-import { maxWidth, minWidth, PHONE, TABLET, MAX_BODY_HEIGHT } from './sizes'
+import {
+  maxWidth,
+  minWidth,
+  PHONE,
+  TABLET,
+  MAX_BODY_HEIGHT,
+  DESKTOP,
+} from './sizes'
 
 interface IRow {
   maxHeight?: string
@@ -83,16 +90,17 @@ const ColWrapper = s.div<IColWrapper>(
     ${flex && 'display: flex;'}
     ${alignItems && `align-items: ${alignItems};`}
 
-    ${sm && `width: ${percent(sm)}; flex: none;`}
-
-    ${offsetSm && `margin-left: ${percent(offsetSm)};`}
-
     ${minWidth(PHONE)} {
+      ${sm && `width: ${percent(sm)}; flex: none;`}
+      ${offsetSm && `margin-left: ${percent(offsetSm)};`}
+    }
+
+    ${minWidth(TABLET)} {
       ${md && `width: ${percent(md)}; flex: none;`}
       ${offsetMd && `margin-left: ${percent(offsetMd)};`}
     }
 
-    ${minWidth(TABLET)} {
+    ${minWidth(DESKTOP)} {
       ${lg && `width: ${percent(lg)}; flex: none;`}
       ${offsetLg && `margin-left: ${percent(offsetLg)};`}
       ${fullHeight && `height: ${MAX_BODY_HEIGHT};`}

@@ -56,7 +56,11 @@ export const FormField = ({
 }: iFormFieldProps) => {
   return (
     <>
-      {label && <Text bold>{label}</Text>}
+      {label && (
+        <Text bold heading>
+          {label}
+        </Text>
+      )}
       {textArea ? (
         <FormTextAreaStyle
           rows={3}

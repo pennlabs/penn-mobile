@@ -8,7 +8,7 @@ import { Text } from '../styles/Text'
 import { Button } from '../styles/Buttons'
 import { colors } from '../../utils/colors'
 import { Group } from '../styles/Layout'
-import { NAV_HEIGHT } from '../styles/sizes'
+import { maxWidth, NAV_HEIGHT, PHONE } from '../styles/sizes'
 import { AuthUserContext } from '../../context/auth'
 
 const NavStyle = s.nav`
@@ -30,14 +30,21 @@ const NavSpace = s.div`
   height: ${NAV_HEIGHT};
 `
 
+const NavLinkWrapper = s.div`
+  margin-right: 4rem;
+  ${maxWidth(PHONE)} {
+    margin-right: 0.5rem;
+  }
+`
+
 const NavLink = ({ title, link }: { title: string; link?: string }) => (
-  <Link href={link || `/${title}`}>
-    <a>
-      <Text style={{ marginRight: '4rem' }} heading>
-        {title}
-      </Text>
-    </a>
-  </Link>
+  <NavLinkWrapper>
+    <Link href={link || `/${title}`}>
+      <a>
+        <Text heading>{title}</Text>
+      </a>
+    </Link>
+  </NavLinkWrapper>
 )
 
 const Nav = () => {
