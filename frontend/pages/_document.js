@@ -1,10 +1,6 @@
-import Document from 'next/document'
+import Document, { Html, Head, Main, NextScript } from 'next/document'
 import { ServerStyleSheet } from 'styled-components'
 
-/**
- * from: https://github.com/vercel/next.js/blob/master/examples/with-styled-components/pages/_document.js
- * necessary for styled-components to render properly on the server side
- */
 export default class MyDocument extends Document {
   static async getInitialProps(ctx) {
     const sheet = new ServerStyleSheet()
@@ -14,7 +10,9 @@ export default class MyDocument extends Document {
       ctx.renderPage = () =>
         originalRenderPage({
           enhanceApp: (App) => (props) =>
+            /* eslint-disable */
             sheet.collectStyles(<App {...props} />),
+          /* eslint-enable */
         })
 
       const initialProps = await Document.getInitialProps(ctx)
@@ -30,5 +28,17 @@ export default class MyDocument extends Document {
     } finally {
       sheet.seal()
     }
+  }
+
+  render() {
+    return (
+      <Html>
+        <Head />
+        <body>
+          <Main />
+          <NextScript />
+        </body>
+      </Html>
+    )
   }
 }

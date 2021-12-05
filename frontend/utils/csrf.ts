@@ -3,10 +3,12 @@
  */
 const getCsrf = (): string => {
   const cookiesArray = document.cookie.split('; ')
-  cookiesArray.filter((cookie) => cookie.startsWith('csrftoken='))
+  const filteredArray = cookiesArray.filter((cookie) =>
+    cookie.startsWith('csrftoken=')
+  )
 
   return cookiesArray[0]
-    ? decodeURIComponent(cookiesArray[0].substring('csrftoken='.length))
+    ? decodeURIComponent(filteredArray[0].substring('csrftoken='.length))
     : ''
 }
 

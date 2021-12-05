@@ -8,7 +8,7 @@ import { Text } from '../styles/Text'
 import { Button } from '../styles/Buttons'
 import { colors } from '../../utils/colors'
 import { Group } from '../styles/Layout'
-import { NAV_HEIGHT } from '../styles/sizes'
+import { maxWidth, NAV_HEIGHT, PHONE } from '../styles/sizes'
 import { AuthUserContext } from '../../context/auth'
 
 const NavStyle = s.nav`
@@ -30,16 +30,25 @@ const NavSpace = s.div`
   height: ${NAV_HEIGHT};
 `
 
+const NavLinkWrapper = s.div`
+  margin-right: 4rem;
+  ${maxWidth(PHONE)} {
+    margin-right: 0.5rem;
+  }
+`
+
 const NavLink = ({ title, link }: { title: string; link?: string }) => (
-  <Link href={link || `/${title}`}>
-    <a>
-      <Text style={{ marginRight: '4rem' }}>{title}</Text>
-    </a>
-  </Link>
+  <NavLinkWrapper>
+    <Link href={link || `/${title}`}>
+      <a>
+        <Text heading>{title}</Text>
+      </a>
+    </Link>
+  </NavLinkWrapper>
 )
 
 const Nav = () => {
-  const { user: isLoggedIn } = useContext(AuthUserContext)
+  const { user } = useContext(AuthUserContext)
   const router: NextRouter = useRouter()
 
   const LandingPageNav = () => (
@@ -56,19 +65,19 @@ const Nav = () => {
       <NavStyle>
         <Logo />
         <Group horizontal margin="0 0 0.5rem 0">
-          {!isLoggedIn ? (
+          {!user ? (
             <LandingPageNav />
           ) : (
             <NavLink title="Create" link="/polls/create" />
           )}
           <Link
-            href={`/api/accounts/${isLoggedIn ? 'logout' : 'login'}/?next=${
+            href={`/api/accounts/${user ? 'logout' : 'login'}/?next=${
               router.pathname
             }`}
           >
             <a>
               <Button color={colors.MEDIUM_BLUE}>
-                {isLoggedIn ? 'Logout' : 'Login'}
+                {user ? 'Logout' : 'Login'}
               </Button>
             </a>
           </Link>

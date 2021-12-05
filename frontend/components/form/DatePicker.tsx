@@ -2,7 +2,7 @@ import React from 'react'
 import moment from 'moment'
 
 import DatePicker from 'antd/lib/date-picker'
-import { updateStateType } from '../../pages/polls/create'
+import { updateStateType } from '../../types'
 
 const disabledDate = (current: moment.Moment) =>
   // disable days before today
@@ -11,13 +11,13 @@ const disabledDate = (current: moment.Moment) =>
 interface IDatePickerProps {
   updateState: updateStateType
   startDate: Date | null
-  endDate: Date | null
+  expireDate: Date | null
 }
 
 const DatePickerForm = ({
   updateState,
   startDate,
-  endDate,
+  expireDate,
 }: IDatePickerProps) => {
   const { RangePicker } = DatePicker
   return (
@@ -34,13 +34,15 @@ const DatePickerForm = ({
       }}
       format="MM-DD-YYYY hh:mm A"
       defaultValue={
-        startDate && endDate ? [moment(startDate), moment(endDate)] : undefined
+        startDate && expireDate
+          ? [moment(startDate), moment(expireDate)]
+          : undefined
       }
       onChange={(dates) =>
         dates &&
         updateState({
           startDate: dates[0]?.toDate(),
-          endDate: dates[1]?.toDate(),
+          expireDate: dates[1]?.toDate(),
         })
       }
       style={{
