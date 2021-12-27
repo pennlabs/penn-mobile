@@ -5,9 +5,11 @@ import {
   DesktopWireframes,
   MobileWireframes,
 } from '@/components/landing-page/Wireframes'
+import LandingPageNav from '@/components/landing-page/LandingPageNav'
 
 const LandingPage = () => (
   <>
+    <LandingPageNav />
     <Row>
       <Col sm={12} md={8} lg={5}>
         <Group margin="15vh 0 0 5vw">

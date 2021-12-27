@@ -47,29 +47,15 @@ const NavLink = ({ title, link }: { title: string; link?: string }) => (
   </NavLinkWrapper>
 )
 
-const Nav = () => {
+const LandingPageNav = () => {
   const { user } = useContext(AuthUserContext)
   const router: NextRouter = useRouter()
-
-  const LandingPageNav = () => (
-    <>
-      <NavLink title="Home" />
-      <NavLink title="About" />
-      <NavLink title="Tutorial" />
-      <NavLink title="Team" />
-    </>
-  )
 
   return (
     <>
       <NavStyle>
         <Logo />
         <Group horizontal margin="0 0 0.5rem 0">
-          {!user ? (
-            <LandingPageNav />
-          ) : (
-            <NavLink title="Create" link="/polls/create" />
-          )}
           <Link
             href={`/api/accounts/${user ? 'logout' : 'login'}/?next=${
               router.pathname
@@ -88,4 +74,4 @@ const Nav = () => {
   )
 }
 
-export default Nav
+export default LandingPageNav

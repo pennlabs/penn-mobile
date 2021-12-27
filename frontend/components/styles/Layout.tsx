@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { ReactNode } from 'react'
 import s, { css, FlattenSimpleInterpolation } from 'styled-components'
+import { Nav } from '@/components/styles/Nav'
 import {
   maxWidth,
   minWidth,
@@ -7,7 +8,7 @@ import {
   TABLET,
   MAX_BODY_HEIGHT,
   DESKTOP,
-} from './sizes'
+} from '@/components/styles/sizes'
 
 interface IRow {
   maxHeight?: string
@@ -138,36 +139,41 @@ export const Col = ({ margin, children, ...other }: ICol) => (
   </ColWrapper>
 )
 
-export const ColSpace = s(Col)`
-  flex: none;
-  width: ${({ width }) => width || '1rem'};
-
-  ${maxWidth(PHONE)} {
-    display: none;
-  }
-`
-
-export const Spacer = s.div`
-  display: block;
-  width: 100%;
-  height: 1rem;
-`
-
 interface iGroupProps {
   horizontal?: boolean // defaults to vertical
   alignItems?: string
   justifyContent?: string
   margin?: string
+  center?: boolean
+  fullWidth?: boolean
 }
 
 /**
  * Div wrapper for a group of elements.
  */
 export const Group = s.div<iGroupProps>(
-  ({ horizontal, alignItems, justifyContent, margin }) => css`
+  ({
+    horizontal,
+    alignItems,
+    justifyContent,
+    margin,
+    center,
+    fullWidth,
+  }) => css`
     display: ${horizontal ? 'flex' : 'inline-block'};
     ${justifyContent && `justify-content: ${justifyContent};`}
     ${alignItems && `align-items: ${alignItems};`}
     ${margin && `margin: ${margin};`}
+    ${center && 'margin: 0 auto;'}
+    ${fullWidth && 'flex-grow: 1'}
   `
 )
+
+export const Container = ({ children }: { children: ReactNode }) => {
+  return (
+    <Group horizontal>
+      <Nav />
+      <Group fullWidth>{children}</Group>
+    </Group>
+  )
+}

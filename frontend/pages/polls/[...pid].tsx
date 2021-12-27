@@ -5,8 +5,8 @@ import { useRouter } from 'next/router'
 import { AuthUserContext, withAuth } from '@/utils/auth'
 import { doApiRequest } from '@/utils/fetch'
 import { PageType, PollType, Status, User } from '@/utils/types'
-import Nav from '@/components/header/Nav'
-import { Col, Group, Row } from '@/components/styles/Layout'
+import Nav from '@/components/landing-page/LandingPageNav'
+import { Col, Container, Group, Row } from '@/components/styles/Layout'
 import { Button, ToggleButton } from '@/components/styles/Buttons'
 import { Subtitle } from '@/components/styles/Text'
 import { colors } from '@/components/styles/colors'
@@ -120,38 +120,43 @@ const PollPage = ({
 
   return (
     <AuthUserContext.Provider value={{ user }}>
-      <Nav />
-      <Row style={{ padding: '2.5rem 0 0 4rem' }}>
-        <ToggleButton currPage={PageType.POLL} />
-      </Row>
-      <Row>
-        <Col sm={12} md={12} lg={7} padding="0.5rem 4rem">
-          <Group horizontal justifyContent="space-between" margin="0 0 2rem 0">
-            <Subtitle>Poll Details</Subtitle>
-            <Group horizontal alignItems="center">
-              {createMode ? (
-                <Button color={colors.GREEN} onClick={onSubmit}>
-                  Submit
-                </Button>
-              ) : (
-                <>
-                  <Button color={colors.RED} onClick={onDelete}>
-                    Delete
+      <Container>
+        <Row style={{ padding: '2.5rem 0 0 4rem' }}>
+          <ToggleButton currPage={PageType.POLL} />
+        </Row>
+        <Row>
+          <Col sm={12} md={12} lg={7} padding="0.5rem 4rem">
+            <Group
+              horizontal
+              justifyContent="space-between"
+              margin="0 0 2rem 0"
+            >
+              <Subtitle>Poll Details</Subtitle>
+              <Group horizontal alignItems="center">
+                {createMode ? (
+                  <Button color={colors.GREEN} onClick={onSubmit}>
+                    Submit
                   </Button>
-                  <Button color={colors.GRAY} onClick={onSave}>
-                    Save
-                  </Button>
-                </>
-              )}
+                ) : (
+                  <>
+                    <Button color={colors.RED} onClick={onDelete}>
+                      Delete
+                    </Button>
+                    <Button color={colors.GRAY} onClick={onSave}>
+                      Save
+                    </Button>
+                  </>
+                )}
+              </Group>
             </Group>
-          </Group>
-          <StatusBar status={state.status} />
-          <PollForm state={state} updateState={updateState} />
-        </Col>
-        <Col sm={12} md={12} lg={5}>
-          <Preview state={state} />
-        </Col>
-      </Row>
+            <StatusBar status={state.status} />
+            <PollForm state={state} updateState={updateState} />
+          </Col>
+          <Col sm={12} md={12} lg={5}>
+            <Preview state={state} />
+          </Col>
+        </Row>
+      </Container>
     </AuthUserContext.Provider>
   )
 }

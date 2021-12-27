@@ -8,7 +8,7 @@ import { doApiRequest } from '@/utils/fetch'
 import { User } from '@/utils/types'
 
 export interface AuthProps {
-  user: User | null
+  user: User
 }
 
 export const AuthUserContext: React.Context<{ user?: User }> = createContext({})
