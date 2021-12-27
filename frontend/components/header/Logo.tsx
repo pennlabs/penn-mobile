@@ -2,9 +2,8 @@ import React from 'react'
 import s from 'styled-components'
 import Link from 'next/link'
 
-import { Text } from '../styles/Text'
-import { HOME_ROUTE } from '../../utils/routes'
-import { maxWidth, TABLET } from '../styles/sizes'
+import { Text } from '@/components/styles/Text'
+import { maxWidth, TABLET } from '@/components/styles/sizes'
 
 const LogoStyle = s.div`
   display: inline-block;
@@ -27,7 +26,7 @@ const LogoTextWrapper = s.div`
 
 const Logo = () => (
   <LogoStyle>
-    <Link href={HOME_ROUTE}>
+    <Link href="/">
       <a style={{ height: LOGO_SIZE }}>
         <LogoImageStyle src="/penn-mobile.svg" alt="Penn Mobile Logo" />
         <LogoTextWrapper>

@@ -1,8 +1,8 @@
 import s from 'styled-components'
 import Link from 'next/link'
 
-import { colors } from '../../utils/colors'
-import { PageType } from '../../types'
+import { colors } from '@/components/styles/colors'
+import { PageType } from '@/utils/types'
 
 interface iButtonProps {
   color: string

@@ -4,8 +4,8 @@ import {
   GetServerSidePropsResult,
   Redirect,
 } from 'next'
-import { doApiRequest } from '../utils/fetch'
-import { User } from '../types'
+import { doApiRequest } from '@/utils/fetch'
+import { User } from '@/utils/types'
 
 export interface AuthProps {
   user: User | null

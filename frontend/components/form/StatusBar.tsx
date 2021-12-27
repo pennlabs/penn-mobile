@@ -1,11 +1,11 @@
 import React from 'react'
 import s from 'styled-components'
-import { IconCircle } from '../styles/Icons'
 
-import { Group, Row } from '../styles/Layout'
-import { colors } from '../../utils/colors'
-import { Text } from '../styles/Text'
-import { Status } from '../../types'
+import { IconCircle } from '@/components/styles/Icons'
+import { Group, Row } from '@/components/styles/Layout'
+import { colors } from '@/components/styles/colors'
+import { Text } from '@/components/styles/Text'
+import { Status } from '@/utils/types'
 
 interface iStatusBarLineProps {
   color: string

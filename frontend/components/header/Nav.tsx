@@ -3,13 +3,13 @@ import s from 'styled-components'
 import Link from 'next/link'
 import { useRouter, NextRouter } from 'next/router'
 
-import Logo from './Logo'
-import { Text } from '../styles/Text'
-import { Button } from '../styles/Buttons'
-import { colors } from '../../utils/colors'
-import { Group } from '../styles/Layout'
-import { maxWidth, NAV_HEIGHT, PHONE } from '../styles/sizes'
-import { AuthUserContext } from '../../context/auth'
+import Logo from '@/components/header/Logo'
+import { Text } from '@/components/styles/Text'
+import { Button } from '@/components/styles/Buttons'
+import { colors } from '@/components/styles/colors'
+import { Group } from '@/components/styles/Layout'
+import { maxWidth, NAV_HEIGHT, PHONE } from '@/components/styles/sizes'
+import { AuthUserContext } from '@/utils/auth'
 
 const NavStyle = s.nav`
   padding: 1rem 1.5rem 0rem 1.5rem;

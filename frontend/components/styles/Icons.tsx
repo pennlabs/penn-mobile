@@ -8,7 +8,7 @@ import {
   faInfoCircle,
   faArrowCircleRight,
 } from '@fortawesome/free-solid-svg-icons'
-import { colors } from '../../utils/colors'
+import { colors } from '@/components/styles/colors'
 
 interface IIconProps {
   margin?: string

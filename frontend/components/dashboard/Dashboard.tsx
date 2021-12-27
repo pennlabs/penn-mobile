@@ -1,9 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
-import { Group, Row } from '../styles/Layout'
-import { Subtitle, Text } from '../styles/Text'
-import { IconArrowRight } from '../styles/Icons'
-import { colors } from '../../utils/colors'
+import { Group, Row } from '@/components/styles/Layout'
+import { Subtitle, Text } from '@/components/styles/Text'
+import { IconArrowRight } from '@/components/styles/Icons'
+import { colors } from '@/components/styles/colors'
 
 const Dashboard = () => (
   <Row

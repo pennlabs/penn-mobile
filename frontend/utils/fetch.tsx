@@ -1,4 +1,4 @@
-import getCsrf from './csrf'
+import getCsrf from '@/utils/csrf'
 
 export const SITE_ORIGIN =
   process.env.NODE_ENV === 'production'

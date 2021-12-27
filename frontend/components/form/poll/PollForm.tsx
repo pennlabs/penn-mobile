@@ -1,14 +1,14 @@
 import React from 'react'
 
-import { PollType, updateStateType } from '../../../types'
-import { Button } from '../../styles/Buttons'
-import { Heading3, Text } from '../../styles/Text'
-import { colors } from '../../../utils/colors'
-import { Card } from '../../styles/Card'
-import { FormField } from '../../styles/Form'
-import { InfoSpan, IconPlus, IconTimes } from '../../styles/Icons'
-import { Group } from '../../styles/Layout'
-import DatePickerForm from '../DatePicker'
+import { PollType, updateStateType } from '@/utils/types'
+import { Button } from '@/components/styles/Buttons'
+import { Heading3, Text } from '@/components/styles/Text'
+import { colors } from '@/components/styles/colors'
+import { Card } from '@/components/styles/Card'
+import { FormField } from '@/components/styles/Form'
+import { InfoSpan, IconPlus, IconTimes } from '@/components/styles/Icons'
+import { Group } from '@/components/styles/Layout'
+import DatePickerForm from '@/components/styles/DatePicker'
 
 interface PollFormProps {
   state: PollType

@@ -1,10 +1,10 @@
 import React from 'react'
 
 import s from 'styled-components'
-import { PollType } from '../../types'
-import { colors } from '../../utils/colors'
-import { Group } from '../styles/Layout'
-import { Text } from '../styles/Text'
+import { PollType } from '@/utils/types'
+import { colors } from '@/components/styles/colors'
+import { Group } from '@/components/styles/Layout'
+import { Text } from '@/components/styles/Text'
 
 const PhoneCard = s.div`
   border-radius: 10px;

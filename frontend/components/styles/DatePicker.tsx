@@ -2,7 +2,7 @@ import React from 'react'
 import moment from 'moment'
 
 import DatePicker from 'antd/lib/date-picker'
-import { updateStateType } from '../../types'
+import { updateStateType } from '../../utils/types'
 
 const disabledDate = (current: moment.Moment) =>
   // disable days before today

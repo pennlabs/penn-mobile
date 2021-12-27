@@ -1,4 +1,4 @@
-import { PollType } from '../types'
+import { PollType } from '@/utils/types'
 
 /**
  * converts objects with snake_case keys to camelCase key

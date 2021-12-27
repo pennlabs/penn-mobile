@@ -1,6 +1,6 @@
 import React from 'react'
 import Head from 'next/head'
-import Nav from './Nav'
+import Nav from '@/components/header/Nav'
 
 const Header = () => (
   <>
