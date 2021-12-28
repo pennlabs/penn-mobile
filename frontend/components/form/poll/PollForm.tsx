@@ -119,7 +119,7 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
 
       <Heading3>
         Notes
-        <InfoSpan infoText="Portal administrators will see this message during the review process." />
+        <InfoSpan infoText="Portal admin will see this message during the review process." />
       </Heading3>
       <Card>
         <FormField

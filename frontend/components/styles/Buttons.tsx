@@ -58,7 +58,7 @@ export const ToggleButton = ({ currPage }: { currPage: PageType }) =>
     </>
   ) : (
     <>
-      <Link href="/post/create">
+      <Link href="/posts/create">
         <a>
           <ToggleButtonStyle page={PageType.POST}>New Post</ToggleButtonStyle>
         </a>

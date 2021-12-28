@@ -3,7 +3,7 @@ import s from 'styled-components'
 import Link from 'next/link'
 
 import { maxWidth, PHONE } from '@/components/styles/sizes'
-import { Col, Container, Group, Row } from '@/components/styles/Layout'
+import { Container, Group, Row } from '@/components/styles/Layout'
 import { Subtitle, Text } from '@/components/styles/Text'
 import { IconArrowRight } from '@/components/styles/Icons'
 import { colors } from '@/components/styles/colors'
@@ -46,7 +46,7 @@ const EmptyDashboard = () => {
           </Text>
           <Text>
             Ready to get started?
-            <Link href="/post/create">
+            <Link href="/posts/create">
               <a style={{ color: colors.MEDIUM_BLUE }}> Create a new post</a>
             </Link>
             <IconArrowRight />

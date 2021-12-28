@@ -4,40 +4,33 @@ import { useRouter } from 'next/router'
 
 import { AuthUserContext, withAuth } from '@/utils/auth'
 import { doApiRequest } from '@/utils/fetch'
-import { PageType, PollType, Status, User } from '@/utils/types'
-import Nav from '@/components/landing-page/LandingPageNav'
+import { PageType, PostType, Status, User } from '@/utils/types'
 import { Col, Container, Group, Row } from '@/components/styles/Layout'
 import { Button, ToggleButton } from '@/components/styles/Buttons'
 import { Subtitle } from '@/components/styles/Text'
 import { colors } from '@/components/styles/colors'
 import StatusBar from '@/components/form/StatusBar'
-import PollForm from '@/components/form/poll/PollForm'
-import Preview from '@/components/form/Preview'
+import PostForm from '@/components/form/post/PostForm'
+import { PostPhonePreview } from '@/components/form/Preview'
 import { convertCamelCase, convertSnakeCase } from '@/utils/utils'
 
-interface iPollPageProps {
+interface iPostPageProps {
   user: User
-  createMode: boolean // true if creating a poll, false if editing an existing poll
-  poll?: PollType
-  prevOptionIds?: number[] // poll option ids
+  createMode: boolean // true if creating a post, false if editing an existing post
+  post?: PostType
 }
 
-const PollPage = ({
-  user,
-  createMode,
-  poll,
-  prevOptionIds,
-}: iPollPageProps) => {
-  const [state, setState] = useState<PollType>(
-    poll || {
-      question: '',
+const PostPage = ({ user, createMode, post }: iPostPageProps) => {
+  const [state, setState] = useState<PostType>(
+    post || {
+      title: '',
+      subtitle: '',
       source: '',
+      postUrl: '',
+      imageUrl:
+        'https://www.akc.org/wp-content/uploads/2017/11/Pembroke-Welsh-Corgi-standing-outdoors-in-the-fall.jpg',
       startDate: null,
       expireDate: null,
-      options: [
-        { id: 0, choice: '' },
-        { id: 1, choice: '' },
-      ],
       userComments: '',
       status: Status.DRAFT,
       targetPopulations: [],
@@ -51,70 +44,23 @@ const PollPage = ({
   }, [])
 
   const onSubmit = () => {
-    doApiRequest('/api/portal/polls/', {
+    doApiRequest('/api/portal/posts/', {
       method: 'POST',
       body: convertCamelCase(state),
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        state.options.map((option) =>
-          doApiRequest('/api/portal/options/', {
-            method: 'POST',
-            body: {
-              poll: res.id,
-              choice: option.choice,
-            },
-          })
-        )
-
-        router.push('/') // redirect to dashboard after submitting
-      })
+    }).then(() => router.push('/')) // redirect to dashboard after submitting
   }
 
   const onDelete = () => {
-    doApiRequest(`/api/portal/polls/${state.id}`, {
+    doApiRequest(`/api/portal/posts/${state.id}`, {
       method: 'DELETE',
     })
     router.push('/')
   }
 
   const onSave = () => {
-    // update poll fields
-    doApiRequest(`/api/portal/polls/${state.id}/`, {
+    doApiRequest(`/api/portal/posts/${state.id}/`, {
       method: 'PATCH',
       body: convertCamelCase(state),
-    })
-
-    const currOptionIds = state.options.map((option) => {
-      // post new poll option
-      if (!prevOptionIds?.includes(option.id)) {
-        doApiRequest('/api/portal/options/', {
-          method: 'POST',
-          body: {
-            poll: state.id,
-            choice: option.choice,
-          },
-        })
-      } else {
-        // update existing poll option
-        doApiRequest(`/api/portal/options/${option.id}/`, {
-          method: 'PATCH',
-          body: {
-            poll: state.id,
-            choice: option.choice,
-          },
-        })
-      }
-      return option.id
-    })
-
-    prevOptionIds?.forEach((optionId) => {
-      if (!currOptionIds.includes(optionId)) {
-        // delete existing poll option
-        doApiRequest(`/api/portal/options/${optionId}/`, {
-          method: 'DELETE',
-        })
-      }
     })
   }
 
@@ -122,7 +68,7 @@ const PollPage = ({
     <AuthUserContext.Provider value={{ user }}>
       <Container>
         <Row style={{ padding: '2.5rem 0 0 4rem' }}>
-          <ToggleButton currPage={PageType.POLL} />
+          <ToggleButton currPage={PageType.POST} />
         </Row>
         <Row>
           <Col sm={12} md={12} lg={7} padding="0.5rem 4rem">
@@ -131,7 +77,7 @@ const PollPage = ({
               justifyContent="space-between"
               margin="0 0 2rem 0"
             >
-              <Subtitle>Poll Details</Subtitle>
+              <Subtitle>Post Details</Subtitle>
               <Group horizontal alignItems="center">
                 {createMode ? (
                   <Button color={colors.GREEN} onClick={onSubmit}>
@@ -150,10 +96,10 @@ const PollPage = ({
               </Group>
             </Group>
             <StatusBar status={state.status} />
-            <PollForm state={state} updateState={updateState} />
+            <PostForm state={state} updateState={updateState} />
           </Col>
           <Col sm={12} md={12} lg={5}>
-            <Preview state={state} />
+            <PostPhonePreview state={state} />
           </Col>
         </Row>
       </Container>
@@ -164,25 +110,23 @@ const PollPage = ({
 export const getServerSidePropsInner = async (
   context: GetServerSidePropsContext
 ): Promise<{
-  props: { poll?: PollType; prevOptionIds?: number[]; createMode: boolean }
+  props: { post?: PostType; createMode: boolean }
 }> => {
-  const pid = context.params?.pid
+  const pid = context.params?.postId
 
   if (pid && +pid) {
-    const res = await doApiRequest(`/api/portal/polls/${pid}/edit_view`, {
+    const res = await doApiRequest(`/api/portal/posts/${pid}`, {
       method: 'GET',
       headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
     })
-    const poll = await res.json()
-    if (res.ok && poll.id) {
-      const prevOptionIds = poll.options.map((opt: any) => opt.id)
-      poll.status = poll.approved ? Status.APPROVED : Status.PENDING
+    const post = await res.json()
+    if (res.ok && post.id) {
+      post.status = post.approved ? Status.APPROVED : Status.PENDING
 
       return {
         props: {
-          poll: convertSnakeCase(poll),
+          post: convertSnakeCase(post) as unknown as PostType,
           createMode: false,
-          prevOptionIds,
         },
       }
     }
@@ -197,4 +141,4 @@ export const getServerSidePropsInner = async (
 
 export const getServerSideProps = withAuth(getServerSidePropsInner)
 
-export default PollPage
+export default PostPage

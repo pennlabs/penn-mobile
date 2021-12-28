@@ -4,11 +4,10 @@ import Link from 'next/link'
 import { useRouter, NextRouter } from 'next/router'
 
 import Logo from '@/components/header/Logo'
-import { Text } from '@/components/styles/Text'
 import { Button } from '@/components/styles/Buttons'
 import { colors } from '@/components/styles/colors'
 import { Group } from '@/components/styles/Layout'
-import { maxWidth, NAV_HEIGHT, PHONE } from '@/components/styles/sizes'
+import { NAV_HEIGHT } from '@/components/styles/sizes'
 import { AuthUserContext } from '@/utils/auth'
 
 const NavStyle = s.nav`
@@ -29,23 +28,6 @@ const NavSpace = s.div`
   width: 100%;
   height: ${NAV_HEIGHT};
 `
-
-const NavLinkWrapper = s.div`
-  margin-right: 4rem;
-  ${maxWidth(PHONE)} {
-    margin-right: 0.5rem;
-  }
-`
-
-const NavLink = ({ title, link }: { title: string; link?: string }) => (
-  <NavLinkWrapper>
-    <Link href={link || `/${title}`}>
-      <a>
-        <Text heading>{title}</Text>
-      </a>
-    </Link>
-  </NavLinkWrapper>
-)
 
 const LandingPageNav = () => {
   const { user } = useContext(AuthUserContext)

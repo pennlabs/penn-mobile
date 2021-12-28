@@ -32,4 +32,18 @@ export interface PollType {
   targetPopulations: number[]
 }
 
+export interface PostType {
+  id?: number
+  title: string
+  subtitle: string
+  source: string
+  postUrl: string
+  imageUrl: string
+  startDate: Date | null
+  expireDate: Date | null
+  userComments: string
+  status: Status
+  targetPopulations: number[]
+}
+
 export type updateStateType = (newState: Object) => void
