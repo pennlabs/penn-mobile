@@ -4,18 +4,17 @@ import Link from 'next/link'
 
 import { AuthUserContext } from '@/utils/auth'
 import { User } from '@/utils/types'
+import { NAV_WIDTH } from '@/components/styles/sizes'
 import { colors } from '@/components/styles/colors'
-import { Text } from '@/components/styles/Text'
+import { InlineText, Text } from '@/components/styles/Text'
 import { getIcon } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
 
-const NAV_WIDTH = '14%'
-const PROFILE_HEIGHT = '18vh'
+const PROFILE_HEIGHT = '24vh'
+const PROFILE_PIC_SIZE = '4rem'
 
-const ProfileStyle = s.div`
-  position: fixed;
+const ProfileWrapper = s.div`
   height: ${PROFILE_HEIGHT};
-  width: ${NAV_WIDTH};
   background-color: ${colors.NAV_PROFILE_BACKGROUND};
   text-align: center;
   display: flex;
@@ -23,20 +22,43 @@ const ProfileStyle = s.div`
   align-items: center;
 `
 
+const ProfilePicWrapper = s.div`
+  border-radius: 50%;
+  background-color: ${colors.LIGHT_GRAY};
+  width: ${PROFILE_PIC_SIZE};
+  height: ${PROFILE_PIC_SIZE};
+  margin: 0 auto;
+`
+
 const Profile = ({ user }: { user: User }) => {
-  // TODO: replace this with user's org and add user img
+  // TODO: replace this with user's name, org, & img
+  const firstName = 'First'
+  const lastName = 'Last'
   return (
-    <ProfileStyle>
-      <Text bold heading>
-        {user.username}
-      </Text>
-    </ProfileStyle>
+    <ProfileWrapper>
+      <Group center>
+        <ProfilePicWrapper>
+          <InlineText bold heading style={{ lineHeight: PROFILE_PIC_SIZE }}>
+            {firstName[0].toUpperCase()}
+            {lastName[0].toUpperCase()}
+          </InlineText>
+        </ProfilePicWrapper>
+        <Text bold heading>
+          {user.username}
+        </Text>
+      </Group>
+    </ProfileWrapper>
   )
 }
 
-const NavItemStyle = s.div`
+const NavItemWrapper = s.div`
   display: flex;
   cursor: pointer;
+  opacity: 0.8;
+
+  &:hover {
+    opacity: 1;
+  }
 `
 
 const NavItem = ({
@@ -50,24 +72,19 @@ const NavItem = ({
 }) => {
   return (
     <Link href={link}>
-      <NavItemStyle>
+      <NavItemWrapper>
         {getIcon(icon)}
         <Text heading>{title}</Text>
-      </NavItemStyle>
+      </NavItemWrapper>
     </Link>
   )
 }
 
-const NavStyle = s.div`
+const NavWrapper = s.div`
   width: ${NAV_WIDTH};
   background-color: ${colors.NAV_BACKGROUND};
   text-align: center;
   min-height: 99vh;
-`
-
-const NavItemListStyle = s.div`
-  width: ${NAV_WIDTH};
-  margin-top: calc(${PROFILE_HEIGHT} + 1rem);
   position: fixed;
 `
 
@@ -75,15 +92,13 @@ export const Nav = () => {
   const { user } = useContext(AuthUserContext)
 
   return (
-    <NavStyle>
+    <NavWrapper>
       {user && <Profile user={user} />}
-      <NavItemListStyle>
-        <Group center>
-          <NavItem icon="dashboard" title="Dashboard" link="/" />
-          <NavItem icon="analytics" title="Analytics" link="/analytics" />
-          <NavItem icon="settings" title="Settings" link="/settings" />
-        </Group>
-      </NavItemListStyle>
-    </NavStyle>
+      <Group center>
+        <NavItem icon="dashboard" title="Dashboard" link="/" />
+        <NavItem icon="analytics" title="Analytics" link="/analytics" />
+        <NavItem icon="settings" title="Settings" link="/settings" />
+      </Group>
+    </NavWrapper>
   )
 }

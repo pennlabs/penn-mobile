@@ -8,6 +8,7 @@ import {
   TABLET,
   MAX_BODY_HEIGHT,
   DESKTOP,
+  NAV_WIDTH,
 } from '@/components/styles/sizes'
 
 interface IRow {
@@ -173,7 +174,9 @@ export const Container = ({ children }: { children: ReactNode }) => {
   return (
     <Group horizontal>
       <Nav />
-      <Group fullWidth>{children}</Group>
+      <Group margin={`0 0 0 ${NAV_WIDTH}`} fullWidth>
+        {children}
+      </Group>
     </Group>
   )
 }

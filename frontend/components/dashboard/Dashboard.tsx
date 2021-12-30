@@ -28,7 +28,7 @@ const EmptyDashboard = () => {
       justifyContent="center"
       style={{
         alignItems: 'center',
-        height: '80vh',
+        height: '99vh',
       }}
     >
       <Group horizontal>

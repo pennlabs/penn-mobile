@@ -125,7 +125,7 @@ export const PollsPhonePreview = ({ state }: { state: PollType }) => (
       <Text size="1rem" bold>
         {state.question}
       </Text>
-      {state.options.map((option) => (
+      {state.options.map((option, index) => (
         <Group
           horizontal
           justifyContent="space-between"
@@ -141,7 +141,7 @@ export const PollsPhonePreview = ({ state }: { state: PollType }) => (
             color={colors.DARK_GRAY}
             style={{ position: 'absolute', marginLeft: '0.5rem' }}
           >
-            {option.choice || 'Example Poll Option'}
+            {option.choice || `poll option #${index + 1}`}
           </Text>
           <Text size="1rem" bold color={colors.LIGHT_GRAY}>{`${Math.floor(
             100 / state.options.length

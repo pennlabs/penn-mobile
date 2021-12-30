@@ -41,3 +41,13 @@ export const Text = s.p<ITextProps>`
   color: ${({ color }) => color || '#4a4a4a'};
   font-family: ${({ heading }) => (heading ? 'Work Sans' : 'Inter')};
 `
+
+export const InlineText = s.span<ITextProps>`
+  font-size: ${({ size }) => size || '1rem'};
+  font-weight: ${({ bold }) => (bold ? '500' : '350')};
+  margin-bottom: ${({ marginBottom }) => marginBottom || '0.5rem'};
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  color: ${({ color }) => color || '#4a4a4a'};
+  font-family: ${({ heading }) => (heading ? 'Work Sans' : 'Inter')};
+`
