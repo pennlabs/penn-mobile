@@ -2,13 +2,14 @@ import React, { useRef } from 'react'
 
 import { PostType, updateStateType } from '@/utils/types'
 import { Button } from '@/components/styles/Buttons'
-import { Heading3, Text } from '@/components/styles/Text'
+import { Heading3, InlineText, Text } from '@/components/styles/Text'
 import { colors } from '@/components/styles/colors'
 import { Card } from '@/components/styles/Card'
 import { FormField } from '@/components/styles/Form'
 import { InfoSpan } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
 import DatePickerForm from '@/components/styles/DatePicker'
+import { Badge } from '@/components/styles/Badge'
 
 interface PostFormProps {
   state: PostType
@@ -78,14 +79,43 @@ const PostForm = ({ state, updateState }: PostFormProps) => {
         </Group>
       </Card>
 
-      <Heading3>Visibility</Heading3>
+      <Heading3>Dates</Heading3>
       <Card>
-        <Text bold>Dates</Text>
         <DatePickerForm
           updateState={updateState}
           startDate={state.startDate}
           expireDate={state.expireDate}
         />
+      </Card>
+
+      <Heading3>Filters</Heading3>
+      <Card>
+        <Group horizontal justifyContent="space-between">
+          <InlineText
+            bold
+            heading
+            style={{ lineHeight: '1.75rem', width: '5.5rem' }}
+          >
+            Class Year
+          </InlineText>
+          <Badge>2021</Badge>
+          <Badge>2022</Badge>
+          <Badge>2023</Badge>
+          <Badge>2024</Badge>
+        </Group>
+        <Group horizontal justifyContent="space-between">
+          <InlineText
+            bold
+            heading
+            style={{ lineHeight: '1.75rem', width: '5.5rem' }}
+          >
+            School
+          </InlineText>
+          <Badge>College</Badge>
+          <Badge>Wharton</Badge>
+          <Badge>SEAS</Badge>
+          <Badge>Nursing</Badge>
+        </Group>
       </Card>
 
       <Heading3>
