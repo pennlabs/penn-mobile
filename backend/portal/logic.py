@@ -1,3 +1,7 @@
+import json
+
+import requests
+from accounts.ipc import authenticated_request
 from django.contrib.auth import get_user_model
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
@@ -6,26 +10,57 @@ from portal.models import Poll, PollOption, PollVote, TargetPopulation
 User = get_user_model()
 
 
+def get_user_info(user):
+    response = authenticated_request(user, "GET", "https://platform.pennlabs.org/accounts/me/")
+    return json.loads(response.content)
+
+
+def get_user_clubs(user):
+    response = authenticated_request(user, "GET", "https://pennclubs.com/api/memberships/admin")
+    res_json = json.loads(response.content)
+    return res_json
+
+
+def get_club_info(club_code):
+    response = requests.get(f"https://pennclubs.com/api/clubs/{club_code}/")
+    res_json = json.loads(response.content)
+    return {"name": res_json["name"], "image": res_json["image_url"]}
+
+
 def get_user_populations(user):
     """Returns the target populations that the user belongs to"""
 
-    school = None
-    # school = get_affiliation(user.email)
-    # checks if school is in the target population
-    school_id = (
-        TargetPopulation.objects.get(population=school).id
-        if TargetPopulation.objects.filter(population=school).exists()
-        else -1
+    user_info = get_user_info(user)
+
+    content = []
+    content.extend(
+        [
+            TargetPopulation.objects.get(
+                kind=TargetPopulation.KIND_YEAR, population=user_info["student"]["graduation_year"]
+            )
+        ]
     )
-    # year = user.profile.expected_graduation.year if user.profile.expected_graduation else None
-    year = None
-    # checks if year is in the target population
-    year_id = (
-        TargetPopulation.objects.get(population=year).id
-        if TargetPopulation.objects.filter(population=year).exists()
-        else -1
+    content.extend(
+        [
+            TargetPopulation.objects.get(kind=TargetPopulation.KIND_SCHOOL, population=x["name"])
+            for x in user_info["student"]["school"]
+        ]
     )
-    return (school_id, year_id)
+    content.extend(
+        [
+            TargetPopulation.objects.get(kind=TargetPopulation.KIND_MAJOR, population=x["name"])
+            for x in user_info["student"]["major"]
+        ]
+    )
+    content.extend(
+        [
+            TargetPopulation.objects.get(
+                kind=TargetPopulation.KIND_DEGREE, population=x["degree_type"]
+            )
+            for x in user_info["student"]["major"]
+        ]
+    )
+    return content
 
 
 def get_demographic_breakdown(poll_id):
@@ -48,11 +83,8 @@ def get_demographic_breakdown(poll_id):
         votes = PollVote.objects.filter(poll_options__in=[option])
         for vote in votes:
             # goes through each vote and adds +1 to the
-            # populations the user belongs to
-            user_populations = get_user_populations(vote.user)
-            for user_population in user_populations:
-                if user_population != -1:
-                    population = TargetPopulation.objects.get(id=user_population).population
-                    context["breakdown"][population] += 1
+            # target populations that the voter belongs to
+            for target_population in vote.target_populations.all():
+                context["breakdown"][target_population.population] += 1
         data.append(context)
     return data

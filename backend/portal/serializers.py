@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from portal.logic import get_user_populations
 from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
 
 
@@ -14,15 +15,15 @@ class PollSerializer(serializers.ModelSerializer):
         model = Poll
         fields = (
             "id",
-            "source",
+            "club_code",
             "question",
             "created_date",
             "start_date",
             "expire_date",
             "multiselect",
-            "user_comment",
+            "club_comment",
             "admin_comment",
-            "approved",
+            "status",
             "target_populations",
         )
         read_only_fields = ("id", "created_date")
@@ -41,9 +42,7 @@ class PollSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # if Poll is updated, then approve should be false
         if not self.context["request"].user.is_superuser:
-            validated_data["approved"] = False
-        if "approved" in validated_data and validated_data["approved"]:
-            instance.admin_comment = None
+            validated_data["status"] = Poll.STATUS_DRAFT
         return super().update(instance, validated_data)
 
 
@@ -68,7 +67,7 @@ class PollOptionSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         # if Poll Option is updated, then corresponding Poll approval should be false
-        instance.poll.approved = False
+        instance.poll.status = Poll.STATUS_DRAFT
         instance.poll.save()
         return super().update(instance, validated_data)
 
@@ -82,14 +81,14 @@ class RetrievePollSerializer(serializers.ModelSerializer):
         model = Poll
         fields = (
             "id",
-            "source",
+            "club_code",
             "question",
             "created_date",
             "start_date",
             "expire_date",
             "multiselect",
-            "user_comment",
-            "approved",
+            "club_comment",
+            "status",
             "options",
             "target_populations",
         )
@@ -107,10 +106,11 @@ class PollVoteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
 
         options = validated_data["poll_options"]
+        id_hash = validated_data["id_hash"]
 
         poll = options[0].poll
         # checks if user has already voted
-        if PollVote.objects.filter(user=self.context["request"].user, poll=poll).exists():
+        if PollVote.objects.filter(id_hash=id_hash, poll=poll).exists():
             raise serializers.ValidationError(
                 detail={"detail": "You have already voted for this Poll"}
             )
@@ -125,19 +125,17 @@ class PollVoteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     detail={"detail": "Voting options are from different Polls"}
                 )
-        # checks if user belongs to target population
-        # TODO: fix when Platform updates grad year + school
-        # if (
-        #     not poll.target_populations.filter(
-        #         id__in=get_user_populations(self.context["request"].user)
-        #     ).exists()
-        #     and not self.context["request"].user.is_superuser
-        # ):
-        #     raise serializers.ValidationError(
-        #         detail={"detail": "You cannot vote for this poll (not in any target population)"}
-        #     )
-        # adds poll and user to the vote
-        validated_data["user"] = self.context["request"].user
+        # check if user is in target population
+        if (
+            not poll.target_populations.filter(
+                id__in=[x.id for x in get_user_populations(self.context["request"].user)]
+            ).exists()
+            and not self.context["request"].user.is_superuser
+        ):
+            raise serializers.ValidationError(
+                detail={"detail": "You cannot vote for this poll (not in any target population)"}
+            )
+        # adds poll to the vote
         validated_data["poll"] = poll
 
         # increments poll options vote count from the vote

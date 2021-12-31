@@ -1,3 +1,4 @@
+"""
 import datetime
 
 from django.contrib.auth import get_user_model
@@ -350,3 +351,4 @@ class Command(BaseCommand):
         vote_2.poll_options.add(option_2)
 
         self.stdout.write("Uploaded Poll Objects!")
+"""
