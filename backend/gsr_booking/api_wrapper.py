@@ -268,6 +268,7 @@ class WhartonLibWrapper:
         }
         url = f"{WHARTON_URL}{username}/student_reserve"
         response = self.request("POST", url, json=payload).json()
+        print(response)
         if "error" in response:
             raise APIError("Wharton: " + response["error"])
         return response
