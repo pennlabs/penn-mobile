@@ -48,13 +48,13 @@ const StatusBar = ({ status }: iStatusBarProps) => {
         <StatusGroup compareStatus={Status.EXPIRED} />
       </Group>
       <Row style={{ textAlign: 'center' }} justifyContent="space-between">
-        <Text>Draft</Text>
-        <Text>
+        <Text heading>Draft</Text>
+        <Text heading>
           Under <br /> Review
         </Text>
-        <Text>Approved</Text>
-        <Text>Live</Text>
-        <Text>Expired</Text>
+        <Text heading>Approved</Text>
+        <Text heading>Live</Text>
+        <Text heading>Expired</Text>
       </Row>
     </>
   )

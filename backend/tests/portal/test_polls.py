@@ -263,3 +263,54 @@ class TestPollVotes(TestCase):
         res_json2 = json.loads(response2.content)
         # assert newly answered poll is most recent
         self.assertEquals(self.p4_id, res_json2["poll"]["id"])
+
+    def test_polls_status(self):
+        Poll.objects.create(
+            user=self.test_user,
+            source="awaiting approval",
+            question="hey?",
+            start_date=timezone.localtime(),
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+            approved=False,
+            multiselect=True,
+            user_comment="",
+            admin_comment="",
+        )
+
+        Poll.objects.create(
+            user=self.test_user,
+            source="revision",
+            question="hey?",
+            start_date=timezone.localtime(),
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+            approved=False,
+            multiselect=True,
+            user_comment="",
+            admin_comment="need revision",
+        )
+
+        Poll.objects.create(
+            user=self.test_user,
+            source="approved",
+            question="hey?",
+            start_date=timezone.localtime(),
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+            approved=True,
+            multiselect=True,
+            user_comment="",
+        )
+        response = self.client.get("/portal/polls/status/")
+        res_json = json.loads(response.content)
+        self.assertEqual(3, len(res_json))
+
+        approved = res_json["approved"]
+        self.assertEqual(1, len(approved))
+        self.assertEqual("approved", approved[0]["source"])
+
+        awaiting = res_json["awaiting_approval"]
+        self.assertEqual(1, len(awaiting))
+        self.assertEqual("awaiting approval", awaiting[0]["source"])
+
+        revision = res_json["revision"]
+        self.assertEqual(1, len(revision))
+        self.assertEqual("revision", revision[0]["source"])

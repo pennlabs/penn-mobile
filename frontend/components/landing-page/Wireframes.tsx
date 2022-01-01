@@ -1,22 +1,34 @@
 import React from 'react'
 import s from 'styled-components'
+import { DESKTOP, maxWidth, minWidth, NAV_HEIGHT } from '../styles/sizes'
 
-const IPhoneImg = s.img`
+const DesktopWireframesStyle = s.div`
   position: absolute;
-  left: 20%;
-  bottom: -30%;
-  z-index: 1;
+  right: 0;
+  top: calc(-${NAV_HEIGHT} + 1rem);
+  z-index: 2;
+  ${maxWidth(DESKTOP)} {
+    display: none;
+  }
 `
 
-const Wireframes = () => (
-  <div style={{ position: 'relative' }}>
-    <img
-      style={{ zIndex: 3 }}
-      src="/browser-wireframe.svg"
-      alt="browser wireframe"
-    />
-    <IPhoneImg src="/iphone-wireframe.svg" alt="iphone wireframe" />
-  </div>
+const MobileWireframesStyle = s.div`
+  width: 100%;
+  height: auto;
+  margin-bottom: 0;
+  ${minWidth(DESKTOP)} {
+    display: none;
+  }
+`
+
+export const DesktopWireframes = () => (
+  <DesktopWireframesStyle>
+    <img src="/landing-page.svg" alt="web-mockup" />
+  </DesktopWireframesStyle>
 )
 
-export default Wireframes
+export const MobileWireframes = () => (
+  <MobileWireframesStyle>
+    <img style={{ float: 'right' }} src="/landing-page.svg" alt="web-mockup" />
+  </MobileWireframesStyle>
+)

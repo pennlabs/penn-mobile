@@ -6,4 +6,5 @@ export const Card = s.div`
   box-shadow: 0 0 8px 3px #d9d9d9;
   padding: 1.5rem 2rem;
   background-color: ${colors.WHITE};
+  margin-bottom: 2rem;
 `

@@ -108,6 +108,34 @@ class Polls(viewsets.ModelViewSet):
         """Returns information on specific post to allow for editing"""
         return Response(RetrievePollSerializer(Poll.objects.filter(id=pk).first(), many=False).data)
 
+    @action(detail=False, methods=["get"])
+    def status(self, request):
+        polls_awaiting_approval = RetrievePollSerializer(
+            Poll.objects.filter(
+                (Q(admin_comment=None) | Q(admin_comment="")), user=request.user, approved=False,
+            ),
+            many=True,
+        ).data
+
+        polls_revision = RetrievePollSerializer(
+            Poll.objects.filter(
+                ~Q(admin_comment=None), ~Q(admin_comment=""), user=request.user, approved=False,
+            ),
+            many=True,
+        ).data
+
+        polls_approved = RetrievePollSerializer(
+            Poll.objects.filter(user=request.user, approved=True), many=True
+        ).data
+
+        return Response(
+            {
+                "awaiting_approval": polls_awaiting_approval,
+                "revision": polls_revision,
+                "approved": polls_approved,
+            }
+        )
+
 
 class RetrievePollVotes(viewsets.ModelViewSet):
     """Retrieve history of polls and their statistics"""
@@ -276,4 +304,35 @@ class Posts(viewsets.ModelViewSet):
                 Post.objects.filter(Q(admin_comment=None) | Q(admin_comment=""), approved=False),
                 many=True,
             ).data
+        )
+
+    @action(detail=False, methods=["get"])
+    def status(self, request):
+        # awaiting approval: no admin comment, not approved
+        posts_awaiting_approval = PostSerializer(
+            Post.objects.filter(
+                (Q(admin_comment=None) | Q(admin_comment="")), user=request.user, approved=False,
+            ),
+            many=True,
+        ).data
+
+        # revision: have admin comment, not approved
+        posts_revision = PostSerializer(
+            Post.objects.filter(
+                ~Q(admin_comment=None), ~Q(admin_comment=""), user=request.user, approved=False
+            ),
+            many=True,
+        ).data
+
+        # approved
+        posts_approved = PostSerializer(
+            Post.objects.filter(user=request.user, approved=True), many=True
+        ).data
+
+        return Response(
+            {
+                "awaiting_approval": posts_awaiting_approval,
+                "revision": posts_revision,
+                "approved": posts_approved,
+            }
         )

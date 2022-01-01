@@ -1,50 +1,75 @@
 import { createContext } from 'react'
-import * as React from 'react'
-import { NextPageContext, NextPage } from 'next'
-import nextRedirect from '../utils/redirect'
+import {
+  GetServerSidePropsContext,
+  GetServerSidePropsResult,
+  Redirect,
+} from 'next'
 import { doApiRequest } from '../utils/fetch'
 import { User } from '../types'
-import { GIPPage } from '../utils/gippage'
+
+export interface AuthProps {
+  user: User | null
+}
 
 export const AuthUserContext: React.Context<{ user?: User }> = createContext({})
 
-export interface AuthProps {
-  user?: User
-}
+type GetServerSidePropsResultDiscUnion<T> =
+  | { tag: 'props'; props: T }
+  | { tag: 'redirect'; redirect: Redirect }
+  | { tag: 'notFound'; notFound: true }
 
-export function withAuth<T>(
-  WrappedComponent: NextPage<T>
-): GIPPage<T & AuthProps> {
-  const AuthedComponent = ({ user, ...props }: T & AuthProps) => (
-    <AuthUserContext.Provider value={{ user }}>
-      <WrappedComponent {...(props as T)} />
-    </AuthUserContext.Provider>
-  )
-
-  AuthedComponent.getInitialProps = async (ctx: NextPageContext) => {
-    const headers = {
-      credentials: 'include',
-      headers: ctx.req ? { cookie: ctx.req.headers.cookie } : undefined,
-    }
-
-    // TODO: add accounts/me backend route
-    const res = await doApiRequest('/api/users/me/', headers)
-    let user: User | undefined
-    if (res.ok) {
-      user = await res.json()
-    } else {
-      nextRedirect(ctx, (url) => url !== '/', '/')
-    }
-
-    if (WrappedComponent.getInitialProps) {
-      const props = await WrappedComponent.getInitialProps(ctx)
-      return { ...props, user }
-    } else {
-      // Cast is sound: if WrappedComponent doesn't have
-      // getInitialProps, then T : {}
-      return { user } as T & AuthProps
-    }
+function convertGetServerSidePropsResult<T>(
+  r: GetServerSidePropsResult<T>
+): GetServerSidePropsResultDiscUnion<T> {
+  if (Object.prototype.hasOwnProperty.call(r, 'props')) {
+    const casted = r as { props: T }
+    return { tag: 'props', props: casted.props }
+  } else if (Object.prototype.hasOwnProperty.call(r, 'redirect')) {
+    const casted = r as { redirect: Redirect }
+    return { tag: 'redirect', redirect: casted.redirect }
+  } else if (Object.prototype.hasOwnProperty.call(r, 'notFound')) {
+    return { tag: 'notFound', notFound: true }
   }
 
-  return AuthedComponent
+  throw new Error('NextJS typing information incorrect')
+}
+
+type GetServerSidePropsFunc<T> = (
+  ctx: GetServerSidePropsContext
+) => Promise<GetServerSidePropsResult<T>>
+
+export function withAuth<T>(getServerSidePropsFunc: GetServerSidePropsFunc<T>) {
+  return async (
+    ctx: GetServerSidePropsContext
+  ): Promise<GetServerSidePropsResult<T & AuthProps>> => {
+    const headers = {
+      credentials: 'include',
+      headers: { cookie: ctx.req.headers.cookie },
+    }
+
+    const res = await doApiRequest('/api/users/me/', headers)
+    if (res.ok || ctx.req.url === '/') {
+      const user = await res.json()
+      const wrapped = await getServerSidePropsFunc(ctx)
+      const casted = convertGetServerSidePropsResult(wrapped)
+
+      if (casted.tag === 'props') {
+        return {
+          // pass null user if in landing page route `/` and user is not logged in
+          props: { ...casted.props, user: res.ok ? user : null },
+        }
+      } else if (casted.tag === 'notFound') {
+        return { notFound: casted.notFound }
+      } else {
+        return { redirect: casted.redirect }
+      }
+    } else {
+      return {
+        redirect: {
+          destination: '/',
+          permanent: false,
+        },
+      }
+    }
+  }
 }
