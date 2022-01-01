@@ -24,7 +24,7 @@ def get_user_clubs(user):
 def get_club_info(club_code):
     response = requests.get(f"https://pennclubs.com/api/clubs/{club_code}/")
     res_json = json.loads(response.content)
-    return {"name": res_json["name"], "image": res_json["image_url"]}
+    return {"name": res_json["name"], "image": res_json["image_url"], "club_code": club_code}
 
 
 def get_user_populations(user):

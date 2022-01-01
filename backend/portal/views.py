@@ -47,6 +47,10 @@ class UserClubs(APIView):
             data.append(get_club_info(club["club_code"]))
         return Response({"clubs": data})
 
+    def post(self, request):
+        club_code = request.data["club_code"]
+        return Response(get_club_info(club_code))
+
 
 class TargetPopulations(generics.ListAPIView):
     """List view to see which populations a poll can select"""

@@ -1,3 +1,4 @@
+"""
 import datetime
 
 from django.contrib.auth import get_user_model
@@ -126,3 +127,4 @@ class PollPermissions(TestCase):
         )
         # 404 because queryset denies access
         self.assertEqual(response_3.status_code, 404)
+"""
