@@ -30,19 +30,19 @@ def mock_requests_get(obj, *args, **kwargs):
         file_path = "tests/gsr_booking/api_wharton_book.json"
     elif "wharton" in url and "availability" in url:  # wharton availability
         file_path = "tests/gsr_booking/api_wharton_availability.json"
-    elif "wharton" in url and "reservations" in url:
+    elif "wharton" in url and "reservations" in url: # wharton / libcal reservations
         file_path = "tests/gsr_booking/api_wharton_reservations.json"
-    elif "wharton" in url and "cancel" in url:
+    elif "wharton" in url and "cancel" in url: # wharton cancelling
         file_path = "tests/gsr_booking/api_wharton_cancel.json"
-    elif "libcal" in url and "space/categories" in url:
+    elif "libcal" in url and "space/categories" in url: # libcal availability part 1
         file_path = "tests/gsr_booking/api_libcal_space_categories.json"
-    elif "libcal" in url and "space/category" in url:
+    elif "libcal" in url and "space/category" in url: # libcal availability part 2
         file_path = "tests/gsr_booking/api_libcal_space_category.json"
-    elif "libcal" in url and "space/item" in url:
+    elif "libcal" in url and "space/item" in url: # libcal availability part 3
         file_path = "tests/gsr_booking/api_libcal_space_item.json"
-    elif "libcal" in url and "space/reserve" in url:
+    elif "libcal" in url and "space/reserve" in url: # libcal book
         file_path = "tests/gsr_booking/api_libcal_book.json"
-    elif "libcal" in url and "space/cancel" in url:
+    elif "libcal" in url and "space/cancel" in url: # libcal cancel
         file_path = "tests/gsr_booking/api_libcal_cancel.json"
 
     with open(file_path) as data:
