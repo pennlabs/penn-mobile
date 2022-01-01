@@ -1,0 +1,36 @@
+[
+    {
+        "lid": 1086, 
+        "name": "Van Pelt-Dietrich Library Center: Group Study Spaces", 
+        "categories": [
+            {
+                "cid": 4660, 
+                "name": "Van Pelt Library: Ground Floor", 
+                "formid": 906, 
+                "public": 1, 
+                "google": false
+            }, 
+            {
+                "cid": 1889, 
+                "name": "Van Pelt Library: 1st Floor (Weigle Information Commons)", 
+                "formid": 906, 
+                "public": 1, 
+                "google": false 
+            }, 
+            {
+                "cid": 4659, 
+                "name": "Van Pelt Library: 3rd Floor", 
+                "formid": 906, 
+                "public": 1, 
+                "google": false
+            }, 
+            {
+                "cid": 1891, 
+                "name": "Van Pelt Library: 4th Floor", 
+                "formid": 906, 
+                "public": 1, 
+                "google": false
+            }
+        ]
+    }
+]

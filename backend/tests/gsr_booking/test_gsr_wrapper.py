@@ -4,10 +4,10 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
-# from django.urls import reverse
 from rest_framework.test import APIClient
 
 from gsr_booking.api_wrapper import BookingWrapper
+from gsr_booking.models import GSR, Group, GSRBooking, Reservation
 
 
 User = get_user_model()
@@ -18,24 +18,32 @@ def mock_requests_get(obj, *args, **kwargs):
         def __init__(self, json_data, status_code):
             self.json_data = json_data
             self.status_code = status_code
+            self.ok = True
 
         def json(self):
             return self.json_data
 
     url = args[1]
-    print(url)
-
-    if "wharton" in url and "privileges" in url: # is wharton check
+    if "wharton" in url and "privileges" in url:  # is wharton check
         file_path = "tests/gsr_booking/api_is_wharton.json"
-    elif "wharton" in url and "student_reserve" in url: # wharton booking
+    elif "wharton" in url and "student_reserve" in url:  # wharton booking
         file_path = "tests/gsr_booking/api_wharton_book.json"
-    elif "wharton" in url and "availability" in url: # wharton availability
+    elif "wharton" in url and "availability" in url:  # wharton availability
         file_path = "tests/gsr_booking/api_wharton_availability.json"
     elif "wharton" in url and "reservations" in url:
         file_path = "tests/gsr_booking/api_wharton_reservations.json"
     elif "wharton" in url and "cancel" in url:
         file_path = "tests/gsr_booking/api_wharton_cancel.json"
-
+    elif "libcal" in url and "space/categories" in url:
+        file_path = "tests/gsr_booking/api_libcal_space_categories.json"
+    elif "libcal" in url and "space/category" in url:
+        file_path = "tests/gsr_booking/api_libcal_space_category.json"
+    elif "libcal" in url and "space/item" in url:
+        file_path = "tests/gsr_booking/api_libcal_space_item.json"
+    elif "libcal" in url and "space/reserve" in url:
+        file_path = "tests/gsr_booking/api_libcal_book.json"
+    elif "libcal" in url and "space/cancel" in url:
+        file_path = "tests/gsr_booking/api_libcal_cancel.json"
 
     with open(file_path) as data:
         return Mock(json.load(data), 200)
@@ -56,12 +64,12 @@ class TestBookingWrapper(TestCase):
     @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
     def test_wharton_availability(self):
         availability = self.bw.get_availability("JMHH", 1, "2021-01-07", "2022-01-08", self.user)
-        self.assertIn('name', availability)
-        self.assertIn('gid', availability)
-        self.assertIn('rooms', availability)
-        self.assertIn('room_name', availability['rooms'][0])
-        self.assertIn('id', availability['rooms'][0])
-        self.assertIn('availability', availability['rooms'][0])
+        self.assertIn("name", availability)
+        self.assertIn("gid", availability)
+        self.assertIn("rooms", availability)
+        self.assertIn("room_name", availability["rooms"][0])
+        self.assertIn("id", availability["rooms"][0])
+        self.assertIn("availability", availability["rooms"][0])
 
     @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
     def test_book_wharton(self):
@@ -74,10 +82,56 @@ class TestBookingWrapper(TestCase):
     def test_wharton_reservations(self):
         reservations = self.bw.WLW.get_reservations(self.user, [])
         self.assertTrue(isinstance(reservations, list))
-        self.assertIn('booking_id', reservations[0])
-        self.assertIn('gsr', reservations[0])
+        self.assertIn("booking_id", reservations[0])
+        self.assertIn("gsr", reservations[0])
 
     @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
     def test_cancel_wharton(self):
         cancel = self.bw.cancel_room("987654", self.user)
+        self.assertIsNone(cancel)
+
+    @mock.patch("gsr_booking.api_wrapper.LibCalWrapper.request", mock_requests_get)
+    def test_libcal_availability(self):
+        availability = self.bw.get_availability("1086", 1889, "2021-01-07", "2022-01-08", self.user)
+        self.assertIn("name", availability)
+        self.assertIn("gid", availability)
+        self.assertIn("rooms", availability)
+        self.assertIn("room_name", availability["rooms"][0])
+        self.assertIn("id", availability["rooms"][0])
+        self.assertIn("availability", availability["rooms"][0])
+
+    @mock.patch("gsr_booking.api_wrapper.LibCalWrapper.request", mock_requests_get)
+    def test_book_libcal(self):
+        book_libcal = self.bw.book_room(
+            1889,
+            7192,
+            "VP WIC Booth 01",
+            "2021-12-05T16:00:00-05:00",
+            "2021-12-05T16:30:00-05:00",
+            self.user,
+        )
+        self.assertIsNone(book_libcal)
+
+    @mock.patch(
+        "gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get
+    )  # purposefully wharton request here
+    def test_libcal_reservations(self):
+        reservations = self.bw.get_reservations(self.user)
+        self.assertTrue(isinstance(reservations, list))
+        self.assertIn("booking_id", reservations[0])
+        self.assertIn("gsr", reservations[0])
+
+    @mock.patch("gsr_booking.api_wrapper.LibCalWrapper.request", mock_requests_get)
+    def test_cancel_libcal(self):
+        group = Group.objects.create(owner=self.user)
+        reservation = Reservation.objects.create(creator=self.user, group=group)
+        GSRBooking.objects.create(
+            reservation=reservation,
+            user=self.user,
+            booking_id="123",
+            gsr=GSR.objects.all().first(),
+            room_id=1,
+            room_name="room",
+        )
+        cancel = self.bw.cancel_room("123", self.user)
         self.assertIsNone(cancel)

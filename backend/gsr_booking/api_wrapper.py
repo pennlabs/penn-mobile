@@ -236,7 +236,7 @@ class WhartonLibWrapper:
         # hits availability route for a given lid and date
         url = f"{WHARTON_URL}{username}/availability/{lid}/{str(search_date)}"
         rooms = self.request("GET", url).json()
-        if 'closed' in rooms and rooms['closed']:
+        if "closed" in rooms and rooms["closed"]:
             return []
 
         # presets end date as end midnight of next day
