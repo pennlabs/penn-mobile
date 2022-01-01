@@ -102,7 +102,7 @@ class BookingWrapper:
     def cancel_room(self, booking_id, user):
         try:
             # gets reservations from wharton for a user
-            wharton_bookings = self.WLW.get_reservations(user)["bookings"]
+            wharton_bookings = self.WLW.get_reservations(user, [])
         except APIError as e:
             # don't throw error if the student is non-wharton
             if str(e) == "Wharton: GSR view restricted to Wharton Pennkeys":
@@ -236,6 +236,8 @@ class WhartonLibWrapper:
         # hits availability route for a given lid and date
         url = f"{WHARTON_URL}{username}/availability/{lid}/{str(search_date)}"
         rooms = self.request("GET", url).json()
+        if 'closed' in rooms and rooms['closed']:
+            return []
 
         # presets end date as end midnight of next day
         end_date = (
@@ -268,7 +270,6 @@ class WhartonLibWrapper:
         }
         url = f"{WHARTON_URL}{username}/student_reserve"
         response = self.request("POST", url, json=payload).json()
-        print(response)
         if "error" in response:
             raise APIError("Wharton: " + response["error"])
         return response
