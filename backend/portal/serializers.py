@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from portal.logic import get_user_populations
+from portal.logic import get_user_clubs, get_user_populations
 from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
 
 
@@ -29,11 +29,14 @@ class PollSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_date")
 
     def create(self, validated_data):
-        # adds user to the Poll
-        validated_data["user"] = self.context["request"].user
+        club_code = validated_data["club_code"]
+        if club_code not in [x["club_code"] for x in get_user_clubs(self.context["request"].user)]:
+            raise serializers.ValidationError(
+                detail={"detail": "You do not access to create a Poll under this club."}
+            )
         # ensuring user cannot create an admin comment upon creation
         validated_data["admin_comment"] = None
-        validated_data["approved"] = False
+        validated_data["status"] = Poll.STATUS_DRAFT
         if len(validated_data["target_populations"]) == 0:
             validated_data["target_populations"] = list(TargetPopulation.objects.all())
 
