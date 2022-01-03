@@ -6,9 +6,13 @@ import { Heading3, Text } from '@/components/styles/Text'
 import { colors } from '@/components/styles/colors'
 import { Card } from '@/components/styles/Card'
 import { FormField } from '@/components/styles/Form'
-import { InfoSpan, IconPlus, IconTimes } from '@/components/styles/Icons'
+import { IconPlus, IconTimes } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
-import DatePickerForm from '@/components/styles/DatePicker'
+import {
+  DatesCard,
+  FiltersCard,
+  NotesCard,
+} from '@/components/form/FormComponents'
 
 interface PollFormProps {
   state: PollType
@@ -107,29 +111,11 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
         </Button>
       </Card>
 
-      <Heading3>Visibility</Heading3>
-      <Card>
-        <Text bold>Dates</Text>
-        <DatePickerForm
-          updateState={updateState}
-          startDate={state.startDate}
-          expireDate={state.expireDate}
-        />
-      </Card>
+      <DatesCard updateState={updateState} state={state} />
 
-      <Heading3>
-        Notes
-        <InfoSpan infoText="Portal admin will see this message during the review process." />
-      </Heading3>
-      <Card>
-        <FormField
-          name="userComments"
-          value={state.userComments}
-          placeholder="Enter any comments here."
-          updateState={updateState}
-          textArea={true}
-        />
-      </Card>
+      <FiltersCard updateState={updateState} state={state} />
+
+      <NotesCard updateState={updateState} state={state} />
     </>
   )
 }

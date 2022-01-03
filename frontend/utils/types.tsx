@@ -20,11 +20,9 @@ export enum Status {
   REJECTED,
 }
 
-export interface PollType {
+export interface ContentType {
   id?: number
-  question: string
   source: string
-  options: { id: number; choice: string }[]
   startDate: Date | null
   expireDate: Date | null
   userComments: string
@@ -32,18 +30,16 @@ export interface PollType {
   targetPopulations: number[]
 }
 
-export interface PostType {
-  id?: number
+export interface PollType extends ContentType {
+  question: string
+  options: { id: number; choice: string }[]
+}
+
+export interface PostType extends ContentType {
   title: string
   subtitle: string
-  source: string
   postUrl: string
   imageUrl: string
-  startDate: Date | null
-  expireDate: Date | null
-  userComments: string
-  status: Status
-  targetPopulations: number[]
 }
 
 export type updateStateType = (newState: Object) => void

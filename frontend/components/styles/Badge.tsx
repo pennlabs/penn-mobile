@@ -1,4 +1,3 @@
-import React from 'react'
 import s, { css } from 'styled-components'
 import { colors } from './colors'
 

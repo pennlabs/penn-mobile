@@ -16,13 +16,13 @@ const Dashboard = () => (
   </>
 )
 
-const EmptyDashboard = () => {
-  const EmptyDashboardImg = s.img`
-    ${maxWidth(PHONE)} {
-      display: none;
-    }
-  `
+const EmptyDashboardImg = s.img`
+  ${maxWidth(PHONE)} {
+    display: none;
+  }
+`
 
+const EmptyDashboard = () => {
   return (
     <Row
       justifyContent="center"
