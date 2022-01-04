@@ -1,6 +1,5 @@
 import json
 
-import requests
 from accounts.ipc import authenticated_request
 from django.contrib.auth import get_user_model
 
@@ -16,13 +15,13 @@ def get_user_info(user):
 
 
 def get_user_clubs(user):
-    response = authenticated_request(user, "GET", "https://pennclubs.com/api/memberships/admin")
+    response = authenticated_request(user, "GET", "https://pennclubs.com/api/memberships/")
     res_json = json.loads(response.content)
     return res_json
 
 
-def get_club_info(club_code):
-    response = requests.get(f"https://pennclubs.com/api/clubs/{club_code}/")
+def get_club_info(user, club_code):
+    response = authenticated_request(user, "GET", f"https://pennclubs.com/api/clubs/{club_code}/")
     res_json = json.loads(response.content)
     return {"name": res_json["name"], "image": res_json["image_url"], "club_code": club_code}
 

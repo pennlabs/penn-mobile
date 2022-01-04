@@ -22,7 +22,7 @@ class PollOwnerPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         # only creator can edit
         if view.action in ["partial_update", "update", "destroy"]:
-            return obj.club_code in [x["club_code"] for x in get_user_clubs(request.user)]
+            return obj.club_code in [x["club"]["code"] for x in get_user_clubs(request.user)]
         return True
 
     def has_permission(self, request, view):
@@ -36,14 +36,14 @@ class OptionOwnerPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         # only creator can edit
         if view.action in ["partial_update", "update", "destroy"]:
-            return obj.poll.club_code in [x["club_code"] for x in get_user_clubs(request.user)]
+            return obj.poll.club_code in [x["club"]["code"] for x in get_user_clubs(request.user)]
         return True
 
     def has_permission(self, request, view):
         # only creator of poll can create poll option
         if view.action == "create" and request.data:
             poll = Poll.objects.get(id=request.data["poll"])
-            return poll.club_code in [x["club_code"] for x in get_user_clubs(request.user)]
+            return poll.club_code in [x["club"]["code"] for x in get_user_clubs(request.user)]
         return request.user.is_authenticated
 
 
@@ -55,7 +55,9 @@ class TimeSeriesPermission(permissions.BasePermission):
         # checks if poll exists
         if poll.exists():
             # only poll creator and admin can access
-            return poll.first().club_code in [x["club_code"] for x in get_user_clubs(request.user)]
+            return poll.first().club_code in [
+                x["club"]["code"] for x in get_user_clubs(request.user)
+            ]
         return False
 
 

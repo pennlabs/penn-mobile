@@ -30,13 +30,19 @@ class PollSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         club_code = validated_data["club_code"]
-        if club_code not in [x["club_code"] for x in get_user_clubs(self.context["request"].user)]:
+        if club_code not in [
+            x["club"]["code"] for x in get_user_clubs(self.context["request"].user)
+        ]:
             raise serializers.ValidationError(
                 detail={"detail": "You do not access to create a Poll under this club."}
             )
         # ensuring user cannot create an admin comment upon creation
         validated_data["admin_comment"] = None
         validated_data["status"] = Poll.STATUS_DRAFT
+
+        # TODO: toggle this off when multiselect functionality is available
+        validated_data["multiselect"] = False
+
         if len(validated_data["target_populations"]) == 0:
             validated_data["target_populations"] = list(TargetPopulation.objects.all())
 

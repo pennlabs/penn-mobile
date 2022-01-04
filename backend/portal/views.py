@@ -12,6 +12,7 @@ from portal.logic import (
     get_club_info,
     get_demographic_breakdown,
     get_user_clubs,
+    get_user_info,
     get_user_populations,
 )
 from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
@@ -42,14 +43,10 @@ class UserClubs(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        data = []
+        club_data = []
         for club in get_user_clubs(request.user):
-            data.append(get_club_info(club["club_code"]))
-        return Response({"clubs": data})
-
-    def post(self, request):
-        club_code = request.data["club_code"]
-        return Response(get_club_info(club_code))
+            club_data.append(get_club_info(request.user, club["club"]["code"]))
+        return Response({"user": get_user_info(request.user), "clubs": club_data})
 
 
 class TargetPopulations(generics.ListAPIView):
@@ -84,11 +81,12 @@ class Polls(viewsets.ModelViewSet):
     serializer_class = PollSerializer
 
     def get_queryset(self):
+        # all polls if superuser, polls corresponding to club for regular user
         return (
             Poll.objects.all()
             if self.request.user.is_superuser
             else Poll.objects.filter(
-                club_code__in=[x["club_code"] for x in get_user_clubs(self.request.user)]
+                club_code__in=[x["club"]["code"] for x in get_user_clubs(self.request.user)]
             )
         )
 
@@ -100,6 +98,8 @@ class Polls(viewsets.ModelViewSet):
 
         id_hash = request.data["id_hash"]
 
+        # unvoted polls in draft/approaved mode for superuser
+        # unvoted and approved polls within time frame for regular user
         polls = (
             Poll.objects.filter(
                 ~Q(id__in=PollVote.objects.filter(id_hash=id_hash).values_list("poll_id")),
@@ -165,7 +165,7 @@ class PollOptions(viewsets.ModelViewSet):
             if self.request.user.is_superuser
             else PollOption.objects.filter(
                 poll__in=Poll.objects.filter(
-                    club_code__in=[x["club_code"] for x in get_user_clubs(self.request.user)]
+                    club_code__in=[x["club"]["code"] for x in get_user_clubs(self.request.user)]
                 )
             )
         )
