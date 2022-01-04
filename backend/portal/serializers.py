@@ -106,7 +106,7 @@ class RetrievePollSerializer(serializers.ModelSerializer):
 class PollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
-        fields = ("id", "poll_options", "created_date")
+        fields = ("id", "id_hash", "poll_options", "created_date")
         read_only_fields = (
             "id",
             "created_date",
@@ -152,6 +152,11 @@ class PollVoteSerializer(serializers.ModelSerializer):
             option.vote_count += 1
             option.save()
 
+        # populates target populations
+        validated_data["target_populations"] = [
+            x.id for x in get_user_populations(self.context["request"].user)
+        ]
+
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
@@ -172,7 +177,7 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PollVote
-        fields = ("id", "poll", "poll_options", "created_date")
+        fields = ("id", "id_hash", "poll", "poll_options", "created_date")
 
 
 class PostSerializer(serializers.ModelSerializer):

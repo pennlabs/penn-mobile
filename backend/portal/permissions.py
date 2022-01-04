@@ -51,7 +51,7 @@ class TimeSeriesPermission(permissions.BasePermission):
     """Permission that checks for Time Series access (only creator of Poll and admins)"""
 
     def has_permission(self, request, view):
-        poll = Poll.objects.filter(id=view.kwargs["id"])
+        poll = Poll.objects.filter(id=view.kwargs["poll_id"])
         # checks if poll exists
         if poll.exists():
             # only poll creator and admin can access

@@ -10,17 +10,20 @@ User = get_user_model()
 
 
 def get_user_info(user):
+    """Returns Platform user information"""
     response = authenticated_request(user, "GET", "https://platform.pennlabs.org/accounts/me/")
     return json.loads(response.content)
 
 
 def get_user_clubs(user):
+    """Returns list of clubs that user is a member of"""
     response = authenticated_request(user, "GET", "https://pennclubs.com/api/memberships/")
     res_json = json.loads(response.content)
     return res_json
 
 
 def get_club_info(user, club_code):
+    """Returns club information based on club code"""
     response = authenticated_request(user, "GET", f"https://pennclubs.com/api/clubs/{club_code}/")
     res_json = json.loads(response.content)
     return {"name": res_json["name"], "image": res_json["image_url"], "club_code": club_code}
@@ -70,9 +73,6 @@ def get_demographic_breakdown(poll_id):
     poll = Poll.objects.get(id=poll_id)
     data = []
     breakdown = {}
-    # adds all targeted populations into breakdown
-    for target_population in poll.target_populations.all():
-        breakdown[target_population.population] = 0
 
     # gets all options for the poll
     options = PollOption.objects.filter(poll=poll)
@@ -84,6 +84,9 @@ def get_demographic_breakdown(poll_id):
             # goes through each vote and adds +1 to the
             # target populations that the voter belongs to
             for target_population in vote.target_populations.all():
-                context["breakdown"][target_population.population] += 1
+                if target_population.population in context["breakdown"]:
+                    context["breakdown"][target_population.population] += 1
+                else:
+                    context["breakdown"][target_population.population] = 1
         data.append(context)
     return data

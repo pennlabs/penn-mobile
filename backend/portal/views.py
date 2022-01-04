@@ -136,8 +136,8 @@ class Polls(viewsets.ModelViewSet):
         )
 
     @action(detail=True, methods=["get"])
-    def edit_view(self, request, pk=None):
-        """Returns information on specific post to allow for editing"""
+    def option_view(self, request, pk=None):
+        """Returns information on specific poll, including options and vote counts"""
         return Response(RetrievePollSerializer(Poll.objects.filter(id=pk).first(), many=False).data)
 
 
@@ -188,8 +188,7 @@ class PollVotes(viewsets.ModelViewSet):
     serializer_class = PollVoteSerializer
 
     def get_queryset(self):
-        # only user can see, create, update, and/or destroy their own votes
-        return PollVote.objects.filter(user=self.request.user)
+        return PollVote.objects.none()
 
     @action(detail=False, methods=["post"])
     def recent(self, request):
@@ -197,7 +196,7 @@ class PollVotes(viewsets.ModelViewSet):
         id_hash = request.data["id_hash"]
 
         poll_votes = PollVote.objects.filter(id_hash=id_hash).order_by("-created_date").first()
-        return Response(RetrievePollVoteSerializer(poll_votes, many=True).data)
+        return Response(RetrievePollVoteSerializer(poll_votes).data)
 
 
 class PollVoteStatistics(APIView):
