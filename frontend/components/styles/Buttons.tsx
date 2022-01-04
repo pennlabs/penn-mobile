@@ -27,44 +27,61 @@ export const Button = s.button<iButtonProps>`
 `
 
 interface iToggleButtonProps {
-  page: PageType
-  active?: boolean
+  link?: boolean
+  activeOption?: PageType
 }
 
-const ToggleButtonStyle = s.button<iToggleButtonProps>`
+const ToggleContainer = s.div`
+  display: inline-block;
+  border-radius: 100px;
+  background: ${colors.LIGHTER_GRAY};
+  padding: 5px;
+`
+
+const ToggleOptionStyle = s.button<{ active: boolean }>`
   border-width: 0;
   background-color: ${(props) =>
-    props.active ? colors.MEDIUM_BLUE : colors.LIGHT_GRAY};
-  color: white;
-  border-radius: ${(props) =>
-    props.page === PageType.POST ? '12px 0px 0px 12px' : '0px 12px 12px 0px'};
+    props.active ? colors.MEDIUM_BLUE : colors.LIGHTER_GRAY};
+  color: ${(props) => props.active && 'white'};
+  border-radius: 100px;
   height: 28px;
-  width: 115px;
+  padding: 0 1rem;
   outline: none;
   cursor: pointer;
 `
 
-export const ToggleButton = ({ currPage }: { currPage: PageType }) =>
-  currPage === PageType.POST ? (
-    <>
-      <ToggleButtonStyle page={currPage} active>
-        New Post
-      </ToggleButtonStyle>
-      <Link href={CREATE_POLL_ROUTE}>
-        <a>
-          <ToggleButtonStyle page={PageType.POLL}>New Poll</ToggleButtonStyle>
-        </a>
-      </Link>
-    </>
-  ) : (
-    <>
-      <Link href={CREATE_POST_ROUTE}>
-        <a>
-          <ToggleButtonStyle page={PageType.POST}>New Post</ToggleButtonStyle>
-        </a>
-      </Link>
-      <ToggleButtonStyle page={currPage} active>
-        New Poll
-      </ToggleButtonStyle>
-    </>
+export const ToggleButton = ({ link, activeOption }: iToggleButtonProps) => {
+  const ToggleOption = ({
+    label,
+    active,
+    route,
+  }: {
+    label: string
+    active: boolean
+    route: string
+  }) =>
+    link ? (
+      <ToggleOptionStyle active={active}>
+        <Link href={route}>
+          <a>{label}</a>
+        </Link>
+      </ToggleOptionStyle>
+    ) : (
+      <ToggleOptionStyle active={active}>{label}</ToggleOptionStyle>
+    )
+
+  return (
+    <ToggleContainer>
+      <ToggleOption
+        active={activeOption == PageType.POST}
+        label="Post"
+        route={CREATE_POST_ROUTE}
+      />
+      <ToggleOption
+        active={activeOption === PageType.POLL}
+        label="Poll"
+        route={CREATE_POLL_ROUTE}
+      />
+    </ToggleContainer>
   )
+}

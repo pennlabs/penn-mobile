@@ -10,6 +10,7 @@ import {
   DESKTOP,
   NAV_WIDTH,
 } from '@/components/styles/sizes'
+import Header from '@/components/header/Header'
 
 interface IRow {
   maxHeight?: string
@@ -173,13 +174,19 @@ export const Group = s.div<iGroupProps>(
   `
 )
 
+/**
+ * Page layout container with nav bar on left and content on right
+ */
 export const Container = ({ children }: { children: ReactNode }) => {
   return (
-    <Group horizontal>
-      <Nav />
-      <Group margin={`0 0 0 ${NAV_WIDTH}`} fullWidth>
-        {children}
+    <>
+      <Header />
+      <Group horizontal>
+        <Nav />
+        <Group margin={`0 0 0 ${NAV_WIDTH}`} fullWidth>
+          {children}
+        </Group>
       </Group>
-    </Group>
+    </>
   )
 }

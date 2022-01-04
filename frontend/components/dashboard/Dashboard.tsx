@@ -8,10 +8,18 @@ import { Subtitle, Text } from '@/components/styles/Text'
 import { IconArrowRight } from '@/components/styles/Icons'
 import { colors } from '@/components/styles/colors'
 import { CREATE_POST_ROUTE } from '@/utils/routes'
+import { PageType, PollType, PostType } from '@/utils/types'
+import { ToggleButton } from '@/components/styles/Buttons'
 
-const Dashboard = () => (
+interface DashboardProps {
+  postList: PostType[]
+  pollList: PollType[]
+}
+
+const Dashboard = ({ postList, pollList }: DashboardProps) => (
   <>
     <Container>
+      <ToggleButton activeOption={PageType.POST} />
       <EmptyDashboard />
     </Container>
   </>

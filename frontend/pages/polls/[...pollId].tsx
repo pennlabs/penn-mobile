@@ -122,7 +122,7 @@ const PollPage = ({
     <AuthUserContext.Provider value={{ user }}>
       <Container>
         <Row style={{ padding: '2.5rem 0 0 4rem' }}>
-          <ToggleButton currPage={PageType.POLL} />
+          <ToggleButton link activeOption={PageType.POLL} />
         </Row>
         <Row>
           <Col sm={12} md={12} lg={7} padding="0.5rem 4rem">

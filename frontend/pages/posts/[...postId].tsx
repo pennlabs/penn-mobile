@@ -69,7 +69,7 @@ const PostPage = ({ user, createMode, post }: iPostPageProps) => {
     <AuthUserContext.Provider value={{ user }}>
       <Container>
         <Row style={{ padding: '2.5rem 0 0 4rem' }}>
-          <ToggleButton currPage={PageType.POST} />
+          <ToggleButton link activeOption={PageType.POST} />
         </Row>
         <Row>
           <Col sm={12} md={12} lg={7} padding="0.5rem 4rem">
