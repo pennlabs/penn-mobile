@@ -1,68 +1,38 @@
-import React from 'react'
-import s from 'styled-components'
-import Link from 'next/link'
+import React, { useState } from 'react'
 
-import { maxWidth, PHONE } from '@/components/styles/sizes'
-import { Container, Group, Row } from '@/components/styles/Layout'
-import { Subtitle, Text } from '@/components/styles/Text'
-import { IconArrowRight } from '@/components/styles/Icons'
-import { colors } from '@/components/styles/colors'
-import { CREATE_POST_ROUTE } from '@/utils/routes'
-import { PageType, PollType, PostType } from '@/utils/types'
-import { ToggleButton } from '@/components/styles/Buttons'
+import { Container, Row } from '@/components/styles/Layout'
+import { PageType, PollType, PostType, Status } from '@/utils/types'
+import EmptyDashboard from '@/components/dashboard/EmptyDashboard'
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
+import { StatusColumn } from '@/components/dashboard/StatusColumn'
 
 interface DashboardProps {
   postList: PostType[]
   pollList: PollType[]
 }
 
-const Dashboard = ({ postList, pollList }: DashboardProps) => (
-  <>
-    <Container>
-      <ToggleButton activeOption={PageType.POST} />
-      <EmptyDashboard />
-    </Container>
-  </>
-)
+const Dashboard = ({ postList, pollList }: DashboardProps) => {
+  const [activeOption, setActiveOption] = useState<PageType>(PageType.POST)
+  console.log(postList)
 
-const EmptyDashboardImg = s.img`
-  ${maxWidth(PHONE)} {
-    display: none;
-  }
-`
-
-const EmptyDashboard = () => {
   return (
-    <Row
-      justifyContent="center"
-      style={{
-        alignItems: 'center',
-        height: '99vh',
-      }}
-    >
-      <Group horizontal>
-        <EmptyDashboardImg src="/desk-graphic.svg" alt="desk svg" />
-        <Group margin="0 2rem" style={{ maxWidth: '24rem' }}>
-          <Subtitle>Oh, hello there.</Subtitle>
-          <Text>
-            Looks like you&apos;re new here.
-            <br />
-            <br />
-            Penn Mobile Portal allows organizations to connect and engage with
-            students on the Penn Mobile app. Make posts for recruiting, events,
-            or campaigns and watch in real time as users see and interact with
-            your content.
-          </Text>
-          <Text>
-            Ready to get started?
-            <Link href={CREATE_POST_ROUTE}>
-              <a style={{ color: colors.MEDIUM_BLUE }}> Create a new post</a>
-            </Link>
-            <IconArrowRight />
-          </Text>
-        </Group>
-      </Group>
-    </Row>
+    <>
+      <Container>
+        <DashboardHeader
+          activeOption={activeOption}
+          setActiveOption={setActiveOption}
+        />
+        {activeOption === PageType.POST && postList.length === 0 ? (
+          <EmptyDashboard contentType="post" />
+        ) : (
+          <Row>
+            <StatusColumn status={Status.PENDING} />
+            <StatusColumn status={Status.REVISION} />
+            <StatusColumn status={Status.APPROVED} />
+          </Row>
+        )}
+      </Container>
+    </>
   )
 }
 

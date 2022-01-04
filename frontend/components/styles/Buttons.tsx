@@ -1,13 +1,11 @@
 import s from 'styled-components'
-import Link from 'next/link'
 
 import { colors } from '@/components/styles/colors'
-import { PageType } from '@/utils/types'
-import { CREATE_POLL_ROUTE, CREATE_POST_ROUTE } from '@/utils/routes'
 
 interface iButtonProps {
   color: string
   hide?: boolean
+  round?: boolean
 }
 
 export const Button = s.button<iButtonProps>`
@@ -18,7 +16,7 @@ export const Button = s.button<iButtonProps>`
   border: solid 0 #979797;
   background-color: ${(props) => props.color};
   color: #ffffff;
-  border-radius: 5px;
+  border-radius: ${(props) => (props.round ? '100px' : '5px')};
   outline: none;
   padding: 0px 15px 0px 15px;
   display: ${(props) => (props.hide ? 'none' : 'flex')};
@@ -26,62 +24,25 @@ export const Button = s.button<iButtonProps>`
   font-family: inherit;
 `
 
-interface iToggleButtonProps {
-  link?: boolean
-  activeOption?: PageType
-}
-
-const ToggleContainer = s.div`
+export const Toggle = s.div`
   display: inline-block;
   border-radius: 100px;
   background: ${colors.LIGHTER_GRAY};
   padding: 5px;
 `
 
-const ToggleOptionStyle = s.button<{ active: boolean }>`
+export const ToggleOption = s.button<{ active: boolean }>`
   border-width: 0;
   background-color: ${(props) =>
     props.active ? colors.MEDIUM_BLUE : colors.LIGHTER_GRAY};
   color: ${(props) => props.active && 'white'};
   border-radius: 100px;
-  height: 28px;
-  padding: 0 1rem;
+  line-height: inherit;
+  padding: 0.5rem 1rem;
   outline: none;
-  cursor: pointer;
+
+  &:hover {
+    cursor: pointer;
+    opacity: 0.7;
+  }
 `
-
-export const ToggleButton = ({ link, activeOption }: iToggleButtonProps) => {
-  const ToggleOption = ({
-    label,
-    active,
-    route,
-  }: {
-    label: string
-    active: boolean
-    route: string
-  }) =>
-    link ? (
-      <ToggleOptionStyle active={active}>
-        <Link href={route}>
-          <a>{label}</a>
-        </Link>
-      </ToggleOptionStyle>
-    ) : (
-      <ToggleOptionStyle active={active}>{label}</ToggleOptionStyle>
-    )
-
-  return (
-    <ToggleContainer>
-      <ToggleOption
-        active={activeOption == PageType.POST}
-        label="Post"
-        route={CREATE_POST_ROUTE}
-      />
-      <ToggleOption
-        active={activeOption === PageType.POLL}
-        label="Poll"
-        route={CREATE_POLL_ROUTE}
-      />
-    </ToggleContainer>
-  )
-}

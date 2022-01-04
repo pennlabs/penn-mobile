@@ -1,6 +1,7 @@
 export const colors = {
   WHITE: '#ffffff',
-  YELLOW: '#ffd983',
+  YELLOW: '#F2C94C',
+  ORANGE: '#f2994a',
   RED: '#eb9387',
   PURPLE: '#a98abf',
   LIGHT_BLUE: '#d3e3f5',
@@ -9,7 +10,7 @@ export const colors = {
   NAV_BACKGROUND: '#f7f7f7',
   NAV_PROFILE_BACKGROUND: '#D3E3F566',
   GRAY: '#999999',
-  LIGHTER_GRAY: '#e0e0e0',
+  LIGHTER_GRAY: '#e5e5e5',
   LIGHT_GRAY: '#bdbdbd',
   DARK_GRAY: '#828282',
   GREEN: '#3faa6d',

@@ -8,12 +8,13 @@ import { convertCamelCase, convertSnakeCase } from '@/utils/utils'
 import { DASHBOARD_ROUTE } from '@/utils/routes'
 import { PageType, PollType, Status, User } from '@/utils/types'
 import { Col, Container, Group, Row } from '@/components/styles/Layout'
-import { Button, ToggleButton } from '@/components/styles/Buttons'
+import { Button } from '@/components/styles/Buttons'
 import { Subtitle } from '@/components/styles/Text'
 import { colors } from '@/components/styles/colors'
 import StatusBar from '@/components/form/StatusBar'
 import PollForm from '@/components/form/poll/PollForm'
 import { PollsPhonePreview } from '@/components/form/Preview'
+import { CreateContentToggle } from '@/components/form/FormComponents'
 
 interface iPollPageProps {
   user: User
@@ -121,11 +122,11 @@ const PollPage = ({
   return (
     <AuthUserContext.Provider value={{ user }}>
       <Container>
-        <Row style={{ padding: '2.5rem 0 0 4rem' }}>
-          <ToggleButton link activeOption={PageType.POLL} />
+        <Row>
+          <CreateContentToggle activeOption={PageType.POLL} />
         </Row>
         <Row>
-          <Col sm={12} md={12} lg={7} padding="0.5rem 4rem">
+          <Col sm={12} md={12} lg={7} padding="0.5rem">
             <Group
               horizontal
               justifyContent="space-between"

@@ -17,14 +17,12 @@ const Settings = ({ user }: IndexPageProps) => {
   return (
     <AuthUserContext.Provider value={{ user }}>
       <Container>
-        <Group padding="4rem">
-          <Heading3 style={{ marginTop: 0 }}>Settings</Heading3>
-          <Link href={`/api/accounts/logout/?next=${LANDING_PAGE_ROUTE}`}>
-            <a>
-              <Button color={colors.MEDIUM_BLUE}>Logout</Button>
-            </a>
-          </Link>
-        </Group>
+        <Heading3>Settings</Heading3>
+        <Link href={`/api/accounts/logout/?next=${LANDING_PAGE_ROUTE}`}>
+          <a>
+            <Button color={colors.MEDIUM_BLUE}>Logout</Button>
+          </a>
+        </Link>
       </Container>
     </AuthUserContext.Provider>
   )

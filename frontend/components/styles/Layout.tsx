@@ -33,10 +33,7 @@ export const Row = s.div<IRow>(
     max-height: ${maxHeight || 'none'};
     overflow-y: ${overflowY || 'hidden'};
 
-    ${margin &&
-    ` margin-left: -${margin};
-      margin-right: -${margin};
-      width: calc(100% + ${margin} + ${margin});`}
+    ${margin && `margin: ${margin};`}
 
     ${justifyContent && `justify-content: ${justifyContent};`}
   `
@@ -184,7 +181,7 @@ export const Container = ({ children }: { children: ReactNode }) => {
       <Group horizontal>
         <Nav />
         <Group margin={`0 0 0 ${NAV_WIDTH}`} fullWidth>
-          {children}
+          <div style={{ padding: '2.5rem 4rem' }}>{children}</div>
         </Group>
       </Group>
     </>

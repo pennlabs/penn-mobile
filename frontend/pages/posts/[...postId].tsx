@@ -14,6 +14,7 @@ import PostForm from '@/components/form/post/PostForm'
 import { PostPhonePreview } from '@/components/form/Preview'
 import { convertCamelCase, convertSnakeCase } from '@/utils/utils'
 import { DASHBOARD_ROUTE } from '@/utils/routes'
+import { CreateContentToggle } from '@/components/form/FormComponents'
 
 interface iPostPageProps {
   user: User
@@ -68,11 +69,11 @@ const PostPage = ({ user, createMode, post }: iPostPageProps) => {
   return (
     <AuthUserContext.Provider value={{ user }}>
       <Container>
-        <Row style={{ padding: '2.5rem 0 0 4rem' }}>
-          <ToggleButton link activeOption={PageType.POST} />
+        <Row>
+          <CreateContentToggle activeOption={PageType.POST} />
         </Row>
         <Row>
-          <Col sm={12} md={12} lg={7} padding="0.5rem 4rem">
+          <Col sm={12} md={12} lg={7} padding="0.5rem">
             <Group
               horizontal
               justifyContent="space-between"
