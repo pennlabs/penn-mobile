@@ -9,6 +9,11 @@ import { colors } from '@/components/styles/colors'
 import { InlineText, Text } from '@/components/styles/Text'
 import { getIcon } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
+import {
+  ANALYTICS_ROUTE,
+  DASHBOARD_ROUTE,
+  SETTINGS_ROUTE,
+} from '@/utils/routes'
 
 const PROFILE_HEIGHT = '24vh'
 const PROFILE_PIC_SIZE = '4rem'
@@ -95,9 +100,9 @@ export const Nav = () => {
     <NavWrapper>
       {user && <Profile user={user} />}
       <Group center>
-        <NavItem icon="dashboard" title="Dashboard" link="/" />
-        <NavItem icon="analytics" title="Analytics" link="/analytics" />
-        <NavItem icon="settings" title="Settings" link="/settings" />
+        <NavItem icon="dashboard" title="Dashboard" link={DASHBOARD_ROUTE} />
+        <NavItem icon="analytics" title="Analytics" link={ANALYTICS_ROUTE} />
+        <NavItem icon="settings" title="Settings" link={SETTINGS_ROUTE} />
       </Group>
     </NavWrapper>
   )

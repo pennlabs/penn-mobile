@@ -3,6 +3,7 @@ import Link from 'next/link'
 
 import { colors } from '@/components/styles/colors'
 import { PageType } from '@/utils/types'
+import { CREATE_POLL_ROUTE, CREATE_POST_ROUTE } from '@/utils/routes'
 
 interface iButtonProps {
   color: string
@@ -43,14 +44,13 @@ const ToggleButtonStyle = s.button<iToggleButtonProps>`
   cursor: pointer;
 `
 
-// TODO: change links here if i change create route. also refactor this perhaps?
 export const ToggleButton = ({ currPage }: { currPage: PageType }) =>
   currPage === PageType.POST ? (
     <>
       <ToggleButtonStyle page={currPage} active>
         New Post
       </ToggleButtonStyle>
-      <Link href="/polls/create">
+      <Link href={CREATE_POLL_ROUTE}>
         <a>
           <ToggleButtonStyle page={PageType.POLL}>New Poll</ToggleButtonStyle>
         </a>
@@ -58,7 +58,7 @@ export const ToggleButton = ({ currPage }: { currPage: PageType }) =>
     </>
   ) : (
     <>
-      <Link href="/posts/create">
+      <Link href={CREATE_POST_ROUTE}>
         <a>
           <ToggleButtonStyle page={PageType.POST}>New Post</ToggleButtonStyle>
         </a>

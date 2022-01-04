@@ -13,6 +13,7 @@ import StatusBar from '@/components/form/StatusBar'
 import PostForm from '@/components/form/post/PostForm'
 import { PostPhonePreview } from '@/components/form/Preview'
 import { convertCamelCase, convertSnakeCase } from '@/utils/utils'
+import { DASHBOARD_ROUTE } from '@/utils/routes'
 
 interface iPostPageProps {
   user: User
@@ -47,14 +48,14 @@ const PostPage = ({ user, createMode, post }: iPostPageProps) => {
     doApiRequest('/api/portal/posts/', {
       method: 'POST',
       body: convertCamelCase(state),
-    }).then(() => router.push('/')) // redirect to dashboard after submitting
+    }).then(() => router.push(DASHBOARD_ROUTE)) // redirect to dashboard after submitting
   }
 
   const onDelete = () => {
     doApiRequest(`/api/portal/posts/${state.id}`, {
       method: 'DELETE',
     })
-    router.push('/')
+    router.push(DASHBOARD_ROUTE)
   }
 
   const onSave = () => {

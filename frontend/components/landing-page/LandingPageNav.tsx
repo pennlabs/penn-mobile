@@ -1,14 +1,13 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import s from 'styled-components'
 import Link from 'next/link'
-import { useRouter, NextRouter } from 'next/router'
 
 import Logo from '@/components/header/Logo'
 import { Button } from '@/components/styles/Buttons'
 import { colors } from '@/components/styles/colors'
 import { Group } from '@/components/styles/Layout'
 import { NAV_HEIGHT } from '@/components/styles/sizes'
-import { AuthUserContext } from '@/utils/auth'
+import { DASHBOARD_ROUTE } from '@/utils/routes'
 
 const NavStyle = s.nav`
   padding: 1rem 1.5rem 0rem 1.5rem;
@@ -30,23 +29,14 @@ const NavSpace = s.div`
 `
 
 const LandingPageNav = () => {
-  const { user } = useContext(AuthUserContext)
-  const router: NextRouter = useRouter()
-
   return (
     <>
       <NavStyle>
         <Logo />
         <Group horizontal margin="0 0 0.5rem 0">
-          <Link
-            href={`/api/accounts/${user ? 'logout' : 'login'}/?next=${
-              router.pathname
-            }`}
-          >
+          <Link href={`/api/accounts/login/?next=${DASHBOARD_ROUTE}`}>
             <a>
-              <Button color={colors.MEDIUM_BLUE}>
-                {user ? 'Logout' : 'Login'}
-              </Button>
+              <Button color={colors.MEDIUM_BLUE}>Login</Button>
             </a>
           </Link>
         </Group>

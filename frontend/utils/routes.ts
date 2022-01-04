@@ -1,0 +1,6 @@
+export const LANDING_PAGE_ROUTE = '/'
+export const DASHBOARD_ROUTE = '/dashboard'
+export const CREATE_POST_ROUTE = '/posts/create'
+export const CREATE_POLL_ROUTE = '/polls/create'
+export const ANALYTICS_ROUTE = '/analytics'
+export const SETTINGS_ROUTE = '/settings'

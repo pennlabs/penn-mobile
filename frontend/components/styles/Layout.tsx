@@ -147,6 +147,7 @@ interface iGroupProps {
   margin?: string
   center?: boolean
   fullWidth?: boolean
+  padding?: string
 }
 
 /**
@@ -160,6 +161,7 @@ export const Group = s.div<iGroupProps>(
     margin,
     center,
     fullWidth,
+    padding,
   }) => css`
     display: ${horizontal ? 'flex' : 'inline-block'};
     ${justifyContent && `justify-content: ${justifyContent};`}
@@ -167,6 +169,7 @@ export const Group = s.div<iGroupProps>(
     ${margin && `margin: ${margin};`}
     ${center && 'margin: 0 auto;'}
     ${fullWidth && 'flex-grow: 1'}
+    ${padding && `padding: ${padding};`}
   `
 )
 

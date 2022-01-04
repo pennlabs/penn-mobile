@@ -7,6 +7,7 @@ import { Container, Group, Row } from '@/components/styles/Layout'
 import { Subtitle, Text } from '@/components/styles/Text'
 import { IconArrowRight } from '@/components/styles/Icons'
 import { colors } from '@/components/styles/colors'
+import { CREATE_POST_ROUTE } from '@/utils/routes'
 
 const Dashboard = () => (
   <>
@@ -46,7 +47,7 @@ const EmptyDashboard = () => {
           </Text>
           <Text>
             Ready to get started?
-            <Link href="/posts/create">
+            <Link href={CREATE_POST_ROUTE}>
               <a style={{ color: colors.MEDIUM_BLUE }}> Create a new post</a>
             </Link>
             <IconArrowRight />

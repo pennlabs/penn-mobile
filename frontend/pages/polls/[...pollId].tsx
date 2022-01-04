@@ -4,6 +4,8 @@ import { useRouter } from 'next/router'
 
 import { AuthUserContext, withAuth } from '@/utils/auth'
 import { doApiRequest } from '@/utils/fetch'
+import { convertCamelCase, convertSnakeCase } from '@/utils/utils'
+import { DASHBOARD_ROUTE } from '@/utils/routes'
 import { PageType, PollType, Status, User } from '@/utils/types'
 import { Col, Container, Group, Row } from '@/components/styles/Layout'
 import { Button, ToggleButton } from '@/components/styles/Buttons'
@@ -12,7 +14,6 @@ import { colors } from '@/components/styles/colors'
 import StatusBar from '@/components/form/StatusBar'
 import PollForm from '@/components/form/poll/PollForm'
 import { PollsPhonePreview } from '@/components/form/Preview'
-import { convertCamelCase, convertSnakeCase } from '@/utils/utils'
 
 interface iPollPageProps {
   user: User
@@ -66,7 +67,7 @@ const PollPage = ({
           })
         )
 
-        router.push('/') // redirect to dashboard after submitting
+        router.push(DASHBOARD_ROUTE) // redirect to dashboard after submitting
       })
   }
 
@@ -74,7 +75,7 @@ const PollPage = ({
     doApiRequest(`/api/portal/polls/${state.id}`, {
       method: 'DELETE',
     })
-    router.push('/')
+    router.push(DASHBOARD_ROUTE)
   }
 
   const onSave = () => {

@@ -48,15 +48,14 @@ export function withAuth<T>(getServerSidePropsFunc: GetServerSidePropsFunc<T>) {
     }
 
     const res = await doApiRequest('/api/users/me/', headers)
-    if (res.ok || ctx.req.url === '/') {
-      const user = await res.json()
+    if (res.ok) {
+      const user: User = await res.json()
       const wrapped = await getServerSidePropsFunc(ctx)
       const casted = convertGetServerSidePropsResult(wrapped)
 
       if (casted.tag === 'props') {
         return {
-          // pass null user if in landing page route `/` and user is not logged in
-          props: { ...casted.props, user: res.ok ? user : null },
+          props: { ...casted.props, user: user },
         }
       } else if (casted.tag === 'notFound') {
         return { notFound: casted.notFound }
@@ -64,6 +63,7 @@ export function withAuth<T>(getServerSidePropsFunc: GetServerSidePropsFunc<T>) {
         return { redirect: casted.redirect }
       }
     } else {
+      // redirect to landing page if no user is logged in
       return {
         redirect: {
           destination: '/',
