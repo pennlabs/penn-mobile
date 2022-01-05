@@ -38,7 +38,7 @@ export const ToggleOption = s.button<{ active: boolean }>`
   color: ${(props) => props.active && 'white'};
   border-radius: 100px;
   line-height: inherit;
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 1rem;
   outline: none;
 
   &:hover {

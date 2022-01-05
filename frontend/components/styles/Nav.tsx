@@ -11,6 +11,7 @@ import { Icon } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
 import {
   ANALYTICS_ROUTE,
+  CREATE_POST_ROUTE,
   DASHBOARD_ROUTE,
   SETTINGS_ROUTE,
 } from '@/utils/routes'

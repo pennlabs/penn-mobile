@@ -7,6 +7,7 @@ import { colors } from '@/components/styles/colors'
 import { PageType, PollType, PostType } from '@/utils/types'
 import { Button, Toggle, ToggleOption } from '@/components/styles/Buttons'
 import { CREATE_POLL_ROUTE, CREATE_POST_ROUTE } from '@/utils/routes'
+import { IconPlus } from '@/components/styles/Icons'
 
 export const DashboardHeader = ({
   activeOption,
@@ -50,7 +51,7 @@ export const DashboardHeader = ({
         >
           <a>
             <Button color={colors.GREEN} round style={{ margin: '0 0 0 1rem' }}>
-              Create
+              Create <IconPlus margin="0 0 0 0.5rem" />
             </Button>
           </a>
         </Link>

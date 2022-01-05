@@ -25,13 +25,11 @@ export const getServerSidePropsInner = async (
   props: { postList: PostType[]; pollList: PollType[] }
 }> => {
   const postRes = await doApiRequest(`/api/portal/posts/`, {
-    method: 'GET',
     headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
   })
   const postList = await postRes.json()
 
   const pollRes = await doApiRequest(`/api/portal/polls/`, {
-    method: 'GET',
     headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
   })
   const pollList = await pollRes.json()
