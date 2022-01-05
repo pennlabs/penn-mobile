@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.utils import timezone
@@ -7,7 +8,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from portal.logic import get_demographic_breakdown
+from portal.logic import (
+    get_club_info,
+    get_demographic_breakdown,
+    get_user_clubs,
+    get_user_info,
+    get_user_populations,
+)
 from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
 from portal.permissions import (
     IsSuperUser,
@@ -25,6 +32,21 @@ from portal.serializers import (
     RetrievePollVoteSerializer,
     TargetPopulationSerializer,
 )
+
+
+User = get_user_model()
+
+
+class UserClubs(APIView):
+    """Returns list of clubs a User can post on the behalf of"""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        club_data = []
+        for club in get_user_clubs(request.user):
+            club_data.append(get_club_info(request.user, club["club"]["code"]))
+        return Response({"user": get_user_info(request.user), "clubs": club_data})
 
 
 class TargetPopulations(generics.ListAPIView):
@@ -59,130 +81,69 @@ class Polls(viewsets.ModelViewSet):
     serializer_class = PollSerializer
 
     def get_queryset(self):
+        # all polls if superuser, polls corresponding to club for regular user
         return (
             Poll.objects.all()
             if self.request.user.is_superuser
-            else Poll.objects.filter(user=self.request.user)
+            else Poll.objects.filter(
+                club_code__in=[x["club"]["code"] for x in get_user_clubs(self.request.user)]
+            )
         )
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["post"])
     def browse(self, request):
         """Returns list of all possible polls user can answer but has yet to
         For admins, returns list of all polls they have not voted for and have yet to expire
         """
 
+        id_hash = request.data["id_hash"]
+
+        # unvoted polls in draft/approaved mode for superuser
+        # unvoted and approved polls within time frame for regular user
         polls = (
             Poll.objects.filter(
-                ~Q(id__in=PollVote.objects.filter(user=self.request.user).values_list("poll_id")),
-                Q(approved=True) | Q(admin_comment=None),
+                ~Q(id__in=PollVote.objects.filter(id_hash=id_hash).values_list("poll_id")),
+                Q(status=Poll.STATUS_DRAFT) | Q(status=Poll.STATUS_APPROVED),
                 expire_date__gte=timezone.localtime(),
             )
             if request.user.is_superuser
             else Poll.objects.filter(
-                ~Q(id__in=PollVote.objects.filter(user=self.request.user).values_list("poll_id")),
-                # Q(target_populations__in=get_user_populations(request.user)),
+                ~Q(id__in=PollVote.objects.filter(id_hash=id_hash).values_list("poll_id")),
+                Q(target_populations__in=get_user_populations(request.user)),
+                status=Poll.STATUS_APPROVED,
                 start_date__lte=timezone.localtime(),
                 expire_date__gte=timezone.localtime(),
-                approved=True,
             )
         )
 
+        # # TODO: fix sorting DRAFT before APPROVED if the functionality is necessary
+        # # sort draft first, then approved
+        # CASE_SQL = '(case when status="DRAFT" then 1 when status="APPROVED" then 2 end)'
+
+        # return Response(
+        #     RetrievePollSerializer(
+        #         polls.distinct().extra(
+        #             select={"status_order": CASE_SQL}, order_by=["status_order", "expire_date"]
+        #         ),
+        #         many=True,
+        #     ).data
+        # )
+
         return Response(
-            RetrievePollSerializer(
-                polls.distinct().order_by("approved", "start_date"), many=True,
-            ).data
+            RetrievePollSerializer(polls.distinct().order_by("expire_date"), many=True).data
         )
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
     def review(self, request):
         """Returns list of all Polls that admins still need to approve of"""
         return Response(
-            RetrievePollSerializer(
-                Poll.objects.filter(Q(admin_comment=None) | Q(admin_comment=""), approved=False),
-                many=True,
-            ).data
+            RetrievePollSerializer(Poll.objects.filter(status=Poll.STATUS_DRAFT), many=True,).data
         )
 
     @action(detail=True, methods=["get"])
-    def edit_view(self, request, pk=None):
-        """Returns information on specific post to allow for editing"""
+    def option_view(self, request, pk=None):
+        """Returns information on specific poll, including options and vote counts"""
         return Response(RetrievePollSerializer(Poll.objects.filter(id=pk).first(), many=False).data)
-
-    @action(detail=False, methods=["get"])
-    def status(self, request):
-        polls_awaiting_approval = RetrievePollSerializer(
-            Poll.objects.filter(
-                (Q(admin_comment=None) | Q(admin_comment="")), user=request.user, approved=False,
-            ),
-            many=True,
-        ).data
-
-        polls_revision = RetrievePollSerializer(
-            Poll.objects.filter(
-                ~Q(admin_comment=None), ~Q(admin_comment=""), user=request.user, approved=False,
-            ),
-            many=True,
-        ).data
-
-        polls_approved = RetrievePollSerializer(
-            Poll.objects.filter(user=request.user, approved=True), many=True
-        ).data
-
-        return Response(
-            {
-                "awaiting_approval": polls_awaiting_approval,
-                "revision": polls_revision,
-                "approved": polls_approved,
-            }
-        )
-
-
-class RetrievePollVotes(viewsets.ModelViewSet):
-    """Retrieve history of polls and their statistics"""
-
-    permission_classes = [IsAuthenticated | IsSuperUser]
-    serializer_class = RetrievePollSerializer
-
-    def get_queryset(self):
-        return (
-            Poll.objects.all()
-            if self.request.user.is_superuser
-            else Poll.objects.filter(user=self.request.user)
-        )
-
-    def list(self, request):
-
-        # filters for all polls that user voted in
-        serializer = RetrievePollVoteSerializer(
-            PollVote.objects.filter(user=request.user), many=True
-        )
-        history_list = serializer.data
-        # filters for all polls user has not voted in
-        remaining_list = RetrievePollSerializer(
-            Poll.objects.filter(expire_date__lte=timezone.localtime()).exclude(
-                id__in=PollVote.objects.filter(user=request.user).values_list("poll", flat=True),
-                approved=True,
-            ),
-            many=True,
-        ).data
-        # puts remaining_list in the same format of history_list, then appends them
-        for entry in remaining_list:
-            context = {
-                "id": None,
-                "poll": entry,
-                "poll_options": PollOptionSerializer(
-                    PollOption.objects.filter(poll__id=entry["id"]), many=True
-                ).data,
-            }
-            history_list.append(context)
-        return Response(sorted(history_list, key=lambda i: i["poll"]["expire_date"], reverse=True))
-
-    @action(detail=False, methods=["get"])
-    def recent(self, request, pk=None):
-        user_poll_votes = (
-            PollVote.objects.filter(user=request.user).order_by("-created_date").first()
-        )
-        return Response(RetrievePollVoteSerializer(user_poll_votes).data)
 
 
 class PollOptions(viewsets.ModelViewSet):
@@ -207,7 +168,11 @@ class PollOptions(viewsets.ModelViewSet):
         return (
             PollOption.objects.all()
             if self.request.user.is_superuser
-            else PollOption.objects.filter(poll__in=Poll.objects.filter(user=self.request.user))
+            else PollOption.objects.filter(
+                poll__in=Poll.objects.filter(
+                    club_code__in=[x["club"]["code"] for x in get_user_clubs(self.request.user)]
+                )
+            )
         )
 
 
@@ -215,21 +180,21 @@ class PollVotes(viewsets.ModelViewSet):
     """
     create:
     Create a Poll Vote.
-
-    partial_update:
-    Update certain fields in the Poll Vote.
-    Only specify the fields that you want to change.
-
-    destroy:
-    Delete a Poll Vote.
     """
 
     permission_classes = [PollOwnerPermission | IsSuperUser]
     serializer_class = PollVoteSerializer
 
     def get_queryset(self):
-        # only user can see, create, update, and/or destroy their own votes
-        return PollVote.objects.filter(user=self.request.user)
+        return PollVote.objects.none()
+
+    @action(detail=False, methods=["post"])
+    def recent(self, request):
+
+        id_hash = request.data["id_hash"]
+
+        poll_votes = PollVote.objects.filter(id_hash=id_hash).order_by("-created_date").first()
+        return Response(RetrievePollVoteSerializer(poll_votes).data)
 
 
 class PollVoteStatistics(APIView):
@@ -237,15 +202,15 @@ class PollVoteStatistics(APIView):
 
     permission_classes = [TimeSeriesPermission | IsSuperUser]
 
-    def get(self, request, id):
+    def get(self, request, poll_id):
         return Response(
             {
-                "time_series": PollVote.objects.filter(poll__id=id)
+                "time_series": PollVote.objects.filter(poll__id=poll_id)
                 .annotate(date=Trunc("created_date", "day"))
                 .values("date")
                 .annotate(votes=Count("date"))
                 .order_by("date"),
-                "poll_statistics": get_demographic_breakdown(id),
+                "poll_statistics": get_demographic_breakdown(poll_id),
             }
         )
 
