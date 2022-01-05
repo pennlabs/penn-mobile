@@ -128,7 +128,10 @@ class Polls(viewsets.ModelViewSet):
         #         many=True,
         #     ).data
         # )
-        return Response(polls.distinct().order_by("expire_date"), many=True,)
+
+        return Response(
+            RetrievePollSerializer(polls.distinct().order_by("expire_date"), many=True).data
+        )
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
     def review(self, request):
