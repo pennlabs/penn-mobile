@@ -7,7 +7,7 @@ import { User } from '@/utils/types'
 import { NAV_WIDTH } from '@/components/styles/sizes'
 import { colors } from '@/components/styles/colors'
 import { InlineText, Text } from '@/components/styles/Text'
-import { getIcon } from '@/components/styles/Icons'
+import { Icon } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
 import {
   ANALYTICS_ROUTE,
@@ -78,7 +78,7 @@ const NavItem = ({
   return (
     <Link href={link}>
       <NavItemWrapper>
-        {getIcon(icon)}
+        <Icon name={icon} margin="auto 1rem 1px 0" />
         <Text heading>{title}</Text>
       </NavItemWrapper>
     </Link>

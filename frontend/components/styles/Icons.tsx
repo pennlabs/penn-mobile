@@ -9,9 +9,21 @@ import {
   faArrowCircleRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { colors } from '@/components/styles/colors'
-import Dashboard from '../../public/icons/dashboard.svg'
-import Analytics from '../../public/icons/analytics.svg'
-import Settings from '../../public/icons/settings.svg'
+import dynamic from 'next/dynamic'
+
+/**
+ * renders icon svg from public/icons as a component
+ * @param {string} name icon filename
+ */
+export const Icon = ({ name, margin }: { name: string; margin?: string }) => {
+  const IconSvg = dynamic(() => import(`@/public/icons/${name}.svg`))
+
+  return (
+    <IconWrapper margin={margin}>
+      <IconSvg />
+    </IconWrapper>
+  )
+}
 
 interface IIconProps {
   margin?: string
@@ -77,37 +89,5 @@ export const IconTimes = () => (
 export const IconArrowRight = () => (
   <IconWrapper color={colors.MEDIUM_BLUE} margin="0 0.5rem">
     <FontAwesomeIcon icon={faArrowCircleRight} size="1x" />
-  </IconWrapper>
-)
-
-// TODO: include iconwrapper in this if not used for anything else?
-export const getIcon = (icon: string) => {
-  switch (icon) {
-    case 'dashboard':
-      return <IconDashboard />
-    case 'analytics':
-      return <IconAnalytics />
-    case 'settings':
-      return <IconSettings />
-    default:
-      return <IconDashboard />
-  }
-}
-
-export const IconDashboard = () => (
-  <IconWrapper margin="auto 1rem 1px 0">
-    <Dashboard />
-  </IconWrapper>
-)
-
-export const IconAnalytics = () => (
-  <IconWrapper margin="auto 1rem 1px 0">
-    <Analytics />
-  </IconWrapper>
-)
-
-export const IconSettings = () => (
-  <IconWrapper margin="auto 1rem 1px 0">
-    <Settings />
   </IconWrapper>
 )
