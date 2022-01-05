@@ -17,13 +17,12 @@ export enum PageType {
 }
 
 export enum Status {
-  DRAFT,
-  PENDING, // pending review
-  REVISION, // under revision
-  APPROVED,
-  LIVE,
-  EXPIRED,
-  REJECTED,
+  DRAFT = 'DRAFT',
+  REVISION = 'REVISION', // under revision
+  APPROVED = 'APPROVED',
+  LIVE = 'LIVE',
+  EXPIRED = 'EXPIRED',
+  REJECTED = 'REJECTED',
 }
 
 export interface ContentType {

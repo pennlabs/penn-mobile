@@ -169,13 +169,16 @@ export const getServerSidePropsInner = async (
   const pid = context.params?.pollId
 
   if (pid && +pid) {
-    const res = await doApiRequest(`/api/portal/polls/${pid}/edit_view`, {
+    const res = await doApiRequest(`/api/portal/polls/${pid}/option_view`, {
       headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
     })
     const poll = await res.json()
     if (res.ok && poll.id) {
+      // TODO: change this when filters are implemented
       const prevOptionIds = poll.options.map((opt: any) => opt.id)
-      poll.status = poll.approved ? Status.APPROVED : Status.PENDING
+      poll.target_populations = poll.target_populations.map(
+        (pop: any) => pop.id
+      )
 
       return {
         props: {

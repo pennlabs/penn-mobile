@@ -73,7 +73,7 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
         />
 
         <Text bold>Club</Text>
-        <ClubSelect />
+        <ClubSelect updateState={updateState} clubCode={state.club_code} />
 
         <Text bold>Poll Options</Text>
         {state.options.map((obj, i) => (

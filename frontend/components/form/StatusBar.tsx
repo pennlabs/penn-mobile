@@ -25,18 +25,21 @@ interface iStatusBarProps {
 }
 
 const StatusBar = ({ status }: iStatusBarProps) => {
+  const orderedStatus = Object.values(Status)
+
   // colors line & circle blue if active, gray if not. dependent on Status enum order.
-  const StatusGroup = ({ compareStatus }: { compareStatus: Status }) => (
-    <>
-      <StatusBarLine
-        color={status >= compareStatus ? colors.MEDIUM_BLUE : colors.LIGHT_GRAY}
-        width={25}
-      />
-      <IconCircle
-        color={status >= compareStatus ? colors.MEDIUM_BLUE : colors.LIGHT_GRAY}
-      />
-    </>
-  )
+  const StatusGroup = ({ compareStatus }: { compareStatus: Status }) => {
+    const statusColor =
+      orderedStatus.indexOf(status) >= orderedStatus.indexOf(compareStatus)
+        ? colors.MEDIUM_BLUE
+        : colors.LIGHT_GRAY
+    return (
+      <>
+        <StatusBarLine color={statusColor} width={25} />
+        <IconCircle color={statusColor} />
+      </>
+    )
+  }
 
   return (
     <>

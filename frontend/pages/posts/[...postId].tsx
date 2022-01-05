@@ -121,8 +121,6 @@ export const getServerSidePropsInner = async (
     })
     const post = await res.json()
     if (res.ok && post.id) {
-      post.status = post.approved ? Status.APPROVED : Status.PENDING
-
       return {
         props: {
           post: post as PostType,
