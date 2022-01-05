@@ -1,0 +1,50 @@
+{
+    "accepting_members": false,
+    "active": true,
+    "address": "",
+    "application_required": 5,
+    "appointment_needed": false,
+    "approved": true,
+    "available_virtually": false,
+    "code": "pennlabs",
+    "email": "contact@pennlabs.org",
+    "enables_subscription": true,
+    "favorite_count": 393,
+    "founded": "2011-09-01",
+    "image_url": "image_url.jpeg",
+    "is_favorite": true,
+    "is_member": 20,
+    "is_subscribe": true,
+    "membership_count": 57,
+    "recruiting_cycle": 4,
+    "name": "Penn Labs",
+    "size": 3,
+    "subtitle": "The organization that builds your favorite software.",
+    "tags": [
+        {
+            "id": 2,
+            "name": "Programming"
+        },
+        {
+            "id": 4,
+            "name": "Technology"
+        },
+        {
+            "id": 58,
+            "name": "Academic"
+        },
+        {
+            "id": 70,
+            "name": "Undergraduate"
+        },
+        {
+            "id": 71,
+            "name": "Graduate"
+        }
+    ],
+    "advisor_set": [],
+    "approved_by": "None",
+    "approved_comment": "",
+    "badges": [],
+    "created_at": "2019-09-01T16:50:04.357000-04:00"
+}

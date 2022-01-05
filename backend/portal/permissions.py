@@ -1,5 +1,6 @@
 from rest_framework import permissions
 
+from portal.logic import get_user_clubs
 from portal.models import Poll
 
 
@@ -21,7 +22,7 @@ class PollOwnerPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         # only creator can edit
         if view.action in ["partial_update", "update", "destroy"]:
-            return request.user == obj.user
+            return obj.club_code in [x["club"]["code"] for x in get_user_clubs(request.user)]
         return True
 
     def has_permission(self, request, view):
@@ -35,14 +36,14 @@ class OptionOwnerPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         # only creator can edit
         if view.action in ["partial_update", "update", "destroy"]:
-            return request.user == obj.poll.user
+            return obj.poll.club_code in [x["club"]["code"] for x in get_user_clubs(request.user)]
         return True
 
     def has_permission(self, request, view):
         # only creator of poll can create poll option
         if view.action == "create" and request.data:
             poll = Poll.objects.get(id=request.data["poll"])
-            return poll.user == request.user
+            return poll.club_code in [x["club"]["code"] for x in get_user_clubs(request.user)]
         return request.user.is_authenticated
 
 
@@ -50,11 +51,13 @@ class TimeSeriesPermission(permissions.BasePermission):
     """Permission that checks for Time Series access (only creator of Poll and admins)"""
 
     def has_permission(self, request, view):
-        poll = Poll.objects.filter(id=view.kwargs["id"])
+        poll = Poll.objects.filter(id=view.kwargs["poll_id"])
         # checks if poll exists
         if poll.exists():
             # only poll creator and admin can access
-            return poll.first().user == request.user
+            return poll.first().club_code in [
+                x["club"]["code"] for x in get_user_clubs(request.user)
+            ]
         return False
 
 
