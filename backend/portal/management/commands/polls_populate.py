@@ -1,4 +1,3 @@
-"""
 import datetime
 
 from django.contrib.auth import get_user_model
@@ -47,11 +46,6 @@ class Command(BaseCommand):
         else:
             user3 = User.objects.get(username="user3")
 
-        if not User.objects.filter(username="admin").first():
-            admin = User.objects.create_superuser("admin", "admin@seas.upenn.edu", "admin")
-        else:
-            admin = User.objects.get(username="admin")
-
         if not User.objects.filter(username="user_cas").first():
             user_cas = User.objects.create_user("user_cas", "user@sas.upenn.edu", "user_cas")
             user_cas_profile = Profile.objects.get(user=user_cas)
@@ -93,11 +87,10 @@ class Command(BaseCommand):
 
         # Poll that expired one day ago
         expired_poll, _ = Poll.objects.get_or_create(
-            user=user1,
-            source="poll expired",
+            club_code="pennlabs",
             question="lorem ipsum",
             expire_date=timezone.now() - datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
         )
         expired_poll.target_populations.add(target_pop_seas)
         option_1, _ = PollOption.objects.get_or_create(poll=expired_poll, choice="choice 1")
@@ -105,21 +98,19 @@ class Command(BaseCommand):
 
         # Poll without poll options, unapproved
         poll_no_option, _ = Poll.objects.get_or_create(
-            user=user1,
-            source="poll_no_option",
+            club_code="notpennlabs",
             question="lorem ipsum",
             expire_date=timezone.now() - datetime.timedelta(days=1),
-            approved=False,
+            status=Poll.STATUS_APPROVED,
         )
         poll_no_option.target_populations.add(target_pop_seas)
 
         # Poll without target populations, unapproved
         poll_no_target_pop, _ = Poll.objects.get_or_create(
-            user=user1,
-            source="poll_no_target_pop",
+            club_code="pennlabs",
             question="lorem ipsum",
             expire_date=timezone.now() - datetime.timedelta(days=1),
-            approved=False,
+            status=Poll.STATUS_APPROVED,
         )
         poll_no_target_pop.target_populations.add(target_pop_seas)
         option_1, _ = PollOption.objects.get_or_create(poll=poll_no_target_pop, choice="choice 1")
@@ -127,11 +118,10 @@ class Command(BaseCommand):
 
         # Poll that targets seas students
         poll_targeting_seas, _ = Poll.objects.get_or_create(
-            user=user1,
-            source="poll for seas",
+            club_code="pennlabs",
             question="cis major?",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
         )
         poll_targeting_seas.target_populations.add(target_pop_seas)
         option_1, _ = PollOption.objects.get_or_create(poll=poll_targeting_seas, choice="choice 1")
@@ -139,11 +129,10 @@ class Command(BaseCommand):
 
         # Poll that targets seas and cas studnets
         poll_targeting_seas_sas, _ = Poll.objects.get_or_create(
-            user=user1,
-            source="poll for seas and cas",
+            club_code="seascas",
             question="seas or cas?",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
         )
         poll_targeting_seas_sas.target_populations.add(target_pop_seas)
         poll_targeting_seas_sas.target_populations.add(target_pop_sas)
@@ -156,11 +145,10 @@ class Command(BaseCommand):
 
         # Unapproved post
         unapproved_poll, _ = Poll.objects.get_or_create(
-            user=user1,
-            source="poll 1",
+            club_code="pollers",
             question="poll question 1",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=False,
+            status=Poll.STATUS_DRAFT,
         )
         unapproved_poll.target_populations.add(target_pop_sas)
         option_1, _ = PollOption.objects.get_or_create(poll=unapproved_poll, choice="choice 1")
@@ -168,11 +156,10 @@ class Command(BaseCommand):
 
         # UNAPPROVED Poll with admin comment
         unapproved_poll_with_admin_comment, _ = Poll.objects.get_or_create(
-            user=user1,
-            source="options",
+            club_code="club",
             question="question",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=False,
+            status=Poll.STATUS_REVISION,
             admin_comment="Bad poll!",
         )
         unapproved_poll_with_admin_comment.target_populations.add(target_pop_seas)
@@ -186,11 +173,10 @@ class Command(BaseCommand):
         # Poll created by admin
         # cas, wh, seas and nursing students vote the poll
         poll_admin, _ = Poll.objects.get_or_create(
-            user=admin,
-            source="admin",
+            club_code="clubs",
             question="poll for everyone",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
         )
         poll_admin.target_populations.add(target_pop_sas)
         poll_admin.target_populations.add(target_pop_wh)
@@ -204,30 +190,29 @@ class Command(BaseCommand):
         )
         poll_admin.save()
         vote_1, _ = PollVote.objects.get_or_create(
-            user=user_cas, poll=poll_admin, created_date=timezone.localtime()
+            id_hash="1", poll=poll_admin, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1_for_votes_admin)
         vote_2, _ = PollVote.objects.get_or_create(
-            user=user_wh, poll=poll_admin, created_date=timezone.localtime()
+            id_hash="2", poll=poll_admin, created_date=timezone.localtime()
         )
         vote_2.poll_options.add(option_2_for_votes_admin)
         vote_3, _ = PollVote.objects.get_or_create(
-            user=user1, poll=poll_admin, created_date=timezone.localtime()
+            id_hash="3", poll=poll_admin, created_date=timezone.localtime()
         )
         vote_3.poll_options.add(option_2_for_votes_admin)
         vote_4, _ = PollVote.objects.get_or_create(
-            user=user_nursing, poll=poll_admin, created_date=timezone.localtime()
+            id_hash="4", poll=poll_admin, created_date=timezone.localtime()
         )
         vote_4.poll_options.add(option_2_for_votes_admin)
 
         # Poll created by student, allows multiselect
         # Other seas students vote for the poll
         poll_with_options_and_votes_multi, _ = Poll.objects.get_or_create(
-            user=user3,
-            source="industry",
+            club_code="industry",
             question="cis or ese or dats?",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
             multiselect=True,
         )
         poll_with_options_and_votes_multi.target_populations.add(target_pop_seas)
@@ -238,22 +223,21 @@ class Command(BaseCommand):
             poll=poll_with_options_and_votes_multi, choice="choice 2"
         )
         vote_1, _ = PollVote.objects.get_or_create(
-            user=user1, poll=poll_with_options_and_votes_multi, created_date=timezone.localtime()
+            id_hash="1", poll=poll_with_options_and_votes_multi, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1_for_votes_multi)
         vote_1.poll_options.add(option_2_for_votes_multi)
         vote_2, _ = PollVote.objects.get_or_create(
-            user=user2, poll=poll_with_options_and_votes_multi, created_date=timezone.localtime()
+            id_hash="2", poll=poll_with_options_and_votes_multi, created_date=timezone.localtime()
         )
         vote_2.poll_options.add(option_1_for_votes_multi)
 
         # cas student creates poll targeted at wharton and nursing students
         poll_targeting_wh_nur, _ = Poll.objects.get_or_create(
-            user=user_cas,
-            source="poll for wharton and nursing",
+            club_code="wharton_nursing",
             question="cis major?",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
             multiselect=True,
         )
         poll_targeting_wh_nur.target_populations.add(target_pop_wh)
@@ -262,22 +246,21 @@ class Command(BaseCommand):
         option_2, _ = PollOption.objects.get_or_create(poll=poll_targeting_wh_nur, choice="nursing")
         poll_targeting_wh_nur.save()
         vote_1, _ = PollVote.objects.get_or_create(
-            user=user_wh, poll=poll_targeting_wh_nur, created_date=timezone.localtime()
+            id_hash="1", poll=poll_targeting_wh_nur, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1)
         vote_1.poll_options.add(option_2)
         vote_2, _ = PollVote.objects.get_or_create(
-            user=user_nursing, poll=poll_targeting_wh_nur, created_date=timezone.localtime()
+            id_hash="2", poll=poll_targeting_wh_nur, created_date=timezone.localtime()
         )
         vote_2.poll_options.add(option_1)
 
         # Poll targeting wharton and nursing and class of 2022 and 2023
         poll_targeting_wh_nur_22_23, _ = Poll.objects.get_or_create(
-            user=user_cas,
-            source="poll for wharton and nursing, 2022-23",
+            club_code="wh_nur",
             question="internship opportunities",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
             multiselect=True,
         )
         poll_targeting_wh_nur_22_23.target_populations.add(target_pop_wh)
@@ -292,44 +275,42 @@ class Command(BaseCommand):
             poll=poll_targeting_wh_nur_22_23, choice="nursing"
         )
         vote_1, _ = PollVote.objects.get_or_create(
-            user=user_wh, poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
+            id_hash="1", poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1)
         vote_1.poll_options.add(option_2)
         vote_2, _ = PollVote.objects.get_or_create(
-            user=user_nursing, poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
+            id_hash="2", poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
         )
         vote_3.poll_options.add(option_1)
         vote_3, _ = PollVote.objects.get_or_create(
-            user=user2, poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
+            id_hash="3", poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
         )
         vote_3.poll_options.add(option_1)
 
         # Poll targeting the class of 2025
         poll_targeting_25, _ = Poll.objects.get_or_create(
-            user=user_cas,
-            source="poll for freshman",
+            club_code="freshman",
             question="freshman internship opportunities",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
             multiselect=True,
         )
         poll_targeting_25.target_populations.add(target_pop_2025)
         option_1, _ = PollOption.objects.get_or_create(poll=poll_targeting_25, choice="wharton")
         option_2, _ = PollOption.objects.get_or_create(poll=poll_targeting_25, choice="nursing")
         vote_1, _ = PollVote.objects.get_or_create(
-            user=user_cas, poll=poll_targeting_25, created_date=timezone.localtime()
+            id_hash="1", poll=poll_targeting_25, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1)
         vote_1.poll_options.add(option_2)
 
         # Poll targeting wharton and the class of 2024
         poll_targeting_wh_24, _ = Poll.objects.get_or_create(
-            user=user_cas,
-            source="poll for wharton ppl",
+            club_code="wharts",
             question="internship opportunities",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
             multiselect=True,
         )
         poll_targeting_wh_24.target_populations.add(target_pop_wh)
@@ -340,15 +321,14 @@ class Command(BaseCommand):
         )
         option_2, _ = PollOption.objects.get_or_create(poll=poll_targeting_wh_24, choice="trading")
         vote_1, _ = PollVote.objects.get_or_create(
-            user=user_wh, poll=poll_targeting_wh_24, created_date=timezone.localtime()
+            id_hash="1", poll=poll_targeting_wh_24, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1)
         vote_2.poll_options.add(option_2)
         vote_2, _ = PollVote.objects.get_or_create(
-            user=user3, poll=poll_targeting_wh_24, created_date=timezone.localtime()
+            id_hash="2", poll=poll_targeting_wh_24, created_date=timezone.localtime()
         )
         vote_2.poll_options.add(option_1)
         vote_2.poll_options.add(option_2)
 
         self.stdout.write("Uploaded Poll Objects!")
-"""

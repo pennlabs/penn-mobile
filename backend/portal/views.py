@@ -116,7 +116,7 @@ class Polls(viewsets.ModelViewSet):
             )
         )
 
-        # # TODO: fix the sorting
+        # # TODO: fix sorting DRAFT before APPROVED if the functionality is necessary
         # # sort draft first, then approved
         # CASE_SQL = '(case when status="DRAFT" then 1 when status="APPROVED" then 2 end)'
 
