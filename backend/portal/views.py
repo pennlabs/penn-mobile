@@ -175,13 +175,6 @@ class PollVotes(viewsets.ModelViewSet):
     """
     create:
     Create a Poll Vote.
-
-    partial_update:
-    Update certain fields in the Poll Vote.
-    Only specify the fields that you want to change.
-
-    destroy:
-    Delete a Poll Vote.
     """
 
     permission_classes = [PollOwnerPermission | IsSuperUser]

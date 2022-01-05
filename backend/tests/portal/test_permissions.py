@@ -1,7 +1,9 @@
-"""
 import datetime
+import json
+from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -13,19 +15,25 @@ from portal.models import Poll, PollOption, PollVote
 User = get_user_model()
 
 
+def mock_get_user_clubs(*args, **kwargs):
+    with open("tests/portal/get_user_clubs.json") as data:
+        return json.load(data)
+
+
 class PollPermissions(TestCase):
     def setUp(self):
+        call_command("load_target_populations")
+
         self.client = APIClient()
         self.admin = User.objects.create_superuser("admin@example.com", "admin", "admin")
         self.user1 = User.objects.create_user("user1", "user@seas.upenn.edu", "user")
         self.user2 = User.objects.create_user("user2", "user@seas.upenn.edu", "user")
 
         self.poll_1 = Poll.objects.create(
-            user=self.user1,
-            source="poll 1",
+            club_code="pennlabs",
             question="poll question 1",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
         )
 
         self.poll_option_1 = PollOption.objects.create(poll=self.poll_1, choice="hello!")
@@ -33,65 +41,67 @@ class PollPermissions(TestCase):
         self.poll_option_3 = PollOption.objects.create(poll=self.poll_1, choice="hello!!!!!!!")
 
         self.poll_2 = Poll.objects.create(
-            user=self.user2,
-            source="poll 2",
+            club_code="pennlabs",
             question="poll question 2",
             expire_date=timezone.now() + datetime.timedelta(days=1),
-            approved=True,
+            status=Poll.STATUS_APPROVED,
         )
 
-        self.poll_vote = PollVote.objects.create(user=self.user2, poll=self.poll_1)
+        self.poll_vote = PollVote.objects.create(id_hash="2", poll=self.poll_1)
         self.poll_vote.poll_options.add(self.poll_option_1)
 
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     def test_authentication(self):
         # asserts that anonymous users cannot access any route
         list_urls = [
             "poll-list",
             "polloption-list",
             "pollvote-list",
-            "poll-history-list",
             "target-populations",
         ]
         for url in list_urls:
             response_1 = self.client.get(reverse(f"portal:{url}"))
             self.assertEqual(response_1.status_code, 403)
 
-        arg_urls = ["poll-detail", "polloption-detail", "pollvote-detail", "vote-statistics"]
+        arg_urls = ["poll-detail", "polloption-detail", "pollvote-detail"]
         for url in arg_urls:
             response_2 = self.client.get(reverse(f"portal:{url}", args=[self.poll_1.id]))
             self.assertEqual(response_2.status_code, 403)
 
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     def test_update_poll(self):
-        # users who didn't create poll cannot update
+        # users in same club can edit
         self.client.force_authenticate(user=self.user2)
-        payload_1 = {"approved": False}
+        payload_1 = {"status": Poll.STATUS_REVISION}
         response_1 = self.client.patch(
             reverse("portal:poll-detail", args=[self.poll_1.id]), payload_1
         )
         # 404 because queryset denies access
-        self.assertEqual(response_1.status_code, 404)
+        self.assertEqual(response_1.status_code, 200)
 
         # admin can update polls
         self.client.force_authenticate(user=self.admin)
-        payload_2 = {"approved": False}
+        payload_2 = {"status": Poll.STATUS_REVISION}
         response_2 = self.client.patch(
             reverse("portal:poll-detail", args=[self.poll_1.id]), payload_2
         )
         self.assertEqual(response_2.status_code, 200)
 
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     def test_create_update_options(self):
-        # users who didn't create poll cannot create/update corresponding poll option
+        # users in same club can edit poll option
         self.client.force_authenticate(user=self.user2)
         payload_1 = {"poll": self.poll_1.id, "choice": "hello"}
         response_1 = self.client.post("/portal/options/", payload_1)
-        self.assertEqual(response_1.status_code, 403)
+        self.assertEqual(response_1.status_code, 201)
 
         payload_2 = {"choice": "helloooo"}
         response_2 = self.client.patch(
             reverse("portal:polloption-detail", args=[self.poll_1.id]), payload_2
         )
-        # 404 because queryset denies access
-        self.assertEqual(response_2.status_code, 404)
+        self.assertEqual(response_2.status_code, 200)
 
         # admin can create poll option
         self.client.force_authenticate(user=self.admin)
@@ -100,31 +110,3 @@ class PollPermissions(TestCase):
             reverse("portal:poll-detail", args=[self.poll_1.id]), payload_3
         )
         self.assertEqual(response_3.status_code, 200)
-
-    def test_update_votes(self):
-        # user cannot update other user votes
-        self.client.force_authenticate(user=self.user1)
-        payload_1 = {"poll_options": [self.poll_option_1.id]}
-        response_1 = self.client.patch(
-            reverse("portal:pollvote-detail", args=[self.poll_vote.id]), payload_1
-        )
-        # 404 because queryset denies access
-        self.assertEqual(response_1.status_code, 404)
-
-        # user can update own vote
-        self.client.force_authenticate(user=self.user2)
-        payload_2 = {"poll_options": [self.poll_option_2.id]}
-        response_2 = self.client.patch(
-            reverse("portal:pollvote-detail", args=[self.poll_vote.id]), payload_2
-        )
-        self.assertEqual(response_2.status_code, 200)
-
-        # not even admin can update user vote
-        self.client.force_authenticate(user=self.admin)
-        payload_3 = {"poll_options": [self.poll_option_3.id]}
-        response_3 = self.client.patch(
-            reverse("portal:pollvote-detail", args=[self.poll_vote.id]), payload_3
-        )
-        # 404 because queryset denies access
-        self.assertEqual(response_3.status_code, 404)
-"""

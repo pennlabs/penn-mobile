@@ -159,16 +159,6 @@ class PollVoteSerializer(serializers.ModelSerializer):
 
         return super().create(validated_data)
 
-    def update(self, instance, validated_data):
-        # update poll options count
-        for option in instance.poll_options.all():
-            option.vote_count -= 1
-            option.save()
-        for option in validated_data["poll_options"]:
-            option.vote_count += 1
-            option.save()
-        return super().update(instance, validated_data)
-
 
 class RetrievePollVoteSerializer(serializers.ModelSerializer):
 
