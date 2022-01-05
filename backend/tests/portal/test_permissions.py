@@ -95,11 +95,12 @@ class PollPermissions(TestCase):
         self.client.force_authenticate(user=self.user2)
         payload_1 = {"poll": self.poll_1.id, "choice": "hello"}
         response_1 = self.client.post("/portal/options/", payload_1)
+        res_json_1 = json.loads(response_1.content)
         self.assertEqual(response_1.status_code, 201)
 
         payload_2 = {"choice": "helloooo"}
         response_2 = self.client.patch(
-            reverse("portal:polloption-detail", args=[self.poll_1.id]), payload_2
+            reverse("portal:polloption-detail", args=[res_json_1["id"]]), payload_2
         )
         self.assertEqual(response_2.status_code, 200)
 
@@ -107,6 +108,6 @@ class PollPermissions(TestCase):
         self.client.force_authenticate(user=self.admin)
         payload_3 = {"choice": "helloooo"}
         response_3 = self.client.patch(
-            reverse("portal:poll-detail", args=[self.poll_1.id]), payload_3
+            reverse("portal:polloption-detail", args=[res_json_1["id"]]), payload_3
         )
         self.assertEqual(response_3.status_code, 200)
