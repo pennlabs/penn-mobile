@@ -10,26 +10,26 @@ export enum PageType {
   POLL,
 }
 
-/**
- * the lifecycle of a post/poll :)
- */
 export enum Status {
   DRAFT,
-  SUBMITTED,
-  PENDING,
+  PENDING, // pending review
+  REVISION, // under revision
   APPROVED,
   LIVE,
   EXPIRED,
   REJECTED,
 }
 
-export interface Poll {
+export interface PollType {
   id?: number
   question: string
   source: string
-  pollOptions: { [key: number]: string }
+  options: { id: number; choice: string }[]
   startDate: Date | null
-  endDate: Date | null
+  expireDate: Date | null
   userComments: string
   status: Status
+  targetPopulations: number[]
 }
+
+export type updateStateType = (newState: Object) => void
