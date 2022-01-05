@@ -8,11 +8,9 @@ import { Card } from '@/components/styles/Card'
 import { FormField } from '@/components/styles/Form'
 import { IconPlus, IconTimes } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
-import {
-  DatesCard,
-  FiltersCard,
-  NotesCard,
-} from '@/components/form/FormComponents'
+import { DatesCard, NotesCard } from '@/components/form/SharedCards'
+import ClubSelect from '@/components/form/ClubSelect'
+import FiltersCard from '@/components/form/Filters'
 
 interface PollFormProps {
   state: PollType
@@ -73,13 +71,10 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
           placeholder={"e.g. What do you think about Penn's COVID response?"}
           updateState={updateState}
         />
-        <FormField
-          label="Organization"
-          name="source"
-          value={state.source}
-          placeholder="e.g. Daily Pennsylvanian"
-          updateState={updateState}
-        />
+
+        <Text bold>Club</Text>
+        <ClubSelect />
+
         <Text bold>Poll Options</Text>
         {state.options.map((obj, i) => (
           <Group

@@ -6,15 +6,14 @@ import { AuthUserContext, withAuth } from '@/utils/auth'
 import { doApiRequest } from '@/utils/fetch'
 import { PageType, PostType, Status, User } from '@/utils/types'
 import { Col, Container, Group, Row } from '@/components/styles/Layout'
-import { Button, ToggleButton } from '@/components/styles/Buttons'
+import { Button } from '@/components/styles/Buttons'
 import { Subtitle } from '@/components/styles/Text'
 import { colors } from '@/components/styles/colors'
 import StatusBar from '@/components/form/StatusBar'
 import PostForm from '@/components/form/post/PostForm'
 import { PostPhonePreview } from '@/components/form/Preview'
-import { convertCamelCase, convertSnakeCase } from '@/utils/utils'
 import { DASHBOARD_ROUTE } from '@/utils/routes'
-import { CreateContentToggle } from '@/components/form/FormComponents'
+import { CreateContentToggle } from '@/components/form/SharedCards'
 
 interface iPostPageProps {
   user: User
@@ -27,15 +26,15 @@ const PostPage = ({ user, createMode, post }: iPostPageProps) => {
     post || {
       title: '',
       subtitle: '',
-      source: '',
-      postUrl: '',
-      imageUrl:
+      source: '', // TODO: replace with club_code
+      post_url: '',
+      image_url:
         'https://www.akc.org/wp-content/uploads/2017/11/Pembroke-Welsh-Corgi-standing-outdoors-in-the-fall.jpg',
-      startDate: null,
-      expireDate: null,
-      userComments: '',
+      start_date: null,
+      expire_date: null,
+      club_comment: '',
       status: Status.DRAFT,
-      targetPopulations: [],
+      target_populations: [],
     }
   )
 
@@ -48,7 +47,7 @@ const PostPage = ({ user, createMode, post }: iPostPageProps) => {
   const onSubmit = () => {
     doApiRequest('/api/portal/posts/', {
       method: 'POST',
-      body: convertCamelCase(state),
+      body: state,
     }).then(() => router.push(DASHBOARD_ROUTE)) // redirect to dashboard after submitting
   }
 
@@ -62,7 +61,7 @@ const PostPage = ({ user, createMode, post }: iPostPageProps) => {
   const onSave = () => {
     doApiRequest(`/api/portal/posts/${state.id}/`, {
       method: 'PATCH',
-      body: convertCamelCase(state),
+      body: state,
     })
   }
 
@@ -118,7 +117,6 @@ export const getServerSidePropsInner = async (
 
   if (pid && +pid) {
     const res = await doApiRequest(`/api/portal/posts/${pid}`, {
-      method: 'GET',
       headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
     })
     const post = await res.json()
@@ -127,7 +125,7 @@ export const getServerSidePropsInner = async (
 
       return {
         props: {
-          post: convertSnakeCase(post) as unknown as PostType,
+          post: post as PostType,
           createMode: false,
         },
       }

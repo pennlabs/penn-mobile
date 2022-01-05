@@ -6,7 +6,7 @@ import { AuthUserContext, withAuth } from '@/utils/auth'
 import { User } from '@/utils/types'
 import { colors } from '@/components/styles/colors'
 import { Button } from '@/components/styles/Buttons'
-import { Container, Group } from '@/components/styles/Layout'
+import { Container } from '@/components/styles/Layout'
 import { Heading3 } from '@/components/styles/Text'
 
 interface IndexPageProps {

@@ -98,7 +98,7 @@ export const PostPhonePreview = ({ state }: { state: PostType }) => (
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             height: 175,
-            backgroundImage: `url("${state.imageUrl}")`,
+            backgroundImage: `url("${state.image_url}")`,
           }}
         />
       </div>
@@ -120,7 +120,9 @@ export const PollsPhonePreview = ({ state }: { state: PollType }) => (
     <PhoneCard borderRadius="10px" padding="0.5rem 1rem">
       <Text size="12px" color={colors.LIGHT_GRAY}>
         POLL FROM{' '}
-        <span style={{ fontWeight: 'bold' }}>{state.source.toUpperCase()}</span>
+        <span style={{ fontWeight: 'bold' }}>
+          {state.club_code.toUpperCase()}
+        </span>
       </Text>
       <Text size="1rem" bold>
         {state.question}

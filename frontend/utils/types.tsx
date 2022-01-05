@@ -1,8 +1,14 @@
 export interface User {
-  username: string
-  firstName: string
-  lastName: string
+  first_name: string
+  last_name: string
   email: string
+  clubs: Club[]
+}
+
+export interface Club {
+  name: string
+  image?: string
+  club_code: string
 }
 
 export enum PageType {
@@ -22,15 +28,15 @@ export enum Status {
 
 export interface ContentType {
   id?: number
-  source: string
-  startDate: Date | null
-  expireDate: Date | null
-  userComments: string
+  start_date: Date | null
+  expire_date: Date | null
+  club_comment: string
   status: Status
-  targetPopulations: number[]
+  target_populations: number[]
 }
 
 export interface PollType extends ContentType {
+  club_code: string
   question: string
   options: { id: number; choice: string }[]
 }
@@ -38,8 +44,9 @@ export interface PollType extends ContentType {
 export interface PostType extends ContentType {
   title: string
   subtitle: string
-  postUrl: string
-  imageUrl: string
+  source: string // TODO: replace with club_code
+  post_url: string
+  image_url: string
 }
 
 export type updateStateType = (newState: Object) => void

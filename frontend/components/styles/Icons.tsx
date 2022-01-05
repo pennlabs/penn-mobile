@@ -1,5 +1,6 @@
 import s from 'styled-components'
 
+import dynamic from 'next/dynamic'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faCircle,
@@ -9,7 +10,6 @@ import {
   faArrowCircleRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { colors } from '@/components/styles/colors'
-import dynamic from 'next/dynamic'
 
 /**
  * renders icon svg from public/icons as a component

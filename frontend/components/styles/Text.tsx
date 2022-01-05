@@ -51,5 +51,5 @@ export const InlineText = s.span<ITextProps>`
   overflow-wrap: break-word;
   color: ${({ color }) => color || '#4a4a4a'};
   font-family: ${({ heading }) => (heading ? 'Work Sans' : 'Inter')};
-  ${({ centerY }) => centerY && `display: inline-flex; align-items: center;`}
+  ${({ centerY }) => centerY && 'display: inline-flex; align-items: center;'}
 `

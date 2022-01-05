@@ -74,26 +74,37 @@ export const StatusColumn = ({ status, posts }: StatusColumnProps) => {
           </Text>
         </StatusHeader>
         {posts.map((post) => (
-          <DashboardCardWrapper>
-            <DashboardCardHeader color={color}>
-              <InlineText heading bold size="14px" color="inherit" centerY>
-                {label}
-              </InlineText>
-              <Icon name={icon} />
-            </DashboardCardHeader>
-            <DashboardCardBody>
-              <Group horizontal justifyContent="space-between">
-                <InlineText size="10px" bold>
-                  {post.source}
-                </InlineText>
-              </Group>
-            </DashboardCardBody>
-          </DashboardCardWrapper>
+          <PostCard post={post} label={label} color={color} icon={icon} />
         ))}
       </StatusColumnWrapper>
     </Col>
   )
 }
+
+interface PostCardProps {
+  post: PostType
+  label: string
+  color: string
+  icon: string
+}
+
+const PostCard = ({ post, label, color, icon }: PostCardProps) => (
+  <DashboardCardWrapper>
+    <DashboardCardHeader color={color}>
+      <InlineText heading bold size="14px" color="inherit" centerY>
+        {label}
+      </InlineText>
+      <Icon name={icon} />
+    </DashboardCardHeader>
+    <DashboardCardBody>
+      <Group horizontal justifyContent="space-between">
+        {/* <InlineText size="10px" bold>
+          {post.club_code}
+        </InlineText> */}
+      </Group>
+    </DashboardCardBody>
+  </DashboardCardWrapper>
+)
 
 const DashboardCardWrapper = s.div`
   padding: 1rem;

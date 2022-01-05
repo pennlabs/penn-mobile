@@ -4,7 +4,6 @@ import { useRouter } from 'next/router'
 
 import { AuthUserContext, withAuth } from '@/utils/auth'
 import { doApiRequest } from '@/utils/fetch'
-import { convertCamelCase, convertSnakeCase } from '@/utils/utils'
 import { DASHBOARD_ROUTE } from '@/utils/routes'
 import { PageType, PollType, Status, User } from '@/utils/types'
 import { Col, Container, Group, Row } from '@/components/styles/Layout'
@@ -14,7 +13,7 @@ import { colors } from '@/components/styles/colors'
 import StatusBar from '@/components/form/StatusBar'
 import PollForm from '@/components/form/poll/PollForm'
 import { PollsPhonePreview } from '@/components/form/Preview'
-import { CreateContentToggle } from '@/components/form/FormComponents'
+import { CreateContentToggle } from '@/components/form/SharedCards'
 
 interface iPollPageProps {
   user: User
@@ -32,16 +31,16 @@ const PollPage = ({
   const [state, setState] = useState<PollType>(
     poll || {
       question: '',
-      source: '',
-      startDate: null,
-      expireDate: null,
+      club_code: '',
+      start_date: null,
+      expire_date: null,
       options: [
         { id: 0, choice: '' },
         { id: 1, choice: '' },
       ],
-      userComments: '',
+      club_comment: '',
       status: Status.DRAFT,
-      targetPopulations: [],
+      target_populations: [],
     }
   )
 
@@ -54,7 +53,7 @@ const PollPage = ({
   const onSubmit = () => {
     doApiRequest('/api/portal/polls/', {
       method: 'POST',
-      body: convertCamelCase(state),
+      body: state,
     })
       .then((res) => res.json())
       .then((res) => {
@@ -83,7 +82,7 @@ const PollPage = ({
     // update poll fields
     doApiRequest(`/api/portal/polls/${state.id}/`, {
       method: 'PATCH',
-      body: convertCamelCase(state),
+      body: state,
     })
 
     const currOptionIds = state.options.map((option) => {
@@ -171,7 +170,6 @@ export const getServerSidePropsInner = async (
 
   if (pid && +pid) {
     const res = await doApiRequest(`/api/portal/polls/${pid}/edit_view`, {
-      method: 'GET',
       headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
     })
     const poll = await res.json()
@@ -181,7 +179,7 @@ export const getServerSidePropsInner = async (
 
       return {
         props: {
-          poll: convertSnakeCase(poll) as unknown as PollType,
+          poll: poll as PollType,
           createMode: false,
           prevOptionIds,
         },

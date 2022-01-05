@@ -7,11 +7,8 @@ import { colors } from '@/components/styles/colors'
 import { Card } from '@/components/styles/Card'
 import { FormField } from '@/components/styles/Form'
 import { Group } from '@/components/styles/Layout'
-import {
-  DatesCard,
-  FiltersCard,
-  NotesCard,
-} from '@/components/form/FormComponents'
+import { DatesCard, NotesCard } from '@/components/form/SharedCards'
+import FiltersCard from '@/components/form/Filters'
 
 interface PostFormProps {
   state: PostType
@@ -53,8 +50,8 @@ const PostForm = ({ state, updateState }: PostFormProps) => {
         />
         <FormField
           label="Link"
-          name="postUrl"
-          value={state.postUrl}
+          name="post_url"
+          value={state.post_url}
           placeholder="e.g. https://pennlabs.org"
           updateState={updateState}
         />
@@ -77,7 +74,7 @@ const PostForm = ({ state, updateState }: PostFormProps) => {
           >
             Browse
           </Button>
-          {state.imageUrl && <Button color={colors.IMAGE_BLUE}>Crop</Button>}
+          {state.image_url && <Button color={colors.IMAGE_BLUE}>Crop</Button>}
         </Group>
       </Card>
 

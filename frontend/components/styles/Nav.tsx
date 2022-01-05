@@ -11,7 +11,6 @@ import { Icon } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
 import {
   ANALYTICS_ROUTE,
-  CREATE_POST_ROUTE,
   DASHBOARD_ROUTE,
   SETTINGS_ROUTE,
 } from '@/utils/routes'
@@ -37,20 +36,17 @@ const ProfilePicWrapper = s.div`
 `
 
 const Profile = ({ user }: { user: User }) => {
-  // TODO: replace this with user's name, org, & img
-  const firstName = 'First'
-  const lastName = 'Last'
   return (
     <ProfileWrapper>
       <Group center>
         <ProfilePicWrapper>
           <InlineText bold heading style={{ lineHeight: PROFILE_PIC_SIZE }}>
-            {firstName[0].toUpperCase()}
-            {lastName[0].toUpperCase()}
+            {user.first_name[0].toUpperCase()}
+            {user.last_name[0].toUpperCase()}
           </InlineText>
         </ProfilePicWrapper>
         <Text bold heading>
-          {user.username}
+          {user.clubs[0]?.name}
         </Text>
       </Group>
     </ProfileWrapper>

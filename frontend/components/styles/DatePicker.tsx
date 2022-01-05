@@ -41,8 +41,8 @@ const DatePickerForm = ({
       onChange={(dates) =>
         dates &&
         updateState({
-          startDate: dates[0]?.toDate(),
-          expireDate: dates[1]?.toDate(),
+          start_date: dates[0]?.toDate(),
+          expire_date: dates[1]?.toDate(),
         })
       }
       style={{

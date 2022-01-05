@@ -13,7 +13,6 @@ interface DashboardProps {
 
 const Dashboard = ({ postList, pollList }: DashboardProps) => {
   const [activeOption, setActiveOption] = useState<PageType>(PageType.POST)
-  console.log(postList)
 
   return (
     <>
