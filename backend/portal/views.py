@@ -116,17 +116,19 @@ class Polls(viewsets.ModelViewSet):
             )
         )
 
-        # sort draft first, then approved
-        CASE_SQL = '(case when status="DRAFT" then 1 when status="APPROVED" then 2 end)'
+        # # TODO: fix the sorting
+        # # sort draft first, then approved
+        # CASE_SQL = '(case when status="DRAFT" then 1 when status="APPROVED" then 2 end)'
 
-        return Response(
-            RetrievePollSerializer(
-                polls.distinct().extra(
-                    select={"status_order": CASE_SQL}, order_by=["status_order", "expire_date"]
-                ),
-                many=True,
-            ).data
-        )
+        # return Response(
+        #     RetrievePollSerializer(
+        #         polls.distinct().extra(
+        #             select={"status_order": CASE_SQL}, order_by=["status_order", "expire_date"]
+        #         ),
+        #         many=True,
+        #     ).data
+        # )
+        return Response(polls.distinct().order_by("expire_date"), many=True,)
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
     def review(self, request):
