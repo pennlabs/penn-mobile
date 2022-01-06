@@ -139,12 +139,19 @@ class BookingWrapper:
                 reservation.save()
 
     def get_reservations(self, user):
-        all_bookings = GSRBookingSerializer(
-            GSRBooking.objects.filter(user=user, end__gte=timezone.localtime(), is_cancelled=False),
-            many=True,
-        ).data
+        libcal_bookings = self.LCW.get_reservations(user)
+        print("LIBCAL BOOKINGS:")
+        print(libcal_bookings)
         # WLW edits all_bookings with reservations on Wharton website
-        return self.WLW.get_reservations(user, all_bookings)
+        wharton_bookings = self.WLW.get_reservations(user)
+        print("WHARTON BOOKINGS:")
+        print(wharton_bookings)
+        # TODO: put in a set so duplicates are removed
+        # use list comprehension instead of set to preserve ordering
+        all_bookings = libcal_bookings + [
+            booking for booking in wharton_bookings if booking not in libcal_bookings
+        ]
+        return all_bookings
 
     def check_credits(self, lid, gid, user, start, end):
         """
@@ -274,7 +281,8 @@ class WhartonLibWrapper:
             raise APIError("Wharton: " + response["error"])
         return response
 
-    def get_reservations(self, user, all_bookings):
+    def get_reservations(self, user):
+        wharton_bookings = []
         try:
             url = f"{WHARTON_URL}{user.username}/reservations"
             bookings = self.request("GET", url).json()["bookings"]
@@ -295,11 +303,10 @@ class WhartonLibWrapper:
                         "start": booking["start"],
                         "end": booking["end"],
                     }
-                    if context not in all_bookings:
-                        all_bookings.append(context)
+                    wharton_bookings.append(context)
         except APIError:
             pass
-        return all_bookings
+        return wharton_bookings
 
     def cancel_room(self, user, booking_id):
         """Cancels reservation given booking id"""
@@ -461,6 +468,12 @@ class LibCalWrapper:
         if "error" in response:
             raise APIError("LibCal: " + response["error"])
         return response
+
+    def get_reservations(self, user):
+        return GSRBookingSerializer(
+            GSRBooking.objects.filter(user=user, end__gte=timezone.localtime(), is_cancelled=False),
+            many=True,
+        ).data
 
     def get_affiliation(self, email):
         """Gets school from email"""
