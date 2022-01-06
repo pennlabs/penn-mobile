@@ -10,7 +10,7 @@ interface ITextProps {
 }
 
 export const Title = s.h1<ITextProps>`
-  font-size: 6rem;
+  font-size: 7vmax;
   font-weight: normal;
   margin-bottom: ${({ marginBottom }) => marginBottom || '0.5rem'};
   line-height: 1.25;

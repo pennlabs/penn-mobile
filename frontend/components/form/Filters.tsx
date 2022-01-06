@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import _, { startCase, camelCase } from 'lodash'
 import Select, { MultiValue } from 'react-select'
 

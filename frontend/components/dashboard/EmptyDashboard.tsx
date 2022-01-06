@@ -8,6 +8,7 @@ import { Subtitle, Text } from '@/components/styles/Text'
 import { IconArrowRight } from '@/components/styles/Icons'
 import { colors } from '@/components/styles/colors'
 import { CREATE_POLL_ROUTE, CREATE_POST_ROUTE } from '@/utils/routes'
+import { PageType } from '@/utils/types'
 
 const EmptyDashboardImg = s.img`
   ${maxWidth(PHONE)} {
@@ -15,7 +16,7 @@ const EmptyDashboardImg = s.img`
   }
 `
 
-const EmptyDashboard = ({ contentType }: { contentType: string }) => {
+const EmptyDashboard = ({ page }: { page: PageType }) => {
   return (
     <Row justifyContent="center" margin="5rem 0">
       <Group horizontal>
@@ -35,12 +36,12 @@ const EmptyDashboard = ({ contentType }: { contentType: string }) => {
             Ready to get started?
             <Link
               href={
-                contentType === 'post' ? CREATE_POST_ROUTE : CREATE_POLL_ROUTE
+                page === PageType.POST ? CREATE_POST_ROUTE : CREATE_POLL_ROUTE
               }
             >
               <a style={{ color: colors.MEDIUM_BLUE }}>
                 {' '}
-                Create a new {contentType}
+                Create a new {page.toLowerCase()}
               </a>
             </Link>
             <IconArrowRight />
