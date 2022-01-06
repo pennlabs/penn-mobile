@@ -32,6 +32,16 @@ const ClubSelect = ({ updateState, clubCode }: ClubSelectProps) => {
       onChange={onChange}
       id="club-select"
       instanceId="club-select"
+      styles={{
+        control: (base, state) => ({
+          ...base,
+          boxShadow: 'none',
+          borderColor: state.isFocused
+            ? 'rgb(50 115 220 / 25%)'
+            : base.borderColor,
+          '&:hover': { borderColor: 'rgb(50 115 220 / 25%)' },
+        }),
+      }}
     />
   )
 }

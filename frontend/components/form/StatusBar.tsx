@@ -45,7 +45,7 @@ const StatusBar = ({ status }: iStatusBarProps) => {
     <>
       <Group horizontal style={{ margin: '0 0.5rem' }}>
         <IconCircle color={colors.MEDIUM_BLUE} />
-        <StatusGroup compareStatus={Status.PENDING} />
+        <StatusGroup compareStatus={Status.REVISION} />
         <StatusGroup compareStatus={Status.APPROVED} />
         <StatusGroup compareStatus={Status.LIVE} />
         <StatusGroup compareStatus={Status.EXPIRED} />

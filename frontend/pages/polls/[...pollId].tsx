@@ -174,7 +174,6 @@ export const getServerSidePropsInner = async (
     })
     const poll = await res.json()
     if (res.ok && poll.id) {
-      // TODO: change this when filters are implemented
       const prevOptionIds = poll.options.map((opt: any) => opt.id)
       poll.target_populations = poll.target_populations.map(
         (pop: any) => pop.id
