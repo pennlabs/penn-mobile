@@ -8,14 +8,15 @@ import { Card } from '@/components/styles/Card'
 import { FormField } from '@/components/styles/Form'
 import { Group } from '@/components/styles/Layout'
 import { DatesCard, NotesCard } from '@/components/form/SharedCards'
-import FiltersCard from '@/components/form/Filters'
+import FiltersCard, { FilterType } from '@/components/form/Filters'
 
 interface PostFormProps {
   state: PostType
   updateState: updateStateType
+  filters: FilterType[]
 }
 
-const PostForm = ({ state, updateState }: PostFormProps) => {
+const PostForm = ({ state, updateState, filters }: PostFormProps) => {
   const imageFile = useRef<HTMLInputElement | null>(null)
 
   const uploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,7 +81,11 @@ const PostForm = ({ state, updateState }: PostFormProps) => {
 
       <DatesCard updateState={updateState} state={state} />
 
-      <FiltersCard updateState={updateState} state={state} />
+      <FiltersCard
+        updateState={updateState}
+        targetPopulations={state.target_populations}
+        filters={filters}
+      />
 
       <NotesCard updateState={updateState} state={state} />
     </>

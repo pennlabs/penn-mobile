@@ -1,16 +1,22 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import _, { startCase, camelCase } from 'lodash'
 import Select, { MultiValue } from 'react-select'
 
 import { Heading3, Text } from '@/components/styles/Text'
 import { Card } from '@/components/styles/Card'
-import { ContentType, updateStateType } from '@/utils/types'
+import { updateStateType } from '@/utils/types'
 import { InfoSpan } from '@/components/styles/Icons'
-import { doApiRequest } from '@/utils/fetch'
+
+export interface FilterType {
+  id: number
+  population: string
+  kind: string
+}
 
 interface OptionType {
   value: number
   label: string
+  kind: string
 }
 
 interface SelectedFilters {
@@ -18,57 +24,38 @@ interface SelectedFilters {
 }
 
 const FiltersCard = ({
-  state,
+  targetPopulations,
   updateState,
+  filters,
 }: {
-  state: ContentType
+  targetPopulations: number[]
   updateState: updateStateType
+  filters: FilterType[]
 }) => {
-  // info for all target populations
-  const [populations, setPopulations] = useState<{
-    [key: string]: OptionType[]
-  }>({})
+  // format all filters for select dropdown, grouped by kind (e.g. major, year, degree)
+  const populations = _.groupBy(
+    filters.map((filter: any) => ({
+      value: filter.id,
+      label: filter.population,
+      kind: filter.kind,
+    })),
+    'kind'
+  )
 
-  // selected target population IDs and labels grouped by kind of target population
-  const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>({})
+  // format previously selected filters with value and label
+  const formattedSelectedFilters: SelectedFilters = Object.fromEntries(
+    Object.entries(populations).map(([kind, value]) => [
+      kind,
+      value.filter((filter: OptionType) =>
+        targetPopulations.includes(filter.value)
+      ),
+    ])
+  )
 
-  useEffect(() => {
-    // get all population IDs and labels
-    doApiRequest('/api/portal/populations/')
-      .then((res) => res.json())
-      .then((res) => {
-        let formattedSelectedFilters: SelectedFilters = {}
-        const formattedFilters = res.map((filter: any) => {
-          const { id: value, population: label, kind } = filter
-
-          // if target population is previously selected, add to selectedFilters
-          // selectedFilters stays empty if all populations are selected
-          if (
-            state.target_populations.includes(value) &&
-            state.target_populations.length !== res.length
-          ) {
-            if (kind in formattedSelectedFilters) {
-              formattedSelectedFilters = {
-                ...formattedSelectedFilters,
-                [kind]: [...formattedSelectedFilters[kind], { value, label }],
-              }
-            } else {
-              formattedSelectedFilters = {
-                ...formattedSelectedFilters,
-                [kind]: [{ value, label }],
-              }
-            }
-          }
-
-          return { value, label, kind }
-        })
-
-        setSelectedFilters(formattedSelectedFilters)
-
-        // group filters by kind (e.g. major, year)
-        setPopulations(_.groupBy(formattedFilters, 'kind'))
-      })
-  }, [])
+  // stores selected target population IDs and labels grouped by kind of target population ({'YEAR': [{value: '2022', id: 491}]})
+  const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>(
+    formattedSelectedFilters
+  )
 
   const onChange = (kind: string, newValue: MultiValue<OptionType>) => {
     const newSelectedFilters = {
@@ -77,8 +64,8 @@ const FiltersCard = ({
     }
 
     const newFilters: number[] = []
-    Object.entries(newSelectedFilters).forEach(([_, populationArr]) =>
-      newFilters.push(...populationArr.map((filter: any) => filter.value))
+    Object.entries(newSelectedFilters).forEach((filterEntry) =>
+      newFilters.push(...filterEntry[1].map((filter: any) => filter.value))
     )
 
     updateState({ target_populations: newFilters })
@@ -93,8 +80,8 @@ const FiltersCard = ({
       </Heading3>
       <Card>
         {Object.entries(populations).map(([kind, populationArr], i) => (
-          <div key={`div-${i}`}>
-            <Text bold heading id={`text-${kind}-${i}`}>
+          <div key={`div-${kind}`}>
+            <Text bold heading id={`text-${kind}`}>
               {startCase(camelCase(kind))}
             </Text>
             <Select
@@ -103,17 +90,17 @@ const FiltersCard = ({
               defaultValue={selectedFilters[kind]}
               onChange={(selectedVals) => onChange(kind, selectedVals)}
               styles={{
-                control: (base, state) => ({
+                control: (base, selectState) => ({
                   ...base,
                   boxShadow: 'none',
-                  borderColor: state.isFocused
+                  borderColor: selectState.isFocused
                     ? 'rgb(50 115 220 / 25%)'
                     : base.borderColor,
                   '&:hover': { borderColor: 'rgb(50 115 220 / 25%)' },
                 }),
               }}
-              instanceId={`filter-select-${kind}-${i}`}
-              id={`filter-select-${kind}-${i}`}
+              instanceId={`filter-select-${kind}`}
+              id={`filter-select-${kind}`}
             />
           </div>
         ))}

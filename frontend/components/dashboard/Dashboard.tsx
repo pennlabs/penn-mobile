@@ -25,7 +25,7 @@ const Dashboard = ({ postList, pollList }: DashboardProps) => {
           <EmptyDashboard contentType="post" />
         ) : (
           <Row>
-            <StatusColumn status={Status.PENDING} posts={postList} />
+            <StatusColumn status={Status.DRAFT} posts={postList} />
             <StatusColumn status={Status.REVISION} posts={postList} />
             <StatusColumn status={Status.APPROVED} posts={postList} />
           </Row>

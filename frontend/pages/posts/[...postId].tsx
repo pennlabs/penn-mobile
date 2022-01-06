@@ -14,14 +14,20 @@ import PostForm from '@/components/form/post/PostForm'
 import { PostPhonePreview } from '@/components/form/Preview'
 import { DASHBOARD_ROUTE } from '@/utils/routes'
 import { CreateContentToggle } from '@/components/form/SharedCards'
+import { FilterType } from '@/components/form/Filters'
 
 interface iPostPageProps {
-  user: User
   createMode: boolean // true if creating a post, false if editing an existing post
   post?: PostType
+  filters: FilterType[]
 }
 
-const PostPage = ({ user, createMode, post }: iPostPageProps) => {
+const PostPage = ({
+  user,
+  createMode,
+  post,
+  filters,
+}: iPostPageProps & { user: User }) => {
   const [state, setState] = useState<PostType>(
     post || {
       title: '',
@@ -97,7 +103,11 @@ const PostPage = ({ user, createMode, post }: iPostPageProps) => {
               </Group>
             </Group>
             <StatusBar status={state.status} />
-            <PostForm state={state} updateState={updateState} />
+            <PostForm
+              state={state}
+              updateState={updateState}
+              filters={filters}
+            />
           </Col>
           <Col sm={12} md={12} lg={5}>
             <PostPhonePreview state={state} />
@@ -111,20 +121,24 @@ const PostPage = ({ user, createMode, post }: iPostPageProps) => {
 export const getServerSidePropsInner = async (
   context: GetServerSidePropsContext
 ): Promise<{
-  props: { post?: PostType; createMode: boolean }
+  props: iPostPageProps
 }> => {
   const pid = context.params?.postId
+  const data = {
+    headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
+  }
+
+  const filtersRes = await doApiRequest('/api/portal/populations/', data)
 
   if (pid && +pid) {
-    const res = await doApiRequest(`/api/portal/posts/${pid}`, {
-      headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
-    })
+    const res = await doApiRequest(`/api/portal/posts/${pid}`, data)
     const post = await res.json()
     if (res.ok && post.id) {
       return {
         props: {
-          post: post as PostType,
+          post,
           createMode: false,
+          filters: await filtersRes.json(),
         },
       }
     }
@@ -133,6 +147,7 @@ export const getServerSidePropsInner = async (
   return {
     props: {
       createMode: true,
+      filters: await filtersRes.json(),
     },
   }
 }

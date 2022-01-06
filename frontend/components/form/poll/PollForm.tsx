@@ -10,16 +10,17 @@ import { IconPlus, IconTimes } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
 import { DatesCard, NotesCard } from '@/components/form/SharedCards'
 import ClubSelect from '@/components/form/ClubSelect'
-import FiltersCard from '@/components/form/Filters'
+import FiltersCard, { FilterType } from '@/components/form/Filters'
 
 interface PollFormProps {
   state: PollType
   updateState: updateStateType
+  filters: FilterType[]
 }
 
 const MAX_NUM_OPTIONS = 6
 
-const PollForm = ({ state, updateState }: PollFormProps) => {
+const PollForm = ({ state, updateState, filters }: PollFormProps) => {
   const updatePollOptions = (newOption: any) => {
     let modified = false
     const key = Number(Object.keys(newOption)[0])
@@ -108,7 +109,11 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
 
       <DatesCard updateState={updateState} state={state} />
 
-      <FiltersCard updateState={updateState} state={state} />
+      <FiltersCard
+        updateState={updateState}
+        targetPopulations={state.target_populations}
+        filters={filters}
+      />
 
       <NotesCard updateState={updateState} state={state} />
     </>

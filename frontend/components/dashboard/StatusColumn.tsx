@@ -29,7 +29,7 @@ const getStatusProperties = (
   status: Status
 ): { label: string; color: string; icon: string } => {
   switch (status) {
-    case Status.PENDING:
+    case Status.DRAFT:
       return {
         label: 'Awaiting Review',
         color: colors.YELLOW,

@@ -14,12 +14,13 @@ import StatusBar from '@/components/form/StatusBar'
 import PollForm from '@/components/form/poll/PollForm'
 import { PollsPhonePreview } from '@/components/form/Preview'
 import { CreateContentToggle } from '@/components/form/SharedCards'
+import { FilterType } from '@/components/form/Filters'
 
 interface iPollPageProps {
-  user: User
   createMode: boolean // true if creating a poll, false if editing an existing poll
   poll?: PollType
   prevOptionIds?: number[] // poll option ids
+  filters: FilterType[]
 }
 
 const PollPage = ({
@@ -27,7 +28,8 @@ const PollPage = ({
   createMode,
   poll,
   prevOptionIds,
-}: iPollPageProps) => {
+  filters,
+}: iPollPageProps & { user: User }) => {
   const [state, setState] = useState<PollType>(
     poll || {
       question: '',
@@ -150,7 +152,11 @@ const PollPage = ({
               </Group>
             </Group>
             <StatusBar status={state.status} />
-            <PollForm state={state} updateState={updateState} />
+            <PollForm
+              state={state}
+              updateState={updateState}
+              filters={filters}
+            />
           </Col>
           <Col sm={12} md={12} lg={5}>
             <PollsPhonePreview state={state} />
@@ -164,14 +170,17 @@ const PollPage = ({
 export const getServerSidePropsInner = async (
   context: GetServerSidePropsContext
 ): Promise<{
-  props: { poll?: PollType; prevOptionIds?: number[]; createMode: boolean }
+  props: iPollPageProps
 }> => {
   const pid = context.params?.pollId
+  const data = {
+    headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
+  }
+
+  const filtersRes = await doApiRequest('/api/portal/populations/', data)
 
   if (pid && +pid) {
-    const res = await doApiRequest(`/api/portal/polls/${pid}/option_view`, {
-      headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
-    })
+    const res = await doApiRequest(`/api/portal/polls/${pid}/option_view`, data)
     const poll = await res.json()
     if (res.ok && poll.id) {
       const prevOptionIds = poll.options.map((opt: any) => opt.id)
@@ -181,9 +190,10 @@ export const getServerSidePropsInner = async (
 
       return {
         props: {
-          poll: poll as PollType,
+          poll,
           createMode: false,
           prevOptionIds,
+          filters: await filtersRes.json(),
         },
       }
     }
@@ -192,6 +202,7 @@ export const getServerSidePropsInner = async (
   return {
     props: {
       createMode: true,
+      filters: await filtersRes.json(),
     },
   }
 }
