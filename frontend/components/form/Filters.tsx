@@ -43,7 +43,7 @@ const FiltersCard = ({
   )
 
   // format previously selected filters with value and label
-  const formattedSelectedFilters: SelectedFilters = Object.fromEntries(
+  const selectedFilters: SelectedFilters = Object.fromEntries(
     Object.entries(populations).map(([kind, value]) => [
       kind,
       value.filter((filter: OptionType) =>
@@ -51,25 +51,14 @@ const FiltersCard = ({
       ),
     ])
   )
-
-  // stores selected target population IDs and labels grouped by kind of target population ({'YEAR': [{value: '2022', id: 491}]})
-  const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>(
-    formattedSelectedFilters
-  )
-
   const onChange = (kind: string, newValue: MultiValue<OptionType>) => {
-    const newSelectedFilters = {
-      ...selectedFilters,
-      [kind]: newValue,
-    }
-
-    const newFilters: number[] = []
-    Object.entries(newSelectedFilters).forEach((filterEntry) =>
-      newFilters.push(...filterEntry[1].map((filter: any) => filter.value))
+    const kindIds = populations[kind].map((filter: OptionType) => filter.value)
+    const newFilters: number[] = targetPopulations.filter(
+      (id: number) => !kindIds.includes(id)
     )
+    newFilters.push(...newValue.map((filter: OptionType) => filter.value))
 
     updateState({ target_populations: newFilters })
-    setSelectedFilters(newSelectedFilters)
   }
 
   return (
