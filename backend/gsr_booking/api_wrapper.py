@@ -140,18 +140,8 @@ class BookingWrapper:
 
     def get_reservations(self, user):
         libcal_bookings = self.LCW.get_reservations(user)
-<<<<<<< HEAD
         wharton_bookings = self.WLW.get_reservations(user)
         # add all libcal_bookings and wharton bookings not in table
-=======
-        print("LIBCAL BOOKINGS:")
-        print(libcal_bookings)
-        # WLW edits all_bookings with reservations on Wharton website
-        wharton_bookings = self.WLW.get_reservations(user)
-        print("WHARTON BOOKINGS:")
-        print(wharton_bookings)
-        # TODO: put in a set so duplicates are removed
->>>>>>> f01de77ec8789c3a05a6beba58a16fa21e153749
         # use list comprehension instead of set to preserve ordering
         all_bookings = libcal_bookings + [
             booking for booking in wharton_bookings if booking not in libcal_bookings
