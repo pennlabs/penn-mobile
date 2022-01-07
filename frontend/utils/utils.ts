@@ -1,5 +1,3 @@
-import { PollType } from '../types'
-
 /**
  * converts objects with snake_case keys to camelCase key
  * @param obj object with snake_case keys
@@ -11,7 +9,7 @@ export const convertSnakeCase = (obj: { [key: string]: string }) => {
     const newKey = key.replace(/(_\w)/g, (m) => m[1].toUpperCase())
     newObj[newKey] = obj[key]
   })
-  return newObj as unknown as PollType
+  return newObj
 }
 
 /**
@@ -25,5 +23,5 @@ export const convertCamelCase = (obj: any) => {
     const newKey = key.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`)
     newObj[newKey] = obj[key]
   })
-  return newObj as unknown as PollType
+  return newObj
 }

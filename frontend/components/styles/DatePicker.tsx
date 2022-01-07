@@ -2,7 +2,7 @@ import React from 'react'
 import moment from 'moment'
 
 import DatePicker from 'antd/lib/date-picker'
-import { updateStateType } from '../../types'
+import { updateStateType } from '../../utils/types'
 
 const disabledDate = (current: moment.Moment) =>
   // disable days before today
@@ -41,8 +41,8 @@ const DatePickerForm = ({
       onChange={(dates) =>
         dates &&
         updateState({
-          startDate: dates[0]?.toDate(),
-          expireDate: dates[1]?.toDate(),
+          start_date: dates[0]?.toDate(),
+          expire_date: dates[1]?.toDate(),
         })
       }
       style={{

@@ -1,5 +1,5 @@
 import s from 'styled-components'
-import { colors } from '../../utils/colors'
+import { colors } from '@/components/styles/colors'
 
 export const Card = s.div`
   border-radius: 10px;

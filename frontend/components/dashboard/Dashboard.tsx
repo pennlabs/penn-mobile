@@ -1,41 +1,78 @@
-import React from 'react'
-import Link from 'next/link'
-import { Group, Row } from '../styles/Layout'
-import { Subtitle, Text } from '../styles/Text'
-import { IconArrowRight } from '../styles/Icons'
-import { colors } from '../../utils/colors'
+import React, { useState } from 'react'
+import _ from 'lodash'
 
-const Dashboard = () => (
-  <Row
-    justifyContent="center"
-    style={{
-      alignItems: 'center',
-      height: '80vh',
-    }}
-  >
-    <Group horizontal margin="auto">
-      <img src="/desk-graphic.svg" alt="desk svg" />
-      <Group margin="0 2rem" style={{ maxWidth: '24rem' }}>
-        <Subtitle>Oh, hello there.</Subtitle>
-        <Text>
-          Looks like you&apos;re new here.
-          <br />
-          <br />
-          Penn Mobile Portal allows organizations to connect and engage with
-          students on the Penn Mobile app. Make posts for recruiting, events, or
-          campaigns and watch in real time as users see and interact with your
-          content.
-        </Text>
-        <Text>
-          Ready to get started? {/* TODO: change this post/create */}
-          <Link href="/polls/create">
-            <a style={{ color: colors.MEDIUM_BLUE }}>Create a new post</a>
-          </Link>
-          <IconArrowRight />
-        </Text>
-      </Group>
-    </Group>
-  </Row>
-)
+import { Container, Row } from '@/components/styles/Layout'
+import { PageType, PollType, PostType, Status } from '@/utils/types'
+import EmptyDashboard from '@/components/dashboard/EmptyDashboard'
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
+import {
+  PostStatusColumn,
+  PollStatusColumn,
+} from '@/components/dashboard/DashboardColumn'
+import { Heading3 } from '@/components/styles/Text'
+
+interface DashboardProps {
+  postList: PostType[]
+  pollList: PollType[]
+}
+
+const Dashboard = ({ postList, pollList }: DashboardProps) => {
+  const [activeOption, setActiveOption] = useState<PageType>(PageType.POLL)
+
+  const DashboardContent = ({ page }: { page: PageType }) => {
+    const activeList = page === PageType.POST ? postList : pollList
+    if (activeList.length === 0) {
+      return <EmptyDashboard page={page} />
+    }
+    return page === PageType.POST ? (
+      <Row>
+        <PostStatusColumn status={Status.DRAFT} cardList={postList} />
+        <PostStatusColumn status={Status.REVISION} cardList={postList} />
+        <PostStatusColumn status={Status.APPROVED} cardList={postList} />
+      </Row>
+    ) : (
+      <Row>
+        <PollStatusColumn
+          status={Status.DRAFT}
+          cardList={pollList.filter((p) => p.status === Status.DRAFT)}
+        />
+        <PollStatusColumn
+          status={Status.REVISION}
+          cardList={pollList.filter((p) => p.status === Status.REVISION)}
+        />
+        <PollStatusColumn
+          status={Status.APPROVED}
+          cardList={pollList.filter(
+            (p) => p.status === Status.APPROVED || p.status === Status.LIVE
+          )}
+        />
+      </Row>
+    )
+  }
+
+  return (
+    <>
+      <Container>
+        <DashboardHeader
+          activeOption={activeOption}
+          setActiveOption={setActiveOption}
+        />
+        <DashboardContent page={activeOption} />
+
+        <Heading3>Past {`${_.startCase(_.toLower(activeOption))}s`}</Heading3>
+        <Row>
+          {activeOption === PageType.POST ? (
+            <PostStatusColumn status={Status.EXPIRED} cardList={postList} />
+          ) : (
+            <PollStatusColumn
+              status={Status.EXPIRED}
+              cardList={pollList.filter((p) => p.status === Status.EXPIRED)}
+            />
+          )}
+        </Row>
+      </Container>
+    </>
+  )
+}
 
 export default Dashboard

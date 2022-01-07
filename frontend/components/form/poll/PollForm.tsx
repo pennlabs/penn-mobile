@@ -1,23 +1,26 @@
 import React from 'react'
 
-import { PollType, updateStateType } from '../../../types'
-import { Button } from '../../styles/Buttons'
-import { Heading3, Text } from '../../styles/Text'
-import { colors } from '../../../utils/colors'
-import { Card } from '../../styles/Card'
-import { FormField } from '../../styles/Form'
-import { InfoSpan, IconPlus, IconTimes } from '../../styles/Icons'
-import { Group } from '../../styles/Layout'
-import DatePickerForm from '../DatePicker'
+import { PollType, updateStateType } from '@/utils/types'
+import { Button } from '@/components/styles/Buttons'
+import { Heading3, Text } from '@/components/styles/Text'
+import { colors } from '@/components/styles/colors'
+import { Card } from '@/components/styles/Card'
+import { FormField } from '@/components/styles/Form'
+import { IconPlus, IconTimes } from '@/components/styles/Icons'
+import { Group } from '@/components/styles/Layout'
+import { DatesCard, NotesCard } from '@/components/form/SharedCards'
+import ClubSelect from '@/components/form/ClubSelect'
+import FiltersCard, { FilterType } from '@/components/form/Filters'
 
 interface PollFormProps {
   state: PollType
   updateState: updateStateType
+  filters: FilterType[]
 }
 
 const MAX_NUM_OPTIONS = 6
 
-const PollForm = ({ state, updateState }: PollFormProps) => {
+const PollForm = ({ state, updateState, filters }: PollFormProps) => {
   const updatePollOptions = (newOption: any) => {
     let modified = false
     const key = Number(Object.keys(newOption)[0])
@@ -69,13 +72,10 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
           placeholder={"e.g. What do you think about Penn's COVID response?"}
           updateState={updateState}
         />
-        <FormField
-          label="Organization"
-          name="source"
-          value={state.source}
-          placeholder="e.g. Daily Pennsylvanian"
-          updateState={updateState}
-        />
+
+        <Text bold>Club</Text>
+        <ClubSelect updateState={updateState} clubCode={state.club_code} />
+
         <Text bold>Poll Options</Text>
         {state.options.map((obj, i) => (
           <Group
@@ -107,29 +107,15 @@ const PollForm = ({ state, updateState }: PollFormProps) => {
         </Button>
       </Card>
 
-      <Heading3>Visibility</Heading3>
-      <Card>
-        <Text bold>Dates</Text>
-        <DatePickerForm
-          updateState={updateState}
-          startDate={state.startDate}
-          expireDate={state.expireDate}
-        />
-      </Card>
+      <DatesCard updateState={updateState} state={state} />
 
-      <Heading3>
-        Notes
-        <InfoSpan infoText="Portal administrators will see this message during the review process." />
-      </Heading3>
-      <Card>
-        <FormField
-          name="userComments"
-          value={state.userComments}
-          placeholder="Enter any comments here."
-          updateState={updateState}
-          textArea={true}
-        />
-      </Card>
+      <FiltersCard
+        updateState={updateState}
+        targetPopulations={state.target_populations}
+        filters={filters}
+      />
+
+      <NotesCard updateState={updateState} state={state} />
     </>
   )
 }

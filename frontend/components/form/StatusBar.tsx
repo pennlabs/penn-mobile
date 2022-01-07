@@ -1,11 +1,11 @@
 import React from 'react'
 import s from 'styled-components'
-import { IconCircle } from '../styles/Icons'
 
-import { Group, Row } from '../styles/Layout'
-import { colors } from '../../utils/colors'
-import { Text } from '../styles/Text'
-import { Status } from '../../types'
+import { IconCircle } from '@/components/styles/Icons'
+import { Group, Row } from '@/components/styles/Layout'
+import { colors } from '@/components/styles/colors'
+import { Text } from '@/components/styles/Text'
+import { Status } from '@/utils/types'
 
 interface iStatusBarLineProps {
   color: string
@@ -25,24 +25,27 @@ interface iStatusBarProps {
 }
 
 const StatusBar = ({ status }: iStatusBarProps) => {
+  const orderedStatus = Object.values(Status)
+
   // colors line & circle blue if active, gray if not. dependent on Status enum order.
-  const StatusGroup = ({ compareStatus }: { compareStatus: Status }) => (
-    <>
-      <StatusBarLine
-        color={status >= compareStatus ? colors.MEDIUM_BLUE : colors.LIGHT_GRAY}
-        width={25}
-      />
-      <IconCircle
-        color={status >= compareStatus ? colors.MEDIUM_BLUE : colors.LIGHT_GRAY}
-      />
-    </>
-  )
+  const StatusGroup = ({ compareStatus }: { compareStatus: Status }) => {
+    const statusColor =
+      orderedStatus.indexOf(status) >= orderedStatus.indexOf(compareStatus)
+        ? colors.MEDIUM_BLUE
+        : colors.LIGHT_GRAY
+    return (
+      <>
+        <StatusBarLine color={statusColor} width={25} />
+        <IconCircle color={statusColor} />
+      </>
+    )
+  }
 
   return (
     <>
       <Group horizontal style={{ margin: '0 0.5rem' }}>
         <IconCircle color={colors.MEDIUM_BLUE} />
-        <StatusGroup compareStatus={Status.PENDING} />
+        <StatusGroup compareStatus={Status.REVISION} />
         <StatusGroup compareStatus={Status.APPROVED} />
         <StatusGroup compareStatus={Status.LIVE} />
         <StatusGroup compareStatus={Status.EXPIRED} />

@@ -6,10 +6,11 @@ interface ITextProps {
   color?: string
   marginBottom?: string
   heading?: boolean // Work Sans
+  centerY?: boolean
 }
 
 export const Title = s.h1<ITextProps>`
-  font-size: 6rem;
+  font-size: 7vmax;
   font-weight: normal;
   margin-bottom: ${({ marginBottom }) => marginBottom || '0.5rem'};
   line-height: 1.25;
@@ -40,4 +41,15 @@ export const Text = s.p<ITextProps>`
   overflow-wrap: break-word;
   color: ${({ color }) => color || '#4a4a4a'};
   font-family: ${({ heading }) => (heading ? 'Work Sans' : 'Inter')};
+`
+
+export const InlineText = s.span<ITextProps>`
+  font-size: ${({ size }) => size || '1rem'};
+  font-weight: ${({ bold }) => (bold ? '500' : '350')};
+  margin-bottom: ${({ marginBottom }) => marginBottom || '0rem'};
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  color: ${({ color }) => color || '#4a4a4a'};
+  font-family: ${({ heading }) => (heading ? 'Work Sans' : 'Inter')};
+  ${({ centerY }) => centerY && 'display: inline-flex; align-items: center;'}
 `

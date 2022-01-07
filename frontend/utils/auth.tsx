@@ -4,11 +4,11 @@ import {
   GetServerSidePropsResult,
   Redirect,
 } from 'next'
-import { doApiRequest } from '../utils/fetch'
-import { User } from '../types'
+import { doApiRequest } from '@/utils/fetch'
+import { User } from '@/utils/types'
 
 export interface AuthProps {
-  user: User | null
+  user: User
 }
 
 export const AuthUserContext: React.Context<{ user?: User }> = createContext({})
@@ -47,16 +47,21 @@ export function withAuth<T>(getServerSidePropsFunc: GetServerSidePropsFunc<T>) {
       headers: { cookie: ctx.req.headers.cookie },
     }
 
-    const res = await doApiRequest('/api/users/me/', headers)
-    if (res.ok || ctx.req.url === '/') {
-      const user = await res.json()
+    const res = await doApiRequest('/api/portal/user/', headers)
+    if (res.ok) {
+      const userRes = await res.json()
+      const user: User = {
+        first_name: userRes.user.first_name,
+        last_name: userRes.user.last_name,
+        email: userRes.user.email,
+        clubs: userRes.clubs,
+      }
       const wrapped = await getServerSidePropsFunc(ctx)
       const casted = convertGetServerSidePropsResult(wrapped)
 
       if (casted.tag === 'props') {
         return {
-          // pass null user if in landing page route `/` and user is not logged in
-          props: { ...casted.props, user: res.ok ? user : null },
+          props: { ...casted.props, user },
         }
       } else if (casted.tag === 'notFound') {
         return { notFound: casted.notFound }
@@ -64,6 +69,7 @@ export function withAuth<T>(getServerSidePropsFunc: GetServerSidePropsFunc<T>) {
         return { redirect: casted.redirect }
       }
     } else {
+      // redirect to landing page if no user is logged in
       return {
         redirect: {
           destination: '/',

@@ -1,12 +1,11 @@
 import s from 'styled-components'
-import Link from 'next/link'
 
-import { colors } from '../../utils/colors'
-import { PageType } from '../../types'
+import { colors } from '@/components/styles/colors'
 
 interface iButtonProps {
   color: string
   hide?: boolean
+  round?: boolean
 }
 
 export const Button = s.button<iButtonProps>`
@@ -17,7 +16,7 @@ export const Button = s.button<iButtonProps>`
   border: solid 0 #979797;
   background-color: ${(props) => props.color};
   color: #ffffff;
-  border-radius: 5px;
+  border-radius: ${(props) => (props.round ? '100px' : '5px')};
   outline: none;
   padding: 0px 15px 0px 15px;
   display: ${(props) => (props.hide ? 'none' : 'flex')};
@@ -25,46 +24,25 @@ export const Button = s.button<iButtonProps>`
   font-family: inherit;
 `
 
-interface iToggleButtonProps {
-  page: PageType
-  active?: boolean
-}
-
-const ToggleButtonStyle = s.button<iToggleButtonProps>`
-  border-width: 0;
-  background-color: ${(props) =>
-    props.active ? colors.MEDIUM_BLUE : colors.LIGHT_GRAY};
-  color: white;
-  border-radius: ${(props) =>
-    props.page === PageType.POST ? '12px 0px 0px 12px' : '0px 12px 12px 0px'};
-  height: 28px;
-  width: 115px;
-  outline: none;
-  cursor: pointer;
+export const Toggle = s.div`
+  display: inline-block;
+  border-radius: 100px;
+  background: ${colors.LIGHTER_GRAY};
+  padding: 5px;
 `
 
-// TODO: change links here if i change create route. also refactor this perhaps?
-export const ToggleButton = ({ currPage }: { currPage: PageType }) =>
-  currPage === PageType.POST ? (
-    <>
-      <ToggleButtonStyle page={currPage} active>
-        New Post
-      </ToggleButtonStyle>
-      <Link href="/polls/create">
-        <a>
-          <ToggleButtonStyle page={PageType.POLL}>New Poll</ToggleButtonStyle>
-        </a>
-      </Link>
-    </>
-  ) : (
-    <>
-      <Link href="/post/create">
-        <a>
-          <ToggleButtonStyle page={PageType.POST}>New Post</ToggleButtonStyle>
-        </a>
-      </Link>
-      <ToggleButtonStyle page={currPage} active>
-        New Poll
-      </ToggleButtonStyle>
-    </>
-  )
+export const ToggleOption = s.button<{ active: boolean }>`
+  border-width: 0;
+  background-color: ${(props) =>
+    props.active ? colors.MEDIUM_BLUE : colors.LIGHTER_GRAY};
+  color: ${(props) => props.active && 'white'};
+  border-radius: 100px;
+  line-height: inherit;
+  padding: 0.25rem 1rem;
+  outline: none;
+
+  &:hover {
+    cursor: pointer;
+    opacity: 0.7;
+  }
+`

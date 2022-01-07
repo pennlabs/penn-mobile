@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { ReactNode } from 'react'
 import s, { css, FlattenSimpleInterpolation } from 'styled-components'
+import { Nav } from '@/components/styles/Nav'
 import {
   maxWidth,
   minWidth,
@@ -7,7 +8,9 @@ import {
   TABLET,
   MAX_BODY_HEIGHT,
   DESKTOP,
-} from './sizes'
+  NAV_WIDTH,
+} from '@/components/styles/sizes'
+import Header from '@/components/header/Header'
 
 interface IRow {
   maxHeight?: string
@@ -30,10 +33,7 @@ export const Row = s.div<IRow>(
     max-height: ${maxHeight || 'none'};
     overflow-y: ${overflowY || 'hidden'};
 
-    ${margin &&
-    ` margin-left: -${margin};
-      margin-right: -${margin};
-      width: calc(100% + ${margin} + ${margin});`}
+    ${margin && `margin: ${margin};`}
 
     ${justifyContent && `justify-content: ${justifyContent};`}
   `
@@ -138,36 +138,52 @@ export const Col = ({ margin, children, ...other }: ICol) => (
   </ColWrapper>
 )
 
-export const ColSpace = s(Col)`
-  flex: none;
-  width: ${({ width }) => width || '1rem'};
-
-  ${maxWidth(PHONE)} {
-    display: none;
-  }
-`
-
-export const Spacer = s.div`
-  display: block;
-  width: 100%;
-  height: 1rem;
-`
-
 interface iGroupProps {
   horizontal?: boolean // defaults to vertical
   alignItems?: string
   justifyContent?: string
   margin?: string
+  center?: boolean
+  fullWidth?: boolean
+  padding?: string
 }
 
 /**
  * Div wrapper for a group of elements.
  */
 export const Group = s.div<iGroupProps>(
-  ({ horizontal, alignItems, justifyContent, margin }) => css`
+  ({
+    horizontal,
+    alignItems,
+    justifyContent,
+    margin,
+    center,
+    fullWidth,
+    padding,
+  }) => css`
     display: ${horizontal ? 'flex' : 'inline-block'};
     ${justifyContent && `justify-content: ${justifyContent};`}
     ${alignItems && `align-items: ${alignItems};`}
     ${margin && `margin: ${margin};`}
+    ${center && 'margin: 0 auto;'}
+    ${fullWidth && 'flex-grow: 1'}
+    ${padding && `padding: ${padding};`}
   `
 )
+
+/**
+ * Page layout container with nav bar on left and content on right
+ */
+export const Container = ({ children }: { children: ReactNode }) => {
+  return (
+    <>
+      <Header />
+      <Group horizontal>
+        <Nav />
+        <Group margin={`0 0 0 ${NAV_WIDTH}`} fullWidth>
+          <div style={{ padding: '2.5rem 4rem' }}>{children}</div>
+        </Group>
+      </Group>
+    </>
+  )
+}

@@ -1,10 +1,15 @@
 import React from 'react'
-import { Row, Col, Group } from '../styles/Layout'
-import { Heading3, Title } from '../styles/Text'
-import { DesktopWireframes, MobileWireframes } from './Wireframes'
+import { Row, Col, Group } from '@/components/styles/Layout'
+import { Heading3, Title } from '@/components/styles/Text'
+import {
+  DesktopWireframes,
+  MobileWireframes,
+} from '@/components/landing-page/Wireframes'
+import LandingPageNav from '@/components/landing-page/LandingPageNav'
 
 const LandingPage = () => (
   <>
+    <LandingPageNav />
     <Row>
       <Col sm={12} md={8} lg={5}>
         <Group margin="15vh 0 0 5vw">

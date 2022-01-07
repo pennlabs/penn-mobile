@@ -1,6 +1,11 @@
 import React from 'react'
 import s from 'styled-components'
-import { DESKTOP, maxWidth, minWidth, NAV_HEIGHT } from '../styles/sizes'
+import {
+  DESKTOP,
+  maxWidth,
+  minWidth,
+  NAV_HEIGHT,
+} from '@/components/styles/sizes'
 
 const DesktopWireframesStyle = s.div`
   position: absolute;
