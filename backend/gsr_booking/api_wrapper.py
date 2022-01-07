@@ -102,7 +102,7 @@ class BookingWrapper:
     def cancel_room(self, booking_id, user):
         try:
             # gets reservations from wharton for a user
-            wharton_bookings = self.WLW.get_reservations(user, [])
+            wharton_bookings = self.WLW.get_reservations(user)
         except APIError as e:
             # don't throw error if the student is non-wharton
             if str(e) == "Wharton: GSR view restricted to Wharton Pennkeys":
@@ -143,10 +143,7 @@ class BookingWrapper:
         wharton_bookings = self.WLW.get_reservations(user)
         # add all libcal_bookings and wharton bookings not in table
         # use list comprehension instead of set to preserve ordering
-        all_bookings = libcal_bookings + [
-            booking for booking in wharton_bookings if booking not in libcal_bookings
-        ]
-        return all_bookings
+        return libcal_bookings + wharton_bookings
 
     def check_credits(self, lid, gid, user, start, end):
         """
@@ -168,7 +165,7 @@ class BookingWrapper:
         total_minutes = 0
         if gsr.kind == GSR.KIND_WHARTON:
             # gets all current reservations from wharton availability route
-            reservations = self.WLW.get_reservations(user, [])
+            reservations = self.WLW.get_reservations(user)
             for reservation in reservations:
                 if reservation["gsr"]["lid"] == lid:
                     # accumulates total minutes
@@ -466,7 +463,7 @@ class LibCalWrapper:
 
     def get_reservations(self, user):
         return GSRBookingSerializer(
-            GSRBooking.objects.filter(user=user, end__gte=timezone.localtime(), is_cancelled=False),
+            GSRBooking.objects.filter(user=user, gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL), end__gte=timezone.localtime(), is_cancelled=False),
             many=True,
         ).data
 

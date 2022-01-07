@@ -80,7 +80,7 @@ class TestBookingWrapper(TestCase):
 
     @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
     def test_wharton_reservations(self):
-        reservations = self.bw.WLW.get_reservations(self.user, [])
+        reservations = self.bw.WLW.get_reservations(self.user)
         self.assertTrue(isinstance(reservations, list))
         self.assertIn("booking_id", reservations[0])
         self.assertIn("gsr", reservations[0])
