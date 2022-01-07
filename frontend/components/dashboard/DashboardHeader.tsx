@@ -1,13 +1,14 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import Link from 'next/link'
 
 import { Group, Row } from '@/components/styles/Layout'
-import { Heading3, InlineText } from '@/components/styles/Text'
+import { Subtitle, InlineText } from '@/components/styles/Text'
 import { colors } from '@/components/styles/colors'
 import { PageType } from '@/utils/types'
 import { Button, Toggle, ToggleOption } from '@/components/styles/Buttons'
 import { CREATE_POLL_ROUTE, CREATE_POST_ROUTE } from '@/utils/routes'
 import { IconPlus } from '@/components/styles/Icons'
+import { AuthUserContext } from '@/utils/auth'
 
 export const DashboardHeader = ({
   activeOption,
@@ -16,6 +17,8 @@ export const DashboardHeader = ({
   activeOption: PageType
   setActiveOption: React.Dispatch<React.SetStateAction<PageType>>
 }) => {
+  const { user } = useContext(AuthUserContext)
+
   const DashboardToggle = () => (
     <Toggle>
       <ToggleOption
@@ -39,7 +42,7 @@ export const DashboardHeader = ({
 
   return (
     <Row justifyContent="space-between">
-      <Heading3>Penn Labs</Heading3>
+      <Subtitle>{user?.clubs[0].name}</Subtitle>
       <Group horizontal alignItems="center">
         <DashboardToggle />
         <Link

@@ -46,7 +46,7 @@ const Profile = ({ user }: { user: User }) => {
           </InlineText>
         </ProfilePicWrapper>
         <Text bold heading>
-          {user.clubs[0]?.name}
+          {user.first_name} {user.last_name}
         </Text>
       </Group>
     </ProfileWrapper>

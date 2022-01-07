@@ -75,10 +75,8 @@ const PostPage = ({
     <AuthUserContext.Provider value={{ user }}>
       <Container>
         <Row>
-          <CreateContentToggle activeOption={PageType.POST} />
-        </Row>
-        <Row>
           <Col sm={12} md={12} lg={7} padding="0.5rem">
+            <CreateContentToggle activeOption={PageType.POST} />
             <Group
               horizontal
               justifyContent="space-between"

@@ -1,7 +1,7 @@
 import type { GetServerSidePropsContext } from 'next'
 import { AuthUserContext, withAuth } from '@/utils/auth'
 import { User } from '@/utils/types'
-import { Container, Group } from '@/components/styles/Layout'
+import { Container } from '@/components/styles/Layout'
 import { Heading3 } from '@/components/styles/Text'
 
 interface IndexPageProps {
@@ -12,9 +12,7 @@ const Settings = ({ user }: IndexPageProps) => {
   return (
     <AuthUserContext.Provider value={{ user }}>
       <Container>
-        <Group padding="4rem">
-          <Heading3 style={{ marginTop: 0 }}>Analytics</Heading3>
-        </Group>
+        <Heading3>Analytics</Heading3>
       </Container>
     </AuthUserContext.Provider>
   )

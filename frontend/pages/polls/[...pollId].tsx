@@ -124,10 +124,8 @@ const PollPage = ({
     <AuthUserContext.Provider value={{ user }}>
       <Container>
         <Row>
-          <CreateContentToggle activeOption={PageType.POLL} />
-        </Row>
-        <Row>
           <Col sm={12} md={12} lg={7} padding="0.5rem">
+            <CreateContentToggle activeOption={PageType.POLL} />
             <Group
               horizontal
               justifyContent="space-between"

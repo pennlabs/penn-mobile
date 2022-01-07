@@ -5,6 +5,7 @@ import { PollType, PostType } from '@/utils/types'
 import { colors } from '@/components/styles/colors'
 import { Group } from '@/components/styles/Layout'
 import { Text } from '@/components/styles/Text'
+import { DESKTOP, minWidth } from '@/components/styles/sizes'
 
 interface IPhoneCard {
   borderRadius?: string
@@ -35,49 +36,50 @@ const PhonePollOption = s.div<{ width: number }>`
   position: relative;
 `
 
+const PhoneWrapper = s.div`
+  ${minWidth(DESKTOP)} {
+    position: fixed;
+  }
+`
+
 const PhonePreview = ({ children }: { children: ReactNode }) => {
   return (
-    <div
-      className="phone-preview"
-      style={{
-        textAlign: 'center',
-        transformOrigin: 'top center',
-        transform: 'scale(0.9)',
-      }}
-    >
-      <div className="marvel-device iphone-x">
-        <div className="notch" style={{ marginTop: -1 }}>
-          <div className="camera" />
-          <div className="speaker" />
-        </div>
-        <div className="top-bar" />
-        <div className="sleep" />
-        <div className="bottom-bar" />
-        <div className="volume" />
-        <div className="overflow">
-          <div className="shadow shadow--tr" />
-          <div className="shadow shadow--tl" />
-          <div className="shadow shadow--br" />
-          <div className="shadow shadow--bl" />
-        </div>
-        <div className="inner-shadow" />
-        <div
-          className="screen"
-          style={{
-            textAlign: 'left',
-            userSelect: 'none',
-            pointerEvents: 'none',
-          }}
-        >
-          <img
-            src="/phone_header.png"
-            style={{ width: '100%' }}
-            alt="Phone Header"
-          />
-          {children}
+    <PhoneWrapper>
+      <div
+        className="phone-preview"
+        style={{
+          textAlign: 'center',
+          transformOrigin: 'top center',
+          transform: 'scale(0.85)',
+        }}
+      >
+        <div className="marvel-device iphone-x">
+          <div className="notch" style={{ marginTop: -1 }}>
+            <div className="camera" />
+            <div className="speaker" />
+          </div>
+          <div className="top-bar" />
+          <div className="sleep" />
+          <div className="bottom-bar" />
+          <div className="volume" />
+          <div className="overflow">
+            <div className="shadow shadow--tr" />
+            <div className="shadow shadow--tl" />
+            <div className="shadow shadow--br" />
+            <div className="shadow shadow--bl" />
+          </div>
+          <div className="inner-shadow" />
+          <div className="screen" style={{ textAlign: 'left' }}>
+            <img
+              src="/phone_header.png"
+              style={{ width: '100%' }}
+              alt="Phone Header"
+            />
+            {children}
+          </div>
         </div>
       </div>
-    </div>
+    </PhoneWrapper>
   )
 }
 
