@@ -463,7 +463,12 @@ class LibCalWrapper:
 
     def get_reservations(self, user):
         return GSRBookingSerializer(
-            GSRBooking.objects.filter(user=user, gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL), end__gte=timezone.localtime(), is_cancelled=False),
+            GSRBooking.objects.filter(
+                user=user,
+                gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL),
+                end__gte=timezone.localtime(),
+                is_cancelled=False,
+            ),
             many=True,
         ).data
 
