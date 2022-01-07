@@ -1,0 +1,211 @@
+[
+    {
+        "room_name": "241",
+        "id": 123,
+        "availability": [
+            {
+                "start_time": "2021-11-21T21:30:00-05:00",
+                "end_time": "2021-11-21T22:00:00-05:00",
+                "reserved": true
+            },
+            {
+                "start_time": "2021-11-21T22:00:00-05:00",
+                "end_time": "2021-11-21T22:30:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:30:00-05:00",
+                "end_time": "2021-11-21T23:00:00-05:00",
+                "reserved": true
+            }
+        ]
+    },
+    {
+        "room_name": "242",
+        "id": 123,
+        "availability": [
+            {
+                "start_time": "2021-11-21T21:30:00-05:00",
+                "end_time": "2021-11-21T22:00:00-05:00",
+                "reserved": true
+            },
+            {
+                "start_time": "2021-11-21T22:00:00-05:00",
+                "end_time": "2021-11-21T22:30:00-05:00",
+                "reserved": true
+            },
+            {
+                "start_time": "2021-11-21T22:30:00-05:00",
+                "end_time": "2021-11-21T23:00:00-05:00",
+                "reserved": true
+            }
+        ]
+    },
+    {
+        "room_name": "243",
+        "id": 123,
+        "availability": [
+            {
+                "start_time": "2021-11-21T19:30:00-05:00",
+                "end_time": "2021-11-21T20:00:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T21:30:00-05:00",
+                "end_time": "2021-11-21T22:00:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:00:00-05:00",
+                "end_time": "2021-11-21T22:30:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:30:00-05:00",
+                "end_time": "2021-11-21T23:00:00-05:00",
+                "reserved": false
+            }
+        ]
+    },
+    {
+        "room_name": "246",
+        "id": 123,
+        "availability": [
+            {
+                "start_time": "2021-11-21T20:00:00-05:00",
+                "end_time": "2021-11-21T20:30:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T20:30:00-05:00",
+                "end_time": "2021-11-21T21:00:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:30:00-05:00",
+                "end_time": "2021-11-21T23:00:00-05:00",
+                "reserved": false
+            }
+        ]
+    },
+    {
+        "room_name": "247",
+        "id": 123,
+        "availability": [
+            {
+                "start_time": "2021-11-21T20:30:00-05:00",
+                "end_time": "2021-11-21T21:00:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:30:00-05:00",
+                "end_time": "2021-11-21T23:00:00-05:00",
+                "reserved": false
+            }
+        ]
+    },
+    {
+        "room_name": "248",
+        "id": 123,
+        "availability": [
+            {
+                "start_time": "2021-11-21T20:00:00-05:00",
+                "end_time": "2021-11-21T20:30:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T20:30:00-05:00",
+                "end_time": "2021-11-21T21:00:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:30:00-05:00",
+                "end_time": "2021-11-21T23:00:00-05:00",
+                "reserved": false
+            }
+        ]
+    },
+    {
+        "room_name": "251",
+        "id": 123,
+        "availability": []
+    },
+    {
+        "room_name": "252",
+        "id": 123,
+        "availability": [
+            {
+                "start_time": "2021-11-21T21:00:00-05:00",
+                "end_time": "2021-11-21T21:30:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T21:30:00-05:00",
+                "end_time": "2021-11-21T22:00:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:00:00-05:00",
+                "end_time": "2021-11-21T22:30:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:30:00-05:00",
+                "end_time": "2021-11-21T23:00:00-05:00",
+                "reserved": false
+            }
+        ]
+    },
+    {
+        "room_name": "256",
+        "id": 123,
+        "availability": [
+            {
+                "start_time": "2021-11-21T22:00:00-05:00",
+                "end_time": "2021-11-21T22:30:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:30:00-05:00",
+                "end_time": "2021-11-21T23:00:00-05:00",
+                "reserved": false
+            }
+        ]
+    },
+    {
+        "room_name": "257",
+        "id": 123,
+        "availability": [
+            {
+                "start_time": "2021-11-21T19:00:00-05:00",
+                "end_time": "2021-11-21T19:30:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T20:30:00-05:00",
+                "end_time": "2021-11-21T21:00:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T21:00:00-05:00",
+                "end_time": "2021-11-21T21:30:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T21:30:00-05:00",
+                "end_time": "2021-11-21T22:00:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:00:00-05:00",
+                "end_time": "2021-11-21T22:30:00-05:00",
+                "reserved": false
+            },
+            {
+                "start_time": "2021-11-21T22:30:00-05:00",
+                "end_time": "2021-11-21T23:00:00-05:00",
+                "reserved": false
+            }
+        ]
+    }
+]

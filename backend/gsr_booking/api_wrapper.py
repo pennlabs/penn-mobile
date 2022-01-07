@@ -3,8 +3,13 @@ import datetime
 import requests
 from bs4 import BeautifulSoup
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.timezone import make_aware
 from requests.exceptions import ConnectTimeout, ReadTimeout
+
+from gsr_booking.models import GSR, Group, GSRBooking, Reservation
+from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
 
 
 BASE_URL = "https://libcal.library.upenn.edu"
@@ -18,6 +23,177 @@ ROOM_BLACKLIST = {7176, 16970, 16998, 17625}
 
 class APIError(ValueError):
     pass
+
+
+class BookingWrapper:
+    def __init__(self):
+        self.WLW = WhartonLibWrapper()
+        self.LCW = LibCalWrapper()
+
+    def is_wharton(self, username):
+        return self.WLW.is_wharton(username)
+
+    def book_room(self, gid, rid, room_name, start, end, user):
+
+        gsr = GSR.objects.filter(gid=gid).first()
+        if not gsr:
+            raise APIError(f"Unknown GSR GID {gid}")
+
+        if not self.check_credits(gsr.lid, gid, user, start, end):
+            raise APIError("Not Enough Credits to Book")
+
+        # error catching on view side
+        if gsr.kind == GSR.KIND_WHARTON:
+            booking_id = self.WLW.book_room(rid, start, end, user.username).get("booking_id")
+        else:
+            booking_id = self.LCW.book_room(rid, start, end, user).get("booking_id")
+
+        # create reservation with single-person-group containing user
+        # TODO: create reservation with group that frontend passes in
+        single_person_group = Group.objects.filter(owner=user).first()
+        if not single_person_group:
+            raise APIError("Unknown User")
+        reservation = Reservation.objects.create(
+            start=start, end=end, creator=user, group=single_person_group
+        )
+        # creates booking on database
+        # TODO: break start / end time into smaller chunks and pool credit for group booking
+        GSRBooking.objects.create(
+            reservation=reservation,
+            user=user,
+            booking_id=str(booking_id),
+            gsr=gsr,
+            room_id=rid,
+            room_name=room_name,
+            start=datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z"),
+            end=datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z"),
+        )
+
+    def get_availability(self, lid, gid, start, end, user):
+        # checks which GSR class to use
+        gsr = GSR.objects.filter(lid=lid).first()
+        if not gsr:
+            raise APIError(f"Unknown GSR LID {lid}")
+        if gsr.kind == GSR.KIND_WHARTON:
+            rooms = self.WLW.get_availability(lid, start, end, user.username)
+            return {"name": gsr.name, "gid": gsr.gid, "rooms": rooms}
+        else:
+            rooms = self.LCW.get_availability(lid, start, end)
+            # cleans data to match Wharton wrapper
+            try:
+                lc_gsr = [x for x in rooms["categories"] if x["cid"] == int(gid)][0]
+            except IndexError:
+                raise APIError("Unknown GSR")
+
+            for room in lc_gsr["rooms"]:
+                for availability in room["availability"]:
+                    availability["start_time"] = availability["from"]
+                    availability["end_time"] = availability["to"]
+                    del availability["from"]
+                    del availability["to"]
+
+            context = {"name": lc_gsr["name"], "gid": lc_gsr["cid"]}
+            context["rooms"] = [
+                {"room_name": x["name"], "id": x["id"], "availability": x["availability"]}
+                for x in lc_gsr["rooms"]
+            ]
+            return context
+
+    def cancel_room(self, booking_id, user):
+        try:
+            # gets reservations from wharton for a user
+            wharton_bookings = self.WLW.get_reservations(user)
+        except APIError as e:
+            # don't throw error if the student is non-wharton
+            if str(e) == "Wharton: GSR view restricted to Wharton Pennkeys":
+                wharton_bookings = []
+            else:
+                raise APIError(f"Error: {str(e)}")
+        wharton_booking_ids = [str(x["booking_id"]) for x in wharton_bookings]
+        try:
+            gsr_booking = GSRBooking.objects.filter(booking_id=booking_id).first()
+            # checks if the booking_id is a wharton booking_id
+            if booking_id in wharton_booking_ids:
+                self.WLW.cancel_room(user, booking_id)
+            else:
+                # defaults to wharton because it is in wharton_booking_ids
+                self.LCW.cancel_room(user, booking_id)
+        except APIError as e:
+            raise APIError(f"Error: {str(e)}")
+
+        if gsr_booking:
+            # updates GSR booking after done
+            gsr_booking.is_cancelled = True
+            gsr_booking.save()
+
+            reservation = gsr_booking.reservation
+            all_cancelled = True
+            # loops through all reservation bookings and checks if all
+            # corresponding bookings are cancelled
+            for booking in GSRBooking.objects.filter(reservation=reservation):
+                if not booking.is_cancelled:
+                    all_cancelled = False
+                    break
+            if all_cancelled:
+                reservation.is_cancelled = True
+                reservation.save()
+
+    def get_reservations(self, user):
+        libcal_bookings = self.LCW.get_reservations(user)
+        wharton_bookings = self.WLW.get_reservations(user)
+        # add all libcal_bookings and wharton bookings not in table
+        # use list comprehension instead of set to preserve ordering
+        return libcal_bookings + wharton_bookings
+
+    def check_credits(self, lid, gid, user, start, end):
+        """
+        Checks credits for a particular room at a particular date
+        from gsr_booking.api_wrapper import BookingWrapper
+        b = BookingWrapper()
+        b.check_credits(lid, gid, request.user, "2021-10-27")
+        """
+
+        start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
+        end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
+        duration = int((end.timestamp() - start.timestamp()) / 60)
+
+        gsr = GSR.objects.filter(lid=lid, gid=gid).first()
+        # checks if valid gsr
+        if not gsr:
+            raise APIError(f"Unknown GSR LID {lid}")
+
+        total_minutes = 0
+        if gsr.kind == GSR.KIND_WHARTON:
+            # gets all current reservations from wharton availability route
+            reservations = self.WLW.get_reservations(user)
+            for reservation in reservations:
+                if reservation["gsr"]["lid"] == lid:
+                    # accumulates total minutes
+                    start = datetime.datetime.strptime(reservation["start"], "%Y-%m-%dT%H:%M:%S%z")
+                    end = datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
+                    total_minutes += int((end.timestamp() - start.timestamp()) / 60)
+            # 90 minutes at any given time
+            return 90 - total_minutes >= duration
+        else:
+            lc_start = make_aware(
+                datetime.datetime.combine(start.date(), datetime.datetime.min.time())
+            )
+            lc_end = lc_start + datetime.timedelta(days=1)
+            # filters for all reservations for the given date
+            reservations = GSRBooking.objects.filter(
+                gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL),
+                start__gte=lc_start,
+                end__lte=lc_end,
+                is_cancelled=False,
+            )
+            total_minutes = 0
+            for reservation in reservations:
+                # accumulates total minutes over all reservations
+                total_minutes += int(
+                    (reservation.end.timestamp() - reservation.start.timestamp()) / 60
+                )
+            # 120 minutes per day
+            return 120 - total_minutes >= duration
 
 
 class WhartonLibWrapper:
@@ -57,8 +233,10 @@ class WhartonLibWrapper:
         )
 
         # hits availability route for a given lid and date
-        url = WHARTON_URL + username + "/availability/" + lid + "/" + str(search_date)
+        url = f"{WHARTON_URL}{username}/availability/{lid}/{str(search_date)}"
         rooms = self.request("GET", url).json()
+        if "closed" in rooms and rooms["closed"]:
+            return []
 
         # presets end date as end midnight of next day
         end_date = (
@@ -89,19 +267,47 @@ class WhartonLibWrapper:
             "pennkey": username,
             "room": rid,
         }
-        url = WHARTON_URL + username + "/student_reserve"
+        url = f"{WHARTON_URL}{username}/student_reserve"
         response = self.request("POST", url, json=payload).json()
         if "error" in response:
             raise APIError("Wharton: " + response["error"])
         return response
 
     def get_reservations(self, user):
-        url = WHARTON_URL + user.username + "/reservations"
-        return self.request("GET", url).json()
+        wharton_bookings = []
+        try:
+            url = f"{WHARTON_URL}{user.username}/reservations"
+            bookings = self.request("GET", url).json()["bookings"]
+            # ignore this because this route is used by everyone
+            for booking in bookings:
+                booking["lid"] = GSR.objects.get(gid=booking["lid"]).lid
+                # checks if reservation is within time range
+                if (
+                    datetime.datetime.strptime(booking["end"], "%Y-%m-%dT%H:%M:%S%z")
+                    >= timezone.localtime()
+                ):
+                    # filtering for lid here works because Wharton buildings have distinct lid's
+                    context = {
+                        "booking_id": str(booking["booking_id"]),
+                        "gsr": GSRSerializer(GSR.objects.get(lid=booking["lid"])).data,
+                        "room_id": booking["rid"],
+                        "room_name": booking["room"],
+                        "start": booking["start"],
+                        "end": booking["end"],
+                    }
+                    wharton_bookings.append(context)
+        except APIError:
+            pass
+        return wharton_bookings
 
     def cancel_room(self, user, booking_id):
         """Cancels reservation given booking id"""
-        url = WHARTON_URL + user.username + "/reservations/" + booking_id + "/cancel"
+        wharton_booking = GSRBooking.objects.filter(booking_id=booking_id)
+        if wharton_booking.exists():
+            gsr_booking = wharton_booking.first()
+            gsr_booking.is_cancelled = True
+            gsr_booking.save()
+        url = f"{WHARTON_URL}{user.username}/reservations/{booking_id}/cancel"
         response = self.request("DELETE", url).json()
         if "detail" in response:
             raise APIError("Wharton: " + response["detail"])
@@ -197,14 +403,6 @@ class LibCalWrapper:
                 for room in response.json():
                     if room["id"] in ROOM_BLACKLIST:
                         continue
-                    # prepend protocol to urls
-                    if "image" in room and room["image"]:
-                        if not room["image"].startswith("http"):
-                            room["image"] = "https:" + room["image"]
-                    # convert html descriptions to text
-                    if "description" in room:
-                        description = room["description"].replace("\xa0", " ")
-                        room["description"] = BeautifulSoup(description, "html.parser").text.strip()
                     # remove extra fields
                     if "formid" in room:
                         del room["formid"]
@@ -228,7 +426,7 @@ class LibCalWrapper:
         """Books a room given the required information."""
 
         # turns parameters into valid json format, then books room
-        data = {
+        payload = {
             "start": start,
             "fname": user.first_name,
             "lname": user.last_name,
@@ -247,7 +445,7 @@ class LibCalWrapper:
             "q16804": "Yes",
         }
 
-        response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=data).json()
+        response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=payload).json()
 
         # corrects keys in response
         if "error" not in response:
@@ -263,6 +461,17 @@ class LibCalWrapper:
             raise APIError("LibCal: " + response["error"])
         return response
 
+    def get_reservations(self, user):
+        return GSRBookingSerializer(
+            GSRBooking.objects.filter(
+                user=user,
+                gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL),
+                end__gte=timezone.localtime(),
+                is_cancelled=False,
+            ),
+            many=True,
+        ).data
+
     def get_affiliation(self, email):
         """Gets school from email"""
         if "wharton" in email:
@@ -274,8 +483,14 @@ class LibCalWrapper:
         else:
             return "Other"
 
-    def cancel_room(self, booking_id):
+    def cancel_room(self, user, booking_id):
         """Cancels room"""
+        gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
+        if gsr_booking:
+            gsr_booking.is_cancelled = True
+            gsr_booking.save()
+        if user != gsr_booking.user:
+            raise APIError("Error: Unauthorized: This reservation was booked by someone else.")
         response = self.request("POST", f"{API_URL}/1.1/space/cancel/{booking_id}").json()
         if "error" in response[0]:
             raise APIError("LibCal: " + response[0]["error"])

@@ -1,0 +1,34 @@
+[
+    {
+        "cid": 4660, 
+        "name": "Van Pelt Library: Ground Floor", 
+        "formid": 906, 
+        "public": 1, 
+        "google": false, 
+        "items": [7225, 7231, 7226, 7227, 7228, 7229, 7230]
+    }, 
+    {
+        "cid": 1889, 
+        "name": "Van Pelt Library: 1st Floor (Weigle Information Commons)", 
+        "formid": 906, 
+        "public": 1, 
+        "google": false, 
+        "items": [7192, 7193, 7194, 7195, 7196, 7197, 7198, 7199, 7200, 7201, 7202, 7203, 7205, 7206, 7207, 7208, 7209, 7210, 7211, 7212, 7213]
+    }, 
+    {
+        "cid": 4659, 
+        "name": "Van Pelt Library: 3rd Floor", 
+        "formid": 906, 
+        "public": 1, 
+        "google": false, 
+        "items": [17606]
+    },
+    {
+        "cid": 1891, 
+        "name": "Van Pelt Library: 4th Floor", 
+        "formid": 906, 
+        "public": 1, 
+        "google": false, 
+        "items": []
+    }
+]
