@@ -34,18 +34,18 @@
     "no-else-return": 0,
     "global-require": 0,
     "camelcase": "off",
-    "no-param-reassign": 0
+    "no-param-reassign": 0,
+    "import/no-unresolved": 0
   },
   "settings": {
     "import/resolver": {
       "node": {
         "extensions": [".js", ".jsx", ".ts", ".tsx"]
       },
-      "typescript": {
-        "project": "."
-      },
+      "typescript": {},
       "alias": {
-        "map": [["@/*", "./*"]]
+        "map": [["@/*", "./*"]],
+        "extensions": [".js", ".jsx", ".ts", ".tsx"]
       }
     }
   }
