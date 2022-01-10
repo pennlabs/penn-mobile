@@ -11,7 +11,7 @@ const LandingPage = () => (
   <>
     <LandingPageNav />
     <Row>
-      <Col sm={12} md={8} lg={5}>
+      <Col sm={12} md={8} lg={6}>
         <Group margin="15vh 0 0 5vw">
           <Title>
             Welcome <br /> to Portal.
@@ -22,7 +22,7 @@ const LandingPage = () => (
           </Heading3>
         </Group>
       </Col>
-      <Col sm={12} md={12} lg={7}>
+      <Col sm={12} md={12} lg={6}>
         <DesktopWireframes />
         <MobileWireframes />
       </Col>
