@@ -18,7 +18,7 @@ export enum PageType {
 
 export enum Status {
   DRAFT = 'DRAFT',
-  REVISION = 'REVISION', // under revision
+  REVISION = 'REVISION',
   APPROVED = 'APPROVED',
   LIVE = 'LIVE',
   EXPIRED = 'EXPIRED',
@@ -46,6 +46,39 @@ export interface PostType extends ContentType {
   source: string // TODO: replace with club_code
   post_url: string
   image_url: string
+}
+
+export const initialPoll: PollType = {
+  question: '',
+  club_code: '',
+  start_date: null,
+  expire_date: null,
+  options: [
+    { id: 0, choice: '' },
+    { id: 1, choice: '' },
+  ],
+  club_comment: '',
+  status: Status.DRAFT,
+  target_populations: [],
+}
+
+export const initialPost: PostType = {
+  title: '',
+  subtitle: '',
+  source: '', // TODO: replace with club_code
+  post_url: '',
+  image_url:
+    'https://www.akc.org/wp-content/uploads/2017/11/Pembroke-Welsh-Corgi-standing-outdoors-in-the-fall.jpg', // TODO: remove corgi :(
+  start_date: null,
+  expire_date: null,
+  club_comment: '',
+  status: Status.DRAFT,
+  target_populations: [],
+}
+
+// typeguard to determine if content is PostType
+export function isPost(content: PostType | PollType): content is PostType {
+  return (content as PostType).title !== undefined
 }
 
 export type updateStateType = (newState: Object) => void

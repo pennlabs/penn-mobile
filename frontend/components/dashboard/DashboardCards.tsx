@@ -3,7 +3,6 @@ import Link from 'next/link'
 import s from 'styled-components'
 
 import { colors } from '@/components/styles/colors'
-import { PollType, PostType } from '@/utils/types'
 import { InlineText, Text } from '@/components/styles/Text'
 import { Icon } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
@@ -11,6 +10,7 @@ import {
   getStatusProperties,
   StatusProps,
 } from '@/components/dashboard/DashboardColumn'
+import { PollType, PostType } from '@/utils/types'
 
 const DashboardCardWrapper = ({
   href,
