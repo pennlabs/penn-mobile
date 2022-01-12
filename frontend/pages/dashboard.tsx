@@ -2,8 +2,10 @@ import type { GetServerSidePropsContext } from 'next'
 
 import Dashboard from '@/components/dashboard/Dashboard'
 import { AuthUserContext, withAuth } from '@/utils/auth'
-import { PollType, PostType, Status, User } from '@/utils/types'
+import { PollType, PostType, User } from '@/utils/types'
 import { doApiRequest } from '@/utils/fetch'
+import { Container } from '@/components/styles/Layout'
+import { setStatuses } from '@/utils/utils'
 
 interface DashboardPageProps {
   user: User
@@ -14,22 +16,11 @@ interface DashboardPageProps {
 const DashboardPage = ({ user, postList, pollList }: DashboardPageProps) => {
   return (
     <AuthUserContext.Provider value={{ user }}>
-      <Dashboard postList={postList} pollList={pollList} />
+      <Container>
+        <Dashboard postList={postList} pollList={pollList} />
+      </Container>
     </AuthUserContext.Provider>
   )
-}
-
-const setStatuses = (contentList: PostType[] | PollType[]) => {
-  return contentList.map((p: any) => {
-    if (new Date(p.expire_date) < new Date()) {
-      p.status = Status.EXPIRED
-      return p
-    }
-    if (p.status === Status.APPROVED && new Date(p.start_date) < new Date()) {
-      p.status = Status.LIVE
-    }
-    return p
-  })
 }
 
 export const getServerSidePropsInner = async (

@@ -1,6 +1,8 @@
 import s from 'styled-components'
 
 import { colors } from '@/components/styles/colors'
+import { PageType } from '@/utils/types'
+import { InlineText } from '@/components/styles/Text'
 
 interface iButtonProps {
   color: string
@@ -28,7 +30,8 @@ export const Toggle = s.div`
   display: inline-block;
   border-radius: 100px;
   background: ${colors.LIGHTER_GRAY};
-  padding: 5px;
+  padding: 6px;
+  height: 2.5rem;
 `
 
 export const ToggleOption = s.button<{ active: boolean }>`
@@ -37,7 +40,6 @@ export const ToggleOption = s.button<{ active: boolean }>`
     props.active ? colors.MEDIUM_BLUE : colors.LIGHTER_GRAY};
   color: ${(props) => props.active && 'white'};
   border-radius: 100px;
-  line-height: inherit;
   padding: 0.25rem 1rem;
   outline: none;
 
@@ -46,3 +48,30 @@ export const ToggleOption = s.button<{ active: boolean }>`
     opacity: 0.7;
   }
 `
+
+export const PostPollToggle = ({
+  activeOption,
+  setActiveOption,
+}: {
+  activeOption: PageType
+  setActiveOption: React.Dispatch<React.SetStateAction<PageType>>
+}) => (
+  <Toggle style={{ verticalAlign: 'middle' }}>
+    <ToggleOption
+      active={activeOption === PageType.POST}
+      onClick={() => setActiveOption(PageType.POST)}
+    >
+      <InlineText heading color="inherit">
+        Posts
+      </InlineText>
+    </ToggleOption>
+    <ToggleOption
+      active={activeOption === PageType.POLL}
+      onClick={() => setActiveOption(PageType.POLL)}
+    >
+      <InlineText heading color="inherit">
+        Polls
+      </InlineText>
+    </ToggleOption>
+  </Toggle>
+)

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import _ from 'lodash'
 
-import { Container, Row } from '@/components/styles/Layout'
+import { Row } from '@/components/styles/Layout'
 import { PageType, PollType, PostType, Status } from '@/utils/types'
 import EmptyDashboard from '@/components/dashboard/EmptyDashboard'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
@@ -54,13 +54,11 @@ const Dashboard = ({ postList, pollList }: DashboardProps) => {
 
   return (
     <>
-      <Container>
-        <DashboardHeader
-          activeOption={activeOption}
-          setActiveOption={setActiveOption}
-        />
-        <DashboardContent page={activeOption} />
-      </Container>
+      <DashboardHeader
+        activeOption={activeOption}
+        setActiveOption={setActiveOption}
+      />
+      <DashboardContent page={activeOption} />
     </>
   )
 }
