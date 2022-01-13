@@ -78,6 +78,7 @@ class Post(models.Model):
     created_date = models.DateTimeField(default=timezone.now)
     start_date = models.DateTimeField(default=timezone.now)
     expire_date = models.DateTimeField()
+    status = models.CharField(max_length=30, choices=STATUS_OPTIONS, default=STATUS_DRAFT)
     club_comment = models.CharField(max_length=255, null=True, blank=True)
     admin_comment = models.CharField(max_length=255, null=True, blank=True)
     target_populations = models.ManyToManyField(TargetPopulation, blank=True)
