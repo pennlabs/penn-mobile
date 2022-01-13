@@ -60,16 +60,25 @@ class PollVote(models.Model):
 
 
 class Post(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    source = models.CharField(max_length=255)
+    STATUS_DRAFT = "DRAFT"
+    STATUS_REVISION = "REVISION"
+    STATUS_APPROVED = "APPROVED"
+
+    STATUS_OPTIONS = (
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_REVISION, "Revision"),
+        (STATUS_APPROVED, "Approved"),
+    )
+
+    club_code = models.CharField(max_length=255, blank=True)
     title = models.CharField(max_length=255)
     subtitle = models.CharField(max_length=255)
     post_url = models.URLField(null=True)
     image_url = models.URLField(null=True)
-    target_populations = models.ManyToManyField(TargetPopulation, blank=True)
+    created_date = models.DateTimeField(default=timezone.now)
     start_date = models.DateTimeField(default=timezone.now)
     expire_date = models.DateTimeField()
-    approved = models.BooleanField(default=False)
-    created_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=30, choices=STATUS_OPTIONS, default=STATUS_DRAFT)
+    club_comment = models.CharField(max_length=255, null=True, blank=True)
     admin_comment = models.CharField(max_length=255, null=True, blank=True)
-    user_comment = models.CharField(max_length=255, null=True, blank=True)
+    target_populations = models.ManyToManyField(TargetPopulation, blank=True)

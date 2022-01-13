@@ -67,7 +67,7 @@ class PostOwnerPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         # only creator can edit
         if view.action in ["partial_update", "update", "destroy"]:
-            return request.user == obj.user
+            return obj.club_code in [x["club"]["code"] for x in get_user_clubs(request.user)]
         return True
 
     def has_permission(self, request, view):

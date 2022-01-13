@@ -233,11 +233,17 @@ class Posts(viewsets.ModelViewSet):
     Need to be the admin or the creator.
     """
 
-    serializer_class = PostSerializer
     permission_classes = [PostOwnerPermission | IsSuperUser]
+    serializer_class = PostSerializer
 
     def get_queryset(self):
-        return Post.objects.all()
+        return (
+            Post.objects.all()
+            if self.request.user.is_superuser
+            else Post.objects.filter(
+                club_code__in=[x["club"]["code"] for x in get_user_clubs(self.request.user)]
+            )
+        )
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
@@ -247,57 +253,22 @@ class Posts(viewsets.ModelViewSet):
         """
         posts = (
             Post.objects.filter(
-                Q(approved=True) | Q(admin_comment=None), expire_date__gte=timezone.localtime(),
+                Q(status=Post.STATUS_DRAFT) | Q(status=Post.STATUS_APPROVED),
+                expire_date__gte=timezone.localtime(),
             )
             if request.user.is_superuser
             else Post.objects.filter(
-                # Q(target_populations__in=get_user_populations(request.user)),
+                Q(target_populations__in=get_user_populations(request.user)),
+                status=Post.STATUS_APPROVED,
                 start_date__lte=timezone.localtime(),
                 expire_date__gte=timezone.localtime(),
-                approved=True,
             )
         )
-        return Response(
-            PostSerializer(posts.distinct().order_by("approved", "start_date"), many=True).data
-        )
+        return Response(PostSerializer(posts.distinct().order_by("expire_date"), many=True).data)
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
     def review(self, request):
         """Returns a list of all Posts that admins still need to approve of"""
         return Response(
-            PostSerializer(
-                Post.objects.filter(Q(admin_comment=None) | Q(admin_comment=""), approved=False),
-                many=True,
-            ).data
-        )
-
-    @action(detail=False, methods=["get"])
-    def status(self, request):
-        # awaiting approval: no admin comment, not approved
-        posts_awaiting_approval = PostSerializer(
-            Post.objects.filter(
-                (Q(admin_comment=None) | Q(admin_comment="")), user=request.user, approved=False,
-            ),
-            many=True,
-        ).data
-
-        # revision: have admin comment, not approved
-        posts_revision = PostSerializer(
-            Post.objects.filter(
-                ~Q(admin_comment=None), ~Q(admin_comment=""), user=request.user, approved=False
-            ),
-            many=True,
-        ).data
-
-        # approved
-        posts_approved = PostSerializer(
-            Post.objects.filter(user=request.user, approved=True), many=True
-        ).data
-
-        return Response(
-            {
-                "awaiting_approval": posts_awaiting_approval,
-                "revision": posts_revision,
-                "approved": posts_approved,
-            }
+            PostSerializer(Post.objects.filter(status=Poll.STATUS_DRAFT), many=True,).data
         )

@@ -30,6 +30,7 @@ class PollSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         club_code = validated_data["club_code"]
+        # ensures user is part of club
         if club_code not in [
             x["club"]["code"] for x in get_user_clubs(self.context["request"].user)
         ]:
@@ -175,24 +176,33 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = (
             "id",
-            "source",
+            "club_code",
             "title",
             "subtitle",
             "post_url",
             "image_url",
-            "target_populations",
+            "created_date",
             "start_date",
             "expire_date",
-            "approved",
-            "created_at",
+            "club_comment",
+            "admin_comment",
+            "status",
+            "target_populations",
         )
+        read_only_fields = ("id", "created_date")
 
     def create(self, validated_data):
-        # adds the creator to the post
-        validated_data["user"] = self.context["request"].user
+        club_code = validated_data["club_code"]
+        # ensures user is part of club
+        if club_code not in [
+            x["club"]["code"] for x in get_user_clubs(self.context["request"].user)
+        ]:
+            raise serializers.ValidationError(
+                detail={"detail": "You do not access to create a Poll under this club."}
+            )
         # ensuring user cannot create an admin comment upon creation
-        validated_data["approved"] = False
         validated_data["admin_comment"] = None
+        validated_data["status"] = Post.STATUS_DRAFT
         if len(validated_data["target_populations"]) == 0:
             validated_data["target_populations"] = list(TargetPopulation.objects.all())
         return super().create(validated_data)
@@ -200,7 +210,5 @@ class PostSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # if post is updated, then approved should be false
         if not self.context["request"].user.is_superuser:
-            validated_data["approved"] = False
-        if "approved" in validated_data and validated_data["approved"]:
-            instance.admin_comment = None
+            validated_data["status"] = Post.STATUS_DRAFT
         return super().update(instance, validated_data)
