@@ -19,6 +19,10 @@ def mock_get_user_clubs(*args, **kwargs):
         return json.load(data)
 
 
+def mock_get_no_clubs(*args, **kwargs):
+    return []
+
+
 def mock_get_user_info(*args, **kwargs):
     with open("tests/portal/get_user_info.json") as data:
         return json.load(data)
@@ -74,6 +78,23 @@ class TestPosts(TestCase):
         self.assertEqual(2, Post.objects.all().count())
         self.assertEqual("pennlabs", res_json["club_code"])
         self.assertEqual(None, Post.objects.get(id=res_json["id"]).admin_comment)
+
+    @mock.patch("portal.serializers.get_user_clubs", mock_get_no_clubs)
+    def test_fail_post(self):
+        # Creates an unapproved post
+        payload = {
+            "club_code": "pennlabs",
+            "title": "Test Title 2",
+            "subtitle": "Test Subtitle 2",
+            "target_populations": [self.target_id],
+            "expire_date": timezone.localtime() + datetime.timedelta(days=1),
+            "created_at": timezone.localtime(),
+            "admin_comment": "comment 2",
+        }
+        response = self.client.post("/portal/posts/", payload)
+        res_json = json.loads(response.content)
+        # should not create post under pennlabs if not aprt of pennlabs
+        self.assertEqual("You do not access to create a Poll under this club.", res_json["detail"])
 
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
