@@ -33,14 +33,21 @@ export const DashboardStatusColumn = ({
   status: Status
   cardList: (PostType | PollType)[]
 }) => {
+  const { label } = getStatusProperties(status)
+
   return (
     <Col sm={12} md={4} lg={4}>
       <StatusColumnWrapper>
         <StatusHeader>
           <Text heading bold size="18px">
-            {getStatusProperties(status).label}
+            {label}
           </Text>
         </StatusHeader>
+        {cardList.length === 0 && (
+          <Text heading style={{ textAlign: 'center', padding: '4rem 0' }}>
+            No posts are {label.toLowerCase()}.
+          </Text>
+        )}
         {cardList.map((content) =>
           isPost(content) ? (
             <PostCard post={content} key={content.id} />
@@ -63,7 +70,7 @@ export const getStatusProperties = (status: Status): StatusProps => {
       }
     case Status.REVISION:
       return {
-        label: 'Revision',
+        label: 'Under Revision',
         color: colors.ORANGE,
         icon: 'tool',
       }
