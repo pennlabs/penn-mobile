@@ -97,7 +97,14 @@ const AnalyticsCardContent = ({
   return (
     <AnalyticsBodyWrapper>
       {error}
-      {data && !isLoading && <>test</>}
+      {data.poll_statistics.length > 0 && !isLoading && (
+        <>
+          <Text>Poll Options</Text>
+          {data.poll_statistics.map((opt: any) => (
+            <p key={opt.option}>{opt.option}</p>
+          ))}
+        </>
+      )}
     </AnalyticsBodyWrapper>
   )
 }

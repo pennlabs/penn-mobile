@@ -2,8 +2,23 @@ import { useEffect, useState } from 'react'
 
 import { doApiRequest } from '@/utils/fetch'
 
+interface OptionStatsType {
+  breakdown: { [key: string]: number }
+  option: string
+}
+
+interface AnalyticsDataType {
+  poll_statistics: OptionStatsType[]
+  time_series: number[]
+}
+
+const initData = {
+  poll_statistics: [],
+  time_series: [],
+}
+
 const useAnalytics = (id: number | undefined) => {
-  const [data, setData] = useState({})
+  const [data, setData] = useState<AnalyticsDataType>(initData)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -17,7 +32,7 @@ const useAnalytics = (id: number | undefined) => {
 
     // clean up after component unmounts
     return () => {
-      setData({})
+      setData(initData)
       setError(null)
     }
   }, [id])
