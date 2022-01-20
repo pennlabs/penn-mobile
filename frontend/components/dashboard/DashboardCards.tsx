@@ -34,6 +34,7 @@ const DashboardCardHeaderWrapper = s.div<{ color: string }>`
   display: flex;
   justify-content: space-between;
   box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.25);
+  line-height: 2rem;
 `
 
 const DashboardCardBody = s.div`

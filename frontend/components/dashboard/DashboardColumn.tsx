@@ -90,7 +90,7 @@ export const getStatusProperties = (status: Status): StatusProps => {
       return {
         label: 'Expired',
         color: colors.GRAY,
-        icon: 'check-circle', // TODO: expired icon?
+        icon: 'x',
       }
     default:
       return {
