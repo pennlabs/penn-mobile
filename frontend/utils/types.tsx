@@ -29,13 +29,13 @@ export interface ContentType {
   id?: number
   start_date: Date | null
   expire_date: Date | null
+  club_code: string
   club_comment: string
   status: Status
   target_populations: number[]
 }
 
 export interface PollType extends ContentType {
-  club_code: string
   question: string
   options: { id: number; choice: string }[]
 }
@@ -43,7 +43,6 @@ export interface PollType extends ContentType {
 export interface PostType extends ContentType {
   title: string
   subtitle: string
-  source: string // TODO: replace with club_code
   post_url: string
   image_url: string
 }
@@ -65,7 +64,7 @@ export const initialPoll: PollType = {
 export const initialPost: PostType = {
   title: '',
   subtitle: '',
-  source: '', // TODO: replace with club_code
+  club_code: '',
   post_url: '',
   image_url:
     'https://www.akc.org/wp-content/uploads/2017/11/Pembroke-Welsh-Corgi-standing-outdoors-in-the-fall.jpg', // TODO: remove corgi :(

@@ -68,7 +68,7 @@ export const PostCard = ({ post }: { post: PostType }) => {
         <div style={{ padding: '0.5rem' }}>
           <Group horizontal justifyContent="space-between">
             <InlineText size="10px" bold>
-              {post.source}
+              {post.club_code}
             </InlineText>
             <InlineText size="10px" bold>
               {post.start_date &&

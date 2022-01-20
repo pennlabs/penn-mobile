@@ -9,6 +9,7 @@ import { FormField } from '@/components/styles/Form'
 import { Group } from '@/components/styles/Layout'
 import { DatesCard, NotesCard } from '@/components/form/SharedCards'
 import FiltersCard, { FilterType } from '@/components/form/Filters'
+import ClubSelect from '@/components/form/ClubSelect'
 
 interface PostFormProps {
   state: PostType
@@ -42,13 +43,10 @@ const PostForm = ({ state, updateState, filters }: PostFormProps) => {
           updateState={updateState}
           textArea={true}
         />
-        <FormField
-          label="Organization"
-          name="source"
-          value={state.source}
-          placeholder="e.g. Penn Labs"
-          updateState={updateState}
-        />
+
+        <Text bold>Club</Text>
+        <ClubSelect updateState={updateState} clubCode={state.club_code} />
+
         <FormField
           label="Link"
           name="post_url"
