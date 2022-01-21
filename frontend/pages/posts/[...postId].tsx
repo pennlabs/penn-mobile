@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 
 import { AuthUserContext, withAuth } from '@/utils/auth'
 import { doApiRequest } from '@/utils/fetch'
-import { PageType, PostType, Status, User } from '@/utils/types'
+import { initialPost, PageType, PostType, User } from '@/utils/types'
 import { Col, Container, Group, Row } from '@/components/styles/Layout'
 import { Button } from '@/components/styles/Buttons'
 import { Subtitle } from '@/components/styles/Text'
@@ -28,21 +28,7 @@ const PostPage = ({
   post,
   filters,
 }: iPostPageProps & { user: User }) => {
-  const [state, setState] = useState<PostType>(
-    post || {
-      title: '',
-      subtitle: '',
-      source: '', // TODO: replace with club_code
-      post_url: '',
-      image_url:
-        'https://www.akc.org/wp-content/uploads/2017/11/Pembroke-Welsh-Corgi-standing-outdoors-in-the-fall.jpg',
-      start_date: null,
-      expire_date: null,
-      club_comment: '',
-      status: Status.DRAFT,
-      target_populations: [],
-    }
-  )
+  const [state, setState] = useState<PostType>(post || initialPost)
 
   const router = useRouter()
 

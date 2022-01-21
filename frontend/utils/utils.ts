@@ -1,27 +1,27 @@
-/**
- * converts objects with snake_case keys to camelCase key
- * @param obj object with snake_case keys
- * @returns copy of object with camelCase keys
- */
-export const convertSnakeCase = (obj: { [key: string]: string }) => {
-  const newObj: { [key: string]: string } = {}
-  Object.keys(obj).forEach((key) => {
-    const newKey = key.replace(/(_\w)/g, (m) => m[1].toUpperCase())
-    newObj[newKey] = obj[key]
-  })
-  return newObj
-}
+import { PostType, PollType, Status } from '@/utils/types'
 
-/**
- * converts objects with camelCase keys to snake_case key
- * @param obj object with camelCase keys
- * @returns copy of object with snake_case keys
- */
-export const convertCamelCase = (obj: any) => {
-  const newObj: { [key: string]: string } = {}
-  Object.keys(obj).forEach((key) => {
-    const newKey = key.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`)
-    newObj[newKey] = obj[key]
+// sets live and expired statuses. returns an array of posts/polls sorted by start date
+// with live posts first
+export const setStatuses = (contentList: PostType[] | PollType[]) => {
+  const contentWithStatus = contentList.map((p: any) => {
+    if (new Date(p.expire_date) < new Date()) {
+      p.status = Status.EXPIRED
+      return p
+    }
+    if (p.status === Status.APPROVED && new Date(p.start_date) < new Date()) {
+      p.status = Status.LIVE
+    }
+    return p
   })
-  return newObj
+
+  const sortedByDate = contentWithStatus.sort((a, b) => {
+    if (new Date(a.start_date) < new Date(b.start_date)) {
+      return 1
+    } else if (new Date(a.start_date) > new Date(b.start_date)) {
+      return -1
+    }
+    return 0
+  })
+
+  return sortedByDate.sort((a, _) => (a.status === Status.LIVE ? -1 : 1))
 }

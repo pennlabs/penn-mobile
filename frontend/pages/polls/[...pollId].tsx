@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import { AuthUserContext, withAuth } from '@/utils/auth'
 import { doApiRequest } from '@/utils/fetch'
 import { DASHBOARD_ROUTE } from '@/utils/routes'
-import { PageType, PollType, Status, User } from '@/utils/types'
+import { initialPoll, PageType, PollType, User } from '@/utils/types'
 import { Col, Container, Group, Row } from '@/components/styles/Layout'
 import { Button } from '@/components/styles/Buttons'
 import { Subtitle } from '@/components/styles/Text'
@@ -30,21 +30,7 @@ const PollPage = ({
   prevOptionIds,
   filters,
 }: iPollPageProps & { user: User }) => {
-  const [state, setState] = useState<PollType>(
-    poll || {
-      question: '',
-      club_code: '',
-      start_date: null,
-      expire_date: null,
-      options: [
-        { id: 0, choice: '' },
-        { id: 1, choice: '' },
-      ],
-      club_comment: '',
-      status: Status.DRAFT,
-      target_populations: [],
-    }
-  )
+  const [state, setState] = useState<PollType>(poll || initialPoll)
 
   const router = useRouter()
 

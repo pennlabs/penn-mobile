@@ -106,7 +106,7 @@ export const PostPhonePreview = ({ state }: { state: PostType }) => (
       </div>
       <div style={{ padding: '0.5rem' }}>
         <Text size="12px" color={colors.LIGHT_GRAY} bold>
-          {state.source.toUpperCase()}
+          {state.club_code.toUpperCase()}
         </Text>
         <Text bold>{state.title}</Text>
         <Text size="12px" color={colors.LIGHT_GRAY} bold>

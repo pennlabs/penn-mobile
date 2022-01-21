@@ -17,6 +17,7 @@ interface IRow {
   overflowY?: string
   margin?: string
   justifyContent?: string
+  alignItems?: string
 }
 
 export const Row = s.div<IRow>(
@@ -25,6 +26,7 @@ export const Row = s.div<IRow>(
     overflowY,
     margin,
     justifyContent,
+    alignItems,
   }): FlattenSimpleInterpolation => css`
     display: flex;
     flex-direction: row;
@@ -32,6 +34,7 @@ export const Row = s.div<IRow>(
     flex-wrap: wrap;
     max-height: ${maxHeight || 'none'};
     overflow-y: ${overflowY || 'hidden'};
+    ${alignItems && `align-items: ${alignItems}`};
 
     ${margin && `margin: ${margin};`}
 

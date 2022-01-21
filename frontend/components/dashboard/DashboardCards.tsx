@@ -3,7 +3,6 @@ import Link from 'next/link'
 import s from 'styled-components'
 
 import { colors } from '@/components/styles/colors'
-import { PollType, PostType } from '@/utils/types'
 import { InlineText, Text } from '@/components/styles/Text'
 import { Icon } from '@/components/styles/Icons'
 import { Group } from '@/components/styles/Layout'
@@ -11,6 +10,7 @@ import {
   getStatusProperties,
   StatusProps,
 } from '@/components/dashboard/DashboardColumn'
+import { PollType, PostType } from '@/utils/types'
 
 const DashboardCardWrapper = ({
   href,
@@ -34,6 +34,7 @@ const DashboardCardHeaderWrapper = s.div<{ color: string }>`
   display: flex;
   justify-content: space-between;
   box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.25);
+  line-height: 2rem;
 `
 
 const DashboardCardBody = s.div`
@@ -68,7 +69,7 @@ export const PostCard = ({ post }: { post: PostType }) => {
         <div style={{ padding: '0.5rem' }}>
           <Group horizontal justifyContent="space-between">
             <InlineText size="10px" bold>
-              {post.source}
+              {post.club_code}
             </InlineText>
             <InlineText size="10px" bold>
               {post.start_date &&

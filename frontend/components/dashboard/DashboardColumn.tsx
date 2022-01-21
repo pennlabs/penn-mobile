@@ -1,8 +1,8 @@
-import React, { ReactNode } from 'react'
+import React from 'react'
 import s from 'styled-components'
 
 import { Col } from '@/components/styles/Layout'
-import { PollType, PostType, Status } from '@/utils/types'
+import { isPost, PollType, PostType, Status } from '@/utils/types'
 import { colors } from '@/components/styles/colors'
 import { Text } from '@/components/styles/Text'
 import { PollCard, PostCard } from '@/components/dashboard/DashboardCards'
@@ -26,56 +26,39 @@ const StatusHeader = s.div`
   padding: 0.25rem 1rem;
 `
 
-export const PostStatusColumn = ({
+export const DashboardStatusColumn = ({
   status,
   cardList,
 }: {
   status: Status
-  cardList: PostType[]
+  cardList: (PostType | PollType)[]
 }) => {
+  const { label } = getStatusProperties(status)
+
   return (
-    <StatusColumn label={getStatusProperties(status).label}>
-      {cardList.map((content) => (
-        <PostCard post={content} />
-      ))}
-    </StatusColumn>
+    <Col sm={12} md={4} lg={4}>
+      <StatusColumnWrapper>
+        <StatusHeader>
+          <Text heading bold size="18px">
+            {label}
+          </Text>
+        </StatusHeader>
+        {cardList.length === 0 && (
+          <Text heading style={{ textAlign: 'center', padding: '4rem 0' }}>
+            No posts are {label.toLowerCase()}.
+          </Text>
+        )}
+        {cardList.map((content) =>
+          isPost(content) ? (
+            <PostCard post={content} key={content.id} />
+          ) : (
+            <PollCard poll={content} key={content.id} />
+          )
+        )}
+      </StatusColumnWrapper>
+    </Col>
   )
 }
-
-export const PollStatusColumn = ({
-  status,
-  cardList,
-}: {
-  status: Status
-  cardList: PollType[]
-}) => {
-  return (
-    <StatusColumn label={getStatusProperties(status).label}>
-      {cardList.map((content) => (
-        <PollCard poll={content} />
-      ))}
-    </StatusColumn>
-  )
-}
-
-const StatusColumn = ({
-  label,
-  children,
-}: {
-  label: string
-  children: ReactNode
-}) => (
-  <Col sm={12} md={4} lg={4}>
-    <StatusColumnWrapper>
-      <StatusHeader>
-        <Text heading bold size="18px">
-          {label}
-        </Text>
-      </StatusHeader>
-      {children}
-    </StatusColumnWrapper>
-  </Col>
-)
 
 export const getStatusProperties = (status: Status): StatusProps => {
   switch (status) {
@@ -87,7 +70,7 @@ export const getStatusProperties = (status: Status): StatusProps => {
       }
     case Status.REVISION:
       return {
-        label: 'Revision',
+        label: 'Under Revision',
         color: colors.ORANGE,
         icon: 'tool',
       }
@@ -107,7 +90,7 @@ export const getStatusProperties = (status: Status): StatusProps => {
       return {
         label: 'Expired',
         color: colors.GRAY,
-        icon: 'check-circle', // TODO: expired icon?
+        icon: 'x',
       }
     default:
       return {
