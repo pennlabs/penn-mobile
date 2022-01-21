@@ -173,7 +173,7 @@ class BookingWrapper:
                     end = datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
                     total_minutes += int((end.timestamp() - start.timestamp()) / 60)
             # 90 minutes at any given time
-            return 90 - total_minutes >= duration
+            return (90 - total_minutes) >= duration
         else:
             lc_start = make_aware(
                 datetime.datetime.combine(start.date(), datetime.datetime.min.time())
@@ -185,6 +185,7 @@ class BookingWrapper:
                 start__gte=lc_start,
                 end__lte=lc_end,
                 is_cancelled=False,
+                user=user,
             )
             total_minutes = 0
             for reservation in reservations:
@@ -193,7 +194,7 @@ class BookingWrapper:
                     (reservation.end.timestamp() - reservation.start.timestamp()) / 60
                 )
             # 120 minutes per day
-            return 120 - total_minutes >= duration
+            return (120 - total_minutes) >= duration
 
 
 class WhartonLibWrapper:
