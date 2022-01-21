@@ -16,3 +16,6 @@ class Event(models.Model):
 class HomePageOrder(models.Model):
     cell = models.CharField(max_length=255)
     rank = models.IntegerField()
+
+    def __str__(self):
+        return self.cell

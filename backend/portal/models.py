@@ -21,6 +21,9 @@ class TargetPopulation(models.Model):
     kind = models.CharField(max_length=10, choices=KIND_OPTIONS, default=KIND_SCHOOL)
     population = models.CharField(max_length=255)
 
+    def __str__(self):
+        return self.population
+
 
 class Poll(models.Model):
     STATUS_DRAFT = "DRAFT"
@@ -44,11 +47,17 @@ class Poll(models.Model):
     admin_comment = models.CharField(max_length=255, null=True, blank=True)
     target_populations = models.ManyToManyField(TargetPopulation, blank=True)
 
+    def __str__(self):
+        return f"{self.id} - {self.club_code} - {self.question}"
+
 
 class PollOption(models.Model):
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
     choice = models.CharField(max_length=255)
     vote_count = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.poll.id} - Option - {self.choice}"
 
 
 class PollVote(models.Model):
@@ -82,3 +91,6 @@ class Post(models.Model):
     club_comment = models.CharField(max_length=255, null=True, blank=True)
     admin_comment = models.CharField(max_length=255, null=True, blank=True)
     target_populations = models.ManyToManyField(TargetPopulation, blank=True)
+
+    def __str__(self):
+        return f"{self.id} - {self.club_code} - {self.title}"
