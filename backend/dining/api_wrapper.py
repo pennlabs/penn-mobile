@@ -4,6 +4,8 @@ import requests
 from django.conf import settings
 from requests.exceptions import ReadTimeout
 
+from dining.models import Venue
+
 
 V2_BASE_URL = "https://esb.isc-seo.upenn.edu/8091/open_data/dining/v2/?service="
 
@@ -42,6 +44,10 @@ def dining_request(url):
     Makes GET request to Penn Dining API and returns the response
     """
 
+    def sortByStart(elem):
+        print(elem)
+        return elem["open"]
+
     try:
         response = requests.get(url, params=None, headers=headers(), timeout=30)
     except ReadTimeout:
@@ -59,6 +65,23 @@ def dining_request(url):
     if error_text:
         raise APIError(error_text)
 
+    venues = response["result_data"]["document"]["venue"]
+
+    # adds dining hall image to associated dining hall
+    for venue in venues:
+        if Venue.objects.filter(venue_id=str(venue["id"])).exists():
+            image_url = Venue.objects.get(venue_id=str(venue["id"])).image_url
+        else:
+            image_url = None
+        venue["imageURL"] = image_url
+
+        if "dateHours" in venue:
+            meals = venue["dateHours"]
+            for i in range(len(meals)):
+                print(meals[i])
+                if not isinstance(meals[i]["meal"], list):
+                    meals[i]["meal"] = [meals[i]["meal"]]
+                meals[i]["meal"].sort(key=lambda x: x["open"])
     return response
 
 

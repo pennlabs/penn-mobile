@@ -34,16 +34,6 @@ class Venues(APIView):
         except APIError as e:
             return Response({"error": str(e)}, status=400)
 
-        venues = response["document"]["venue"]
-
-        # adds dining hall image to associated dining hall
-        for venue in venues:
-            if Venue.objects.filter(venue_id=str(venue["id"])).exists():
-                image_url = Venue.objects.get(venue_id=str(venue["id"])).image_url
-            else:
-                image_url = None
-            venue["imageURL"] = image_url
-
         return Response(response)
 
 
