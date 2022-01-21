@@ -31,11 +31,8 @@ class TestCalender(TestCase):
     def test_response(self):
         response = self.client.get(reverse("calendar"))
         res_json = json.loads(response.content)
-        self.assertIn("calendar", res_json)
-        self.assertEqual(len(res_json), 1)
 
-        calendar = res_json["calendar"]
-        for event in calendar:
+        for event in res_json:
             self.assertEqual(len(event), 2)
             self.assertIn("event", event)
             self.assertIn("date", event)

@@ -137,7 +137,7 @@ class Calendar(APIView):
         return calendar
 
     def get(self, request):
-        return Response({"calendar": self.get_calendar()})
+        return Response(self.get_calendar())
 
 
 class Events(generics.ListAPIView):
