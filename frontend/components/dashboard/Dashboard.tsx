@@ -1,20 +1,28 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import _ from 'lodash'
 
+import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { Row } from '@/components/styles/Layout'
 import { PageType, PollType, PostType, Status } from '@/utils/types'
 import EmptyDashboard from '@/components/dashboard/EmptyDashboard'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { DashboardStatusColumn } from '@/components/dashboard/DashboardColumn'
 import { Heading3 } from '@/components/styles/Text'
-
-interface DashboardProps {
-  postList: PostType[]
-  pollList: PollType[]
-}
+import { SuccessMessage } from '@/components/styles/StatusMessage'
+import { DashboardProps } from '@/pages/dashboard'
 
 const Dashboard = ({ postList, pollList }: DashboardProps) => {
   const [activeOption, setActiveOption] = useState<PageType>(PageType.POST)
+  const [success, setSuccess] = useLocalStorage<string | null>('success', null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(success)
+
+  // clear success message from local storage
+  useEffect(() => {
+    if (success) {
+      setSuccessMsg(success)
+      setSuccess(null)
+    }
+  }, [success, setSuccess])
 
   const DashboardContent = ({ page }: { page: PageType }) => {
     const activeList: (PollType | PostType)[] =
@@ -54,6 +62,7 @@ const Dashboard = ({ postList, pollList }: DashboardProps) => {
 
   return (
     <>
+      {successMsg && <SuccessMessage msg={successMsg} />}
       <DashboardHeader
         activeOption={activeOption}
         setActiveOption={setActiveOption}

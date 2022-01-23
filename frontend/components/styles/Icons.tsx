@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faCircle,
-  faPlus,
   faTimes,
   faInfoCircle,
   faArrowCircleRight,
@@ -15,11 +14,15 @@ import { colors } from '@/components/styles/colors'
  * renders icon svg from public/icons as a component
  * @param {string} name icon filename
  */
-export const Icon = ({ name, margin }: { name: string; margin?: string }) => {
+export const Icon = ({
+  name,
+  margin,
+  color,
+}: { name: string } & IIconProps) => {
   const IconSvg = dynamic(() => import(`@/public/icons/${name}.svg`))
 
   return (
-    <IconWrapper margin={margin}>
+    <IconWrapper margin={margin} color={color}>
       <IconSvg />
     </IconWrapper>
   )
@@ -32,7 +35,10 @@ interface IIconProps {
 
 const IconWrapper = s.span<IIconProps>`
   margin: ${(props) => props.margin || '0'};
-  color: ${(props) => props.color || colors.MEDIUM_BLUE};
+  color: ${(props) => props.color || colors.DARK_GRAY};
+  stroke: ${(props) => props.color || colors.DARK_GRAY};
+  display: inline-flex;
+  vertical-align: middle;
 `
 
 export const IconCircle = ({ color }: { color?: string }) => (
@@ -45,11 +51,7 @@ export const InfoSpan = ({ infoText }: { infoText: string }) => (
   <IconWrapper
     margin="0 0 0 1rem"
     color={colors.GRAY}
-    style={{
-      fontSize: '0.75rem',
-      lineHeight: '1.25rem',
-      verticalAlign: 'middle',
-    }}
+    style={{ fontSize: '0.75rem' }}
   >
     <FontAwesomeIcon
       icon={faInfoCircle}
@@ -57,12 +59,6 @@ export const InfoSpan = ({ infoText }: { infoText: string }) => (
       style={{ marginRight: '0.5rem' }}
     />
     {infoText || ''}
-  </IconWrapper>
-)
-
-export const IconPlus = ({ margin }: { margin: string }) => (
-  <IconWrapper color={colors.WHITE} margin={margin}>
-    <FontAwesomeIcon icon={faPlus} size="sm" />
   </IconWrapper>
 )
 

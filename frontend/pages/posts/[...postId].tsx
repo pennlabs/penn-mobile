@@ -15,6 +15,8 @@ import { PostPhonePreview } from '@/components/form/Preview'
 import { DASHBOARD_ROUTE } from '@/utils/routes'
 import { CreateContentToggle } from '@/components/form/SharedCards'
 import { FilterType } from '@/components/form/Filters'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { ErrorMessage } from '@/components/styles/StatusMessage'
 
 interface iPostPageProps {
   createMode: boolean // true if creating a post, false if editing an existing post
@@ -29,6 +31,9 @@ const PostPage = ({
   filters,
 }: iPostPageProps & { user: User }) => {
   const [state, setState] = useState<PostType>(post || initialPost)
+  // success message to display on dashboard if successfully created a post
+  const [, setSuccess] = useLocalStorage<string | null>('success', null)
+  const [error, setError] = useState<string | null>(null)
 
   const router = useRouter()
 
@@ -36,25 +41,46 @@ const PostPage = ({
     setState((currentState) => ({ ...currentState, ...newState }))
   }, [])
 
-  const onSubmit = () => {
-    doApiRequest('/api/portal/posts/', {
+  const onSubmit = async () => {
+    const res = await doApiRequest('/api/portal/posts/', {
       method: 'POST',
       body: state,
-    }).then(() => router.push(DASHBOARD_ROUTE)) // redirect to dashboard after submitting
+    })
+    if (res.ok) {
+      // redirect to dashboard after submitting with success message
+      setSuccess('Post successfully submitted!')
+      router.push(DASHBOARD_ROUTE)
+    } else {
+      const errorMsg = await res.json()
+      setError(`Error submitting post: ${JSON.stringify(errorMsg)}`)
+    }
   }
 
-  const onDelete = () => {
-    doApiRequest(`/api/portal/posts/${state.id}`, {
+  const onDelete = async () => {
+    const res = await doApiRequest(`/api/portal/posts/${state.id}`, {
       method: 'DELETE',
     })
-    router.push(DASHBOARD_ROUTE)
+    if (res.ok) {
+      setSuccess('Post successfully deleted!')
+      router.push(DASHBOARD_ROUTE)
+    } else {
+      const errorMsg = await res.json()
+      setError(`Error deleting post: ${JSON.stringify(errorMsg)}`)
+    }
   }
 
-  const onSave = () => {
-    doApiRequest(`/api/portal/posts/${state.id}/`, {
+  const onSave = async () => {
+    const res = await doApiRequest(`/api/portal/posts/${state.id}/`, {
       method: 'PATCH',
       body: state,
     })
+    if (res.ok) {
+      setSuccess('Post successfully updated!')
+      router.push(DASHBOARD_ROUTE)
+    } else {
+      const errorMsg = await res.json()
+      setError(`Error updating post: ${JSON.stringify(errorMsg)}`)
+    }
   }
 
   return (
@@ -62,6 +88,7 @@ const PostPage = ({
       <Container>
         <Row>
           <Col sm={12} md={12} lg={7} padding="0.5rem">
+            {error && <ErrorMessage msg={error} />}
             <CreateContentToggle activeOption={PageType.POST} />
             <Group
               horizontal

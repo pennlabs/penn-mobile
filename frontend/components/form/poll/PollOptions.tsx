@@ -3,7 +3,7 @@ import React from 'react'
 import { PollType, updateStateType } from '@/utils/types'
 import { Group } from '@/components/styles/Layout'
 import { FormField } from '@/components/styles/Form'
-import { IconPlus, IconTimes } from '@/components/styles/Icons'
+import { IconTimes } from '@/components/styles/Icons'
 import { Button } from '@/components/styles/Buttons'
 import { colors } from '@/components/styles/colors'
 
@@ -82,8 +82,7 @@ const PollOptions = ({ state, updateState }: iPollOptionsProps) => {
         </Group>
       ))}
       <Button onClick={addPollOption} color={colors.MEDIUM_BLUE}>
-        <IconPlus margin="0 0.5rem 0 0" />
-        Add Option
+        Add Option +
       </Button>
     </>
   )

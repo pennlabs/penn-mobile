@@ -7,13 +7,16 @@ import { doApiRequest } from '@/utils/fetch'
 import { Container } from '@/components/styles/Layout'
 import { setStatuses } from '@/utils/utils'
 
-interface DashboardPageProps {
-  user: User
+export interface DashboardProps {
   postList: PostType[]
   pollList: PollType[]
 }
 
-const DashboardPage = ({ user, postList, pollList }: DashboardPageProps) => {
+const DashboardPage = ({
+  user,
+  postList,
+  pollList,
+}: { user: User } & DashboardProps) => {
   return (
     <AuthUserContext.Provider value={{ user }}>
       <Container>
@@ -25,9 +28,7 @@ const DashboardPage = ({ user, postList, pollList }: DashboardPageProps) => {
 
 export const getServerSidePropsInner = async (
   context: GetServerSidePropsContext
-): Promise<{
-  props: { postList: PostType[]; pollList: PollType[] }
-}> => {
+): Promise<{ props: DashboardProps }> => {
   const postRes = await doApiRequest('/api/portal/posts/', {
     headers: context.req ? { cookie: context.req.headers.cookie } : undefined,
   })
