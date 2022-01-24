@@ -9,6 +9,9 @@ import {
   faArrowCircleRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { colors } from '@/components/styles/colors'
+import Dashboard from '@/public/icons/dashboard.svg'
+import Analytics from '@/public/icons/analytics.svg'
+import Settings from '@/public/icons/settings.svg'
 
 /**
  * renders icon svg from public/icons as a component
@@ -19,6 +22,28 @@ export const Icon = ({
   margin,
   color,
 }: { name: string } & IIconProps) => {
+  // icons to load statically to prevent flickering
+  switch (name) {
+    case 'dashboard':
+      return (
+        <IconWrapper margin={margin} color={color}>
+          <Dashboard />
+        </IconWrapper>
+      )
+    case 'analytics':
+      return (
+        <IconWrapper margin={margin} color={color}>
+          <Analytics />
+        </IconWrapper>
+      )
+    case 'settings':
+      return (
+        <IconWrapper margin={margin} color={color}>
+          <Settings />
+        </IconWrapper>
+      )
+  }
+
   const IconSvg = dynamic(() => import(`@/public/icons/${name}.svg`))
 
   return (
