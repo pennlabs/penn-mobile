@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import _ from 'lodash'
 
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { Row } from '@/components/styles/Layout'
@@ -49,7 +48,7 @@ const Dashboard = ({ postList, pollList }: DashboardProps) => {
             )}
           />
         </Row>
-        <Heading3>Past {`${_.startCase(_.toLower(activeOption))}s`}</Heading3>
+        <Heading3>Past {`${activeOption}s`}</Heading3>
         <Row>
           <DashboardStatusColumn
             status={Status.EXPIRED}
