@@ -37,6 +37,13 @@ from portal.serializers import (
 User = get_user_model()
 
 
+class UserInfo(APIView):
+    """Returns User information"""
+
+    def get(self, request):
+        return Response({"user": get_user_info(request.user)})
+
+
 class UserClubs(APIView):
     """Returns list of clubs a User can post on the behalf of"""
 
@@ -46,7 +53,7 @@ class UserClubs(APIView):
         club_data = []
         for club in get_user_clubs(request.user):
             club_data.append(get_club_info(request.user, club["club"]["code"]))
-        return Response({"user": get_user_info(request.user), "clubs": club_data})
+        return Response({"clubs": club_data})
 
 
 class TargetPopulations(generics.ListAPIView):

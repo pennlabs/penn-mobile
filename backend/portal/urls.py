@@ -9,6 +9,7 @@ from portal.views import (
     Posts,
     TargetPopulations,
     UserClubs,
+    UserInfo,
 )
 
 
@@ -23,6 +24,7 @@ router.register(r"posts", Posts, basename="posts")
 additional_urls = [
     path("populations/", TargetPopulations.as_view(), name="target-populations"),
     path("vote-statistics/<poll_id>/", PollVoteStatistics.as_view(), name="vote-statistics"),
-    path("user/", UserClubs.as_view(), name="user-clubs"),
+    path("user/", UserInfo.as_view(), name="user-info"),
+    path("clubs/", UserClubs.as_view(), name="user-clubs"),
 ]
 urlpatterns = router.urls + additional_urls

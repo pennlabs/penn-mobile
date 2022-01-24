@@ -38,12 +38,16 @@ class TestUserClubs(TestCase):
         self.client.force_authenticate(user=self.test_user)
 
     @mock.patch("portal.views.get_user_info", mock_get_user_info)
-    @mock.patch("portal.views.get_club_info", mock_get_club_info)
-    @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
-    def test_user_clubs(self):
+    def test_user_info(self):
         response = self.client.get("/portal/user/")
         res_json = json.loads(response.content)
         self.assertEqual(12345678, res_json["user"]["pennid"])
+
+    @mock.patch("portal.views.get_club_info", mock_get_club_info)
+    @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
+    def test_user_clubs(self):
+        response = self.client.get("/portal/clubs/")
+        res_json = json.loads(response.content)
         self.assertEqual("pennlabs", res_json["clubs"][0]["code"])
 
 
