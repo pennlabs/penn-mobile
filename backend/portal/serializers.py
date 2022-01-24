@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from portal.logic import get_user_clubs, get_user_populations
+from portal.logic import check_targets, get_user_clubs, get_user_populations
 from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
 
 
@@ -44,8 +44,37 @@ class PollSerializer(serializers.ModelSerializer):
         # TODO: toggle this off when multiselect functionality is available
         validated_data["multiselect"] = False
 
-        if len(validated_data["target_populations"]) == 0:
-            validated_data["target_populations"] = list(TargetPopulation.objects.all())
+        year = False
+        major = False
+        school = False
+        degree = False
+
+        for population in validated_data["target_populations"]:
+            if population.kind == TargetPopulation.KIND_YEAR:
+                year = True
+            elif population.kind == TargetPopulation.KIND_MAJOR:
+                major = True
+            elif population.kind == TargetPopulation.KIND_SCHOOL:
+                school = True
+            elif population.kind == TargetPopulation.KIND_DEGREE:
+                degree = True
+
+        if not year:
+            validated_data["target_populations"] += list(
+                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_YEAR)
+            )
+        if not major:
+            validated_data["target_populations"] += list(
+                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_MAJOR)
+            )
+        if not school:
+            validated_data["target_populations"] += list(
+                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_SCHOOL)
+            )
+        if not degree:
+            validated_data["target_populations"] += list(
+                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_DEGREE)
+            )
 
         return super().create(validated_data)
 
@@ -135,16 +164,13 @@ class PollVoteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     detail={"detail": "Voting options are from different Polls"}
                 )
-        # check if user is in target population
-        if (
-            not poll.target_populations.filter(
-                id__in=[x.id for x in get_user_populations(self.context["request"].user)]
-            ).exists()
-            and not self.context["request"].user.is_superuser
-        ):
+
+        # # check if user is in target population
+        if not check_targets(poll, self.context["request"].user):
             raise serializers.ValidationError(
                 detail={"detail": "You cannot vote for this poll (not in any target population)"}
             )
+
         # adds poll to the vote
         validated_data["poll"] = poll
 
@@ -153,10 +179,12 @@ class PollVoteSerializer(serializers.ModelSerializer):
             option.vote_count += 1
             option.save()
 
+        # add populations to poll data
+        populations = get_user_populations(self.context["request"].user)
+        population_list = populations[0] + populations[1] + populations[2] + populations[3]
+
         # populates target populations
-        validated_data["target_populations"] = [
-            x.id for x in get_user_populations(self.context["request"].user)
-        ]
+        validated_data["target_populations"] = [x.id for x in population_list]
 
         return super().create(validated_data)
 
@@ -203,8 +231,39 @@ class PostSerializer(serializers.ModelSerializer):
         # ensuring user cannot create an admin comment upon creation
         validated_data["admin_comment"] = None
         validated_data["status"] = Post.STATUS_DRAFT
-        if len(validated_data["target_populations"]) == 0:
-            validated_data["target_populations"] = list(TargetPopulation.objects.all())
+
+        year = False
+        major = False
+        school = False
+        degree = False
+
+        for population in validated_data["target_populations"]:
+            if population.kind == TargetPopulation.KIND_YEAR:
+                year = True
+            elif population.kind == TargetPopulation.KIND_MAJOR:
+                major = True
+            elif population.kind == TargetPopulation.KIND_SCHOOL:
+                school = True
+            elif population.kind == TargetPopulation.KIND_DEGREE:
+                degree = True
+
+        if not year:
+            validated_data["target_populations"] += list(
+                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_YEAR)
+            )
+        if not major:
+            validated_data["target_populations"] += list(
+                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_MAJOR)
+            )
+        if not school:
+            validated_data["target_populations"] += list(
+                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_SCHOOL)
+            )
+        if not degree:
+            validated_data["target_populations"] += list(
+                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_DEGREE)
+            )
+
         return super().create(validated_data)
 
     def update(self, instance, validated_data):

@@ -54,6 +54,12 @@ class TestPolls(TestCase):
     def setUp(self):
         call_command("load_target_populations")
         self.target_id = TargetPopulation.objects.get(population="2024").id
+        year = TargetPopulation.objects.get(population="2024").id
+        major = TargetPopulation.objects.get(population="Computer Science, BSE").id
+        school = TargetPopulation.objects.get(
+            population="School of Engineering and Applied Science"
+        ).id
+        degree = TargetPopulation.objects.get(population="BACHELORS").id
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client.force_authenticate(user=self.test_user)
@@ -63,10 +69,25 @@ class TestPolls(TestCase):
             "question": "How is your day",
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "club_comment": "hello!",
-            "target_populations": [self.target_id],
+            "target_populations": [year, major, school, degree],
         }
         self.client.post("/portal/polls/", payload)
-        poll_1 = Poll.objects.all().first()
+
+        bad_year = TargetPopulation.objects.get(population="2025").id
+        payload = {
+            "club_code": "pennlabs",
+            "question": "Bad poll",
+            "expire_date": timezone.localtime() + datetime.timedelta(days=1),
+            "club_comment": "hello not hello!!",
+            "target_populations": [bad_year, major, school, degree],
+        }
+        self.client.post("/portal/polls/", payload)
+
+        for poll in Poll.objects.all():
+            poll.status = Poll.STATUS_APPROVED
+            poll.save()
+
+        poll_1 = Poll.objects.get(question="How is your day")
         poll_1.status = Poll.STATUS_APPROVED
         poll_1.save()
         self.id = poll_1.id
@@ -79,12 +100,12 @@ class TestPolls(TestCase):
             "question": "How is this question? 2",
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "admin_comment": "asdfs 2",
-            "target_populations": [self.target_id],
+            "target_populations": [],
         }
         response = self.client.post("/portal/polls/", payload)
         res_json = json.loads(response.content)
         # asserts that poll was created and that the admin comment cannot be made
-        self.assertEqual(2, Poll.objects.all().count())
+        self.assertEqual(3, Poll.objects.all().count())
         self.assertEqual("pennlabs", res_json["club_code"])
         self.assertEqual(None, Poll.objects.get(id=res_json["id"]).admin_comment)
 
@@ -108,14 +129,14 @@ class TestPolls(TestCase):
             "question": "How is this question? 2",
             "expire_date": timezone.localtime() + datetime.timedelta(days=1),
             "admin_comment": "asdfs 2",
-            "target_populations": [self.target_id],
+            "target_populations": [],
         }
         self.client.post("/portal/polls/", payload)
         # asserts that you can only see approved polls
         response = self.client.post("/portal/polls/browse/", {"id_hash": 1})
         res_json = json.loads(response.content)
         self.assertEqual(1, len(res_json))
-        self.assertEqual(2, Poll.objects.all().count())
+        self.assertEqual(3, Poll.objects.all().count())
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
@@ -157,7 +178,7 @@ class TestPolls(TestCase):
         res_json = json.loads(response.content)
         # checks that admin can see unapproved polls
         self.assertEqual(1, len(res_json))
-        self.assertEqual(2, Poll.objects.all().count())
+        self.assertEqual(3, Poll.objects.all().count())
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
@@ -212,7 +233,7 @@ class TestPollVotes(TestCase):
             expire_date=timezone.now() + datetime.timedelta(days=1),
             status=Poll.STATUS_APPROVED,
         )
-        p1.target_populations.add(self.target_id)
+        p1.target_populations.set(TargetPopulation.objects.all())
         p1.save()
         self.p1_id = p1.id
         p1_op1 = PollOption.objects.create(poll=p1, choice="choice 1")
@@ -246,7 +267,7 @@ class TestPollVotes(TestCase):
             expire_date=timezone.now() + datetime.timedelta(days=1),
             status=Poll.STATUS_APPROVED,
         )
-        p4.target_populations.add(self.target_id)
+        p4.target_populations.set(TargetPopulation.objects.all())
         p4.save()
         self.p4_id = p4.id
         p4_op1 = PollOption.objects.create(poll=p4, choice="choice 10")

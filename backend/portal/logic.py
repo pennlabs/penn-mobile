@@ -34,35 +34,48 @@ def get_user_populations(user):
 
     user_info = get_user_info(user)
 
-    content = []
-    content.extend(
-        [
-            TargetPopulation.objects.get(
-                kind=TargetPopulation.KIND_YEAR, population=user_info["student"]["graduation_year"]
-            )
-        ]
+    year = [
+        TargetPopulation.objects.get(
+            kind=TargetPopulation.KIND_YEAR, population=user_info["student"]["graduation_year"]
+        )
+    ]
+
+    school = [
+        TargetPopulation.objects.get(kind=TargetPopulation.KIND_SCHOOL, population=x["name"])
+        for x in user_info["student"]["school"]
+    ]
+
+    major = [
+        TargetPopulation.objects.get(kind=TargetPopulation.KIND_MAJOR, population=x["name"])
+        for x in user_info["student"]["major"]
+    ]
+
+    degree = [
+        TargetPopulation.objects.get(kind=TargetPopulation.KIND_DEGREE, population=x["degree_type"])
+        for x in user_info["student"]["major"]
+    ]
+
+    return [year, school, major, degree]
+
+
+def check_targets(obj, user):
+    """
+    Check if user aligns with target populations of poll or post
+    """
+
+    populations = get_user_populations(user)
+
+    year = set(obj.target_populations.filter(kind=TargetPopulation.KIND_YEAR))
+    school = set(obj.target_populations.filter(kind=TargetPopulation.KIND_SCHOOL))
+    major = set(obj.target_populations.filter(kind=TargetPopulation.KIND_MAJOR))
+    degree = set(obj.target_populations.filter(kind=TargetPopulation.KIND_DEGREE))
+
+    return (
+        set(populations[0]).issubset(year)
+        and set(populations[1]).issubset(school)
+        and set(populations[2]).issubset(major)
+        and set(populations[3]).issubset(degree)
     )
-    content.extend(
-        [
-            TargetPopulation.objects.get(kind=TargetPopulation.KIND_SCHOOL, population=x["name"])
-            for x in user_info["student"]["school"]
-        ]
-    )
-    content.extend(
-        [
-            TargetPopulation.objects.get(kind=TargetPopulation.KIND_MAJOR, population=x["name"])
-            for x in user_info["student"]["major"]
-        ]
-    )
-    content.extend(
-        [
-            TargetPopulation.objects.get(
-                kind=TargetPopulation.KIND_DEGREE, population=x["degree_type"]
-            )
-            for x in user_info["student"]["major"]
-        ]
-    )
-    return content
 
 
 def get_demographic_breakdown(poll_id):
