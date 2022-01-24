@@ -75,8 +75,10 @@ const NavItem = ({
   return (
     <Link href={link}>
       <NavItemWrapper>
-        <Icon name={icon} margin="auto 1rem 1px 0" />
-        <Text heading>{title}</Text>
+        <Text heading>
+          <Icon name={icon} margin="auto 1rem 1px 0" />
+          {title}
+        </Text>
       </NavItemWrapper>
     </Link>
   )

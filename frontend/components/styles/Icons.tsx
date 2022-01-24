@@ -4,22 +4,50 @@ import dynamic from 'next/dynamic'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faCircle,
-  faPlus,
   faTimes,
   faInfoCircle,
   faArrowCircleRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { colors } from '@/components/styles/colors'
+import Dashboard from '@/public/icons/dashboard.svg'
+import Analytics from '@/public/icons/analytics.svg'
+import Settings from '@/public/icons/settings.svg'
 
 /**
  * renders icon svg from public/icons as a component
  * @param {string} name icon filename
  */
-export const Icon = ({ name, margin }: { name: string; margin?: string }) => {
+export const Icon = ({
+  name,
+  margin,
+  color,
+}: { name: string } & IIconProps) => {
+  // icons to load statically to prevent flickering
+  switch (name) {
+    case 'dashboard':
+      return (
+        <IconWrapper margin={margin} color={color}>
+          <Dashboard />
+        </IconWrapper>
+      )
+    case 'analytics':
+      return (
+        <IconWrapper margin={margin} color={color}>
+          <Analytics />
+        </IconWrapper>
+      )
+    case 'settings':
+      return (
+        <IconWrapper margin={margin} color={color}>
+          <Settings />
+        </IconWrapper>
+      )
+  }
+
   const IconSvg = dynamic(() => import(`@/public/icons/${name}.svg`))
 
   return (
-    <IconWrapper margin={margin}>
+    <IconWrapper margin={margin} color={color}>
       <IconSvg />
     </IconWrapper>
   )
@@ -32,7 +60,10 @@ interface IIconProps {
 
 const IconWrapper = s.span<IIconProps>`
   margin: ${(props) => props.margin || '0'};
-  color: ${(props) => props.color || colors.MEDIUM_BLUE};
+  color: ${(props) => props.color || colors.DARK_GRAY};
+  stroke: ${(props) => props.color || colors.DARK_GRAY};
+  display: inline-flex;
+  vertical-align: middle;
 `
 
 export const IconCircle = ({ color }: { color?: string }) => (
@@ -45,11 +76,7 @@ export const InfoSpan = ({ infoText }: { infoText: string }) => (
   <IconWrapper
     margin="0 0 0 1rem"
     color={colors.GRAY}
-    style={{
-      fontSize: '0.75rem',
-      lineHeight: '1.25rem',
-      verticalAlign: 'middle',
-    }}
+    style={{ fontSize: '0.75rem' }}
   >
     <FontAwesomeIcon
       icon={faInfoCircle}
@@ -57,12 +84,6 @@ export const InfoSpan = ({ infoText }: { infoText: string }) => (
       style={{ marginRight: '0.5rem' }}
     />
     {infoText || ''}
-  </IconWrapper>
-)
-
-export const IconPlus = ({ margin }: { margin: string }) => (
-  <IconWrapper color={colors.WHITE} margin={margin}>
-    <FontAwesomeIcon icon={faPlus} size="sm" />
   </IconWrapper>
 )
 

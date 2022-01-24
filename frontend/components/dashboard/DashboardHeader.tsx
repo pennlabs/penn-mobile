@@ -7,7 +7,6 @@ import { colors } from '@/components/styles/colors'
 import { PageType } from '@/utils/types'
 import { Button, PostPollToggle } from '@/components/styles/Buttons'
 import { CREATE_POLL_ROUTE, CREATE_POST_ROUTE } from '@/utils/routes'
-import { IconPlus } from '@/components/styles/Icons'
 import { AuthUserContext } from '@/utils/auth'
 
 export const DashboardHeader = ({
@@ -36,7 +35,7 @@ export const DashboardHeader = ({
         >
           <a>
             <Button color={colors.GREEN} round style={{ margin: '0 0 0 1rem' }}>
-              Create <IconPlus margin="0 0 0 0.5rem" />
+              Create +
             </Button>
           </a>
         </Link>

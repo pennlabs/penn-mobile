@@ -29,12 +29,11 @@ const DashboardCardWrapper = ({
 const DashboardCardHeaderWrapper = s.div<{ color: string }>`
   background-color: ${(props) => props.color};
   border-radius: 10px 10px 0 0;
-  padding: 0.5rem;
+  padding: 0.75rem;
   color: white;
   display: flex;
   justify-content: space-between;
   box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.25);
-  line-height: 2rem;
 `
 
 const DashboardCardBody = s.div`
@@ -48,7 +47,7 @@ const DashboardCardHeader = ({ statusProps }: { statusProps: StatusProps }) => (
     <InlineText heading bold size="14px" color="inherit" centerY>
       {statusProps.label}
     </InlineText>
-    <Icon name={statusProps.icon} />
+    <Icon name={statusProps.icon} color={colors.WHITE} />
   </DashboardCardHeaderWrapper>
 )
 

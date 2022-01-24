@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import _ from 'lodash'
 
 import { PageType, PollType, PostType } from '@/utils/types'
 import { PostPollToggle } from '@/components/styles/Buttons'
@@ -36,7 +35,7 @@ const Analytics = ({ postList, pollList }: AnalyticsProps) => {
   return (
     <>
       <Row justifyContent="space-between" alignItems="center">
-        <Subtitle>All {`${_.startCase(_.toLower(activeOption))}s`} </Subtitle>
+        <Subtitle>All {`${activeOption}s`} </Subtitle>
         <PostPollToggle
           activeOption={activeOption}
           setActiveOption={setActiveOption}

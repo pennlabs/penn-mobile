@@ -12,8 +12,8 @@ export interface Club {
 }
 
 export enum PageType {
-  POST = 'POST',
-  POLL = 'POLL',
+  POST = 'Post',
+  POLL = 'Poll',
 }
 
 export enum Status {

@@ -1,20 +1,14 @@
 import React, { useState, useCallback } from 'react'
 import { GetServerSidePropsContext } from 'next'
-import { useRouter } from 'next/router'
 
 import { AuthUserContext, withAuth } from '@/utils/auth'
 import { doApiRequest } from '@/utils/fetch'
-import { initialPost, PageType, PostType, User } from '@/utils/types'
-import { Col, Container, Group, Row } from '@/components/styles/Layout'
-import { Button } from '@/components/styles/Buttons'
-import { Subtitle } from '@/components/styles/Text'
-import { colors } from '@/components/styles/colors'
-import StatusBar from '@/components/form/StatusBar'
+import { initialPost, PostType, User } from '@/utils/types'
+import { Col, Container, Row } from '@/components/styles/Layout'
 import PostForm from '@/components/form/post/PostForm'
 import { PostPhonePreview } from '@/components/form/Preview'
-import { DASHBOARD_ROUTE } from '@/utils/routes'
-import { CreateContentToggle } from '@/components/form/SharedCards'
 import { FilterType } from '@/components/form/Filters'
+import FormHeader from '@/components/form/FormHeader'
 
 interface iPostPageProps {
   createMode: boolean // true if creating a post, false if editing an existing post
@@ -30,63 +24,16 @@ const PostPage = ({
 }: iPostPageProps & { user: User }) => {
   const [state, setState] = useState<PostType>(post || initialPost)
 
-  const router = useRouter()
-
   const updateState = useCallback((newState) => {
     setState((currentState) => ({ ...currentState, ...newState }))
   }, [])
-
-  const onSubmit = () => {
-    doApiRequest('/api/portal/posts/', {
-      method: 'POST',
-      body: state,
-    }).then(() => router.push(DASHBOARD_ROUTE)) // redirect to dashboard after submitting
-  }
-
-  const onDelete = () => {
-    doApiRequest(`/api/portal/posts/${state.id}`, {
-      method: 'DELETE',
-    })
-    router.push(DASHBOARD_ROUTE)
-  }
-
-  const onSave = () => {
-    doApiRequest(`/api/portal/posts/${state.id}/`, {
-      method: 'PATCH',
-      body: state,
-    })
-  }
 
   return (
     <AuthUserContext.Provider value={{ user }}>
       <Container>
         <Row>
           <Col sm={12} md={12} lg={7} padding="0.5rem">
-            <CreateContentToggle activeOption={PageType.POST} />
-            <Group
-              horizontal
-              justifyContent="space-between"
-              margin="0 0 2rem 0"
-            >
-              <Subtitle>Post Details</Subtitle>
-              <Group horizontal alignItems="center">
-                {createMode ? (
-                  <Button color={colors.GREEN} onClick={onSubmit}>
-                    Submit
-                  </Button>
-                ) : (
-                  <>
-                    <Button color={colors.RED} onClick={onDelete}>
-                      Delete
-                    </Button>
-                    <Button color={colors.GRAY} onClick={onSave}>
-                      Save
-                    </Button>
-                  </>
-                )}
-              </Group>
-            </Group>
-            <StatusBar status={state.status} />
+            <FormHeader createMode={createMode} state={state} />
             <PostForm
               state={state}
               updateState={updateState}
