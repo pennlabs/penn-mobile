@@ -9,8 +9,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from penndata.models import Event
-from penndata.serializers import EventSerializer
+from penndata.models import Event, HomePageOrder
+from penndata.serializers import EventSerializer, HomePageOrderSerializer
 
 
 class News(APIView):
@@ -137,7 +137,7 @@ class Calendar(APIView):
         return calendar
 
     def get(self, request):
-        return Response({"calendar": self.get_calendar()})
+        return Response(self.get_calendar())
 
 
 class Events(generics.ListAPIView):
@@ -151,6 +151,19 @@ class Events(generics.ListAPIView):
 
     def get_queryset(self):
         return Event.objects.filter(event_type=self.kwargs.get("type", ""))
+
+
+class HomePageOrdering(generics.ListAPIView):
+    """
+    list:
+    Return a list of orderings for homepage
+    """
+
+    permission_classes = [AllowAny]
+    serializer_class = HomePageOrderSerializer
+
+    def get_queryset(self):
+        return HomePageOrder.objects.all()
 
 
 class HomePage(APIView):

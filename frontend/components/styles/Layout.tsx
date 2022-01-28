@@ -1,12 +1,23 @@
-import React from 'react'
+import React, { ReactNode } from 'react'
 import s, { css, FlattenSimpleInterpolation } from 'styled-components'
-import { maxWidth, minWidth, PHONE, TABLET, MAX_BODY_HEIGHT } from './sizes'
+import { Nav } from '@/components/styles/Nav'
+import {
+  maxWidth,
+  minWidth,
+  PHONE,
+  TABLET,
+  MAX_BODY_HEIGHT,
+  DESKTOP,
+  NAV_WIDTH,
+} from '@/components/styles/sizes'
+import Header from '@/components/header/Header'
 
 interface IRow {
   maxHeight?: string
   overflowY?: string
   margin?: string
   justifyContent?: string
+  alignItems?: string
 }
 
 export const Row = s.div<IRow>(
@@ -15,6 +26,7 @@ export const Row = s.div<IRow>(
     overflowY,
     margin,
     justifyContent,
+    alignItems,
   }): FlattenSimpleInterpolation => css`
     display: flex;
     flex-direction: row;
@@ -22,11 +34,9 @@ export const Row = s.div<IRow>(
     flex-wrap: wrap;
     max-height: ${maxHeight || 'none'};
     overflow-y: ${overflowY || 'hidden'};
+    ${alignItems && `align-items: ${alignItems}`};
 
-    ${margin &&
-    ` margin-left: -${margin};
-      margin-right: -${margin};
-      width: calc(100% + ${margin} + ${margin});`}
+    ${margin && `margin: ${margin};`}
 
     ${justifyContent && `justify-content: ${justifyContent};`}
   `
@@ -83,16 +93,17 @@ const ColWrapper = s.div<IColWrapper>(
     ${flex && 'display: flex;'}
     ${alignItems && `align-items: ${alignItems};`}
 
-    ${sm && `width: ${percent(sm)}; flex: none;`}
-
-    ${offsetSm && `margin-left: ${percent(offsetSm)};`}
-
     ${minWidth(PHONE)} {
+      ${sm && `width: ${percent(sm)}; flex: none;`}
+      ${offsetSm && `margin-left: ${percent(offsetSm)};`}
+    }
+
+    ${minWidth(TABLET)} {
       ${md && `width: ${percent(md)}; flex: none;`}
       ${offsetMd && `margin-left: ${percent(offsetMd)};`}
     }
 
-    ${minWidth(TABLET)} {
+    ${minWidth(DESKTOP)} {
       ${lg && `width: ${percent(lg)}; flex: none;`}
       ${offsetLg && `margin-left: ${percent(offsetLg)};`}
       ${fullHeight && `height: ${MAX_BODY_HEIGHT};`}
@@ -130,36 +141,52 @@ export const Col = ({ margin, children, ...other }: ICol) => (
   </ColWrapper>
 )
 
-export const ColSpace = s(Col)`
-  flex: none;
-  width: ${({ width }) => width || '1rem'};
-
-  ${maxWidth(PHONE)} {
-    display: none;
-  }
-`
-
-export const Spacer = s.div`
-  display: block;
-  width: 100%;
-  height: 1rem;
-`
-
 interface iGroupProps {
   horizontal?: boolean // defaults to vertical
   alignItems?: string
   justifyContent?: string
   margin?: string
+  center?: boolean
+  fullWidth?: boolean
+  padding?: string
 }
 
 /**
  * Div wrapper for a group of elements.
  */
 export const Group = s.div<iGroupProps>(
-  ({ horizontal, alignItems, justifyContent, margin }) => css`
+  ({
+    horizontal,
+    alignItems,
+    justifyContent,
+    margin,
+    center,
+    fullWidth,
+    padding,
+  }) => css`
     display: ${horizontal ? 'flex' : 'inline-block'};
     ${justifyContent && `justify-content: ${justifyContent};`}
     ${alignItems && `align-items: ${alignItems};`}
     ${margin && `margin: ${margin};`}
+    ${center && 'margin: 0 auto;'}
+    ${fullWidth && 'flex-grow: 1'}
+    ${padding && `padding: ${padding};`}
   `
 )
+
+/**
+ * Page layout container with nav bar on left and content on right
+ */
+export const Container = ({ children }: { children: ReactNode }) => {
+  return (
+    <>
+      <Header />
+      <Group horizontal>
+        <Nav />
+        <Group margin={`0 0 0 ${NAV_WIDTH}`} fullWidth>
+          <div style={{ padding: '2.5rem 4rem' }}>{children}</div>
+        </Group>
+      </Group>
+    </>
+  )
+}

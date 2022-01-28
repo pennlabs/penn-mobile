@@ -42,6 +42,10 @@ def dining_request(url):
     Makes GET request to Penn Dining API and returns the response
     """
 
+    def sortByStart(elem):
+        print(elem)
+        return elem["open"]
+
     try:
         response = requests.get(url, params=None, headers=headers(), timeout=30)
     except ReadTimeout:

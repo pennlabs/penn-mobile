@@ -1,4 +1,4 @@
-import getCsrf from './csrf'
+import getCsrf from '@/utils/csrf'
 
 export const SITE_ORIGIN =
   process.env.NODE_ENV === 'production'
@@ -19,7 +19,7 @@ export function getApiUrl(path: string): string {
  * perform a fetch request to the API
  * @param path e.g. /api/portal/polls/
  * @param data
- * @returns
+ * @returns Promise<Response>
  */
 export function doApiRequest(path: string, data?: any): Promise<Response> {
   let formattedData = data

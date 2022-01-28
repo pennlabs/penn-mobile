@@ -44,6 +44,13 @@ class Venues(APIView):
                 image_url = None
             venue["imageURL"] = image_url
 
+            if "dateHours" in venue:
+                meals = venue["dateHours"]
+                for i in range(len(meals)):
+                    if not isinstance(meals[i]["meal"], list):
+                        meals[i]["meal"] = [meals[i]["meal"]]
+                    meals[i]["meal"].sort(key=lambda x: x["open"])
+
         return Response(response)
 
 

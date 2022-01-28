@@ -1,0 +1,92 @@
+[
+    {
+        "booking_id": "id 1",
+        "gsr": {
+            "id": 2,
+            "kind": "LIBCAL",
+            "lid": "1086",
+            "gid": 1889,
+            "name": "Weigle",
+            "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-1086-gid-1889.jpg"
+        },
+        "room_id": 72,
+        "room_name": "VP WIC Booth 01",
+        "start": "2021-11-22T11:30:00-05:00",
+        "end": "2021-11-22T12:00:00-05:00"
+    },
+    {
+        "booking_id": "id 2",
+        "gsr": {
+            "id": 2,
+            "kind": "LIBCAL",
+            "lid": "1086",
+            "gid": 1889,
+            "name": "Weigle",
+            "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-1086-gid-1889.jpg"
+        },
+        "room_id": 41234,
+        "room_name": "VP WIC Booth 01",
+        "start": "2021-11-22T12:30:00-05:00",
+        "end": "2021-11-22T14:00:00-05:00"
+    },
+    {
+        "booking_id": "id 3",
+        "gsr": {
+            "id": 288,
+            "kind": "LIBCAL",
+            "lid": "1086",
+            "gid": 1889,
+            "name": "Weigle",
+            "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-1086-gid-1889.jpg"
+        },
+        "room_id": 7243292,
+        "room_name": "VP WIC Booth 01",
+        "start": "2021-11-24T12:00:00-05:00",
+        "end": "2021-11-24T12:30:00-05:00"
+    },
+    {
+        "booking_id": "id 4",
+        "gsr": {
+            "id": 1124,
+            "kind": "LIBCAL",
+            "lid": "1086",
+            "gid": 1889,
+            "name": "Weigle",
+            "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-1086-gid-1889.jpg"
+        },
+        "room_id": 7193242342,
+        "room_name": "VP WIC Booth 01",
+        "start": "2021-11-24T12:30:00-05:00",
+        "end": "2021-11-24T14:00:00-05:00"
+    },
+    {
+        "booking_id": "id 5",
+        "gsr": {
+            "id": 220012,
+            "kind": "WHARTON",
+            "lid": "JMHH",
+            "gid": 1,
+            "name": "Huntsman",
+            "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-JMHH-gid-1.jpg"
+        },
+        "room_id": 123214,
+        "room_name": "246",
+        "start": "2021-11-21T20:00:00-05:00",
+        "end": "2021-11-21T21:00:00-05:00"
+    },
+    {
+        "booking_id": "id 6",
+        "gsr": {
+            "id": 734563,
+            "kind": "WHARTON",
+            "lid": "ARB",
+            "gid": 6,
+            "name": "Academic Research",
+            "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-ARB-gid-6.jpg"
+        },
+        "room_id": 43891,
+        "room_name": "128",
+        "start": "2021-11-22T07:00:00-05:00",
+        "end": "2021-11-22T07:30:00-05:00"
+    }
+]

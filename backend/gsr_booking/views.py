@@ -1,10 +1,7 @@
-import datetime
-
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
@@ -12,14 +9,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from gsr_booking.api_wrapper import APIError, LibCalWrapper, WhartonLibWrapper
+from gsr_booking.api_wrapper import APIError, BookingWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, UserSearchIndex
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
     GroupMembershipSerializer,
     GroupSerializer,
-    GSRBookingSerializer,
     GSRSerializer,
     UserSerializer,
 )
@@ -99,9 +95,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         # Ensure that all invites for this user, even ones created before their account was in the
         # DB, are associated with the User object.
         GroupMembership.objects.filter(username=user.username).update(user=user)
-
-        UserSearchIndex.objects.get_or_create(user=user)
-
         return Response({"success": True})
 
 
@@ -287,9 +280,8 @@ class GroupViewSet(viewsets.ModelViewSet):
         return Response(result_json)
 
 
-# classes used for accessing GSR API's (needed for token authentication)
-LCW = LibCalWrapper()
-WLW = WhartonLibWrapper()
+# umbrella class used for accessing GSR API's (needed for token authentication)
+BW = BookingWrapper()
 
 
 class Locations(generics.ListAPIView):
@@ -308,9 +300,15 @@ class RecentGSRs(generics.ListAPIView):
     def get_queryset(self):
         return GSR.objects.filter(
             id__in=GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
+            .distinct()
             .order_by("-end")[:2]
             .values_list("gsr", flat=True)
         )
+
+
+class CheckWharton(APIView):
+    def get(self, request):
+        return Response({"is_wharton": BW.is_wharton(request.user.username)})
 
 
 class Availability(APIView):
@@ -323,49 +321,13 @@ class Availability(APIView):
     """
 
     def get(self, request, lid, gid):
-
         start = request.GET.get("start")
         end = request.GET.get("end")
-        # checks which GSR class to use
-        if not GSR.objects.filter(lid=lid).exists():
-            return Response({"error": "Unknown GSR"}, status=404)
-        is_wharton = GSR.objects.filter(lid=lid).first().kind == GSR.KIND_WHARTON
-        if is_wharton:
-            try:
-                if request.user.is_anonymous:
-                    return Response({"error": "Anonymous User"}, status=400)
-                # no need for gid under Wharton API
-                rooms = WLW.get_availability(lid, start, end, request.user.username)
-            except APIError as e:
-                return Response({"error": str(e)}, status=400)
-            gsr = GSR.objects.get(lid=lid)
-            return Response({"name": gsr.name, "gid": gsr.gid, "rooms": rooms})
-        else:
-            try:
-                rooms = LCW.get_availability(lid, start, end)
-            except APIError as e:
-                return Response({"error": str(e)}, status=400)
 
-            # cleans data to match Wharton wrapper
-            try:
-                gsr = [x for x in rooms["categories"] if x["cid"] == int(gid)][0]
-            except IndexError:
-                return Response({"error": "Unknown GSR"}, status=404)
-
-            for room in gsr["rooms"]:
-                for availability in room["availability"]:
-                    availability["start_time"] = availability["from"]
-                    availability["end_time"] = availability["to"]
-                    del availability["from"]
-                    del availability["to"]
-            context = {}
-            context["name"] = gsr["name"]
-            context["gid"] = gsr["cid"]
-            context["rooms"] = [
-                {"room_name": x["name"], "id": x["id"], "availability": x["availability"]}
-                for x in gsr["rooms"]
-            ]
-            return Response(context)
+        try:
+            return Response(BW.get_availability(lid, gid, start, end, request.user))
+        except APIError as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class BookRoom(APIView):
@@ -376,33 +338,15 @@ class BookRoom(APIView):
     def post(self, request):
         start = request.data["start_time"]
         end = request.data["end_time"]
-        if not GSR.objects.filter(gid=request.data["gid"]).exists():
-            return Response({"error": "Unknown GSR"}, status=404)
-        is_wharton = GSR.objects.filter(gid=request.data["gid"]).first().kind == GSR.KIND_WHARTON
+        gid = request.data["gid"]
         room_id = request.data["id"]
         room_name = request.data["room_name"]
-        # checks which GSR class to use
-        if is_wharton:
-            try:
-                booking_id = WLW.book_room(room_id, start, end, request.user.username)["booking_id"]
-            except APIError as e:
-                return Response({"error": str(e)}, status=400)
-        else:
-            try:
-                booking_id = LCW.book_room(room_id, start, end, request.user)["booking_id"]
-            except APIError as e:
-                return Response({"error": str(e)}, status=400)
-        # creates booking on database
-        GSRBooking.objects.create(
-            user=request.user,
-            booking_id=str(booking_id),
-            gsr=GSR.objects.get(gid=request.data["gid"]),
-            room_id=room_id,
-            room_name=room_name,
-            start=datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z"),
-            end=datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z"),
-        )
-        return Response({"detail": "success"})
+
+        try:
+            BW.book_room(gid, room_id, room_name, start, end, request.user)
+            return Response({"detail": "success"})
+        except APIError as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class CancelRoom(APIView):
@@ -413,57 +357,13 @@ class CancelRoom(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        booking_id = str(request.data["booking_id"])
+        booking_id = request.data["booking_id"]
 
-        # gets list of all reservations from wharton
-        # if student is non-wharton, then they will never
-        # have reservations from wharton
-        # throws error iff the error isn't just unable to
-        # perform action
         try:
-            wharton_bookings = WLW.get_reservations(request.user)["bookings"]
+            BW.cancel_room(booking_id, request.user)
+            return Response({"detail": "success"})
         except APIError as e:
-            if str(e) == "Wharton: GSR view restricted to Wharton Pennkeys":
-                wharton_bookings = []
-            else:
-                return Response({"error": str(e)}, status=400)
-        wharton_booking_ids = [str(x["booking_id"]) for x in wharton_bookings]
-        # checks if the booking_id is a wharton booking_id
-        if booking_id not in wharton_booking_ids:
-            gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
-            if request.user != gsr_booking.user:
-                return Response(
-                    {"error": "Unauthorized: This reservation was booked by someone else."},
-                    status=400,
-                )
-            else:
-                # checks which GSR class to use
-                is_wharton = False
-        else:
-            # defaults to wharton because it is in wharton_booking_ids
-            wharton_booking = GSRBooking.objects.filter(booking_id=booking_id)
-            if wharton_booking.exists():
-                gsr_booking = wharton_booking.first()
-            else:
-                gsr_booking = None
-            is_wharton = True
-
-        if is_wharton:
-            try:
-                WLW.cancel_room(request.user, booking_id)
-            except APIError as e:
-                return Response({"error": str(e)}, status=400)
-        else:
-            try:
-                LCW.cancel_room(booking_id)
-            except APIError as e:
-                return Response({"error": str(e)}, status=400)
-
-        if gsr_booking:
-            # updates GSR booking after done
-            gsr_booking.is_cancelled = True
-            gsr_booking.save()
-        return Response({"detail": "success"})
+            return Response({"error": str(e)}, status=400)
 
 
 class ReservationsView(APIView):
@@ -474,42 +374,4 @@ class ReservationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        serializer = GSRBookingSerializer(
-            GSRBooking.objects.filter(
-                user=self.request.user, end__gte=timezone.localtime(), is_cancelled=False
-            ),
-            many=True,
-        )
-        response = serializer.data
-        try:
-            # ignore this because this route is used by everyone
-            wharton_reservations = WLW.get_reservations(request.user)["bookings"]
-            for reservation in wharton_reservations:
-                if reservation["lid"] == 1:
-                    reservation["lid"] = "JMHH"
-                if reservation["lid"] == 6:
-                    reservation["lid"] = "ARB"
-                # checks if reservation is within time range
-                if (
-                    datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
-                    >= timezone.localtime()
-                ):
-                    # filtering for lid here works because Wharton buildings have distinct lid's
-                    context = {
-                        "booking_id": str(reservation["booking_id"]),
-                        "gsr": GSRSerializer(GSR.objects.get(lid=reservation["lid"])).data,
-                        "room_id": reservation["rid"],
-                        "room_name": reservation["room"],
-                        "start": reservation["start"],
-                        "end": reservation["end"],
-                    }
-                    if context not in response:
-                        response.append(context)
-        except APIError:
-            pass
-        return Response(response)
-
-
-class CheckWharton(APIView):
-    def get(self, request):
-        return Response({"is_wharton": WLW.is_wharton(request.user.username)})
+        return Response(BW.get_reservations(request.user))

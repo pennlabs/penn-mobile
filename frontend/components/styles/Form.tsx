@@ -1,6 +1,6 @@
 import s from 'styled-components'
-import { Text } from './Text'
-import { updateStateType } from '../../pages/polls/create'
+import { Text } from '@/components/styles/Text'
+import { updateStateType } from '@/utils/types'
 
 const FormInputStyle = s.input<{
   marginBottom?: boolean
@@ -56,7 +56,11 @@ export const FormField = ({
 }: iFormFieldProps) => {
   return (
     <>
-      {label && <Text bold>{label}</Text>}
+      {label && (
+        <Text bold heading>
+          {label}
+        </Text>
+      )}
       {textArea ? (
         <FormTextAreaStyle
           rows={3}

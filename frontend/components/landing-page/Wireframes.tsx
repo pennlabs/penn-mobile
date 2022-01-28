@@ -1,22 +1,48 @@
 import React from 'react'
+import Image from 'next/image'
 import s from 'styled-components'
+import {
+  DESKTOP,
+  maxWidth,
+  minWidth,
+  NAV_HEIGHT,
+} from '@/components/styles/sizes'
+import LandingPageImg from '@/public/landing-page.jpg'
 
-const IPhoneImg = s.img`
+const DesktopWireframesStyle = s.div`
   position: absolute;
-  left: 20%;
-  bottom: -30%;
-  z-index: 1;
+  right: 0;
+  top: calc(-${NAV_HEIGHT} + 1rem);
+  z-index: 2;
+  width: 50vw;
+  ${maxWidth(DESKTOP)} {
+    display: none;
+  }
 `
 
-const Wireframes = () => (
-  <div style={{ position: 'relative' }}>
-    <img
-      style={{ zIndex: 3 }}
-      src="/browser-wireframe.svg"
-      alt="browser wireframe"
+const MobileWireframesStyle = s.div`
+  width: 100%;
+  height: auto;
+  margin-bottom: 0;
+  ${minWidth(DESKTOP)} {
+    display: none;
+  }
+`
+
+export const DesktopWireframes = () => (
+  <DesktopWireframesStyle>
+    <Image
+      src={LandingPageImg}
+      alt="web-mockup"
+      placeholder="blur"
+      layout="responsive"
+      objectFit="contain"
     />
-    <IPhoneImg src="/iphone-wireframe.svg" alt="iphone wireframe" />
-  </div>
+  </DesktopWireframesStyle>
 )
 
-export default Wireframes
+export const MobileWireframes = () => (
+  <MobileWireframesStyle>
+    <img style={{ float: 'right' }} src="/landing-page.svg" alt="web-mockup" />
+  </MobileWireframesStyle>
+)

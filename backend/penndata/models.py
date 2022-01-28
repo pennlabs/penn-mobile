@@ -11,3 +11,11 @@ class Event(models.Model):
     email = models.CharField(max_length=255)
     website = models.URLField(max_length=255, null=True)
     facebook = models.URLField(max_length=255, null=True)
+
+
+class HomePageOrder(models.Model):
+    cell = models.CharField(max_length=255)
+    rank = models.IntegerField()
+
+    def __str__(self):
+        return self.cell

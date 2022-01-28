@@ -19,6 +19,7 @@ class Command(BaseCommand):
                 lid, gid, name, service = row
 
                 # gets image from s3 given the lid and gid
+                # TODO: fix image url!
                 image_url = (
                     f"https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-{lid}-gid-{gid}.jpg"
                 )

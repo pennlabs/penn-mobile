@@ -1,23 +1,30 @@
 import React from 'react'
-import { colors } from '../../utils/colors'
-
-import { Row, Col, Group } from '../styles/Layout'
-import { Title, Text } from '../styles/Text'
-import Wireframes from './Wireframes'
+import { Row, Col, Group } from '@/components/styles/Layout'
+import { Heading3, Title } from '@/components/styles/Text'
+import {
+  DesktopWireframes,
+  MobileWireframes,
+} from '@/components/landing-page/Wireframes'
+import LandingPageNav from '@/components/landing-page/LandingPageNav'
 
 const LandingPage = () => (
   <>
-    <Row style={{ backgroundColor: colors.WHITE }}>
-      <Col sm={12} md={12} lg={5} fullHeight padding="0 0 0 3rem">
-        <Group style={{ marginTop: '6rem' }}>
+    <LandingPageNav />
+    <Row>
+      <Col sm={12} md={8} lg={6}>
+        <Group margin="15vh 0 0 5vw">
           <Title>
             Welcome <br /> to Portal.
           </Title>
-          <Text>ah, there will be some text here...</Text>
+          <Heading3 bold={false}>
+            Poll/advertise to 8,000 undergraduates in real time on the
+            University of Pennsylvania&apos;s official student app.
+          </Heading3>
         </Group>
       </Col>
-      <Col sm={12} md={12} lg={7} style={{ overflow: 'hidden' }}>
-        <Wireframes />
+      <Col sm={12} md={12} lg={6}>
+        <DesktopWireframes />
+        <MobileWireframes />
       </Col>
     </Row>
   </>
