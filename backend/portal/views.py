@@ -9,11 +9,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from portal.logic import (
+    check_targets,
     get_club_info,
     get_demographic_breakdown,
     get_user_clubs,
     get_user_info,
-    get_user_populations,
 )
 from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
 from portal.permissions import (
@@ -107,7 +107,7 @@ class Polls(viewsets.ModelViewSet):
 
         # unvoted polls in draft/approaved mode for superuser
         # unvoted and approved polls within time frame for regular user
-        polls = (
+        unfiltered_polls = (
             Poll.objects.filter(
                 ~Q(id__in=PollVote.objects.filter(id_hash=id_hash).values_list("poll_id")),
                 Q(status=Poll.STATUS_DRAFT) | Q(status=Poll.STATUS_APPROVED),
@@ -116,12 +116,22 @@ class Polls(viewsets.ModelViewSet):
             if request.user.is_superuser
             else Poll.objects.filter(
                 ~Q(id__in=PollVote.objects.filter(id_hash=id_hash).values_list("poll_id")),
-                Q(target_populations__in=get_user_populations(request.user)),
                 status=Poll.STATUS_APPROVED,
                 start_date__lte=timezone.localtime(),
                 expire_date__gte=timezone.localtime(),
             )
         )
+
+        # list of polls where user doesn't identify with
+        # target populations
+        bad_polls = []
+        if not request.user.is_superuser:
+            for unfiltered_poll in unfiltered_polls:
+                if not check_targets(unfiltered_poll, request.user):
+                    bad_polls.append(unfiltered_poll.id)
+
+        # excludes the bad polls
+        polls = unfiltered_polls.exclude(id__in=bad_polls)
 
         # # TODO: fix sorting DRAFT before APPROVED if the functionality is necessary
         # # sort draft first, then approved
@@ -258,19 +268,30 @@ class Posts(viewsets.ModelViewSet):
         Returns a list of all posts that are targeted at the current user
         For admins, returns list of posts that they have not approved and have yet to expire
         """
-        posts = (
+        unfiltered_posts = (
             Post.objects.filter(
                 Q(status=Post.STATUS_DRAFT) | Q(status=Post.STATUS_APPROVED),
                 expire_date__gte=timezone.localtime(),
             )
             if request.user.is_superuser
             else Post.objects.filter(
-                Q(target_populations__in=get_user_populations(request.user)),
                 status=Post.STATUS_APPROVED,
                 start_date__lte=timezone.localtime(),
                 expire_date__gte=timezone.localtime(),
             )
         )
+
+        # list of polls where user doesn't identify with
+        # target populations
+        bad_posts = []
+        if not request.user.is_superuser:
+            for unfiltered_post in unfiltered_posts:
+                if not check_targets(unfiltered_post, request.user):
+                    bad_posts.append(unfiltered_post.id)
+
+        # excludes the bad polls
+        posts = unfiltered_posts.exclude(id__in=bad_posts)
+
         return Response(PostSerializer(posts.distinct().order_by("expire_date"), many=True).data)
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
