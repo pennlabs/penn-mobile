@@ -83,7 +83,7 @@ class Post(models.Model):
     title = models.CharField(max_length=255)
     subtitle = models.CharField(max_length=255)
     post_url = models.URLField(null=True)
-    image_url = models.URLField(null=True)
+    image = models.ImageField(upload_to="portal/images", null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now)
     start_date = models.DateTimeField(default=timezone.now)
     expire_date = models.DateTimeField()
