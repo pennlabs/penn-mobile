@@ -208,7 +208,7 @@ class PostSerializer(serializers.ModelSerializer):
             "title",
             "subtitle",
             "post_url",
-            "image_url",
+            "image",
             "created_date",
             "start_date",
             "expire_date",
@@ -222,12 +222,14 @@ class PostSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         club_code = validated_data["club_code"]
         # ensures user is part of club
+
         if club_code not in [
             x["club"]["code"] for x in get_user_clubs(self.context["request"].user)
         ]:
             raise serializers.ValidationError(
                 detail={"detail": "You do not access to create a Poll under this club."}
             )
+
         # ensuring user cannot create an admin comment upon creation
         validated_data["admin_comment"] = None
         validated_data["status"] = Post.STATUS_DRAFT

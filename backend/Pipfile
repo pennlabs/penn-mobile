@@ -34,6 +34,9 @@ django-filter = "*"
 django-labs-accounts = "*"
 django-debug-toolbar = "*"
 django-runtime-options = "*"
+django-storages = "*"
+pillow = "*"
+boto3 = "*"
 
 [requires]
 python_version = "3"
