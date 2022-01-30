@@ -200,6 +200,24 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
+
+    image = serializers.ImageField(write_only=True, required=False, allow_null=True)
+    image_url = serializers.SerializerMethodField("get_image_url")
+
+    def get_image_url(self, obj):
+        # use thumbnail if exists
+        image = obj.image
+
+        # fix image path in development
+        if not image:
+            return None
+        if image.url.startswith("http"):
+            return image.url
+        elif "request" in self.context:
+            return self.context["request"].build_absolute_uri(image.url)
+        else:
+            return image.url
+
     class Meta:
         model = Post
         fields = (
@@ -209,6 +227,7 @@ class PostSerializer(serializers.ModelSerializer):
             "subtitle",
             "post_url",
             "image",
+            "image_url",
             "created_date",
             "start_date",
             "expire_date",
