@@ -201,8 +201,8 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
 
-    # image = serializers.ImageField(write_only=True, required=False, allow_null=True)
-    # image_url = serializers.SerializerMethodField("get_image_url")
+    image = serializers.ImageField(write_only=True, required=False, allow_null=True)
+    image_url = serializers.SerializerMethodField("get_image_url")
 
     def get_image_url(self, obj):
         # use thumbnail if exists
@@ -226,8 +226,8 @@ class PostSerializer(serializers.ModelSerializer):
             "title",
             "subtitle",
             "post_url",
-            # "image",
-            # "image_url",
+            "image",
+            "image_url",
             "created_date",
             "start_date",
             "expire_date",
