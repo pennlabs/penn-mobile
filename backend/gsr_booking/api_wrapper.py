@@ -5,9 +5,11 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from requests.exceptions import ConnectTimeout, ReadTimeout
+
 from gsr_booking.models import GSR, Group, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
-from requests.exceptions import ConnectTimeout, ReadTimeout
+
 
 BASE_URL = "https://libcal.library.upenn.edu"
 API_URL = "https://api2.libcal.com"

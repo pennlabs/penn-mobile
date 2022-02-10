@@ -1,9 +1,20 @@
 from django.urls import include, path
-from gsr_booking.views import (Availability, BookRoom, CancelRoom,
-                               CheckWharton, CreditsView,
-                               GroupMembershipViewSet, GroupViewSet, Locations,
-                               RecentGSRs, ReservationsView, UserViewSet)
 from rest_framework import routers
+
+from gsr_booking.views import (
+    Availability,
+    BookRoom,
+    CancelRoom,
+    CheckWharton,
+    CreditsView,
+    GroupMembershipViewSet,
+    GroupViewSet,
+    Locations,
+    RecentGSRs,
+    ReservationsView,
+    UserViewSet,
+)
+
 
 router = routers.DefaultRouter()
 

@@ -3,18 +3,23 @@ from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from gsr_booking.api_wrapper import APIError, BookingWrapper
-from gsr_booking.booking_logic import book_rooms_for_group
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
-from gsr_booking.serializers import (GroupBookingRequestSerializer,
-                                     GroupMembershipSerializer,
-                                     GroupSerializer, GSRSerializer,
-                                     UserSerializer)
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from gsr_booking.api_wrapper import APIError, BookingWrapper
+from gsr_booking.booking_logic import book_rooms_for_group
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
+from gsr_booking.serializers import (
+    GroupBookingRequestSerializer,
+    GroupMembershipSerializer,
+    GroupSerializer,
+    GSRSerializer,
+    UserSerializer,
+)
+
 
 User = get_user_model()
 
