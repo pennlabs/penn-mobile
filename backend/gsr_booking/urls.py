@@ -1,19 +1,9 @@
 from django.urls import include, path
+from gsr_booking.views import (Availability, BookRoom, CancelRoom,
+                               CheckWharton, CreditsView,
+                               GroupMembershipViewSet, GroupViewSet, Locations,
+                               RecentGSRs, ReservationsView, UserViewSet)
 from rest_framework import routers
-
-from gsr_booking.views import (
-    Availability,
-    BookRoom,
-    CancelRoom,
-    CheckWharton,
-    GroupMembershipViewSet,
-    GroupViewSet,
-    Locations,
-    RecentGSRs,
-    ReservationsView,
-    UserViewSet,
-)
-
 
 router = routers.DefaultRouter()
 
@@ -30,4 +20,5 @@ urlpatterns = [
     path("gsr/book/", BookRoom.as_view(), name="book"),
     path("gsr/cancel/", CancelRoom.as_view(), name="cancel"),
     path("gsr/reservations/", ReservationsView.as_view(), name="reservations"),
+    path("gsr/credits/", CreditsView.as_view(), name="credits"),
 ]
