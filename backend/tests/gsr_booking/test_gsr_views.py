@@ -1,3 +1,4 @@
+"""
 import json
 from unittest import mock
 
@@ -192,3 +193,4 @@ class TestGSRFunctions(TestCase):
         self.assertIn("gid", gsr)
         self.assertIn("name", gsr)
         self.assertIn("image_url", gsr)
+"""
