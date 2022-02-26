@@ -112,6 +112,7 @@ class TestGSRFunctions(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertTrue(res_json["is_wharton"])
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     @mock.patch("gsr_booking.views.BW.get_availability", libcal_availability)
     def test_availability_libcal(self):
         response = self.client.get(reverse("availability", args=["1086", "1889"]))
@@ -126,6 +127,7 @@ class TestGSRFunctions(TestCase):
             self.assertIn("id", room)
             self.assertIn("availability", room)
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     @mock.patch("gsr_booking.views.BW.get_availability", wharton_availability)
     def test_availability_wharton(self):
         response = self.client.get(reverse("availability", args=["JMHH", "1"]))
