@@ -37,6 +37,7 @@ django-runtime-options = "*"
 django-storages = "*"
 pillow = "*"
 boto3 = "*"
+apns2 = "*"
 
 [requires]
 python_version = "3"

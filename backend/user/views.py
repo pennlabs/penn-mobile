@@ -1,6 +1,8 @@
-from rest_framework import generics
+from rest_framework import generics, viewsets
+from rest_framework.permissions import IsAuthenticated
 
-from user.serializers import UserSerializer
+from user.models import NotificationToken
+from user.serializers import NotificationTokenSerializer, UserSerializer
 
 
 class UserView(generics.RetrieveUpdateAPIView):
@@ -21,3 +23,13 @@ class UserView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class NotificationView(viewsets.ModelViewSet):
+    # TODO: write comments
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationTokenSerializer
+
+    def get_queryset(self):
+        return NotificationToken.objects.filter(user=self.request.user)

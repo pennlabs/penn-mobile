@@ -9,6 +9,15 @@ class NotificationTokenSerializer(serializers.ModelSerializer):
         model = NotificationToken
         fields = ("kind", "dev", "token")
 
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        tokens = NotificationToken.objects.filter(user=validated_data["user"]).first()
+        if tokens:
+            tokens.token = validated_data["token"]
+            tokens.save()
+        else:
+            return super().create(validated_data)
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
