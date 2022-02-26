@@ -40,6 +40,8 @@ class GroupMembership(models.Model):
 
     def save(self, *args, **kwargs):
         # determines whether user is wharton or not
+
+        """
         if self.is_wharton is None:
             # not using api_wrapper.py to prevent circular dependency
             url = f"https://apps.wharton.upenn.edu/gsr/api/v1/{self.user.username}/privileges"
@@ -51,6 +53,7 @@ class GroupMembership(models.Model):
                 self.is_wharton = response["detail"] != "Disallowed" and response["type"] != "None"
             except (ConnectTimeout, ReadTimeout, KeyError):
                 self.is_wharton = False
+        """
         super().save(*args, **kwargs)
 
     class Meta:
