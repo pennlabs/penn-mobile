@@ -6,7 +6,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
-from requests.exceptions import ConnectTimeout, ReadTimeout
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from gsr_booking.models import GSR, Group, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
@@ -210,7 +210,7 @@ class WhartonLibWrapper:
 
         try:
             response = requests.request(*args, **kwargs)
-        except (ConnectTimeout, ReadTimeout):
+        except (ConnectTimeout, ReadTimeout, ConnectionError):
             raise APIError("Wharton: Connection timeout")
 
         # only wharton students can access these routes
@@ -379,7 +379,7 @@ class LibCalWrapper:
 
         try:
             return requests.request(*args, **kwargs)
-        except (ConnectTimeout, ReadTimeout):
+        except (ConnectTimeout, ReadTimeout, ConnectionError):
             raise APIError("LibCal: Connection timeout")
 
     def get_availability(self, lid, start=None, end=None):
