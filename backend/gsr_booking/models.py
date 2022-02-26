@@ -1,11 +1,9 @@
+import requests
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
-
-
-# import requests
-# from django.conf import settings
-# from requests.exceptions import ConnectTimeout, ReadTimeout
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 
 User = get_user_model()
@@ -43,7 +41,6 @@ class GroupMembership(models.Model):
     def save(self, *args, **kwargs):
         # determines whether user is wharton or not
 
-        """
         if self.is_wharton is None:
             # not using api_wrapper.py to prevent circular dependency
             url = f"https://apps.wharton.upenn.edu/gsr/api/v1/{self.user.username}/privileges"
@@ -53,9 +50,9 @@ class GroupMembership(models.Model):
                 ).json()
 
                 self.is_wharton = response["detail"] != "Disallowed" and response["type"] != "None"
-            except (ConnectTimeout, ReadTimeout, KeyError):
+            except (ConnectTimeout, ReadTimeout, KeyError, ConnectionError):
                 self.is_wharton = False
-        """
+
         super().save(*args, **kwargs)
 
     class Meta:
