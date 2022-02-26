@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
-from requests.exceptions import ConnectTimeout, ReadTimeout
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 
 User = get_user_model()
@@ -41,17 +41,21 @@ class GroupMembership(models.Model):
     def save(self, *args, **kwargs):
         # determines whether user is wharton or not
         if self.is_wharton is None:
-            # not using api_wrapper.py to prevent circular dependency
-            url = f"https://apps.wharton.upenn.edu/gsr/api/v1/{self.user.username}/privileges"
-            try:
-                response = requests.get(
-                    url, headers={"Authorization": f"Token {settings.WHARTON_TOKEN}"}
-                ).json()
+            self.is_wharton = self.check_wharton()
 
-                self.is_wharton = response["detail"] != "Disallowed" and response["type"] != "None"
-            except (ConnectTimeout, ReadTimeout, KeyError):
-                self.is_wharton = False
         super().save(*args, **kwargs)
+
+    def check_wharton(self):
+        # not using api_wrapper.py to prevent circular dependency
+        url = f"https://apps.wharton.upenn.edu/gsr/api/v1/{self.user.username}/privileges"
+        try:
+            response = requests.get(
+                url, headers={"Authorization": f"Token {settings.WHARTON_TOKEN}"}
+            ).json()
+
+            return response["detail"] != "Disallowed" and response["type"] != "None"
+        except (ConnectTimeout, ReadTimeout, KeyError, ConnectionError):
+            return False
 
     class Meta:
         verbose_name = "Group Membership"

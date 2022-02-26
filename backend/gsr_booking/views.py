@@ -141,19 +141,6 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         if isinstance(usernames, str):
             usernames = [usernames]
 
-        for username in usernames:
-            if GroupMembership.objects.filter(
-                username=username, group=group, accepted=False
-            ).exists():
-                return Response({"message": "invite exists"}, status=400)
-            elif GroupMembership.objects.filter(
-                username=username, group=group, accepted=True
-            ).exists():
-                return Response({"message": f"user {username} already member"}, status=400)
-            GroupMembership.objects.create(
-                username=username, group=group, type=request.data.get("type", "M")
-            )
-
         return Response({"message": "invite(s) sent."})
 
     @action(detail=True, methods=["post"])

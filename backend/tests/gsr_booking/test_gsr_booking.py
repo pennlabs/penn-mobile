@@ -6,10 +6,16 @@ from rest_framework.test import APIClient
 from gsr_booking.models import Group, GroupMembership
 
 
+from unittest import mock
+
+def check_wharton(*args):
+    return False
+
 User = get_user_model()
 
 
 class UserViewTestCase(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.user1 = User.objects.create_user(
             username="user1", password="password", first_name="user", last_name="one"
@@ -59,19 +65,8 @@ class UserViewTestCase(TestCase):
         self.assertTrue(200, response.status_code)
         self.assertEqual(1, len(response.data))
 
-    def test_actualize_nouser_invite(self):
-        mem = GroupMembership.objects.create(username="user4", group=self.group, accepted=False)
-        user4 = User.objects.create_user(username="user4", password="password")
-        self.client.logout()
-        self.client.login(username="user4", password="password")
-        response = self.client.post("/users/user4/activate/")
-        self.assertEqual(200, response.status_code)
-        mem = GroupMembership.objects.get(pk=mem.pk)
-        self.assertEqual(user4, mem.user)
-        self.assertEqual("user4", mem.username)
-
-
 class MembershipViewTestCase(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.user1 = User.objects.create_user(username="user1", password="password")
         self.user2 = User.objects.create_user(username="user2", password="password")
@@ -91,6 +86,7 @@ class MembershipViewTestCase(TestCase):
             ).exists()
         )
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def test_bulk_invite(self):
         User.objects.create_user(username="user3", password="password")
         response = self.client.post(
@@ -101,17 +97,6 @@ class MembershipViewTestCase(TestCase):
             2,
             GroupMembership.objects.filter(accepted=False).count(),
             GroupMembership.objects.all(),
-        )
-
-    def test_invite_by_pennkey_no_user(self):
-        response = self.client.post(
-            "/membership/invite/", {"user": "user4", "group": self.group.pk}
-        )
-        self.assertEqual(200, response.status_code)
-        self.assertTrue(
-            GroupMembership.objects.filter(
-                group=self.group.pk, accepted=False, user=None, username="user4"
-            ).exists()
         )
 
     def test_invite_no_permission(self):
@@ -152,6 +137,7 @@ class MembershipViewTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertTrue(GroupMembership.objects.get(pk=mem.pk).accepted)
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def test_wrong_user_accept_invite_fails(self):
         user3 = User.objects.create_user(username="user3", password="password")
         mem = GroupMembership.objects.create(user=user3, group=self.group2, accepted=False)
@@ -164,17 +150,13 @@ class MembershipViewTestCase(TestCase):
         response = self.client.post(f"/membership/{mem.pk}/accept/")
         self.assertEqual(404, response.status_code)
 
-    def test_accept_invite_no_user_fails(self):
-        mem = GroupMembership.objects.create(username="user4", group=self.group2, accepted=True)
-        response = self.client.post(f"/membership/{mem.pk}/accept/")
-        self.assertEqual(404, response.status_code)
-
     def test_decline_invite(self):
         mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=False)
         response = self.client.post(f"/membership/{mem.pk}/decline/")
         self.assertEqual(200, response.status_code)
         self.assertFalse(GroupMembership.objects.filter(pk=mem.pk).exists())
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def test_wrong_user_decline_invite_fails(self):
         user3 = User.objects.create_user(username="user3", password="password")
         mem = GroupMembership.objects.create(user=user3, group=self.group2, accepted=False)
@@ -200,6 +182,7 @@ class MembershipViewTestCase(TestCase):
 
 
 class GroupTestCase(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.user1 = User.objects.create_user(username="user1", password="password")
         self.user2 = User.objects.create_user(username="user2", password="password")
