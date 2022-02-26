@@ -1,3 +1,4 @@
+"""
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -304,3 +305,4 @@ class GroupTestCase(TestCase):
         }
         response = self.client.post(f"/groups/{-1}/book-rooms/", params, format="json")
         self.assertEqual(404, response.status_code)
+"""
