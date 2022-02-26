@@ -1,4 +1,3 @@
-"""
 import json
 from unittest import mock
 
@@ -12,6 +11,10 @@ from gsr_booking.models import GSR, Group, GSRBooking, Reservation
 
 
 User = get_user_model()
+
+
+def check_wharton(*args):
+    return False
 
 
 def mock_requests_get(obj, *args, **kwargs):
@@ -51,6 +54,7 @@ def mock_requests_get(obj, *args, **kwargs):
 
 
 class TestBookingWrapper(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_gsrs")
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
@@ -136,4 +140,3 @@ class TestBookingWrapper(TestCase):
         )
         cancel = self.bw.cancel_room("123", self.user)
         self.assertIsNone(cancel)
-"""
