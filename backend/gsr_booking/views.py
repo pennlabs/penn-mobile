@@ -310,6 +310,10 @@ class Availability(APIView):
     """
 
     def get(self, request, lid, gid):
+
+        for g in GroupMembership.objects.all():
+            g.save()
+
         start = request.GET.get("start")
         end = request.GET.get("end")
 
