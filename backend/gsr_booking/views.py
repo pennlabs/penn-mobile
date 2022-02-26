@@ -311,9 +311,6 @@ class Availability(APIView):
 
     def get(self, request, lid, gid):
 
-        for g in GroupMembership.objects.filter(is_wharton=None):
-            g.save()
-
         start = request.GET.get("start")
         end = request.GET.get("end")
 
