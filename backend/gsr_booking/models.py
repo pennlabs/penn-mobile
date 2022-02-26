@@ -1,9 +1,11 @@
-import requests
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
-from requests.exceptions import ConnectTimeout, ReadTimeout
+
+
+# import requests
+# from django.conf import settings
+# from requests.exceptions import ConnectTimeout, ReadTimeout
 
 
 User = get_user_model()

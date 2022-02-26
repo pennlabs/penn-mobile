@@ -1,4 +1,3 @@
-
 from django.contrib import auth
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -53,4 +52,3 @@ class UserTestCase(TestCase):
         user.save()
         self.assertEqual(1, Profile.objects.all().count())
         self.assertEqual(user, Profile.objects.all().first().user)
-
