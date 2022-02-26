@@ -40,8 +40,8 @@ class GroupMembership(models.Model):
 
     def save(self, *args, **kwargs):
         # determines whether user is wharton or not
-        if self.is_wharton is None:
-            self.is_wharton = self.check_wharton()
+        # if self.is_wharton is None:
+        self.is_wharton = self.check_wharton()
 
         super().save(*args, **kwargs)
 
@@ -52,8 +52,7 @@ class GroupMembership(models.Model):
             response = requests.get(
                 url, headers={"Authorization": f"Token {settings.WHARTON_TOKEN}"}
             ).json()
-
-            return response["detail"] != "Disallowed" and response["type"] != "None"
+            return response["type"] != "None"
         except (ConnectTimeout, ReadTimeout, KeyError, ConnectionError):
             return False
 
