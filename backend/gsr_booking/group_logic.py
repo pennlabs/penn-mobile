@@ -54,4 +54,5 @@ class GroupBook:
         if gsr.kind == GSR.KIND_WHARTON:
             # check if wharton users is non-empty
             wharton_id = self.get_wharton_ids(group)[0]
+            print(wharton_id)
             return self.bw.get_availability(lid, gid, start, end, User.objects.get(id=wharton_id))
