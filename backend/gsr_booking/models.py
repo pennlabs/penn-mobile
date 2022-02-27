@@ -54,7 +54,7 @@ class GroupMembership(models.Model):
             ).json()
             return response["type"] != "None"
         except (ConnectTimeout, ReadTimeout, KeyError, ConnectionError):
-            return False
+            return None
 
     class Meta:
         verbose_name = "Group Membership"

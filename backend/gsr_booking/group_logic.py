@@ -3,7 +3,7 @@ import random
 from django.contrib.auth import get_user_model
 
 from gsr_booking.api_wrapper import APIError, BookingWrapper
-from gsr_booking.models import GSR, Reservation
+from gsr_booking.models import GSR, GroupMembership, Reservation
 
 
 # GroupMembership
@@ -75,5 +75,6 @@ class GroupBook:
             # # check if wharton users is non-empty
             # wharton_id = self.get_wharton_ids(group)[0]
             # return self.bw.get_availability(lid, gid, start, end, User.objects.get(id=wharton_id))
-            wharton_user = self.get_wharton_users(group)[0]
+            # wharton_user = self.get_wharton_users(group)[0]
+            wharton_user = GroupMembership.objects.filter(group=group, is_wharton=True).first().user
             return self.bw.get_availability(lid, gid, start, end, wharton_user)
