@@ -5,12 +5,8 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-<<<<<<< HEAD
-from requests.exceptions import ConnectTimeout, ReadTimeout
-=======
 from django.utils.timezone import make_aware
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
->>>>>>> master
 
 from gsr_booking.models import GSR, Group, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
