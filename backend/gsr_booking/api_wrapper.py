@@ -5,7 +5,12 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+<<<<<<< HEAD
 from requests.exceptions import ConnectTimeout, ReadTimeout
+=======
+from django.utils.timezone import make_aware
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+>>>>>>> master
 
 from gsr_booking.models import GSR, Group, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
@@ -32,7 +37,7 @@ class BookingWrapper:
     def is_wharton(self, username):
         return self.WLW.is_wharton(username)
 
-    def book_room(self, gid, rid, room_name, start, end, user):
+    def book_room(self, gid, rid, room_name, start, end, user, single_book=True):
 
         gsr = GSR.objects.filter(gid=gid).first()
         if not gsr:
@@ -46,12 +51,14 @@ class BookingWrapper:
 
         # create reservation with single-person-group containing user
         # TODO: create reservation with group that frontend passes in
-        single_person_group = Group.objects.filter(owner=user).first()
-        if not single_person_group:
-            raise APIError("Unknown User")
-        reservation = Reservation.objects.create(
-            start=start, end=end, creator=user, group=single_person_group
-        )
+        if single_book:
+            single_person_group = Group.objects.filter(owner=user).first()
+            if not single_person_group:
+                raise APIError("Unknown User")
+            reservation = Reservation.objects.create(
+                start=start, end=end, creator=user, group=single_person_group
+            )
+
         # creates booking on database
         # TODO: break start / end time into smaller chunks and pool credit for group booking
         GSRBooking.objects.create(
@@ -161,7 +168,7 @@ class WhartonLibWrapper:
 
         try:
             response = requests.request(*args, **kwargs)
-        except (ConnectTimeout, ReadTimeout):
+        except (ConnectTimeout, ReadTimeout, ConnectionError):
             raise APIError("Wharton: Connection timeout")
 
         # only wharton students can access these routes
@@ -236,7 +243,23 @@ class WhartonLibWrapper:
         return response
 
     def get_reservations(self, user):
+        # TODO: connect this to DB
+
+        # get all reservations, then get GSRBookings,
+        # then finish
+
         wharton_bookings = []
+
+        # db_bookings = GSRBookingSerializer(
+        #     GSRBooking.objects.filter(
+        #         user=user,
+        #         gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL),
+        #         end__gte=timezone.localtime(),
+        #         is_cancelled=False,
+        #     ),
+        #     many=True,
+        # ).data
+
         try:
             url = f"{WHARTON_URL}{user.username}/reservations"
             bookings = self.request("GET", url).json()["bookings"]
@@ -324,7 +347,7 @@ class LibCalWrapper:
 
         try:
             return requests.request(*args, **kwargs)
-        except (ConnectTimeout, ReadTimeout):
+        except (ConnectTimeout, ReadTimeout, ConnectionError):
             raise APIError("LibCal: Connection timeout")
 
     def get_availability(self, lid, start=None, end=None):

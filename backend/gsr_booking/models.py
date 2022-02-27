@@ -1,6 +1,9 @@
+import requests
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 
 User = get_user_model()
@@ -12,7 +15,6 @@ class GroupMembership(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="memberships", blank=True, null=True,
     )
-    username = models.CharField(max_length=127, blank=True, null=True, default=None)
 
     group = models.ForeignKey("Group", on_delete=models.CASCADE, related_name="memberships")
 
@@ -27,27 +29,32 @@ class GroupMembership(models.Model):
 
     notifications = models.BooleanField(default=True)
 
+    is_wharton = models.BooleanField(blank=True, null=True, default=None)
+
     @property
     def is_invite(self):
         return not self.accepted
 
     def __str__(self):
-        return "{}<->{}".format(self.user, self.group)
+        return f"{self.user}<->{self.group}"
 
     def save(self, *args, **kwargs):
-        if self.user is not None:
-            self.username = self.user.username
-        elif (
-            self.username is not None
-        ):  # if no user has been set yet, try to find a user to attach.
-            try:
-                self.user = User.objects.get(username=self.username)
-            except User.DoesNotExist:
-                self.user = None
-        else:  # Both user and username are None, which is an invalid Membership.
-            raise ValueError("Either user or username must be set.")
+        # determines whether user is wharton or not
+        # if self.is_wharton is None:
+        self.is_wharton = self.check_wharton()
 
         super().save(*args, **kwargs)
+
+    def check_wharton(self):
+        # not using api_wrapper.py to prevent circular dependency
+        url = f"https://apps.wharton.upenn.edu/gsr/api/v1/{self.user.username}/privileges"
+        try:
+            response = requests.get(
+                url, headers={"Authorization": f"Token {settings.WHARTON_TOKEN}"}
+            ).json()
+            return response["type"] != "None"
+        except (ConnectTimeout, ReadTimeout, KeyError, ConnectionError):
+            return False
 
     class Meta:
         verbose_name = "Group Membership"
@@ -67,7 +74,7 @@ class Group(models.Model):
     MEMBER = "M"
 
     def __str__(self):
-        return "{}: {}".format(self.pk, self.name)
+        return f"{self.pk}: {self.name}"
 
     def has_member(self, user):
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
