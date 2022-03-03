@@ -46,6 +46,10 @@ class Venues(APIView):
 
             if "dateHours" in venue:
                 meals = venue["dateHours"]
+                if not isinstance(meals, list):
+                    venue["dateHours"] = [meals]
+                    meals = venue["dateHours"]
+
                 for i in range(len(meals)):
                     if not isinstance(meals[i]["meal"], list):
                         meals[i]["meal"] = [meals[i]["meal"]]
