@@ -38,6 +38,7 @@ django-storages = "*"
 pillow = "*"
 boto3 = "*"
 apns2 = "*"
+numpy = "*"
 
 [requires]
 python_version = "3"
