@@ -1,8 +1,12 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from user.models import NotificationToken
 from user.serializers import NotificationTokenSerializer, UserSerializer
+from user.notifications import send_push_notification
 
 
 class UserView(generics.RetrieveUpdateAPIView):
@@ -38,19 +42,22 @@ class NotificationView(viewsets.ModelViewSet):
         return NotificationToken.objects.filter(user=self.request.user)
 
 
-# class SendNotification(APIView):
-#     """Sends push notification alert if one exists."""
+class NotificationAlertView(APIView):
+    """
+    post: 
+    sends push notification alert if one exists
+    """
 
-#     permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
-#     def post(self, request):
-#         title = request.data["title"]
-#         body = request.data["body"]
+    def post(self, request):
+        title = request.data["title"]
+        body = request.data["body"]
 
-#         # only iOS for now
-#         token = get_object_or_404(
-#             NotificationToken, user=self.request.user, kind=NotificationToken.KIND_IOS
-#         )
+        # only iOS for now
+        token = get_object_or_404(
+            NotificationToken, user=self.request.user, kind=NotificationToken.KIND_IOS
+        )
 
-#         send_push_notification(token.token, title, body)
-#         return Response({"success": True})
+        send_push_notification(token.token, title, body)
+        return Response({"success": True})
