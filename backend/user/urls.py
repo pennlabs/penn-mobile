@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework import routers
 
-from user.views import NotificationView, UserView, NotificationAlertView
+from user.views import NotificationAlertView, NotificationView, UserView
 
 
 app_name = "user"

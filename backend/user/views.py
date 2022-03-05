@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from user.models import NotificationToken
-from user.serializers import NotificationTokenSerializer, UserSerializer
 from user.notifications import send_push_notification
+from user.serializers import NotificationTokenSerializer, UserSerializer
 
 
 class UserView(generics.RetrieveUpdateAPIView):
@@ -44,7 +44,7 @@ class NotificationView(viewsets.ModelViewSet):
 
 class NotificationAlertView(APIView):
     """
-    post: 
+    post:
     sends push notification alert if one exists
     """
 
