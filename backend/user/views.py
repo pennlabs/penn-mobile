@@ -1,14 +1,8 @@
-# from django.shortcuts import get_object_or_404
 from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
 
 from user.models import NotificationToken
-# from user.notifications import send_push_notification
 from user.serializers import NotificationTokenSerializer, UserSerializer
-
-
-# from rest_framework.response import Response
-# from rest_framework.views import APIView
 
 
 class UserView(generics.RetrieveUpdateAPIView):
