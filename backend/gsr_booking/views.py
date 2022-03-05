@@ -297,7 +297,7 @@ class RecentGSRs(generics.ListAPIView):
 
 class CheckWharton(APIView):
     def get(self, request):
-        return Response({"is_wharton": BW.is_wharton(request.user.username)})
+        return Response({"is_wharton": BW.is_wharton(request.user)})
 
 
 class Availability(APIView):
@@ -315,9 +315,8 @@ class Availability(APIView):
         end = request.GET.get("end")
 
         try:
-            gsr = GSR.objects.filter(gid=gid).first()
             group = Group.objects.get(name="Penn Labs")
-            if request.user in group.members.all() and gsr.kind == GSR.KIND_WHARTON:
+            if request.user in group.members.all():
                 return Response(GB.get_availability(lid, gid, start, end, request.user, group))
             else:
                 return Response(BW.get_availability(lid, gid, start, end, request.user))
@@ -338,9 +337,8 @@ class BookRoom(APIView):
         room_name = request.data["room_name"]
 
         try:
-            gsr = GSR.objects.filter(gid=gid).first()
             group = Group.objects.get(name="Penn Labs")
-            if request.user in group.members.all() and gsr.kind == GSR.KIND_WHARTON:
+            if request.user in group.members.all():
                 GB.book_room(gid, room_id, room_name, start, end, request.user, group)
             else:
                 BW.book_room(gid, room_id, room_name, start, end, request.user)

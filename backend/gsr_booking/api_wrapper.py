@@ -30,8 +30,9 @@ class BookingWrapper:
         self.WLW = WhartonLibWrapper()
         self.LCW = LibCalWrapper()
 
-    def is_wharton(self, username):
-        return self.WLW.is_wharton(username)
+    def is_wharton(self, user):
+        group = Group.objects.get(name="Penn Labs")
+        return self.WLW.is_wharton(user.username) or user in group.members.all()
 
     def book_room(self, gid, rid, room_name, start, end, user, single_book=True):
 
