@@ -1,7 +1,7 @@
 import os
 
 from apns2.client import APNsClient
-from apns2.credientials import TokenCredentials
+from apns2.credentials import TokenCredentials
 from apns2.payload import Payload
 
 

@@ -13,8 +13,11 @@ class NotificationTokenSerializer(serializers.ModelSerializer):
         validated_data["user"] = self.context["request"].user
         tokens = NotificationToken.objects.filter(user=validated_data["user"]).first()
         if tokens:
+            # if token already exists, just update it
+            tokens.kind = validated_data["kind"]
             tokens.token = validated_data["token"]
             tokens.save()
+            return tokens
         else:
             return super().create(validated_data)
 
@@ -22,7 +25,8 @@ class NotificationTokenSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ("expected_graduation", "degrees", "laundry_preferences", "dining_preferences")
+        # removed "expected_graduation" and "degrees"
+        fields = ("laundry_preferences", "dining_preferences")
 
 
 class UserSerializer(serializers.ModelSerializer):
