@@ -42,36 +42,28 @@ class GroupBook:
         if not gsr:
             raise APIError(f"Unknown GSR GID {gid}")
 
-        if gsr.kind == GSR.KIND_WHARTON:
-            wharton_users = self.get_wharton_users(group)
-            for wharton_user in wharton_users:
-                try:
+        try:
+            if gsr.kind == GSR.KIND_WHARTON:
+                wharton_users = self.get_wharton_users(group)
+                for wharton_user in wharton_users:
                     booking = self.bw.book_room(
                         gid, rid, room_name, start, end, wharton_user.user, group_book=True
                     )
-                    reservation = Reservation.objects.create(
-                        start=start, end=end, creator=user, group=group
-                    )
-                    booking.reservation = reservation
-                    booking.save()
                     break
-                except APIError:
-                    pass
-        else:
-            all_users = self.get_all_users(group)
-            for all_user in all_users:
-                try:
+            else:
+                all_users = self.get_all_users(group)
+                for all_user in all_users:
                     booking = self.bw.book_room(
                         gid, rid, room_name, start, end, all_user.user, group_book=True
                     )
-                    reservation = Reservation.objects.create(
-                        start=start, end=end, creator=user, group=group
-                    )
-                    booking.reservation = reservation
-                    booking.save()
                     break
-                except APIError:
-                    pass
+            reservation = Reservation.objects.create(
+                start=start, end=end, creator=user, group=group
+            )
+            booking.reservation = reservation
+            booking.save()
+        except APIError:
+            pass
 
     def get_availability(self, lid, gid, start, end, user, group):
         """
