@@ -46,8 +46,14 @@ class GroupBook:
             wharton_users = self.get_wharton_users(group)
             for wharton_user in wharton_users:
                 try:
-                    self.bw.book_room(gid, rid, room_name, start, end, wharton_user.user)
-                    Reservation.objects.create(start=start, end=end, creator=user, group=group)
+                    booking = self.bw.book_room(
+                        gid, rid, room_name, start, end, wharton_user.user, group_book=True
+                    )
+                    reservation = Reservation.objects.create(
+                        start=start, end=end, creator=user, group=group
+                    )
+                    booking.reservation = reservation
+                    booking.save()
                     break
                 except APIError:
                     pass
@@ -55,8 +61,14 @@ class GroupBook:
             all_users = self.get_all_users(group)
             for all_user in all_users:
                 try:
-                    self.bw.book_room(gid, rid, room_name, start, end, all_user)
-                    Reservation.objects.create(start=start, end=end, creator=user, group=group)
+                    booking = self.bw.book_room(
+                        gid, rid, room_name, start, end, all_user.user, group_book=True
+                    )
+                    reservation = Reservation.objects.create(
+                        start=start, end=end, creator=user, group=group
+                    )
+                    booking.reservation = reservation
+                    booking.save()
                     break
                 except APIError:
                     pass
@@ -65,13 +77,12 @@ class GroupBook:
         """
         Availability function for Group
         """
+
         gsr = GSR.objects.filter(gid=gid).first()
         if gsr.kind == GSR.KIND_WHARTON:
             # check if wharton users is non-empty
             wharton_user = GroupMembership.objects.filter(group=group, is_wharton=True).first()
             if wharton_user:
                 return self.bw.get_availability(lid, gid, start, end, wharton_user.user)
-            else:
-                return self.bw.get_availability(lid, gid, start, end, user)
-        else:
-            return self.bw.get_availability(lid, gid, start, end, user)
+
+        return self.bw.get_availability(lid, gid, start, end, user)

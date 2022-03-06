@@ -85,7 +85,7 @@ class TestBookingWrapper(TestCase):
         book_wharton = self.bw.book_room(
             1, 94, "241", "2021-12-05T16:00:00-05:00", "2021-12-05T16:30:00-05:00", self.user
         )
-        self.assertIsNone(book_wharton)
+        self.assertEquals("241", book_wharton.room_name)
 
     @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
     def test_wharton_reservations(self):
@@ -119,7 +119,7 @@ class TestBookingWrapper(TestCase):
             "2021-12-05T16:30:00-05:00",
             self.user,
         )
-        self.assertIsNone(book_libcal)
+        self.assertEquals("VP WIC Booth 01", book_libcal.room_name)
 
     @mock.patch(
         "gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get
