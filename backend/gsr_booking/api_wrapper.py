@@ -146,18 +146,22 @@ class BookingWrapper:
 
     def get_reservations(self, user):
         bookings = self.LCW.get_reservations(user) + self.WLW.get_reservations(user)
-        for booking in bookings:
-            gsr_booking = GSRBooking.objects.filter(booking_id=booking["booking_id"]).first()
-            if not gsr_booking:
-                booking["room_name"] = "[Me] " + booking["room_name"]
-            else:
-                # TODO: change this once we release the "Me" group
-                if gsr_booking.user == gsr_booking.reservation.creator:
+
+        # TODO: toggle this for everyone
+        group = Group.objects.get(name="Penn Labs")
+        if user in group.members.all():
+            for booking in bookings:
+                gsr_booking = GSRBooking.objects.filter(booking_id=booking["booking_id"]).first()
+                if not gsr_booking:
                     booking["room_name"] = "[Me] " + booking["room_name"]
                 else:
-                    booking["room_name"] = (
-                        f"[{gsr_booking.reservation.group.name}] " + booking["room_name"]
-                    )
+                    # TODO: change this once we release the "Me" group
+                    if gsr_booking.user == gsr_booking.reservation.creator:
+                        booking["room_name"] = "[Me] " + booking["room_name"]
+                    else:
+                        booking["room_name"] = (
+                            f"[{gsr_booking.reservation.group.name}] " + booking["room_name"]
+                        )
         return bookings
 
     def check_credits(self, lid, gid, user, start, end):
