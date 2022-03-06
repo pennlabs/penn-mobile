@@ -46,7 +46,7 @@ class GroupBook:
             wharton_users = self.get_wharton_users(group)
             for wharton_user in wharton_users:
                 try:
-                    self.bw.book_room(gid, rid, room_name, start, end, wharton_user)
+                    self.bw.book_room(gid, rid, room_name, start, end, wharton_user.user)
                     Reservation.objects.create(start=start, end=end, creator=user, group=group)
                     break
                 except APIError:
