@@ -347,11 +347,14 @@ class WhartonLibWrapper:
     def cancel_room(self, user, booking_id):
         """Cancels reservation given booking id"""
         wharton_booking = GSRBooking.objects.filter(booking_id=booking_id)
+        username = user.username
         if wharton_booking.exists():
             gsr_booking = wharton_booking.first()
             gsr_booking.is_cancelled = True
             gsr_booking.save()
-        url = f"{WHARTON_URL}{user.username}/reservations/{booking_id}/cancel"
+            # changing username if booking is in database
+            username = gsr_booking.user.username
+        url = f"{WHARTON_URL}{username}/reservations/{booking_id}/cancel"
         response = self.request("DELETE", url).json()
         if "detail" in response:
             raise APIError("Wharton: " + response["detail"])
