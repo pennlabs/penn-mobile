@@ -40,9 +40,7 @@ class GroupMembership(models.Model):
 
     def save(self, *args, **kwargs):
         # determines whether user is wharton or not
-        # if self.is_wharton is None:
         self.is_wharton = self.check_wharton()
-
         super().save(*args, **kwargs)
 
     def check_wharton(self):
