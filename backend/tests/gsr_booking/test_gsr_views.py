@@ -7,10 +7,14 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from gsr_booking.models import GSR, GSRBooking
+from gsr_booking.models import GSR, Group, GSRBooking
 
 
 User = get_user_model()
+
+
+def check_wharton(*args):
+    return False
 
 
 def is_wharton_false(*args):
@@ -41,11 +45,15 @@ def reservations(*args):
 
 
 class TestGSRs(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_gsrs")
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
+
+        test_user = User.objects.create_user("user1", "user")
+        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
     def test_get_location(self):
         response = self.client.get(reverse("locations"))
@@ -60,11 +68,15 @@ class TestGSRs(TestCase):
 
 
 class TestGSRFunctions(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_gsrs")
         self.user = User.objects.create_user("user", "user@sas.upenn.edu", "user")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
+
+        test_user = User.objects.create_user("user1", "user")
+        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
     def test_recent(self):
         gsrs = list(GSR.objects.all())
@@ -100,6 +112,7 @@ class TestGSRFunctions(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertTrue(res_json["is_wharton"])
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     @mock.patch("gsr_booking.views.BW.get_availability", libcal_availability)
     def test_availability_libcal(self):
         response = self.client.get(reverse("availability", args=["1086", "1889"]))
@@ -114,6 +127,7 @@ class TestGSRFunctions(TestCase):
             self.assertIn("id", room)
             self.assertIn("availability", room)
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     @mock.patch("gsr_booking.views.BW.get_availability", wharton_availability)
     def test_availability_wharton(self):
         response = self.client.get(reverse("availability", args=["JMHH", "1"]))

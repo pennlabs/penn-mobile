@@ -14,6 +14,10 @@ from portal.models import Poll, PollOption, PollVote, TargetPopulation
 User = get_user_model()
 
 
+def check_wharton(*args):
+    return False
+
+
 def mock_get_user_clubs(*args, **kwargs):
     with open("tests/portal/get_user_clubs.json") as data:
         return json.load(data)
@@ -32,6 +36,7 @@ def mock_get_club_info(*args, **kwargs):
 class TestUserClubs(TestCase):
     """Test User and Club information"""
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
@@ -54,6 +59,7 @@ class TestUserClubs(TestCase):
 class TestPolls(TestCase):
     """Tests Create/Update/Retrieve for Polls and Poll Options"""
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     def setUp(self):
         call_command("load_target_populations")
@@ -170,6 +176,7 @@ class TestPolls(TestCase):
         self.client.patch(f'/portal/options/{res_json["id"]}/', payload_2)
         self.assertEqual("no!", PollOption.objects.get(id=res_json["id"]).choice)
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def test_review_poll(self):
         Poll.objects.create(
             club_code="pennlabs",
@@ -221,6 +228,7 @@ class TestPolls(TestCase):
 class TestPollVotes(TestCase):
     """Tests Create/Update Polls and History"""
 
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_target_populations")
         self.target_id = TargetPopulation.objects.get(population="2024").id
