@@ -106,8 +106,12 @@ class DailyMenu(APIView):
     GET: Returns data on daily menu for a particular venue
     """
 
-    def get(self, request, venue_id):
-        date = str(timezone.localtime().date())
+    def post(self, request, venue_id):
+        date = (
+            request.data.get("date")
+            if request.data.get("date")
+            else str(timezone.localtime().date())
+        )
         try:
             v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
         except APIError as e:
