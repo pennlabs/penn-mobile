@@ -234,3 +234,52 @@ class HomePage(APIView):
         cells.sort(key=lambda x: x.weight, reverse=True)
 
         return Response({"cells": [x.getCell() for x in cells]})
+
+class Fitness(APIView):
+    """
+    GET: Get's news article from the DP
+    """
+
+    def get_capacities(self):
+        # capacities default to 0 because spreadsheet number appears blank if nobody is at a location
+        capacities = {
+            "4th Floor Fitness": 0,
+            "3rd Floor Fitness": 0,
+            "2nd Floor Strength": 0,
+            "Basketball Courts": 0,
+            "MPR": 0,
+            "Climbing Wall": 0,
+            "1st floor Fitness": 0,
+            "Pool-Shallow": 0,
+            "Pool-Deep": 0
+            }
+        try:
+            resp = requests.get("https://docs.google.com/spreadsheets/u/0/d/e/2PACX-1vSX91_MlAjJo5uVLznuy7BFnUgiBOI28oBCReLRKKo76L-k8EFgizAYXpIKPBX_c76wC3aztn3BogD4/pubhtml/sheet?headers=false&gid=0")
+        except ConnectionError:
+            return None
+
+        html = resp.content.decode("utf8")
+
+        soup = BeautifulSoup(html, "html5lib")
+
+        embedded_spreadsheet = soup.find("body", {"class": "docs-gm"})
+        table_rows = embedded_spreadsheet.findChildren("tr")
+        for row in table_rows:
+            cells = row.findChildren("td")
+            if (len(cells) >= 2):
+                location = cells[0].getText()
+                if location in capacities:
+                    try:
+                        count = int(cells[1].getText())
+                        capacities[location] = count
+                    except ValueError:
+                        capacities[location] = 0
+        
+        return capacities
+
+    def get(self, request):
+        capacities = self.get_capacities()
+        if capacities:
+            return Response(capacities)
+        else:
+            return Response({"error": "Site could not be reached or could not be parsed."})
