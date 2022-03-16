@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from penndata.models import Event, HomePageOrder, FitnessRoom
+from penndata.models import Event, FitnessRoom, HomePageOrder
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -23,6 +23,7 @@ class HomePageOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = HomePageOrder
         fields = ("cell", "rank")
+
 
 class FitnessRoomSerializer(serializers.ModelSerializer):
     class Meta:

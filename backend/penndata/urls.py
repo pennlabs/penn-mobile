@@ -1,6 +1,6 @@
 from django.urls import path
 
-from penndata.views import Calendar, Events, HomePage, HomePageOrdering, News, Fitness
+from penndata.views import Calendar, Events, Fitness, HomePage, HomePageOrdering, News
 
 
 urlpatterns = [

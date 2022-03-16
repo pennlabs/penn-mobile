@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 
+
 class Event(models.Model):
     event_type = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
@@ -19,6 +20,7 @@ class HomePageOrder(models.Model):
 
     def __str__(self):
         return self.cell
+
 
 class FitnessRoom(models.Model):
     name = models.CharField(max_length=255)

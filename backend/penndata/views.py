@@ -235,13 +235,14 @@ class HomePage(APIView):
 
         return Response({"cells": [x.getCell() for x in cells]})
 
+
 class Fitness(APIView):
     """
     GET: Get's news article from the DP
     """
 
     def get_capacities(self):
-        # capacities default to 0 because spreadsheet number appears blank if nobody is at a location
+        # capacities default to 0 because spreadsheet number appears blank if 0 people at location
         capacities = {
             "4th Floor Fitness": 0,
             "3rd Floor Fitness": 0,
@@ -251,10 +252,17 @@ class Fitness(APIView):
             "Climbing Wall": 0,
             "1st floor Fitness": 0,
             "Pool-Shallow": 0,
-            "Pool-Deep": 0
-            }
+            "Pool-Deep": 0,
+        }
         try:
-            resp = requests.get("https://docs.google.com/spreadsheets/u/0/d/e/2PACX-1vSX91_MlAjJo5uVLznuy7BFnUgiBOI28oBCReLRKKo76L-k8EFgizAYXpIKPBX_c76wC3aztn3BogD4/pubhtml/sheet?headers=false&gid=0")
+            resp = requests.get(
+                (
+                    "https://docs.google.com/spreadsheets/u/0/d/e/"
+                    "2PACX-1vSX91_MlAjJo5uVLznuy7BFnUgiBOI28oBCReLRKKo76L"
+                    "-k8EFgizAYXpIKPBX_c76wC3aztn3BogD4"
+                    "/pubhtml/sheet?headers=false&gid=0"
+                )
+            )
         except ConnectionError:
             return None
 
@@ -266,7 +274,7 @@ class Fitness(APIView):
         table_rows = embedded_spreadsheet.findChildren("tr")
         for row in table_rows:
             cells = row.findChildren("td")
-            if (len(cells) >= 2):
+            if len(cells) >= 2:
                 location = cells[0].getText()
                 if location in capacities:
                     try:
@@ -274,7 +282,7 @@ class Fitness(APIView):
                         capacities[location] = count
                     except ValueError:
                         capacities[location] = 0
-        
+
         return capacities
 
     def get(self, request):
