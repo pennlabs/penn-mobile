@@ -24,6 +24,8 @@ class HomePageOrder(models.Model):
 
 class FitnessRoom(models.Model):
     name = models.CharField(max_length=255)
+    # TODO "portal/images" does not exist, add back images
+    # image = models.ImageField(upload_to="portal/images", blank=False)
 
     def __str__(self):
         return str(self.name)
@@ -31,9 +33,8 @@ class FitnessRoom(models.Model):
 
 class FitnessSnapshot(models.Model):
     room = models.ForeignKey(FitnessRoom, on_delete=models.CASCADE, null=True)
-    date_updated = models.DateTimeField(default=timezone.now)
+    date = models.DateTimeField(default=timezone.now)
     count = models.IntegerField()
-    percent = models.IntegerField()
 
     def __str__(self):
         return f"Room Name {self.room.name} | {self.date.date()}"
