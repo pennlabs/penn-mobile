@@ -46,6 +46,10 @@ class Venues(APIView):
 
             if "dateHours" in venue:
                 meals = venue["dateHours"]
+                if not isinstance(meals, list):
+                    venue["dateHours"] = [meals]
+                    meals = venue["dateHours"]
+
                 for i in range(len(meals)):
                     if not isinstance(meals[i]["meal"], list):
                         meals[i]["meal"] = [meals[i]["meal"]]
@@ -102,8 +106,12 @@ class DailyMenu(APIView):
     GET: Returns data on daily menu for a particular venue
     """
 
-    def get(self, request, venue_id):
-        date = str(timezone.localtime().date())
+    def post(self, request, venue_id):
+        date = (
+            request.data.get("date")
+            if request.data.get("date")
+            else str(timezone.localtime().date())
+        )
         try:
             v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
         except APIError as e:

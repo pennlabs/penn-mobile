@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, BookingWrapper
 from gsr_booking.booking_logic import book_rooms_for_group
+from gsr_booking.group_logic import GroupBook
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 from gsr_booking.serializers import (
     GroupBookingRequestSerializer,
@@ -139,19 +140,6 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         usernames = request.data.get("user").split(",")
         if isinstance(usernames, str):
             usernames = [usernames]
-
-        for username in usernames:
-            if GroupMembership.objects.filter(
-                username=username, group=group, accepted=False
-            ).exists():
-                return Response({"message": "invite exists"}, status=400)
-            elif GroupMembership.objects.filter(
-                username=username, group=group, accepted=True
-            ).exists():
-                return Response({"message": f"user {username} already member"}, status=400)
-            GroupMembership.objects.create(
-                username=username, group=group, type=request.data.get("type", "M")
-            )
 
         return Response({"message": "invite(s) sent."})
 
@@ -282,6 +270,7 @@ class GroupViewSet(viewsets.ModelViewSet):
 
 # umbrella class used for accessing GSR API's (needed for token authentication)
 BW = BookingWrapper()
+GB = GroupBook()
 
 
 class Locations(generics.ListAPIView):
@@ -308,7 +297,7 @@ class RecentGSRs(generics.ListAPIView):
 
 class CheckWharton(APIView):
     def get(self, request):
-        return Response({"is_wharton": BW.is_wharton(request.user.username)})
+        return Response({"is_wharton": BW.is_wharton(request.user)})
 
 
 class Availability(APIView):
@@ -321,11 +310,16 @@ class Availability(APIView):
     """
 
     def get(self, request, lid, gid):
+
         start = request.GET.get("start")
         end = request.GET.get("end")
 
         try:
-            return Response(BW.get_availability(lid, gid, start, end, request.user))
+            group = Group.objects.get(name="Penn Labs")
+            if request.user in group.members.all():
+                return Response(GB.get_availability(lid, gid, start, end, request.user, group))
+            else:
+                return Response(BW.get_availability(lid, gid, start, end, request.user))
         except APIError as e:
             return Response({"error": str(e)}, status=400)
 
@@ -343,7 +337,11 @@ class BookRoom(APIView):
         room_name = request.data["room_name"]
 
         try:
-            BW.book_room(gid, room_id, room_name, start, end, request.user)
+            group = Group.objects.get(name="Penn Labs")
+            if request.user in group.members.all():
+                GB.book_room(gid, room_id, room_name, start, end, request.user, group)
+            else:
+                BW.book_room(gid, room_id, room_name, start, end, request.user)
             return Response({"detail": "success"})
         except APIError as e:
             return Response({"error": str(e)}, status=400)

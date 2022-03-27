@@ -1,4 +1,5 @@
 import json
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -10,6 +11,10 @@ from rest_framework.test import APIClient
 from dining.models import Venue
 from laundry.models import LaundryRoom
 from penndata.models import Event
+
+
+def check_wharton(*args):
+    return False
 
 
 User = get_user_model()
@@ -74,6 +79,7 @@ class TestEvent(TestCase):
 
 
 class TestHomePage(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_venues")
         call_command("load_laundry_rooms")
