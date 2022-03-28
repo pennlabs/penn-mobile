@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from user.models import NotificationToken, Profile
+from user.models import NotificationSetting, NotificationToken, Profile
 
 
 class NotificationTokenSerializer(serializers.ModelSerializer):
@@ -11,13 +11,34 @@ class NotificationTokenSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user
-        tokens = NotificationToken.objects.filter(user=validated_data["user"]).first()
-        if tokens:
+        token = NotificationToken.objects.filter(user=validated_data["user"]).first()
+
+        if token:
             # if token already exists, just update it
-            tokens.kind = validated_data["kind"]
-            tokens.token = validated_data["token"]
-            tokens.save()
-            return tokens
+            token.kind = validated_data["kind"]
+            token.token = validated_data["token"]
+            token.save()
+            return token
+        else:
+            return super().create(validated_data)
+
+
+class NotificationSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationSetting
+        fields = ("service", "enabled")
+
+    def create(self, validated_data):
+        validated_data["token"] = NotificationToken.objects.get(user=self.context["request"].user)
+        setting = NotificationSetting.objects.filter(
+            token=validated_data["token"], service=validated_data["service"]
+        ).first()
+
+        if setting:
+            # if setting already exists, just update it
+            setting.enabled = validated_data["enabled"]
+            setting.save()
+            return setting
         else:
             return super().create(validated_data)
 

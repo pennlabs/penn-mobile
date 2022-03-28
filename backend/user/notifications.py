@@ -1,3 +1,4 @@
+import collections
 import os
 
 from apns2.client import APNsClient
@@ -5,12 +6,25 @@ from apns2.credentials import TokenCredentials
 from apns2.payload import Payload
 
 
+# taken from the apns2 method for batch notifications
+Notification = collections.namedtuple("Notification", ["token", "payload"])
+
+
 def send_push_notification(token, title, body, isDev=False):
     client = get_client(isDev)
     alert = {"title": title, "body": body}
     payload = Payload(alert=alert, sound="default", badge=0)
     topic = "org.pennlabs.PennMobile"
-    client.send_notification(token, payload, topic)
+    client.send_notification(token.token, payload, topic)
+
+
+def send_push_notification_batch(tokens, title, body, isDev=False):
+    client = get_client(isDev)
+    alert = {"title": title, "body": body}
+    payload = Payload(alert=alert, sound="default", badge=0)
+    notifications = [Notification(token.token, payload) for token in tokens]
+    topic = "org.pennlabs.PennMobile"
+    client.send_notification_batch(notifications=notifications, topic=topic)
 
 
 def get_client(isDev):
