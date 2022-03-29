@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 
 import requests
 from bs4 import BeautifulSoup
@@ -21,6 +22,12 @@ LOCATION_BLACKLIST = {3620, 2636, 2611, 3217, 2637, 2634}
 ROOM_BLACKLIST = {7176, 16970, 16998, 17625}
 
 
+class CreditType(Enum):
+    LIBCAL = "Libcal"
+    HUNTSMAN = "JMHH"
+    ARB = "ARB"
+
+
 class APIError(ValueError):
     pass
 
@@ -40,12 +47,9 @@ class BookingWrapper:
         if not gsr:
             raise APIError(f"Unknown GSR GID {gid}")
 
-        if not self.check_credits(gsr.lid, gid, user, start, end):
-            raise APIError("Not Enough Credits to Book")
-
         # error catching on view side
         if gsr.kind == GSR.KIND_WHARTON:
-            booking_id = self.WLW.book_room(rid, start, end, user.username).get("booking_id")
+            booking_id = self.WLW.book_room(rid, start, end, user, gsr.lid).get("booking_id")
         else:
             booking_id = self.LCW.book_room(rid, start, end, user).get("booking_id")
 
@@ -164,56 +168,12 @@ class BookingWrapper:
                         )
         return bookings
 
-    def check_credits(self, lid, gid, user, start, end):
-        """
-        Checks credits for a particular room at a particular date
-        from gsr_booking.api_wrapper import BookingWrapper
-        b = BookingWrapper()
-        b.check_credits(lid, gid, request.user, "2021-10-27")
-        """
-
-        start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
-        end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
-        duration = int((end.timestamp() - start.timestamp()) / 60)
-
-        gsr = GSR.objects.filter(lid=lid, gid=gid).first()
-        # checks if valid gsr
-        if not gsr:
-            raise APIError(f"Unknown GSR LID {lid}")
-
-        total_minutes = 0
-        if gsr.kind == GSR.KIND_WHARTON:
-            # gets all current reservations from wharton availability route
-            reservations = self.WLW.get_reservations(user)
-            for reservation in reservations:
-                if reservation["gsr"]["lid"] == lid:
-                    # accumulates total minutes
-                    start = datetime.datetime.strptime(reservation["start"], "%Y-%m-%dT%H:%M:%S%z")
-                    end = datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
-                    total_minutes += int((end.timestamp() - start.timestamp()) / 60)
-            # 90 minutes at any given time
-            return (90 - total_minutes) >= duration
-        else:
-            lc_start = make_aware(
-                datetime.datetime.combine(start.date(), datetime.datetime.min.time())
-            )
-            lc_end = lc_start + datetime.timedelta(days=1)
-            # filters for all reservations for the given date
-            reservations = GSRBooking.objects.filter(
-                gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL),
-                start__gte=lc_start,
-                end__lte=lc_end,
-                is_cancelled=False,
-                user=user,
-            )
-            total_minutes = 0
-            for reservation in reservations:
-                # accumulates total minutes over all reservations
-                total_minutes += int(
-                    (reservation.end.timestamp() - reservation.start.timestamp()) / 60
-                )
-            # 120 minutes per day
-            return (120 - total_minutes) >= duration
+    def check_credits(self, user):
+        wharton_booking_credits = self.WLW.check_credits(user)
+        libcal_booking_credits = self.LCW.check_credits(user)
+        credits_merged = libcal_booking_credits.copy()
+        credits_merged.update(wharton_booking_credits)
+        return credits_merged
 
 
 class WhartonLibWrapper:
@@ -279,15 +239,23 @@ class WhartonLibWrapper:
                 room["availability"] = valid_slots
         return rooms
 
-    def book_room(self, rid, start, end, username):
+    def book_room(self, rid, start, end, user, lid):
         """Books room if pennkey is valid"""
+
+        start_date = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
+        end_date = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
+        duration = int((end_date.timestamp() - start_date.timestamp()) / 60)
+
+        if self.check_credits(user)[lid] < duration:
+            raise APIError("Not Enough Credits to Book")
+
         payload = {
             "start": start,
             "end": end,
-            "pennkey": username,
+            "pennkey": user.username,
             "room": rid,
         }
-        url = f"{WHARTON_URL}{username}/student_reserve"
+        url = f"{WHARTON_URL}{user.username}/student_reserve"
         response = self.request("POST", url, json=payload).json()
         if "error" in response:
             raise APIError("Wharton: " + response["error"])
@@ -359,6 +327,24 @@ class WhartonLibWrapper:
         if "detail" in response:
             raise APIError("Wharton: " + response["detail"])
         return response
+
+    def check_credits(self, user):
+        # gets all current reservations from wharton availability route
+        wharton_lids = GSR.objects.filter(kind=GSR.KIND_WHARTON).values_list("lid", flat=True)
+        # wharton get 90 minutes of credit at any moment
+        wharton_credits = {lid: 90 for lid in wharton_lids}
+        reservations = self.get_reservations(user)
+        for reservation in reservations:
+            # determines if ARB or Huntsman
+            room_type = reservation["gsr"]["lid"]
+            if room_type in wharton_credits:
+                # accumulates total minutes
+                start = datetime.datetime.strptime(reservation["start"], "%Y-%m-%dT%H:%M:%S%z")
+                end = datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
+                wharton_credits[room_type] -= int((end.timestamp() - start.timestamp()) / 60)
+
+        # 90 minutes at any given time
+        return wharton_credits
 
 
 class LibCalWrapper:
@@ -472,6 +458,13 @@ class LibCalWrapper:
     def book_room(self, rid, start, end, user, test=False):
         """Books a room given the required information."""
 
+        start_date = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
+        end_date = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
+        duration = int((end_date.timestamp() - start_date.timestamp()) / 60)
+
+        if self.check_credits(user, start_date)[CreditType.LIBCAL.value] < duration:
+            raise APIError("Not Enough Credits to Book")
+
         # turns parameters into valid json format, then books room
         payload = {
             "start": start,
@@ -550,3 +543,26 @@ class LibCalWrapper:
         if "error" in response[0]:
             raise APIError("LibCal: " + response[0]["error"])
         return response
+
+    def check_credits(self, user, lc_start=None):
+        # default to beginning of day
+        if lc_start is None:
+            lc_start = make_aware(datetime.datetime.now())
+            lc_start = lc_start.replace(second=0, microsecond=0, minute=0, hour=0)
+
+        lc_end = lc_start + datetime.timedelta(days=1)
+
+        # filters for all reservations for the given date
+        reservations = GSRBooking.objects.filter(
+            gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL),
+            start__gte=lc_start,
+            end__lte=lc_end,
+            is_cancelled=False,
+            user=user,
+        )
+        total_minutes = 0
+        for reservation in reservations:
+            # accumulates total minutes over all reservations
+            total_minutes += int((reservation.end.timestamp() - reservation.start.timestamp()) / 60)
+        # 120 minutes per day
+        return {CreditType.LIBCAL.value: 120 - total_minutes}

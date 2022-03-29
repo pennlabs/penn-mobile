@@ -373,3 +373,14 @@ class ReservationsView(APIView):
 
     def get(self, request):
         return Response(BW.get_reservations(request.user))
+
+
+class CreditsView(APIView):
+    """
+    Gets credits for a User
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(BW.check_credits(request.user))
