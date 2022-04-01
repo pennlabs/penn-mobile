@@ -32,14 +32,11 @@ class Command(BaseCommand):
                     continue
 
                 booking = reservation.gsrbooking_set.first()
-                title = "GSR Booking!"
-                body = (
-                    f"Upcoming GSR Reservation in {booking.room_name} {booking.room_id} "
-                    + "in 30 minutes!"
-                    if booking
-                    else "Upcoming GSR Reservation in 30 minutes!"
-                )
-
-                send_push_notification(token.token, title, body)
+                if booking:
+                    title = "GSR Booking!"
+                    body = (
+                        f"You have reserved {booking.room_name} {booking.room_id} starting in 10 minutes!"
+                    )
+                    send_push_notification(token.token, title, body)
 
         self.stdout.write("Sent out notifications!")

@@ -41,7 +41,7 @@ cronjobs:
       - name: DJANGO_SETTINGS_MODULE
         value: pennmobile.settings.production
   - name: send-gsr-reminders
-    schedule: "*/30 * * * *"
+    schedule: "20,50 * * * *"
     image: pennlabs/penn-mobile-backend
     secret: penn-mobile
     cmd: ["python", "manage.py", "send_gsr_reminders"]
