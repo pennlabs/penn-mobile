@@ -52,9 +52,14 @@ class GroupMembership(models.Model):
             response = requests.get(
                 url, headers={"Authorization": f"Token {settings.WHARTON_TOKEN}"}
             ).json()
-            return response["type"] != "None"
+            if "type" in response:
+                # check if user is wharton
+                return response["type"] == "whartonMBA" or response["type"] == "whartonUGR"
+            else:
+                # accomodate for inconsistent responses
+                return False
         except (ConnectTimeout, ReadTimeout, KeyError, ConnectionError):
-            return False
+            return None
 
     class Meta:
         verbose_name = "Group Membership"

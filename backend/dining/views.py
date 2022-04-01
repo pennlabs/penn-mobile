@@ -44,8 +44,25 @@ class Venues(APIView):
                 image_url = None
             venue["imageURL"] = image_url
 
+            if venue["name"] == "1920 Commons":
+                venue["name"] = "Best Dining Hall"
+            elif venue["name"] == "Hill House":
+                venue["name"] = "Mountain House"
+            elif venue["name"] == "English House":
+                venue["name"] = "French House"
+            elif venue["name"] == "McClelland Express":
+                venue["name"] = "McDonald's Meets Sushi"
+            elif venue["name"] == "Joe's Café":
+                venue["name"] = "Gary’s Café"
+            elif venue["name"] == "Houston Market":
+                venue["name"] = "Allow Meal Swipes Pls"
+
             if "dateHours" in venue:
                 meals = venue["dateHours"]
+                if not isinstance(meals, list):
+                    venue["dateHours"] = [meals]
+                    meals = venue["dateHours"]
+
                 for i in range(len(meals)):
                     if not isinstance(meals[i]["meal"], list):
                         meals[i]["meal"] = [meals[i]["meal"]]
@@ -102,8 +119,12 @@ class DailyMenu(APIView):
     GET: Returns data on daily menu for a particular venue
     """
 
-    def get(self, request, venue_id):
-        date = str(timezone.localtime().date())
+    def post(self, request, venue_id):
+        date = (
+            request.data.get("date")
+            if request.data.get("date")
+            else str(timezone.localtime().date())
+        )
         try:
             v2_response = dining_request(V2_ENDPOINTS["MENUS"] + venue_id + "&date=" + date)
         except APIError as e:

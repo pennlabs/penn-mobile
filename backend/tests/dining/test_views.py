@@ -76,7 +76,7 @@ class TestMenu(TestCase):
         self.assertEquals(commons["menudate"], timezone.localtime().date().strftime("%-m/%d/%Y"))
 
     def test_daily_get(self):
-        response = self.client.get(reverse("daily-menu", args=["593"]))
+        response = self.client.post(reverse("daily-menu", args=["593"]))
         commons = json.loads(response.content)["Document"]
         self.assertEquals(commons["menudate"], timezone.localtime().date().strftime("%-m/%d/%Y"))
 
