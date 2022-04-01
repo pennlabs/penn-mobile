@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.timezone import make_aware
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
-from gsr_booking.models import GSR, Group, GSRBooking, Reservation
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
 
 
@@ -38,8 +38,10 @@ class BookingWrapper:
         self.LCW = LibCalWrapper()
 
     def is_wharton(self, user):
-        group = Group.objects.get(name="Penn Labs")
-        return self.WLW.is_wharton(user.username) or user in group.members.all()
+        penn_labs = Group.objects.get(name="Penn Labs")
+        me_group = Group.objects.get(name="Me", owner=user)
+        membership = GroupMembership.objects.filter(group=me_group).first()
+        return membership.is_wharton or user in penn_labs.members.all()
 
     def book_room(self, gid, rid, room_name, start, end, user, group_book=None):
 
