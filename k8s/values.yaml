@@ -5,7 +5,7 @@ applications:
   - name: django
     image: pennlabs/penn-mobile-backend
     secret: penn-mobile
-    replicas: 3
+    replicas: 8
     ingress:
       hosts:
         - host: studentlife.pennlabs.org
