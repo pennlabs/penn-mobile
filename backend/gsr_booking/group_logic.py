@@ -1,9 +1,11 @@
 import random
+from types import MemberDescriptorType
 
 from django.contrib.auth import get_user_model
+from django.db.models import Prefetch
 
 from gsr_booking.api_wrapper import APIError, BookingWrapper
-from gsr_booking.models import GSR, GroupMembership, Reservation
+from gsr_booking.models import GSR, Group, GroupMembership, Reservation
 
 
 User = get_user_model()
@@ -32,6 +34,21 @@ class GroupBook:
         # shuffle to prevent sequential booking
         random.shuffle(all_users)
         return all_users
+
+    def rebooking(self, user, time, enum):
+        memberships = GroupMembership.objects.filter(user=user).select_related("group").all()
+        group_ids = memberships.values_list("group", flat=True).distinct()
+        # iterating thru each User in all corresponding Group objects
+        # random ordering to prevent clustering
+        for group in Group.objects.filter(id__in=group_ids).order_by("?"):
+            for user in group.members.all().order_by("?"):
+                # if check credits: user, enum
+
+                print(user)
+
+        if time != 0:
+            # return failure
+            pass
 
     def book_room(self, gid, rid, room_name, start, end, user, group):
         """

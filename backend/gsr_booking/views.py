@@ -316,6 +316,9 @@ class Availability(APIView):
 
         try:
             group = Group.objects.get(name="Penn Labs")
+
+            GB.rebooking(request.user, "arb", "hi")
+
             if request.user in group.members.all():
                 return Response(GB.get_availability(lid, gid, start, end, request.user, group))
             else:
