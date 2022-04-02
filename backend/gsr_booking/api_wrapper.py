@@ -162,7 +162,7 @@ class BookingWrapper:
                     booking["room_name"] = "[Me] " + booking["room_name"]
                 else:
                     # TODO: change this once we release the "Me" group
-                    if gsr_booking.user == gsr_booking.reservation.creator:
+                    if user == gsr_booking.reservation.creator:
                         booking["room_name"] = "[Me] " + booking["room_name"]
                     else:
                         booking["room_name"] = (
