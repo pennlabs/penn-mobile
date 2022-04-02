@@ -44,19 +44,6 @@ class Venues(APIView):
                 image_url = None
             venue["imageURL"] = image_url
 
-            if venue["name"] == "1920 Commons":
-                venue["name"] = "Best Dining Hall"
-            elif venue["name"] == "Hill House":
-                venue["name"] = "Mountain House"
-            elif venue["name"] == "English House":
-                venue["name"] = "French House"
-            elif venue["name"] == "McClelland Express":
-                venue["name"] = "McDonald's Meets Sushi"
-            elif venue["name"] == "Joe's Café":
-                venue["name"] = "Gary’s Café"
-            elif venue["name"] == "Houston Market":
-                venue["name"] = "Allow Meal Swipes Pls"
-
             if "dateHours" in venue:
                 meals = venue["dateHours"]
                 if not isinstance(meals, list):
