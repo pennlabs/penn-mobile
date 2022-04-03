@@ -1,21 +1,10 @@
 from django.core.management.base import BaseCommand
 
-# from laundry.models import LaundryRoom
 from penndata.models import FitnessRoom
 
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-
-        # with open("fitnesss/data/fitness_data.csv") as data:
-        #     reader = csv.reader(data)
-
-        #     for i, row in enumerate(reader):
-        #         name = row
-
-        #         FitnessRoom.objects.get_or_create(
-        #             name = name
-        #         )
         fitness_rooms = [
             "4th Floor Fitness",
             "3rd Floor Fitness",

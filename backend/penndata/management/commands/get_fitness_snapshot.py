@@ -5,16 +5,13 @@ from penndata.models import FitnessRoom, FitnessSnapshot
 from penndata.views import Fitness
 
 
-# from laundry.api_wrapper import save_data
-
-
 class Command(BaseCommand):
     help = "Captures a new Fitness Snapshot for every Laundry room."
 
     def handle(self, *args, **kwargs):
-        # save_data()
         now = timezone.localtime()
 
+        # prevent double creating FitnessSnapshots
         if FitnessSnapshot.objects.filter(date=now).count() == 0:
             fitness = Fitness()
             data = fitness.get_capacities()
