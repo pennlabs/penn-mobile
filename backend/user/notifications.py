@@ -10,20 +10,28 @@ from apns2.payload import Payload
 Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
-def send_push_notification(token, title, body, isDev=False):
+def send_push_notif(token, title, body, isDev=False):
     client = get_client(isDev)
     alert = {"title": title, "body": body}
     payload = Payload(alert=alert, sound="default", badge=0)
-    topic = "org.pennlabs.PennMobile"
+    topic = "org.pennlabs.PennMobile" + (".dev" if isDev else "")
     client.send_notification(token.token, payload, topic)
 
 
-def send_push_notification_batch(tokens, title, body, isDev=False):
+def send_push_notif_batch(tokens, title, body, isDev=False):
     client = get_client(isDev)
     alert = {"title": title, "body": body}
     payload = Payload(alert=alert, sound="default", badge=0)
     notifications = [Notification(token.token, payload) for token in tokens]
-    topic = "org.pennlabs.PennMobile"
+    topic = "org.pennlabs.PennMobile" + (".dev" if isDev else "")
+    client.send_notification_batch(notifications=notifications, topic=topic)
+
+
+def send_shadow_push_notif_batch(tokens, body, isDev=False):
+    client = get_client(isDev)
+    payload = Payload(content_available=True, custom=body)
+    notifications = [Notification(token.token, payload) for token in tokens]
+    topic = "org.pennlabs.PennMobile" + (".dev" if isDev else "")
     client.send_notification_batch(notifications=notifications, topic=topic)
 
 
