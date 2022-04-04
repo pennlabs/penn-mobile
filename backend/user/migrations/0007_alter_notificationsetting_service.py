@@ -13,11 +13,24 @@ def create_settings_for_users(apps, schema_editor):
     """
     NotificationToken = apps.get_model("user", "NotificationToken")
     NotificationSetting = apps.get_model("user", "NotificationSetting")
-    services = NotificationSetting.SERVICE_OPTIONS
+    SERVICE_OPTIONS = [
+        "CFA",
+        "Penn Clubs",
+        "Penn Basics",
+        "OHQ",
+        "Penn Course Alert",
+        "Penn Course Plan",
+        "Penn Course Review",
+        "Penn Mobile",
+        "GSR Booking",
+        "Dining",
+        "University",
+        "Laundry",
+    ]
 
     for user in User.objects.all():
-        token, _ = NotificationToken.objects.get_or_create(user=user, token="")
-        for service, _ in services:
+        token, _ = NotificationToken.objects.get_or_create(user=user)
+        for service in SERVICE_OPTIONS:
             setting = NotificationSetting.objects.filter(token=token, service=service).first()
             if not setting:
                 NotificationSetting.objects.create(token=token, service=service, enabled=False)
