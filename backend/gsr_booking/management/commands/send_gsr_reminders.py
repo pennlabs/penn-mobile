@@ -38,7 +38,8 @@ class Command(BaseCommand):
                 if booking:
                     title = "GSR Booking!"
                     body = (
-                        f"You have reserved {booking.room_name} {booking.room_id} starting in 10 minutes!"
+                        f"You have reserved {booking.room_name} "
+                        + "{booking.room_id} starting in 10 minutes!"
                     )
                     send_push_notif(token.token, title, body)
 
