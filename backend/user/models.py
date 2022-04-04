@@ -76,4 +76,6 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
     # notifications
     token, _ = NotificationToken.objects.get_or_create(user=instance)
     for service, _ in NotificationSetting.SERVICE_OPTIONS:
-        NotificationSetting.objects.get_or_create(token=token, service=service, enabled=False)
+        setting = NotificationSetting.objects.filter(token=token, service=service).first()
+        if not setting:
+            NotificationSetting.objects.create(token=token, service=service, enabled=False)

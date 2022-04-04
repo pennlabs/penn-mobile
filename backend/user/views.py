@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from user.models import NotificationSetting, NotificationToken
-from user.notifications import send_push_notification, send_push_notification_batch
+from user.notifications import send_push_notif, send_push_notif_batch
 from user.serializers import (
     NotificationSettingSerializer,
     NotificationTokenSerializer,
@@ -76,12 +76,13 @@ class NotificationSettingView(viewsets.ModelViewSet):
         if pk not in dict(NotificationSetting.SERVICE_OPTIONS):
             return Response({"error": "invalid service"})
 
-        token = NotificationToken.objects.filter(user=self.request.user).first()
+        token = NotificationToken.objects.filter(user=self.request.user).exclude(token="").first()
         if not token:
-            return Response({"enabled": False})
+            # assumes that if token is missing, enabled should be returned as 'False'
+            return Response({"enabled": False, "missing_token": True})
 
         setting, _ = NotificationSetting.objects.get_or_create(token=token, service=pk)
-        return Response({"enabled": setting.enabled})
+        return Response({"enabled": setting.enabled, "missing_token": False})
 
 
 class NotificationAlertView(APIView):
@@ -99,20 +100,26 @@ class NotificationAlertView(APIView):
         service = request.data["service"]
         title = request.data["title"]
         body = request.data["body"]
+        isDev = request.data["isDev"] if "isDev" in request.data else False
 
         # queries tokens, filters by pennkey, service, and whether notif enabled
-        tokens = NotificationToken.objects.select_related("user").filter(
-            kind=NotificationToken.KIND_IOS,  # until Android implementation
-            user__username__in=usernames,
-            notificationsetting__service=service,
-            notificationsetting__enabled=True,
+        tokens = (
+            NotificationToken.objects.select_related("user")
+            .filter(
+                kind=NotificationToken.KIND_IOS,  # NOTE: until Android implementation
+                user__username__in=usernames,
+                notificationsetting__service=service,
+                notificationsetting__enabled=True,
+            )
+            .exclude(token="")
         )
 
         if len(tokens) == 1:
-            send_push_notification(tokens[0], title, body)
+            send_push_notif(tokens[0], title, body, isDev)
         elif len(tokens) > 1:
-            send_push_notification_batch(tokens, title, body)
+            send_push_notif_batch(tokens, title, body, isDev)
 
         # get users that are not being sent notifs
-        failed_users = list(set(usernames) - set([token.user.username for token in tokens]))
-        return Response({"success": True, "failed_users": failed_users})
+        success_users = [token.user.username for token in tokens]
+        failed_users = list(set(usernames) - set(success_users))
+        return Response({"success_users": success_users, "failed_users": failed_users})

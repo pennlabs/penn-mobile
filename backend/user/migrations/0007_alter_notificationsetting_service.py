@@ -18,9 +18,9 @@ def create_settings_for_users(apps, schema_editor):
     for user in User.objects.all():
         token, _ = NotificationToken.objects.get_or_create(user=user, token="")
         for service, _ in services:
-            service = NotificationSetting.objects.get_or_create(
-                token=token, service=service, enabled=False
-            )
+            setting = NotificationSetting.objects.filter(token=token, service=service).first()
+            if not setting:
+                NotificationSetting.objects.create(token=token, service=service, enabled=False)
 
 
 class Migration(migrations.Migration):
@@ -52,4 +52,5 @@ class Migration(migrations.Migration):
                 max_length=30,
             ),
         ),
+        migrations.RunPython(create_settings_for_users),
     ]
