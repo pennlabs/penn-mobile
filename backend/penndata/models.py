@@ -37,4 +37,4 @@ class FitnessSnapshot(models.Model):
     count = models.IntegerField()
 
     def __str__(self):
-        return f"Room Name {self.room.name} | {self.date.date()}"
+        return f"Room Name: {self.room.name} | {self.date.date()}"

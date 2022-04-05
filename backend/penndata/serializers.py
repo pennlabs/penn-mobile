@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from penndata.models import Event, FitnessRoom, HomePageOrder
+from penndata.models import Event, FitnessRoom, FitnessSnapshot, HomePageOrder
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -29,3 +29,12 @@ class FitnessRoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = FitnessRoom
         fields = ("name",)
+
+
+class FitnessSnapshotSerializer(serializers.ModelSerializer):
+
+    room = FitnessRoomSerializer()
+
+    class Meta:
+        model = FitnessSnapshot
+        fields = ("room", "date", "count")
