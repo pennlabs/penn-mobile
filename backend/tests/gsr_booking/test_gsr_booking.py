@@ -47,7 +47,6 @@ class UserViewTestCase(TestCase):
         self.assertTrue(200, response.status_code)
         self.assertEqual(2, len(response.data["booking_groups"]))
 
-    """
     def test_user_detail_invited(self):
         self.group.members.add(self.user2)
         memship = self.group.memberships.all()[0]
@@ -65,7 +64,6 @@ class UserViewTestCase(TestCase):
         response = self.client.get("/users/user2/invites/")
         self.assertTrue(200, response.status_code)
         self.assertEqual(1, len(response.data))
-"""
 
 
 class MembershipViewTestCase(TestCase):
