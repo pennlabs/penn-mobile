@@ -33,21 +33,21 @@ class UserViewTestCase(TestCase):
         self.client.login(username="user1", password="password")
 
     def test_user_list(self):
-        response = self.client.get("/users/")
+        response = self.client.get("/gsr/users/")
         self.assertTrue(200, response.status_code)
         self.assertEqual(2, len(response.data))
 
-    """
+    
     def test_user_detail_in_group(self):
-        response = self.client.get("/users/user1/")
+        response = self.client.get("/gsr/users/user1/")
         self.assertTrue(200, response.status_code)
         self.assertEqual(2, len(response.data["booking_groups"]))
 
     def test_me_user_detail_in_group(self):
-        response = self.client.get("/users/me/")
+        response = self.client.get("/gsr/users/me/")
         self.assertTrue(200, response.status_code)
         self.assertEqual(2, len(response.data["booking_groups"]))
-
+    """
     def test_user_detail_invited(self):
         self.group.members.add(self.user2)
         memship = self.group.memberships.all()[0]
