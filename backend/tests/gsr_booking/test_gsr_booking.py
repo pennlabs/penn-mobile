@@ -52,7 +52,7 @@ class UserViewTestCase(TestCase):
         memship = self.group.memberships.all()[0]
         memship.accepted = False
         memship.save()
-        response = self.client.get("/users/user2/")
+        response = self.client.get("/gsr/users/user2/")
         self.assertTrue(200, response.status_code)
         self.assertEqual(1, len(response.data["booking_groups"]))
 
@@ -61,7 +61,7 @@ class UserViewTestCase(TestCase):
         memship = self.group.memberships.all()[0]
         memship.accepted = False
         memship.save()
-        response = self.client.get("/users/user2/invites/")
+        response = self.client.get("/gsr/users/user2/invites/")
         self.assertTrue(200, response.status_code)
         self.assertEqual(1, len(response.data))
 
