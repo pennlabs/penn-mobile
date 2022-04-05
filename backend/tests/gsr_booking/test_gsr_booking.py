@@ -37,7 +37,6 @@ class UserViewTestCase(TestCase):
         self.assertTrue(200, response.status_code)
         self.assertEqual(2, len(response.data))
 
-    
     def test_user_detail_in_group(self):
         response = self.client.get("/gsr/users/user1/")
         self.assertTrue(200, response.status_code)
@@ -47,6 +46,7 @@ class UserViewTestCase(TestCase):
         response = self.client.get("/gsr/users/me/")
         self.assertTrue(200, response.status_code)
         self.assertEqual(2, len(response.data["booking_groups"]))
+
     """
     def test_user_detail_invited(self):
         self.group.members.add(self.user2)
