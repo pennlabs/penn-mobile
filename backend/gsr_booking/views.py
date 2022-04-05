@@ -134,7 +134,8 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         group_id = request.data.get("group")
         group = get_object_or_404(Group, pk=group_id)
 
-        if not group.has_member(request.user):
+        # don't invite when user already in group
+        if group.has_member(request.user):
             return HttpResponseForbidden()
 
         usernames = request.data.get("user").split(",")
