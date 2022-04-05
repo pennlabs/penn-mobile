@@ -1,4 +1,3 @@
-"""
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -14,7 +13,7 @@ def check_wharton(*args):
 
 User = get_user_model()
 
-
+"""
 class UserViewTestCase(TestCase):
     @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
@@ -65,6 +64,7 @@ class UserViewTestCase(TestCase):
         response = self.client.get("/users/user2/invites/")
         self.assertTrue(200, response.status_code)
         self.assertEqual(1, len(response.data))
+"""
 
 
 class MembershipViewTestCase(TestCase):
@@ -284,4 +284,3 @@ class GroupTestCase(TestCase):
         }
         response = self.client.post(f"/groups/{-1}/book-rooms/", params, format="json")
         self.assertEqual(404, response.status_code)
-"""
