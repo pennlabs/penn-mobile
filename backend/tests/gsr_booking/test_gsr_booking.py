@@ -13,7 +13,7 @@ def check_wharton(*args):
 
 User = get_user_model()
 
-"""
+
 class UserViewTestCase(TestCase):
     @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
@@ -37,6 +37,7 @@ class UserViewTestCase(TestCase):
         self.assertTrue(200, response.status_code)
         self.assertEqual(2, len(response.data))
 
+    """
     def test_user_detail_in_group(self):
         response = self.client.get("/users/user1/")
         self.assertTrue(200, response.status_code)
@@ -80,7 +81,7 @@ class MembershipViewTestCase(TestCase):
     def test_invite_single(self):
         self.client.login(username="user2", password="password")
         response = self.client.post(
-            "/membership/invite/", {"user": "user2", "group": self.group.pk}
+            "/gsr/membership/invite/", {"user": "user2", "group": self.group.pk}
         )
         self.assertEqual(200, response.status_code)
 
@@ -89,33 +90,33 @@ class MembershipViewTestCase(TestCase):
         User.objects.create_user(username="user3", password="password")
         self.client.login(username="user2", password="password")
         response = self.client.post(
-            "/membership/invite/", {"user": "user2,user3", "group": self.group.pk}
+            "/gsr/membership/invite/", {"user": "user2,user3", "group": self.group.pk}
         )
         self.assertEqual(200, response.status_code)
 
     def test_invite_no_permission(self):
         self.client.login(username="user2", password="password")
         response = self.client.post(
-            "/membership/invite/", {"user": "user2", "group": self.group.pk}
+            "/gsr/membership/invite/", {"user": "user2", "group": self.group.pk}
         )
         self.assertEqual(200, response.status_code)
 
     def test_invite_logged_out_fails(self):
         self.client.logout()
         response = self.client.post(
-            "/membership/invite/", {"user": "user2", "group": self.group.pk}
+            "/gsr/membership/invite/", {"user": "user2", "group": self.group.pk}
         )
         self.assertEqual(403, response.status_code)
 
     def test_invite_bad_group_fails(self):
-        response = self.client.post("/membership/invite/", {"user": "user2", "group": 300})
+        response = self.client.post("/gsr/membership/invite/", {"user": "user2", "group": 300})
         self.assertEqual(404, response.status_code)
 
     def test_duplicate_invite_fails(self):
         GroupMembership.objects.create(user=self.user2, group=self.group, accepted=False)
         self.client.force_authenticate(user=self.user2)
         response = self.client.post(
-            "/membership/invite/", {"user": "user2", "group": self.group.pk}
+            "/gsr/membership/invite/", {"user": "user2", "group": self.group.pk}
         )
         self.assertEqual(403, response.status_code)
 
@@ -123,13 +124,13 @@ class MembershipViewTestCase(TestCase):
         GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True)
         self.client.force_authenticate(user=self.user2)
         response = self.client.post(
-            "/membership/invite/", {"user": "user2", "group": self.group.pk}
+            "/gsr/membership/invite/", {"user": "user2", "group": self.group.pk}
         )
         self.assertEqual(403, response.status_code)
 
     def test_accept_invite(self):
         mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=False)
-        response = self.client.post(f"/membership/{mem.pk}/accept/")
+        response = self.client.post(f"/gsr/membership/{mem.pk}/accept/")
         self.assertEqual(200, response.status_code)
         self.assertTrue(GroupMembership.objects.get(pk=mem.pk).accepted)
 
@@ -137,18 +138,18 @@ class MembershipViewTestCase(TestCase):
     def test_wrong_user_accept_invite_fails(self):
         user3 = User.objects.create_user(username="user3", password="password")
         mem = GroupMembership.objects.create(user=user3, group=self.group2, accepted=False)
-        response = self.client.post(f"/membership/{mem.pk}/accept/")
+        response = self.client.post(f"/gsr/membership/{mem.pk}/accept/")
         self.assertEqual(403, response.status_code)
         self.assertFalse(GroupMembership.objects.get(pk=mem.pk).accepted)
 
     def test_accept_invite_again_fails(self):
         mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=True)
-        response = self.client.post(f"/membership/{mem.pk}/accept/")
+        response = self.client.post(f"/gsr/membership/{mem.pk}/accept/")
         self.assertEqual(404, response.status_code)
 
     def test_decline_invite(self):
         mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=False)
-        response = self.client.post(f"/membership/{mem.pk}/decline/")
+        response = self.client.post(f"/gsr/membership/{mem.pk}/decline/")
         self.assertEqual(200, response.status_code)
         self.assertFalse(GroupMembership.objects.filter(pk=mem.pk).exists())
 
@@ -156,14 +157,14 @@ class MembershipViewTestCase(TestCase):
     def test_wrong_user_decline_invite_fails(self):
         user3 = User.objects.create_user(username="user3", password="password")
         mem = GroupMembership.objects.create(user=user3, group=self.group2, accepted=False)
-        response = self.client.post(f"/membership/{mem.pk}/decline/")
+        response = self.client.post(f"/gsr/membership/{mem.pk}/decline/")
         self.assertEqual(403, response.status_code)
         self.assertTrue(GroupMembership.objects.filter(pk=mem.pk).exists())
         self.assertFalse(GroupMembership.objects.get(pk=mem.pk).accepted)
 
     def test_decline_invite_again_fails(self):
         mem = GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=True)
-        response = self.client.post(f"/membership/{mem.pk}/decline/")
+        response = self.client.post(f"/gsr/membership/{mem.pk}/decline/")
         self.assertEqual(404, response.status_code)
 
     def test_promote_to_admin(self):
@@ -171,7 +172,7 @@ class MembershipViewTestCase(TestCase):
         mem = GroupMembership.objects.create(
             user=self.user2, group=self.group, accepted=True, type="M"
         )
-        response = self.client.patch(f"/membership/{mem.pk}/", {"type": "A"})
+        response = self.client.patch(f"/gsr/membership/{mem.pk}/", {"type": "A"})
         self.assertEqual(200, response.status_code)
         mem.refresh_from_db()
         self.assertEqual("A", mem.type)
@@ -188,33 +189,33 @@ class GroupTestCase(TestCase):
         self.client.login(username="user1", password="password")
 
     def test_get_groups(self):
-        response = self.client.get("/groups/")
+        response = self.client.get("/gsr/groups/")
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, len(response.data))
 
     def test_get_groups_includes_invites(self):
         GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=False)
-        response = self.client.get(f"/groups/{self.group2.pk}/")
+        response = self.client.get(f"/gsr/groups/{self.group2.pk}/")
         self.assertEqual(200, response.status_code)
 
     def test_get_group_not_involved_fails(self):
-        response = self.client.get(f"/groups/{self.group2.pk}/")
+        response = self.client.get(f"/gsr/groups/{self.group2.pk}/")
         self.assertEqual(404, response.status_code)
 
     def test_make_group(self):
-        response = self.client.post("/groups/", {"name": "gx", "color": "blue"})
+        response = self.client.post("/gsr/groups/", {"name": "gx", "color": "blue"})
         self.assertEqual(201, response.status_code, response.data)
         self.assertEqual(5, Group.objects.count())
         self.assertEqual("user1", Group.objects.get(name="gx").owner.username)
 
     def test_only_accepted_memberships(self):
         gm = GroupMembership.objects.create(user=self.user2, group=self.group, accepted=False)
-        response = self.client.get(f"/groups/{self.group.pk}/")
+        response = self.client.get(f"/gsr/groups/{self.group.pk}/")
         self.assertEqual(200, response.status_code)
         self.assertEqual(1, len(response.data["memberships"]))
         gm.accepted = True
         gm.save()
-        response = self.client.get(f"/groups/{self.group.pk}/")
+        response = self.client.get(f"/gsr/groups/{self.group.pk}/")
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, len(response.data["memberships"]))
 
@@ -231,7 +232,9 @@ class GroupTestCase(TestCase):
                 }
             ]
         }
-        response = self.client.post(f"/groups/{self.group.pk}/book-rooms/", params, format="json")
+        response = self.client.post(
+            f"/gsr/groups/{self.group.pk}/book-rooms/", params, format="json"
+        )
         self.assertEqual(200, response.status_code)
 
     def test_book_rooms_forbidden_if_not_admin(self):
@@ -249,7 +252,9 @@ class GroupTestCase(TestCase):
                 }
             ]
         }
-        response = self.client.post(f"/groups/{self.group.pk}/book-rooms/", params, format="json")
+        response = self.client.post(
+            f"/gsr/groups/{self.group.pk}/book-rooms/", params, format="json"
+        )
         self.assertEqual(403, response.status_code)
 
     def test_book_rooms_forbidden_if_not_member(self):
@@ -266,7 +271,9 @@ class GroupTestCase(TestCase):
                 }
             ]
         }
-        response = self.client.post(f"/groups/{self.group.pk}/book-rooms/", params, format="json")
+        response = self.client.post(
+            f"/gsr/groups/{self.group.pk}/book-rooms/", params, format="json"
+        )
         self.assertEqual(403, response.status_code)
 
     def test_book_rooms_group_does_not_exist(self):
@@ -282,5 +289,5 @@ class GroupTestCase(TestCase):
                 }
             ]
         }
-        response = self.client.post(f"/groups/{-1}/book-rooms/", params, format="json")
+        response = self.client.post(f"/gsr/groups/{-1}/book-rooms/", params, format="json")
         self.assertEqual(404, response.status_code)

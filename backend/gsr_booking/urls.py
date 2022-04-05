@@ -24,12 +24,12 @@ router.register(r"groups", GroupViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("gsr/locations/", Locations.as_view(), name="locations"),
-    path("gsr/recent/", RecentGSRs.as_view(), name="recent-gsrs"),
-    path("gsr/wharton/", CheckWharton.as_view(), name="is-wharton"),
-    path("gsr/availability/<lid>/<gid>", Availability.as_view(), name="availability"),
-    path("gsr/book/", BookRoom.as_view(), name="book"),
-    path("gsr/cancel/", CancelRoom.as_view(), name="cancel"),
-    path("gsr/reservations/", ReservationsView.as_view(), name="reservations"),
-    path("gsr/credits/", CreditsView.as_view(), name="credits"),
+    path("locations/", Locations.as_view(), name="locations"),
+    path("recent/", RecentGSRs.as_view(), name="recent-gsrs"),
+    path("wharton/", CheckWharton.as_view(), name="is-wharton"),
+    path("availability/<lid>/<gid>", Availability.as_view(), name="availability"),
+    path("book/", BookRoom.as_view(), name="book"),
+    path("cancel/", CancelRoom.as_view(), name="cancel"),
+    path("reservations/", ReservationsView.as_view(), name="reservations"),
+    path("credits/", CreditsView.as_view(), name="credits"),
 ]
