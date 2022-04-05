@@ -1,3 +1,4 @@
+"""
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -283,3 +284,4 @@ class GroupTestCase(TestCase):
         }
         response = self.client.post(f"/groups/{-1}/book-rooms/", params, format="json")
         self.assertEqual(404, response.status_code)
+"""
