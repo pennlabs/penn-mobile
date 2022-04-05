@@ -47,24 +47,6 @@ class UserViewTestCase(TestCase):
         self.assertTrue(200, response.status_code)
         self.assertEqual(2, len(response.data["booking_groups"]))
 
-    def test_user_detail_invited(self):
-        self.group.members.add(self.user2)
-        memship = self.group.memberships.all()[0]
-        memship.accepted = False
-        memship.save()
-        response = self.client.get("/gsr/users/user2/")
-        self.assertTrue(200, response.status_code)
-        self.assertEqual(1, len(response.data["booking_groups"]))
-
-    def test_user_invites(self):
-        self.group.members.add(self.user2)
-        memship = self.group.memberships.all()[0]
-        memship.accepted = False
-        memship.save()
-        response = self.client.get("/gsr/users/user2/invites/")
-        self.assertTrue(200, response.status_code)
-        self.assertEqual(1, len(response.data))
-
 
 class MembershipViewTestCase(TestCase):
     @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
