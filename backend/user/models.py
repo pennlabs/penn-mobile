@@ -49,7 +49,6 @@ class NotificationSetting(models.Model):
         (SERVICE_LAUNDRY, "Laundry"),
     )
 
-    # user = models.ForeignKey(User, on_delete=models.CASCADE)
     token = models.ForeignKey(NotificationToken, on_delete=models.CASCADE)
     service = models.CharField(max_length=30, choices=SERVICE_OPTIONS, default=SERVICE_PENN_MOBILE)
     enabled = models.BooleanField(default=True)

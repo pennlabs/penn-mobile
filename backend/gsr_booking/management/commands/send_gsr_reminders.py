@@ -14,24 +14,23 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         # iterate through all reservations scheduled for the next 30 minutes
         for reservation in Reservation.objects.filter(
-            start__gt=timezone.now(), start__lte=timezone.now() + datetime.timedelta(minutes=30)
+            is_cancelled=False,
+            start__gt=timezone.now(),
+            start__lte=timezone.now() + datetime.timedelta(minutes=10),
         ):
-            if reservation.is_cancelled:
-                continue
-
-            creator = reservation.creator
-
             # NOTE: only iOS for now, change when Android gets set up
             token = (
-                NotificationToken.objects.filter(user=creator, kind=NotificationToken.KIND_IOS)
+                NotificationToken.objects.filter(
+                    user=reservation.creator, kind=NotificationToken.KIND_IOS
+                )
                 .exclude(token="")
                 .first()
             )
 
             if token:
-                # skip user if their setting = disabled for GSR Notifs
+                # skip user if their setting is disabled for GSR Notifs
                 setting = token.objects.filter(service=SERVICE_GSR_BOOKING).first()
-                if setting and not setting.enabled:
+                if not setting or not setting.enabled:
                     continue
 
                 booking = reservation.gsrbooking_set.first()

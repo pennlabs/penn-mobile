@@ -7,7 +7,15 @@ from user.notifications import send_shadow_push_notif_batch
 
 
 class Command(BaseCommand):
-    help = "Sends shadow notifs to all or targeted users."
+    help = """
+    Sends shadow notifs to all or targeted users.
+    -
+    Example Input:
+    Send to all (yes/no)? No
+    Target users (comma-delimitted): pennkey1,pennkey2,pennkey3
+    isDev (yes/no)? No
+    JSON-formatted message: {"a":"b","c":{"d":"e"},"f":["g","h"]}
+    """
 
     def handle(self, *args, **kwargs):
         send_to_all = input("Send to all (yes/no)? ").lower() == "yes"

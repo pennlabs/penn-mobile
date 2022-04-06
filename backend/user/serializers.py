@@ -46,7 +46,6 @@ class NotificationSettingSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        # removed "expected_graduation" and "degrees"
         fields = ("laundry_preferences", "dining_preferences")
 
 

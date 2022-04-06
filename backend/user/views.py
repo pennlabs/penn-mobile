@@ -70,8 +70,6 @@ class NotificationSettingView(viewsets.ModelViewSet):
         Returns whether the user wants notification for specified service.
         :param pk: service name
         """
-        # style
-        pk = pk.upper().replace("-", "_")
 
         if pk not in dict(NotificationSetting.SERVICE_OPTIONS):
             return Response({"error": "invalid service"})
