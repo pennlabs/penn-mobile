@@ -125,6 +125,7 @@ class Reservation(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
     is_cancelled = models.BooleanField(default=False)
+    reminder_sent = models.BooleanField(default=False)
 
 
 class GSRBooking(models.Model):
@@ -138,4 +139,3 @@ class GSRBooking(models.Model):
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(default=timezone.now)
     is_cancelled = models.BooleanField(default=False)
-    reminder_sent = models.BooleanField(default=False)

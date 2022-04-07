@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from gsr_booking.models import Reservation
-from user.models import SERVICE_GSR_BOOKING, NotificationToken
+from user.models import NotificationSetting, NotificationToken
 from user.notifications import send_push_notif
 
 
@@ -12,6 +12,7 @@ class Command(BaseCommand):
     help = "Sends reminders for the GSR Bookings."
 
     def handle(self, *args, **kwargs):
+
         # iterate through all reservations scheduled for the next 30 minutes
         for reservation in Reservation.objects.filter(
             is_cancelled=False,
@@ -29,7 +30,9 @@ class Command(BaseCommand):
 
             if token:
                 # skip user if their setting is disabled for GSR Notifs
-                setting = token.objects.filter(service=SERVICE_GSR_BOOKING).first()
+                setting = NotificationSetting.objects.filter(
+                    token=token, service=NotificationSetting.SERVICE_GSR_BOOKING
+                ).first()
                 if not setting or not setting.enabled:
                     continue
 
@@ -41,5 +44,7 @@ class Command(BaseCommand):
                         + f"{booking.room_id} starting in 10 minutes!"
                     )
                     send_push_notif(token.token, title, body)
+                    reservation.reminder_sent = True
+                    reservation.save()
 
         self.stdout.write("Sent out notifications!")
