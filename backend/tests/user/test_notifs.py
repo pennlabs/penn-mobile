@@ -16,6 +16,7 @@ User = get_user_model()
 
 
 def mock_send_notif(*args, **kwargs):
+    # used for mocking notification sends
     return
 
 
@@ -28,10 +29,12 @@ class TestNotificationToken(TestCase):
         self.client.force_authenticate(user=self.test_user)
 
     def test_post_save(self):
+        # asserts that post save hook in creating tokens works correctly
         self.assertEqual(1, NotificationToken.objects.all().count())
         self.assertEqual(self.test_user, NotificationToken.objects.all().first().user)
 
     def test_create_update_token(self):
+        # test that creating token returns correct response
         payload = {"kind": "IOS", "dev": "false", "token": "test123"}
         response = self.client.post("/user/notifications/tokens/", payload)
         res_json = json.loads(response.content)
@@ -49,6 +52,7 @@ class TestNotificationToken(TestCase):
         self.assertEqual(1, NotificationToken.objects.all().count())
 
     def test_get_token(self):
+        # test that tokens are visible via GET
         payload = {"kind": "IOS", "dev": "false", "token": "test123"}
         response = self.client.post("/user/notifications/tokens/", payload)
 
@@ -89,10 +93,18 @@ class TestSendGSRReminders(TestCase):
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client.force_authenticate(user=self.test_user)
 
+        # enabling tokens and settings
         token = NotificationToken.objects.get(user=self.test_user)
         token.token = "test123"
         token.save()
 
+        setting = NotificationSetting.objects.get(
+            token=token, service=NotificationSetting.SERVICE_GSR_BOOKING
+        )
+        setting.enabled = True
+        setting.save()
+
+        # creating reservation and booking for notifs
         g = GSRBooking.objects.create(
             user=self.test_user,
             gsr=GSR.objects.all().first(),
@@ -112,17 +124,13 @@ class TestSendGSRReminders(TestCase):
         g.reservation = r
         g.save()
 
-        setting = NotificationSetting.objects.get(
-            token=token, service=NotificationSetting.SERVICE_GSR_BOOKING
-        )
-        setting.enabled = True
-        setting.save()
-
     @mock.patch(
         "gsr_booking.management.commands.send_gsr_reminders.send_push_notif", mock_send_notif
     )
     def test_send_reminder(self):
+        # mock the notification send via mock_send_notif
         call_command("send_gsr_reminders")
+        # test that reservation reminder was sent
         r = Reservation.objects.all().first()
         self.assertTrue(r.reminder_sent)
 
