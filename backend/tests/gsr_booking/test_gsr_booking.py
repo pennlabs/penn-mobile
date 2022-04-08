@@ -199,63 +199,6 @@ class GroupTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, len(response.data["memberships"]))
 
-    def test_book_rooms(self):
-        GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True)
-        GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True)
-        params = {
-            "room_bookings": [
-                {
-                    "room": 16993,
-                    "start": "2020-03-10T10:00:00-0500",
-                    "end": "2020-03-10T16:00:00-0500",
-                    "lid": 2587,
-                }
-            ]
-        }
-        response = self.client.post(
-            f"/gsr/groups/{self.group.pk}/book-rooms/", params, format="json"
-        )
-        self.assertEqual(200, response.status_code)
-
-    def test_book_rooms_forbidden_if_not_admin(self):
-        # where user2 is logged in
-        self.client.login(username="user2", password="password")
-        GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True)
-        GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True, type="M")
-        params = {
-            "room_bookings": [
-                {
-                    "room": 16993,
-                    "start": "2020-03-10T10:00:00-0500",
-                    "end": "2020-03-10T16:00:00-0500",
-                    "lid": 2587,
-                }
-            ]
-        }
-        response = self.client.post(
-            f"/gsr/groups/{self.group.pk}/book-rooms/", params, format="json"
-        )
-        self.assertEqual(403, response.status_code)
-
-    def test_book_rooms_forbidden_if_not_member(self):
-        # where user2 is logged in
-        self.client.login(username="user2", password="password")
-        GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True)
-        params = {
-            "room_bookings": [
-                {
-                    "room": 16993,
-                    "start": "2020-03-10T10:00:00-0500",
-                    "end": "2020-03-10T16:00:00-0500",
-                    "lid": 2587,
-                }
-            ]
-        }
-        response = self.client.post(
-            f"/gsr/groups/{self.group.pk}/book-rooms/", params, format="json"
-        )
-        self.assertEqual(403, response.status_code)
-
     def test_book_rooms_group_does_not_exist(self):
         GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True)
         GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True, type="M")
