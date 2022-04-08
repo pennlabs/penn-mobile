@@ -82,7 +82,7 @@ class Post(models.Model):
     club_code = models.CharField(max_length=255, blank=True)
     title = models.CharField(max_length=255)
     subtitle = models.CharField(max_length=255)
-    post_url = models.URLField(null=True)
+    post_url = models.CharField(max_length=255, null=True, blank=True)
     image = models.ImageField(upload_to="portal/images", null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now)
     start_date = models.DateTimeField(default=timezone.now)
