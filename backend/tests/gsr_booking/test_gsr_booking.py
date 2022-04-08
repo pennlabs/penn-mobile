@@ -198,19 +198,3 @@ class GroupTestCase(TestCase):
         response = self.client.get(f"/gsr/groups/{self.group.pk}/")
         self.assertEqual(200, response.status_code)
         self.assertEqual(2, len(response.data["memberships"]))
-
-    def test_book_rooms_group_does_not_exist(self):
-        GroupMembership.objects.create(user=self.user1, group=self.group, accepted=True)
-        GroupMembership.objects.create(user=self.user2, group=self.group, accepted=True, type="M")
-        params = {
-            "room_bookings": [
-                {
-                    "room": 16993,
-                    "start": "2020-03-10T10:00:00-0500",
-                    "end": "2020-03-10T16:00:00-0500",
-                    "lid": 2587,
-                }
-            ]
-        }
-        response = self.client.post(f"/gsr/groups/{-1}/book-rooms/", params, format="json")
-        self.assertEqual(404, response.status_code)
