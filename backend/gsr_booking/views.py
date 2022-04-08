@@ -65,8 +65,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Retrieve all invites for a given user.
         """
-        if username == "me":
-            username = request.user.username
 
         user = get_object_or_404(User, username=username)
         return Response(
@@ -77,24 +75,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
                 many=True,
             ).data
         )
-
-    @action(detail=True, methods=["post"])
-    def activate(self, request, username=None):
-        """
-        Activate a user's account. Must be run when a user signs in for the first time, at least.
-        The action is idempotent, so no harm in calling it multiple times.
-        """
-        if username == "me":
-            username = request.user.username
-
-        user = get_object_or_404(User, username=username)
-        if user != request.user:
-            return HttpResponseForbidden()
-
-        # Ensure that all invites for this user, even ones created before their account was in the
-        # DB, are associated with the User object.
-        GroupMembership.objects.filter(username=user.username).update(user=user)
-        return Response({"success": True})
 
 
 class GroupMembershipViewSet(viewsets.ModelViewSet):
@@ -116,14 +96,6 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
             )
         )
 
-    def create(self, request, *args, **kwargs):
-        group_id = request.data.get("group")
-        group = get_object_or_404(Group, pk=group_id)
-        if not group.has_member(request.user):
-            return HttpResponseForbidden()
-
-        return super().create(request, *args, **kwargs)
-
     @action(detail=False, methods=["post"])
     def invite(self, request):
         """
@@ -135,10 +107,6 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         # don't invite when user already in group
         if group.has_member(request.user):
             return HttpResponseForbidden()
-
-        usernames = request.data.get("user").split(",")
-        if isinstance(usernames, str):
-            usernames = [usernames]
 
         return Response({"message": "invite(s) sent."})
 
@@ -177,42 +145,6 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         membership.delete()
         return Response(resp)
 
-    @action(detail=False, methods=["post"])
-    def pennkey(self, request):
-        group_id = request.data.get("group")
-        username = request.data.get("user")
-        allow = request.data.get("allow")
-        group = Group.objects.get(pk=group_id)
-        user = User.objects.get(username=username)
-        membership = GroupMembership.objects.get(user=user, group=group)
-        membership.pennkey_allow = allow
-        membership.save()
-        return Response(
-            {
-                "message": "pennkey allowance updated",
-                "user": membership.user.username,
-                "group": membership.group_id,
-            }
-        )
-
-    @action(detail=False, methods=["post"])
-    def notification(self, request):
-        group_id = request.data.get("group")
-        username = request.data.get("user")
-        active = request.data.get("active")
-        group = Group.objects.get(pk=group_id)
-        user = User.objects.get(username=username)
-        membership = GroupMembership.objects.get(user=user, group=group)
-        membership.notifications = active
-        membership.save()
-        return Response(
-            {
-                "message": "notification updated",
-                "user": membership.user.username,
-                "group": membership.group_id,
-            }
-        )
-
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
@@ -229,18 +161,6 @@ class GroupViewSet(viewsets.ModelViewSet):
             .prefetch_related(
                 Prefetch("memberships", GroupMembership.objects.filter(accepted=True))
             )
-        )
-
-    @action(detail=True, methods=["get"])
-    def invites(self, request, pk):
-        group = get_object_or_404(Group, pk=pk)
-        if not group.has_member(request.user):
-            return HttpResponseForbidden()
-
-        return Response(
-            GroupMembershipSerializer(
-                GroupMembership.objects.filter(group=group, accepted=False), many=True
-            ).data
         )
 
 
