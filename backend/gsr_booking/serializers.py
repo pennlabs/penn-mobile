@@ -20,10 +20,6 @@ class GroupRoomBookingRequestSerializer(serializers.Serializer):
         return obj["lid"] == 1
 
 
-class GroupBookingRequestSerializer(serializers.Serializer):
-    room_bookings = GroupRoomBookingRequestSerializer(many=True)
-
-
 class MiniUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
