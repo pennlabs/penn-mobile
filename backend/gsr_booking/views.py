@@ -10,11 +10,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, BookingWrapper
-from gsr_booking.booking_logic import book_rooms_for_group
 from gsr_booking.group_logic import GroupBook
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 from gsr_booking.serializers import (
-    GroupBookingRequestSerializer,
     GroupMembershipSerializer,
     GroupSerializer,
     GSRSerializer,
@@ -244,29 +242,6 @@ class GroupViewSet(viewsets.ModelViewSet):
                 GroupMembership.objects.filter(group=group, accepted=False), many=True
             ).data
         )
-
-    @action(detail=True, methods=["post"], url_path="book-rooms")
-    def book_rooms(self, request, pk):
-        """
-        Book GSR room(s) for a group. Requester must be an admin to book.
-        """
-        booking_serialized = GroupBookingRequestSerializer(data=request.data)
-        if not booking_serialized.is_valid():
-            return Response(status=400)
-
-        booking_data = booking_serialized.data
-
-        group = get_object_or_404(Group, pk=pk)
-
-        # must be admin (and also a member) of the group to book
-        if not group.has_admin(request.user):
-            return HttpResponseForbidden()
-
-        result_json = book_rooms_for_group(
-            group, booking_data["room_bookings"], request.user.username
-        )
-
-        return Response(result_json)
 
 
 # umbrella class used for accessing GSR API's (needed for token authentication)
