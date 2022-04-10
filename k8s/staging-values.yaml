@@ -1,0 +1,15 @@
+deploy_version: 0.1.20
+image_tag: latest
+
+applications:
+  - name: react
+    image: pennlabs/penn-mobile-frontend-staging
+    ingress:
+      hosts:
+        - host: staging-portal.pennmobile.org
+          paths: ["/"]
+    extraEnv:
+      - name: PORT
+        value: 80
+      - name: DOMAIN
+        value: staging-portal.pennmobile.org
