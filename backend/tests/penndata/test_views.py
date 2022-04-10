@@ -1,3 +1,4 @@
+import datetime
 import json
 from unittest import mock
 
@@ -11,6 +12,7 @@ from rest_framework.test import APIClient
 from dining.models import Venue
 from laundry.models import LaundryRoom
 from penndata.models import Event
+from portal.models import Poll, Post
 
 
 def check_wharton(*args):
@@ -121,3 +123,59 @@ class TestHomePage(TestCase):
 
         self.assertEqual(new_res_json[1]["type"], "news")
         self.assertEqual(new_res_json[2]["type"], "calendar")
+
+
+class TestAnalytics(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
+    def setUp(self):
+        self.client = APIClient()
+        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+        self.client.force_authenticate(user=self.test_user)
+
+    def test_create_regular_analytics(self):
+        payload = {
+            "cell_type": "dining",
+            "index": 0,
+            "is_interaction": False,
+            "poll": "",
+            "post": "",
+        }
+        response = self.client.post(reverse("analytics"), payload)
+        res_json = response.json()
+        print(res_json)
+
+    def test_create_poll_analytics(self):
+        poll = Poll.objects.create(
+            club_code="pennlabs",
+            question="hello?",
+            expire_date=timezone.now() + datetime.timedelta(days=3),
+        )
+        print(poll)
+        pass
+
+    def test_create_post_analytics(self):
+        post = Post.objects.create(
+            club_code="notpennlabs",
+            title="Test title 2",
+            subtitle="Test subtitle 2",
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+        )
+        print(post)
+        pass
+
+    def test_fail_post_poll_analytics(self):
+        poll = Poll.objects.create(
+            club_code="pennlabs",
+            question="hello?",
+            expire_date=timezone.now() + datetime.timedelta(days=3),
+        )
+
+        post = Post.objects.create(
+            club_code="notpennlabs",
+            title="Test title 2",
+            subtitle="Test subtitle 2",
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+        )
+        print(poll)
+        print(post)
+        pass
