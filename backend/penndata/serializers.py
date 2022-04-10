@@ -32,4 +32,8 @@ class AnalyticsEventSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user
+        if validated_data["poll"] and validated_data["post"]:
+            raise serializers.ValidationError(
+                detail={"detail": "Poll and Post interactions are mutually exclusive."}
+            )
         return super().create(validated_data)
