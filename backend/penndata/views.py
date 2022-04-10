@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from penndata.models import Event, HomePageOrder
-from penndata.serializers import EventSerializer, HomePageOrderSerializer
+from penndata.serializers import AnalyticsEventSerializer, EventSerializer, HomePageOrderSerializer
 
 
 class News(APIView):
@@ -151,6 +151,12 @@ class Events(generics.ListAPIView):
 
     def get_queryset(self):
         return Event.objects.filter(event_type=self.kwargs.get("type", ""))
+
+
+class Analytics(generics.CreateAPIView):
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = AnalyticsEventSerializer
 
 
 class HomePageOrdering(generics.ListAPIView):
