@@ -106,6 +106,7 @@ jobs:
   publish-frontend:
     name: Publish frontend
     runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/feature/*'
     steps:
       - uses: actions/checkout@v2
       - uses: docker/setup-qemu-action@v1
@@ -132,10 +133,13 @@ jobs:
   stage-frontend:
     name: Stage frontend
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/feature/test'
     steps:
       - uses: actions/checkout@v2
       - uses: docker/setup-qemu-action@v1
       - uses: docker/setup-buildx-action@v1
+      - name: Temp ref test (will delete soon)
+        run: echo ${{ github.ref }}
       - name: Cache Docker layers
         uses: actions/cache@v2
         with:
@@ -150,7 +154,7 @@ jobs:
         with:
           context: frontend
           file: frontend/Dockerfile
-          push: ${{ github.ref == 'refs/heads/feature/*' }}
+          push: ${{ github.ref == 'refs/heads/feature/test' }}
           cache-from: type=local,src=/tmp/.buildx-cache,type=registry,ref=pennlabs/penn-mobile-frontend-staging:latest
           cache-to: type=local,dest=/tmp/.buildx-cache
           tags: pennlabs/penn-mobile-frontend-staging:latest,pennlabs/penn-mobile-frontend-staging:${{ github.sha }}
@@ -159,7 +163,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: pennlabs/helm-tools:39b60af248944898fcbc58d1fe5b0f1995420aef
-    if: github.ref == 'refs/heads/feature/*'
+    if: github.ref == 'refs/heads/feature/test'
     steps:
       - uses: actions/checkout@v2
       - name: Deploy
