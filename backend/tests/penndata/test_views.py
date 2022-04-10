@@ -142,7 +142,9 @@ class TestAnalytics(TestCase):
         }
         response = self.client.post(reverse("analytics"), payload)
         res_json = response.json()
-        print(res_json)
+        self.assertEqual("dining", res_json["cell_type"])
+        self.assertIsNone(res_json["post"])
+        self.assertIsNone(res_json["poll"])
 
     def test_create_poll_analytics(self):
         poll = Poll.objects.create(
@@ -150,8 +152,20 @@ class TestAnalytics(TestCase):
             question="hello?",
             expire_date=timezone.now() + datetime.timedelta(days=3),
         )
-        print(poll)
-        pass
+        payload = {
+            "cell_type": "poll",
+            "index": 10,
+            "is_interaction": True,
+            "poll": poll.id,
+            "post": "",
+        }
+        response = self.client.post(reverse("analytics"), payload)
+        res_json = response.json()
+        self.assertEqual("poll", res_json["cell_type"])
+        self.assertEqual(10, res_json["index"])
+        self.assertIsNotNone(res_json["poll"])
+        self.assertIsNone(res_json["post"])
+        self.assertTrue(res_json["is_interaction"])
 
     def test_create_post_analytics(self):
         post = Post.objects.create(
@@ -160,8 +174,20 @@ class TestAnalytics(TestCase):
             subtitle="Test subtitle 2",
             expire_date=timezone.localtime() + datetime.timedelta(days=1),
         )
-        print(post)
-        pass
+        payload = {
+            "cell_type": "post",
+            "index": 5,
+            "is_interaction": False,
+            "poll": "",
+            "post": post.id,
+        }
+        response = self.client.post(reverse("analytics"), payload)
+        res_json = response.json()
+        self.assertEqual("post", res_json["cell_type"])
+        self.assertEqual(5, res_json["index"])
+        self.assertIsNone(res_json["poll"])
+        self.assertIsNotNone(res_json["post"])
+        self.assertFalse(res_json["is_interaction"])
 
     def test_fail_post_poll_analytics(self):
         poll = Poll.objects.create(
@@ -169,13 +195,20 @@ class TestAnalytics(TestCase):
             question="hello?",
             expire_date=timezone.now() + datetime.timedelta(days=3),
         )
-
         post = Post.objects.create(
             club_code="notpennlabs",
             title="Test title 2",
             subtitle="Test subtitle 2",
             expire_date=timezone.localtime() + datetime.timedelta(days=1),
         )
-        print(poll)
-        print(post)
-        pass
+        payload = {
+            "cell_type": "dining",
+            "index": 0,
+            "is_interaction": False,
+            "poll": poll.id,
+            "post": post.id,
+        }
+        response = self.client.post(reverse("analytics"), payload)
+        res_json = response.json()
+        self.assertEqual(400, response.status_code)
+        self.assertEqual("Poll and Post interactions are mutually exclusive.", res_json["detail"])
