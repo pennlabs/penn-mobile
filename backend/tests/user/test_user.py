@@ -50,6 +50,7 @@ class UserTestCase(TestCase):
         user = auth.authenticate(remote_user=self.user1)
         self.assertEqual(1, Profile.objects.all().count())
         self.assertEqual(user, Profile.objects.all().first().user)
+        self.assertEqual("user", str(Profile.objects.all().first()))
 
     @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def test_user2_profile(self):
