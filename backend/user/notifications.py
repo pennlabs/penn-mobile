@@ -11,6 +11,8 @@ Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
 def send_push_notif(token, title, body, isDev=False):
+    """Sends single push notification to token object"""
+
     client = get_client(isDev)
     alert = {"title": title, "body": body}
     payload = Payload(alert=alert, sound="default", badge=0)
@@ -19,6 +21,8 @@ def send_push_notif(token, title, body, isDev=False):
 
 
 def send_push_notif_batch(tokens, title, body, isDev=False):
+    """Sends push notifications to group of token objects"""
+
     client = get_client(isDev)
     alert = {"title": title, "body": body}
     payload = Payload(alert=alert, sound="default", badge=0)
@@ -28,6 +32,8 @@ def send_push_notif_batch(tokens, title, body, isDev=False):
 
 
 def send_shadow_push_notif_batch(tokens, body, isDev=False):
+    """Sends shadow push notifications to group of token objects"""
+
     client = get_client(isDev)
     payload = Payload(content_available=True, custom=body)
     notifications = [Notification(token.token, payload) for token in tokens]
@@ -36,6 +42,8 @@ def send_shadow_push_notif_batch(tokens, body, isDev=False):
 
 
 def get_client(isDev):
+    """Creates and returns APNsClient based on iOS credentials"""
+
     auth_key_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ios_key.p8"
     )

@@ -9,21 +9,39 @@ from user.notifications import send_shadow_push_notif_batch
 class Command(BaseCommand):
     help = """
     Sends shadow notifs to all or targeted users.
-    -
-    Example Input:
-    Send to all (yes/no)? No
-    Target users (comma-delimitted): pennkey1,pennkey2,pennkey3
-    isDev (yes/no)? No
-    JSON-formatted message: {"a":"b","c":{"d":"e"},"f":["g","h"]}
+    ——
+    Example:
+    <>
+    send_to_all: no
+    <>
+    message: '{"a":"b","c":{"d":"e"},"f":["g","h"]}'
+    (Note: must enclose message in single quotes)
+    <>
+    (Optional) usernames: pennkey1,pennkey2,pennkey3
+    (Note: must be comma-delimitted)
+    <>
+    (Optional) isDev: no
+    <>
     """
 
+    def add_arguments(self, parser):
+        parser.add_argument("send_to_all", type=str, help="whether to send to all")
+        parser.add_argument("message", type=str, help="JSON-formatted message to send")
+
+        # optional argument
+        parser.add_argument("--usernames", type=str, help="list of usernames")
+        parser.add_argument("--isDev", type=str, default="no")
+
     def handle(self, *args, **kwargs):
-        send_to_all = input("Send to all (yes/no)? ").lower() == "yes"
+        send_to_all = kwargs["send_to_all"].lower() == "yes"
+
         # get list of targeted users if not to everyone
         if not send_to_all:
-            usernames = input("Target users (comma-delimitted): ").split(",")
-        isDev = input("isDev (yes/no)? ").lower() == "yes"
-        message = json.loads(input("JSON-formatted message: "))
+            names = kwargs["usernames"]
+            usernames = names.split(",") if "," in names else [names]
+
+        isDev = kwargs["isDev"].lower() == "yes"
+        message = json.loads(kwargs["message"])
 
         # get list of tokens
         if send_to_all:
