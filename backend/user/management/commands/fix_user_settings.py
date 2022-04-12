@@ -17,12 +17,11 @@ class Command(BaseCommand):
 
         # create the proper settings for all users
         SERVICE_OPTIONS = NotificationSetting.SERVICE_OPTIONS
-
         for user in User.objects.all():
             token, _ = NotificationToken.objects.get_or_create(user=user)
             for service, _ in SERVICE_OPTIONS:
-                setting = NotificationSetting.objects.filter(token=token, service=service).first()
-                if not setting:
-                    NotificationSetting.objects.create(token=token, service=service, enabled=False)
+                NotificationSetting.objects.update_or_create(
+                    token=token, service=service, defaults={"enabled": False}
+                )
 
         self.stdout.write("New settings created!")
