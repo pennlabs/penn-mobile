@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 
 import user.notifications as notif
 from gsr_booking.models import GSR, Group, GSRBooking, Reservation
-from user.models import NotificationSetting, NotificationToken
+from user.models import NotificationToken
 
 
 User = get_user_model()
@@ -251,7 +251,7 @@ class TestSendGSRReminders(TestCase):
         # mock the notification send via mock_send_notif
         call_command("send_gsr_reminders")
         # test that reservation reminder was sent
-        r = Reservation.objects.all().first()
+        Reservation.objects.all().first()
         # self.assertTrue(r.reminder_sent)
 
 
