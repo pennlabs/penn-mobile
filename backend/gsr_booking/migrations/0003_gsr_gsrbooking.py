@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 (
@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("booking_id", models.CharField(blank=True, max_length=255, null=True)),
@@ -56,7 +56,7 @@ class Migration(migrations.Migration):
                 (
                     "gsr",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to="gsr_booking.gsr"
+                        on_delete=django.db.models.deletion.CASCADE, to="gsr_booking.gsr",
                     ),
                 ),
                 (

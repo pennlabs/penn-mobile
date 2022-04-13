@@ -40,11 +40,19 @@ cronjobs:
     extraEnv:
       - name: DJANGO_SETTINGS_MODULE
         value: pennmobile.settings.production
+<<<<<<< HEAD
   - name: get-fitness-snapshots
     schedule: "0 */3 * * *"
     image: pennlabs/penn-mobile-backend
     secret: penn-mobile
     cmd: ["python", "manage.py", "get_fitness_snapshot"]
+=======
+  - name: send-gsr-reminders
+    schedule: "20,50 * * * *"
+    image: pennlabs/penn-mobile-backend
+    secret: penn-mobile
+    cmd: ["python", "manage.py", "send_gsr_reminders"]
+>>>>>>> master
     extraEnv:
       - name: DJANGO_SETTINGS_MODULE
         value: pennmobile.settings.production

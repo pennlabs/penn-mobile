@@ -47,7 +47,7 @@ class GroupBook:
             for wharton_user in wharton_users:
                 try:
                     booking = self.bw.book_room(
-                        gid, rid, room_name, start, end, wharton_user.user, group_book=True
+                        gid, rid, room_name, start, end, wharton_user.user, group_book=True,
                     )
                     reservation = Reservation.objects.create(
                         start=start, end=end, creator=user, group=group

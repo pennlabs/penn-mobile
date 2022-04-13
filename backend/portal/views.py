@@ -284,10 +284,12 @@ class Posts(viewsets.ModelViewSet):
         # list of polls where user doesn't identify with
         # target populations
         bad_posts = []
-        if not request.user.is_superuser:
-            for unfiltered_post in unfiltered_posts:
-                if not check_targets(unfiltered_post, request.user):
-                    bad_posts.append(unfiltered_post.id)
+
+        # commented out to make posts
+        # if not request.user.is_superuser:
+        #     for unfiltered_post in unfiltered_posts:
+        #         if not check_targets(unfiltered_post, request.user):
+        #             bad_posts.append(unfiltered_post.id)
 
         # excludes the bad polls
         posts = unfiltered_posts.exclude(id__in=bad_posts)

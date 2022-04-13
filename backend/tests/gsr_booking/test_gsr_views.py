@@ -13,7 +13,7 @@ from gsr_booking.models import GSR, Group, GSRBooking
 User = get_user_model()
 
 
-def check_wharton(*args):
+def check_wharton(*args, **kwargs):
     return False
 
 

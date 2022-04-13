@@ -1,6 +1,6 @@
 from django.urls import path
 
-from penndata.views import Calendar, Events, Fitness, HomePage, HomePageOrdering, News
+from penndata.views import Analytics, Calendar, Events, Fitness, HomePage, HomePageOrdering, News
 
 
 urlpatterns = [
@@ -10,4 +10,5 @@ urlpatterns = [
     path("events/<type>/", Events.as_view(), name="events"),
     path("order/", HomePageOrdering.as_view(), name="home-page-order"),
     path("fitness/", Fitness.as_view(), name="fitness"),
+    path("analytics/", Analytics.as_view(), name="analytics"),
 ]

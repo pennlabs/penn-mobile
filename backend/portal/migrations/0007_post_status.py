@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             model_name="post",
             name="status",
             field=models.CharField(
-                choices=[("DRAFT", "Draft"), ("REVISION", "Revision"), ("APPROVED", "Approved")],
+                choices=[("DRAFT", "Draft"), ("REVISION", "Revision"), ("APPROVED", "Approved"),],
                 default="DRAFT",
                 max_length=30,
             ),

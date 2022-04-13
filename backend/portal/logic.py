@@ -26,7 +26,11 @@ def get_club_info(user, club_code):
     """Returns club information based on club code"""
     response = authenticated_request(user, "GET", f"https://pennclubs.com/api/clubs/{club_code}/")
     res_json = json.loads(response.content)
-    return {"name": res_json["name"], "image": res_json["image_url"], "club_code": club_code}
+    return {
+        "name": res_json["name"],
+        "image": res_json["image_url"],
+        "club_code": club_code,
+    }
 
 
 def get_user_populations(user):
@@ -36,7 +40,7 @@ def get_user_populations(user):
 
     year = [
         TargetPopulation.objects.get(
-            kind=TargetPopulation.KIND_YEAR, population=user_info["student"]["graduation_year"]
+            kind=TargetPopulation.KIND_YEAR, population=user_info["student"]["graduation_year"],
         )
     ]
 

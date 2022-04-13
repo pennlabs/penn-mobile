@@ -40,7 +40,9 @@ class Migration(migrations.Migration):
             model_name="gsrbooking",
             name="reservation",
             field=models.ForeignKey(
-                null=True, on_delete=django.db.models.deletion.CASCADE, to="gsr_booking.reservation"
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="gsr_booking.reservation",
             ),
         ),
         migrations.AddField(

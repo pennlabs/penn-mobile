@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("name", models.CharField(max_length=255)),
@@ -30,10 +30,10 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
-                ("date_updated", models.DateTimeField(default=django.utils.timezone.now)),
+                ("date_updated", models.DateTimeField(default=django.utils.timezone.now),),
                 ("count", models.IntegerField()),
                 ("percent", models.IntegerField()),
                 (

@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.BigAutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID",
                     ),
                 ),
                 ("source", models.CharField(max_length=255)),
@@ -32,8 +32,8 @@ class Migration(migrations.Migration):
                 ("expire_date", models.DateTimeField()),
                 ("approved", models.BooleanField(default=False)),
                 ("created_at", models.DateTimeField(default=django.utils.timezone.now)),
-                ("admin_comment", models.CharField(blank=True, max_length=255, null=True)),
-                ("user_comment", models.CharField(blank=True, max_length=255, null=True)),
+                ("admin_comment", models.CharField(blank=True, max_length=255, null=True),),
+                ("user_comment", models.CharField(blank=True, max_length=255, null=True),),
                 (
                     "target_populations",
                     models.ManyToManyField(blank=True, to="portal.TargetPopulation"),
@@ -41,7 +41,7 @@ class Migration(migrations.Migration):
                 (
                     "user",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+                        on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL,
                     ),
                 ),
             ],
