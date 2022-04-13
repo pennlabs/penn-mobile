@@ -121,3 +121,15 @@ class TestHomePage(TestCase):
 
         self.assertEqual(new_res_json[1]["type"], "news")
         self.assertEqual(new_res_json[2]["type"], "calendar")
+
+# class TestFitness(TestCase):
+#     # def setUp(self):
+#     #     call_command("load_fitness_rooms")
+#     #     self.client = APIClient()
+#     #     self.test_user = User.objects.create_user("user", "user@a.com", "user")
+    
+#     def test_get_capacities(self):
+#         response = self.client.get(reverse("news"))
+#         res_json = json.loads(response.content)
+#         print(res_json)
+#TODO wait for justin to fix
