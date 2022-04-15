@@ -27,6 +27,8 @@ class Command(BaseCommand):
         for user in User.objects.all():
             user_dict[user.username] = user
 
+        i = 0
+
         for row in np_arr:
             # iterate thru csv and add to list
             pennkey, created_at, cell_type, index, is_interaction, misc_2, data, misc_3 = row
@@ -52,7 +54,13 @@ class Command(BaseCommand):
                 )
             )
 
-        # bulk creates objects at once
+            i += 1
+            if i % 10000 == 0:
+                # bulk creates objects at once
+                AnalyticsEvent.objects.bulk_create(analytics_objects)
+                analytics_objects = []
+                print("Got here " + str(i))
+
         AnalyticsEvent.objects.bulk_create(analytics_objects)
 
         self.stdout.write("Uploaded Analytics Events!")
