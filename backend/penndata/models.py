@@ -36,6 +36,7 @@ class AnalyticsEvent(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE, null=True)
     is_interaction = models.BooleanField(default=False)
+    data = models.CharField(max_length=255, null=True)
 
     def __str__(self):
         return f"{self.cell_type}-{self.user.username}"
