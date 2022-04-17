@@ -20,7 +20,6 @@ def check_wharton(*args):
 
 
 def fakeFitnessGet(url, *args, **kwargs):
-    print("hellllooooo")
     if "docs.google.com/spreadsheets/" in url:
         with open("tests/penndata/fitness_snapshot.html", "rb") as f:
             m = mock.MagicMock(content=f.read())
