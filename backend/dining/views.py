@@ -268,13 +268,13 @@ class Balance(APIView):
                     added_swipes = int(div.span.text)
         else:
             return Response(
-                {"success": False, "error": "Something went wrong parsing HTML."}, status=400,
+                {"success": False, "error": "Something went wrong parsing HTML."}, status=400
             )
 
         total_swipes = swipes + added_swipes
 
         balance = DiningBalance.objects.create(
-            profile=profile, dollars=dollars, swipes=total_swipes, guest_swipes=guest_swipes,
+            profile=profile, dollars=dollars, swipes=total_swipes, guest_swipes=guest_swipes
         )
 
         data = DiningBalanceSerializer(balance, many=False).data
@@ -394,7 +394,7 @@ class Projection(APIView):
 
             if len(df.index) <= 5:
                 return Response(
-                    {"success": False, "error": "Insufficient previous transactions"}, status=501,
+                    {"success": False, "error": "Insufficient previous transactions"}, status=501
                 )
 
             num_days = (
