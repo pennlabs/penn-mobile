@@ -9,8 +9,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from penndata.models import Event, HomePageOrder
-from penndata.serializers import AnalyticsEventSerializer, EventSerializer, HomePageOrderSerializer
+from penndata.models import Event, FitnessRoom, FitnessSnapshot, HomePageOrder
+from penndata.serializers import (
+    AnalyticsEventSerializer,
+    EventSerializer,
+    FitnessSnapshotSerializer,
+    HomePageOrderSerializer,
+)
 
 
 class News(APIView):
@@ -240,3 +245,24 @@ class HomePage(APIView):
         cells.sort(key=lambda x: x.weight, reverse=True)
 
         return Response({"cells": [x.getCell() for x in cells]})
+
+
+class Fitness(generics.ListAPIView):
+    """
+    GET: Get Fitness Usage
+    """
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = FitnessSnapshotSerializer
+
+    def get_queryset(self):
+        # recent snapshots initialized to empty set
+        recent_snapshots = FitnessSnapshot.objects.none()
+
+        # query for all snapshots intiailly, sorted decreasing order of date
+        snapshots = FitnessSnapshot.objects.all().order_by("-date")
+        rooms = FitnessRoom.objects.all()
+        for room in rooms:
+            # append to recent snapshots to most recent snapshot for particular room
+            recent_snapshots |= snapshots.filter(room=room)[:1]
+        return recent_snapshots

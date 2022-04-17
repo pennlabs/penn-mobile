@@ -28,6 +28,24 @@ class HomePageOrder(models.Model):
         return self.cell
 
 
+class FitnessRoom(models.Model):
+    name = models.CharField(max_length=255)
+    # TODO "portal/images" does not exist, add back images
+    # image = models.ImageField(upload_to="portal/images", blank=False)
+
+    def __str__(self):
+        return str(self.name)
+
+
+class FitnessSnapshot(models.Model):
+    room = models.ForeignKey(FitnessRoom, on_delete=models.CASCADE, null=True)
+    date = models.DateTimeField(default=timezone.now)
+    count = models.IntegerField()
+
+    def __str__(self):
+        return f"Room Name: {self.room.name} | {self.date.date()}"
+
+
 class AnalyticsEvent(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
