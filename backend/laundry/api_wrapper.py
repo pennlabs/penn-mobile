@@ -43,20 +43,8 @@ def parse_a_hall(hall_link):
     Return names, hall numbers, and the washers/dryers available for a certain hall_id
     """
 
-    washers = {
-        "open": 0,
-        "running": 0,
-        "out_of_order": 0,
-        "offline": 0,
-        "time_remaining": [],
-    }
-    dryers = {
-        "open": 0,
-        "running": 0,
-        "out_of_order": 0,
-        "offline": 0,
-        "time_remaining": [],
-    }
+    washers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
+    dryers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
 
     detailed = []
 
