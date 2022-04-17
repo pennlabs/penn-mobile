@@ -270,7 +270,7 @@ class WhartonLibWrapper:
             creator=user, end__gte=timezone.localtime(), is_cancelled=False
         )
         group_gsrs = GSRBooking.objects.filter(
-            reservation__in=reservations, gsr__in=GSR.objects.filter(kind=GSR.KIND_WHARTON),
+            reservation__in=reservations, gsr__in=GSR.objects.filter(kind=GSR.KIND_WHARTON)
         )
 
         wharton_bookings = GSRBookingSerializer(
@@ -394,7 +394,7 @@ class LibCalWrapper:
         range_str = "availability"
         if start:
             start_datetime = datetime.datetime.combine(
-                datetime.datetime.strptime(start, "%Y-%m-%d").date(), datetime.datetime.min.time(),
+                datetime.datetime.strptime(start, "%Y-%m-%d").date(), datetime.datetime.min.time()
             )
             range_str += "=" + start
             if end and not start == end:
@@ -423,11 +423,7 @@ class LibCalWrapper:
         categories = ",".join([str(x["cid"]) for x in categories])
         response = self.request("GET", f"{API_URL}/1.1/space/category/{categories}").json()
         for category in response:
-            cat_out = {
-                "cid": category["cid"],
-                "name": id_to_category[category["cid"]],
-                "rooms": [],
-            }
+            cat_out = {"cid": category["cid"], "name": id_to_category[category["cid"]], "rooms": []}
 
             # ignore equipment categories
             if cat_out["name"].endswith("Equipment"):
@@ -513,7 +509,7 @@ class LibCalWrapper:
             creator=user, end__gte=timezone.localtime(), is_cancelled=False
         )
         group_gsrs = GSRBooking.objects.filter(
-            reservation__in=reservations, gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL),
+            reservation__in=reservations, gsr__in=GSR.objects.filter(kind=GSR.KIND_LIBCAL)
         )
 
         return GSRBookingSerializer(

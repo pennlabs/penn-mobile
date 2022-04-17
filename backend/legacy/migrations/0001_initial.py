@@ -301,7 +301,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="SchemaMigrations",
             fields=[
-                ("version", models.CharField(max_length=255, primary_key=True, serialize=False),)
+                ("version", models.CharField(max_length=255, primary_key=True, serialize=False))
             ],
             options={"db_table": "schema_migrations", "managed": False},
         ),
