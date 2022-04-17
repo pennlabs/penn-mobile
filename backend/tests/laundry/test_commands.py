@@ -22,17 +22,13 @@ class TestGetSnapshot(TestCase):
     def setUp(self):
         # populates database with LaundryRooms
         LaundryRoom.objects.get_or_create(
-            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9,
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11,
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=2,
-            name="Class of 1928 Fisher",
-            location="Quad",
-            total_washers=8,
-            total_dryers=8,
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
         )
         LaundryRoom.objects.get_or_create(
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3

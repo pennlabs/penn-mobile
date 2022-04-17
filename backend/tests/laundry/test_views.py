@@ -22,17 +22,13 @@ User = get_user_model()
 class HallIdViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
-            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9,
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11,
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=2,
-            name="Class of 1928 Fisher",
-            location="Quad",
-            total_washers=8,
-            total_dryers=8,
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
         )
         LaundryRoom.objects.get_or_create(
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
@@ -54,17 +50,13 @@ class HallIdViewTestCase(TestCase):
 class HallInfoViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
-            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9,
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11,
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=2,
-            name="Class of 1928 Fisher",
-            location="Quad",
-            total_washers=8,
-            total_dryers=8,
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
         )
         LaundryRoom.objects.get_or_create(
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
@@ -90,17 +82,13 @@ class HallInfoViewTestCase(TestCase):
 class MultipleHallInfoViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
-            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9,
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11,
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=2,
-            name="Class of 1928 Fisher",
-            location="Quad",
-            total_washers=8,
-            total_dryers=8,
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
         )
         LaundryRoom.objects.get_or_create(
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
@@ -136,17 +124,13 @@ class MultipleHallInfoViewTestCase(TestCase):
 class HallUsageViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
-            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9,
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11,
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=2,
-            name="Class of 1928 Fisher",
-            location="Quad",
-            total_washers=8,
-            total_dryers=8,
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
         )
         LaundryRoom.objects.get_or_create(
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
@@ -173,17 +157,13 @@ class PreferencesTestCase(TestCase):
     @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         LaundryRoom.objects.get_or_create(
-            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9,
+            hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11,
+            hall_id=1, name="Chestnut Butcher", location="Quad", total_washers=11, total_dryers=11
         )
         LaundryRoom.objects.get_or_create(
-            hall_id=2,
-            name="Class of 1928 Fisher",
-            location="Quad",
-            total_washers=8,
-            total_dryers=8,
+            hall_id=2, name="Class of 1928 Fisher", location="Quad", total_washers=8, total_dryers=8
         )
         LaundryRoom.objects.get_or_create(
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3

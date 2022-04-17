@@ -223,12 +223,12 @@ class Command(BaseCommand):
             poll=poll_with_options_and_votes_multi, choice="choice 2"
         )
         vote_1, _ = PollVote.objects.get_or_create(
-            id_hash="1", poll=poll_with_options_and_votes_multi, created_date=timezone.localtime(),
+            id_hash="1", poll=poll_with_options_and_votes_multi, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1_for_votes_multi)
         vote_1.poll_options.add(option_2_for_votes_multi)
         vote_2, _ = PollVote.objects.get_or_create(
-            id_hash="2", poll=poll_with_options_and_votes_multi, created_date=timezone.localtime(),
+            id_hash="2", poll=poll_with_options_and_votes_multi, created_date=timezone.localtime()
         )
         vote_2.poll_options.add(option_1_for_votes_multi)
 
@@ -275,16 +275,16 @@ class Command(BaseCommand):
             poll=poll_targeting_wh_nur_22_23, choice="nursing"
         )
         vote_1, _ = PollVote.objects.get_or_create(
-            id_hash="1", poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime(),
+            id_hash="1", poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
         )
         vote_1.poll_options.add(option_1)
         vote_1.poll_options.add(option_2)
         vote_2, _ = PollVote.objects.get_or_create(
-            id_hash="2", poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime(),
+            id_hash="2", poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
         )
         vote_3.poll_options.add(option_1)
         vote_3, _ = PollVote.objects.get_or_create(
-            id_hash="3", poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime(),
+            id_hash="3", poll=poll_targeting_wh_nur_22_23, created_date=timezone.localtime()
         )
         vote_3.poll_options.add(option_1)
 
