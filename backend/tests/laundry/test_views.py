@@ -41,7 +41,7 @@ class HallIdViewTestCase(TestCase):
         for hall in res_json:
             self.assertTrue(
                 LaundryRoom.objects.filter(
-                    name=hall["name"], hall_id=hall["hall_id"], location=hall["location"],
+                    name=hall["name"], hall_id=hall["hall_id"], location=hall["location"]
                 )
             )
 
