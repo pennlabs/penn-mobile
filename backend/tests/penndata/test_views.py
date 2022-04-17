@@ -135,6 +135,7 @@ class TestHomePage(TestCase):
 
 
 class TestGetRecentFitness(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_fitness_rooms")
         self.client = APIClient()
