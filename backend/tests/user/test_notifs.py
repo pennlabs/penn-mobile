@@ -195,7 +195,7 @@ class TestNotificationAlert(TestCase):
             "service": "PENN_MOBILE",
         }
         response = self.client.post(
-            "/user/notifications/alerts/", json.dumps(payload), content_type="application/json",
+            "/user/notifications/alerts/", json.dumps(payload), content_type="application/json"
         )
         res_json = json.loads(response.content)
         self.assertEqual(2, len(res_json["success_users"]))
@@ -244,7 +244,7 @@ class TestSendGSRReminders(TestCase):
         g.save()
 
     @mock.patch(
-        "gsr_booking.management.commands.send_gsr_reminders.send_push_notif", mock_send_notif,
+        "gsr_booking.management.commands.send_gsr_reminders.send_push_notif", mock_send_notif
     )
     def test_send_reminder(self):
         # mock the notification send via mock_send_notif
@@ -267,7 +267,7 @@ class TestSendShadowNotifs(TestCase):
         token.save()
 
     @mock.patch(
-        "user.management.commands.send_shadow_notifs.send_shadow_push_notif_batch", mock_send_notif,
+        "user.management.commands.send_shadow_notifs.send_shadow_push_notif_batch", mock_send_notif
     )
     def test_shadow_notifications(self):
         # mock the notification send via mock_send_notif
