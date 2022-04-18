@@ -100,7 +100,10 @@ export const PostPhonePreview = ({ state }: { state: PostType }) => (
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             height: 175,
-            backgroundImage: `url("${state.image_url}")`,
+            backgroundImage: `url("${
+              (state.image && URL.createObjectURL(state.image)) ||
+              state.image_url
+            }")`,
           }}
         />
       </div>
