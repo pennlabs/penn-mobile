@@ -6,7 +6,7 @@ applications:
     image: pennlabs/penn-mobile-frontend-staging
     ingress:
       hosts:
-        - host: staging-portal.pennmobile.org
+        - host: ${image_tag}-staging-portal.pennmobile.org
           paths: ["/"]
     extraEnv:
       - name: PORT
