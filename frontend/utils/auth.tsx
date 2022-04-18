@@ -47,14 +47,14 @@ export function withAuth<T>(getServerSidePropsFunc: GetServerSidePropsFunc<T>) {
       headers: { cookie: ctx.req.headers.cookie },
     }
 
-    const res = await doApiRequest('/api/portal/user/', headers)
-    if (res.ok) {
-      const userRes = await res.json()
+    const userReq = await doApiRequest('/api/portal/user/', headers)
+
+    if (userReq.ok) {
+      const userRes = await userReq.json()
       const user: User = {
         first_name: userRes.user.first_name,
         last_name: userRes.user.last_name,
         email: userRes.user.email,
-        clubs: userRes.clubs,
       }
       const wrapped = await getServerSidePropsFunc(ctx)
       const casted = convertGetServerSidePropsResult(wrapped)
