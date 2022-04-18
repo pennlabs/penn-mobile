@@ -106,7 +106,7 @@ jobs:
   publish-frontend:
     name: Publish frontend
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/feature/*'
+    if: startsWith(github.ref, 'refs/heads/feature/') == false
     steps:
       - uses: actions/checkout@v2
       - uses: docker/setup-qemu-action@v1
@@ -130,10 +130,13 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache
           tags: pennlabs/penn-mobile-frontend:latest,pennlabs/penn-mobile-frontend:${{ github.sha }}
     needs: react-check
+
+
+
   stage-frontend:
     name: Stage frontend
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/feature/test'
+    if: startsWith(github.ref, 'refs/heads/feature/') == true
     steps:
       - uses: actions/checkout@v2
       - uses: docker/setup-qemu-action@v1
@@ -154,16 +157,19 @@ jobs:
         with:
           context: frontend
           file: frontend/Dockerfile
-          push: ${{ github.ref == 'refs/heads/feature/test' }}
+          push: true
           cache-from: type=local,src=/tmp/.buildx-cache,type=registry,ref=pennlabs/penn-mobile-frontend-staging:latest
           cache-to: type=local,dest=/tmp/.buildx-cache
           tags: pennlabs/penn-mobile-frontend-staging:latest,pennlabs/penn-mobile-frontend-staging:${{ github.sha }}
     needs: react-check
+
+
+
   feature-deploy:
     runs-on: ubuntu-latest
     container:
       image: pennlabs/helm-tools:39b60af248944898fcbc58d1fe5b0f1995420aef
-    if: github.ref == 'refs/heads/feature/test'
+    if: startsWith(github.ref, 'refs/heads/feature/') == true
     steps:
       - uses: actions/checkout@v2
       - name: Deploy
@@ -171,7 +177,7 @@ jobs:
           aws eks --region us-east-1 update-kubeconfig --name production --role-arn arn:aws:iam::${AWS_ACCOUNT_ID}:role/kubectl
 
           # get repo name (by removing owner/organization)
-          RELEASE_NAME=${REPOSITORY#*/}
+          RELEASE_NAME=${REPOSITORY#*/}-${{ github.sha }}
 
           # this specifies what tag of icarus to pull down
           DEPLOY_TAG=$(yq r k8s/staging-values.yaml deploy_version)
@@ -203,6 +209,10 @@ jobs:
           REPOSITORY: ${{ github.repository }}
     needs:
       - stage-frontend
+
+
+
+
   deploy:
     runs-on: ubuntu-latest
     container:
