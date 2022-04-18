@@ -1,3 +1,4 @@
+import datetime
 import json
 from unittest import mock
 
@@ -10,11 +11,21 @@ from rest_framework.test import APIClient
 
 from dining.models import Venue
 from laundry.models import LaundryRoom
-from penndata.models import Event
+from penndata.models import Event, FitnessRoom, FitnessSnapshot
+from portal.models import Poll, Post
 
 
 def check_wharton(*args):
     return False
+
+
+def fakeFitnessGet(url, *args, **kwargs):
+    if "docs.google.com/spreadsheets/" in url:
+        with open("tests/penndata/fitness_snapshot.html", "rb") as f:
+            m = mock.MagicMock(content=f.read())
+        return m
+    else:
+        raise NotImplementedError
 
 
 User = get_user_model()
@@ -121,3 +132,148 @@ class TestHomePage(TestCase):
 
         self.assertEqual(new_res_json[1]["type"], "news")
         self.assertEqual(new_res_json[2]["type"], "calendar")
+
+
+class TestGetRecentFitness(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
+    def setUp(self):
+        call_command("load_fitness_rooms")
+        self.client = APIClient()
+        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+        self.client.force_authenticate(user=self.test_user)
+
+        self.fitness_room = FitnessRoom.objects.first()
+        self.new_count = 20
+        self.new_time = timezone.localtime()
+        old_count = 10
+        old_time = self.new_time - datetime.timedelta(days=1)
+
+        # create old snapshot and new snapshot
+        FitnessSnapshot.objects.create(
+            room=self.fitness_room, date=old_time, count=old_count,
+        )
+        FitnessSnapshot.objects.create(
+            room=self.fitness_room, date=self.new_time, count=self.new_count,
+        )
+
+    def test_get_recent(self):
+        response = self.client.get(reverse("fitness"))
+        res_json = json.loads(response.content)
+        self.assertEqual(1, len(res_json))
+        self.assertEqual(str(self.fitness_room), res_json[0]["room"]["name"])
+        # remove last 6 characters for timezone, %z doesn't have colon
+        self.assertEqual(self.new_time.strftime("%Y-%m-%dT%H:%M:%S.%f"), res_json[0]["date"][:-6])
+        self.assertEqual(self.new_count, res_json[0]["count"])
+
+
+@mock.patch("requests.get", fakeFitnessGet)
+class TestGetFitnessSnapshot(TestCase):
+    def setUp(self):
+        call_command("load_fitness_rooms")
+
+    def test_get_fitness_snapshot(self):
+
+        self.assertEqual(FitnessSnapshot.objects.all().count(), 0)
+
+        call_command("get_fitness_snapshot")
+
+        # checks that all fitness snapshots have been accounted for
+        self.assertEqual(FitnessSnapshot.objects.all().count(), 9)
+
+        # asserts that fields are correct, and that all snapshots
+        # have been accounted for
+        for snapshot in FitnessSnapshot.objects.all():
+            self.assertTrue(snapshot.count >= 0)
+
+        call_command("get_fitness_snapshot")
+
+        self.assertEqual(FitnessSnapshot.objects.all().count(), 18)
+
+
+class TestAnalytics(TestCase):
+    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
+    def setUp(self):
+        self.client = APIClient()
+        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+        self.client.force_authenticate(user=self.test_user)
+
+    def test_create_regular_analytics(self):
+        payload = {
+            "cell_type": "dining",
+            "index": 0,
+            "is_interaction": False,
+            "poll": "",
+            "post": "",
+        }
+        response = self.client.post(reverse("analytics"), payload)
+        res_json = response.json()
+        self.assertEqual("dining", res_json["cell_type"])
+        self.assertIsNone(res_json["post"])
+        self.assertIsNone(res_json["poll"])
+
+    def test_create_poll_analytics(self):
+        poll = Poll.objects.create(
+            club_code="pennlabs",
+            question="hello?",
+            expire_date=timezone.now() + datetime.timedelta(days=3),
+        )
+        payload = {
+            "cell_type": "poll",
+            "index": 10,
+            "is_interaction": True,
+            "poll": poll.id,
+            "post": "",
+        }
+        response = self.client.post(reverse("analytics"), payload)
+        res_json = response.json()
+        self.assertEqual("poll", res_json["cell_type"])
+        self.assertEqual(10, res_json["index"])
+        self.assertIsNotNone(res_json["poll"])
+        self.assertIsNone(res_json["post"])
+        self.assertTrue(res_json["is_interaction"])
+
+    def test_create_post_analytics(self):
+        post = Post.objects.create(
+            club_code="notpennlabs",
+            title="Test title 2",
+            subtitle="Test subtitle 2",
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+        )
+        payload = {
+            "cell_type": "post",
+            "index": 5,
+            "is_interaction": False,
+            "poll": "",
+            "post": post.id,
+        }
+        response = self.client.post(reverse("analytics"), payload)
+        res_json = response.json()
+        self.assertEqual("post", res_json["cell_type"])
+        self.assertEqual(5, res_json["index"])
+        self.assertIsNone(res_json["poll"])
+        self.assertIsNotNone(res_json["post"])
+        self.assertFalse(res_json["is_interaction"])
+
+    def test_fail_post_poll_analytics(self):
+        poll = Poll.objects.create(
+            club_code="pennlabs",
+            question="hello?",
+            expire_date=timezone.now() + datetime.timedelta(days=3),
+        )
+        post = Post.objects.create(
+            club_code="notpennlabs",
+            title="Test title 2",
+            subtitle="Test subtitle 2",
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+        )
+        payload = {
+            "cell_type": "dining",
+            "index": 0,
+            "is_interaction": False,
+            "poll": poll.id,
+            "post": post.id,
+        }
+        response = self.client.post(reverse("analytics"), payload)
+        res_json = response.json()
+        self.assertEqual(400, response.status_code)
+        self.assertEqual("Poll and Post interactions are mutually exclusive.", res_json["detail"])

@@ -4,11 +4,13 @@ import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { Row } from '@/components/styles/Layout'
 import { PageType, PollType, PostType, Status } from '@/utils/types'
 import EmptyDashboard from '@/components/dashboard/EmptyDashboard'
+import EmptyClubDashboard from '@/components/dashboard/EmptyClubs'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { DashboardStatusColumn } from '@/components/dashboard/DashboardColumn'
 import { Heading3 } from '@/components/styles/Text'
 import { SuccessMessage } from '@/components/styles/StatusMessage'
 import { DashboardProps } from '@/pages/dashboard'
+import useClubs from '@/hooks/useClubs'
 
 const Dashboard = ({ postList, pollList }: DashboardProps) => {
   const [activeOption, setActiveOption] = useState<PageType>(PageType.POST)
@@ -22,6 +24,12 @@ const Dashboard = ({ postList, pollList }: DashboardProps) => {
       setSuccess(null)
     }
   }, [success, setSuccess])
+
+  const { clubs, clubsLoading } = useClubs()
+
+  if (!clubsLoading && clubs.length === 0) {
+    return <EmptyClubDashboard />
+  }
 
   const DashboardContent = ({ page }: { page: PageType }) => {
     const activeList: (PollType | PostType)[] =
