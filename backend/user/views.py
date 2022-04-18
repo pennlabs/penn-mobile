@@ -5,7 +5,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from user.models import NotificationSetting, NotificationToken
-from user.notifications import send_push_notif, send_push_notif_batch
+from user.notifications import (
+    send_delayed_push_notif,
+    send_delayed_push_notif_batch,
+    send_push_notif,
+    send_push_notif_batch,
+)
 from user.serializers import (
     NotificationSettingSerializer,
     NotificationTokenSerializer,
@@ -97,6 +102,7 @@ class NotificationAlertView(APIView):
         service = request.data["service"]
         title = request.data["title"]
         body = request.data["body"]
+        delay = request.data["delay"] if "delay" in request.data else None
         isDev = request.data["isDev"] if "isDev" in request.data else False
 
         # queries tokens, filters by pennkey, service, and whether notif enabled
@@ -109,14 +115,22 @@ class NotificationAlertView(APIView):
                 notificationsetting__enabled=True,
             )
             .exclude(token="")
+            .values_list("user__username", "token")
         )
 
-        if len(tokens) == 1:
-            send_push_notif(tokens[0], title, body, isDev)
-        elif len(tokens) > 1:
-            send_push_notif_batch(tokens, title, body, isDev)
-
-        # get users that are not being sent notifs
-        success_users = [token.user.username for token in tokens]
+        # unpack list of tuples
+        success_users, tokens = zip(*tokens)
         failed_users = list(set(usernames) - set(success_users))
+
+        if len(tokens) == 1:
+            if delay:
+                send_delayed_push_notif(tokens[0], title, body, delay, isDev)
+            else:
+                send_push_notif(tokens[0], title, body, isDev)
+        elif len(tokens) > 1:
+            if delay:
+                send_delayed_push_notif_batch(tokens, title, body, isDev)
+            else:
+                send_push_notif_batch(tokens, title, body, isDev)
+
         return Response({"success_users": success_users, "failed_users": failed_users})

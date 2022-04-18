@@ -2,6 +2,18 @@ deploy_version: 0.1.20
 image_tag: latest
 
 applications:
+  - name: redis
+    image: redis
+    tag: "4.0"
+    port: 6379
+  - name: celery
+    image: pennlabs/penn-mobile-backend
+    secret: penn-mobile
+    cmd:
+      ["celery", "-A", "pennmobile", "worker", "-linfo"]
+    extraEnv:
+      - name: DJANGO_SETTINGS_MODULE
+        value: pennmobile.settings.production
   - name: django
     image: pennlabs/penn-mobile-backend
     secret: penn-mobile

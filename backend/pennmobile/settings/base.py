@@ -156,6 +156,12 @@ REST_FRAMEWORK = {
     ],
 }
 
+# Redis
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
+
+# Celery
+MESSAGE_BROKER_URL = REDIS_URL
+
 # Laundry API URL
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
 

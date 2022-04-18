@@ -5,7 +5,6 @@ verify_ssl = true
 
 [dev-packages]
 codecov = "*"
-black = "==19.10b0"
 unittest-xml-reporting = "*"
 flake8 = "*"
 flake8-isort = "*"
@@ -39,6 +38,9 @@ pillow = "*"
 boto3 = "*"
 apns2 = "*"
 numpy = "*"
+redis = "*"
+celery = "*"
+black = "*"
 
 [requires]
 python_version = "3"

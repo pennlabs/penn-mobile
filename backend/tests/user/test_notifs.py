@@ -295,16 +295,16 @@ class TestCallingNotificationsAPI(TestCase):
     @mock.patch("apns2.client.APNsClient.send_notification", mock_send_notif)
     def test_send_push_notif(self):
         token = NotificationToken.objects.first()
-        notif.send_push_notif(token=token, title="title", body="body")
+        notif.send_push_notif(token=token.token, title="title", body="body")
 
     @mock.patch("os.path.join", mock_get_path)
     @mock.patch("apns2.client.APNsClient.send_notification_batch", mock_send_notif)
     def test_send_push_notif_batch(self):
         token = NotificationToken.objects.first()
-        notif.send_push_notif_batch(tokens=[token], title="title", body="body")
+        notif.send_push_notif_batch(tokens=[token.token], title="title", body="body")
 
     @mock.patch("os.path.join", mock_get_path)
     @mock.patch("apns2.client.APNsClient.send_notification_batch", mock_send_notif)
     def test_send_shadow_push_notif_batch(self):
         token = NotificationToken.objects.first()
-        notif.send_shadow_push_notif_batch(tokens=[token], body=dict())
+        notif.send_shadow_push_notif_batch(tokens=[token.token], body=dict())

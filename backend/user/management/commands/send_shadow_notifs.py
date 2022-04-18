@@ -45,7 +45,7 @@ class Command(BaseCommand):
 
         # get list of tokens
         if send_to_all:
-            tokens = NotificationToken.objects.exclude(token="")
+            tokens = NotificationToken.objects.exclude(token="").values_list("token", flat=True)
         else:
             tokens = (
                 NotificationToken.objects.select_related("user")
@@ -54,13 +54,16 @@ class Command(BaseCommand):
                     user__username__in=usernames,
                 )
                 .exclude(token="")
+                .values_list("user__username", "token")
             )
+            # unpack list of tuples
+            success_users, tokens = zip(*tokens)
+            failed_users = list(set(usernames) - set(success_users))
 
         # send shadow notifications
         send_shadow_push_notif_batch(tokens=tokens, body=message, isDev=isDev)
 
         if not send_to_all:
-            failed_users = list(set(usernames) - set([token.user.username for token in tokens]))
             # output list of targeted users without tokens if such a list exists
             if len(failed_users) > 0:
                 self.stdout.write("Unavailable token(s) for " + ", ".join(failed_users) + ".")
