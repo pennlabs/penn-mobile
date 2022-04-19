@@ -197,6 +197,8 @@ jobs:
     container:
       image: pennlabs/helm-tools:39b60af248944898fcbc58d1fe5b0f1995420aef
     if: startsWith(github.ref, 'refs/heads/feature/') == true
+    outputs:
+      staging-url: ${{ steps.feature-deploy.outputs.url }}
     steps:
       - uses: actions/checkout@v2
       - name: Deploy
@@ -208,6 +210,7 @@ jobs:
           RELEASE_NAME=${REPOSITORY#*/}-${GITHUB_REF##*/}
 
           STAGING_URL=${GITHUB_REF##*/}-staging-portal.pennmobile.org
+          echo "::set-output name=url::$STAGING_URL"
 
           # this specifies what tag of icarus to pull down
           DEPLOY_TAG=$(yq r k8s/staging-values.yaml deploy_version)
@@ -245,13 +248,18 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/heads/feature/') == true
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2 
+      - name: Get PR Number
+        uses: jwalton/gh-find-current-pr@v1
+        id: findPr
       - name: Comment Staged URL
         uses: peter-evans/create-or-update-comment@v2
         with:
-          issue-number: ${{ github.event.pull_request.number }}
+          issue-number: ${{ steps.findPr.outputs.pr }}
           body: |
-            Website is staged on ${GITHUB_REF##*/}-staging-portal.pennmobile.org
-          reactions: 'rocket'
+            Website is staged on ${{ needs.feature-deploy.outputs.staging-url }}
+          reactions: eyes
     needs:
       - feature-deploy
 
