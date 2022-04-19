@@ -234,7 +234,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.GH_AWS_SECRET_ACCESS_KEY }}
           DO_AUTH_TOKEN: ${{ secrets.DO_AUTH_TOKEN }}
           REPOSITORY: ${{ github.repository }}
-          STAGING_URL: ${{ GITHUB_REF##*/ }}-staging-portal.pennmobile.org
+          STAGING_URL: "${ GITHUB_REF##*/ }-staging-portal.pennmobile.org"
     needs:
       - stage-frontend
       - stage-backend
