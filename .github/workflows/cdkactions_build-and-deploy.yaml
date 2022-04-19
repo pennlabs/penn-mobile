@@ -200,6 +200,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Deploy
+        id: feature-deploy
         run: |-
           aws eks --region us-east-1 update-kubeconfig --name production --role-arn arn:aws:iam::${AWS_ACCOUNT_ID}:role/kubectl
 
@@ -239,6 +240,19 @@ jobs:
     needs:
       - stage-frontend
       - stage-backend
+
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment Staged URL
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            Website is staged on ${GITHUB_REF##*/}-staging-portal.pennmobile.org
+          reactions: 'rocket'
+    needs:
+      - feature-deploy
 
   deploy:
     runs-on: ubuntu-latest
