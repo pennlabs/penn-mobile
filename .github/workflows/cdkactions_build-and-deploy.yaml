@@ -243,10 +243,12 @@ jobs:
 
   comment:
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/feature/') == true
     steps:
       - name: Comment Staged URL
         uses: peter-evans/create-or-update-comment@v1
         with:
+          comment-id: ${{ github.event.comment.id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             Website is staged on ${GITHUB_REF##*/}-staging-portal.pennmobile.org
