@@ -206,6 +206,8 @@ jobs:
           # get repo name (by removing owner/organization)
           RELEASE_NAME=${REPOSITORY#*/}-${GITHUB_REF##*/}
 
+          STAGING_URL=${GITHUB_REF##*/}-staging-portal.pennmobile.org
+
           # this specifies what tag of icarus to pull down
           DEPLOY_TAG=$(yq r k8s/staging-values.yaml deploy_version)
           if [ "$DEPLOY_TAG" = "null" ]; then
@@ -234,13 +236,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.GH_AWS_SECRET_ACCESS_KEY }}
           DO_AUTH_TOKEN: ${{ secrets.DO_AUTH_TOKEN }}
           REPOSITORY: ${{ github.repository }}
-          STAGING_URL: "${ GITHUB_REF##*/ }-staging-portal.pennmobile.org"
     needs:
       - stage-frontend
       - stage-backend
-
-
-
 
   deploy:
     runs-on: ubuntu-latest
