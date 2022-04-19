@@ -258,7 +258,7 @@ jobs:
         with:
           issue-number: ${{ steps.findPr.outputs.pr }}
           body: |
-            Website is staged on ${{ needs.feature-deploy.outputs.staging-url }}
+            Website is staged on [${{ needs.feature-deploy.outputs.staging-url }}](${{ needs.feature-deploy.outputs.staging-url }})!
           reactions: eyes
     needs:
       - feature-deploy
