@@ -21,7 +21,7 @@ htmlcov/
 db.sqlite3
 
 # Redis
-*.rdb
+backend/dump.rdb
 
 # Mac
 .DS_Store
