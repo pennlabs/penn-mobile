@@ -2,19 +2,6 @@ deploy_version: 0.1.20
 image_tag: latest
 
 applications:
-  - name: postgres
-    image: postgres:12
-    extraEnv:
-      - name: POSTGRES_DB
-        value: penn-mobile
-      - name: POSTGRES_PASSWORD
-        value: gary
-      - name: POSTGRES_USER
-        value: penn-mobile
-    ingress:
-      hosts:
-        - host: staging-portal.pennmobile.org
-          paths: ["/"]
   - name: django
     image: pennlabs/penn-mobile-backend-staging
     secret: penn-mobile
@@ -41,3 +28,12 @@ applications:
         value: 80
       - name: DOMAIN
         value: staging-portal.pennmobile.org
+  - name: postgres
+    image: postgres:12
+    extraEnv:
+      - name: POSTGRES_DB
+        value: penn-mobile
+      - name: POSTGRES_PASSWORD
+        value: gary
+      - name: POSTGRES_USER
+        value: penn-mobile
