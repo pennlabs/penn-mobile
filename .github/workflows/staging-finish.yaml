@@ -1,0 +1,30 @@
+name: Finish Staging Build and Deploy
+on: 
+  delete:
+    branches:
+      - 'feature/**'
+jobs:
+  feature-cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Helm Uninstall
+        run: |-
+          aws eks --region us-east-1 update-kubeconfig --name production --role-arn arn:aws:iam::${AWS_ACCOUNT_ID}:role/kubectl
+
+          # get repo name (by removing owner/organization)
+          RELEASE_NAME=${REPOSITORY#*/}-${GITHUB_REF##*/}
+
+          STAGING_URL=${GITHUB_REF##*/}-staging-portal.pennmobile.org
+
+          helm repo add pennlabs https://helm.pennlabs.org/
+
+          # uninstalls helm release for feature branch
+          helm uninstall $RELEASE_NAME
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.GH_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.GH_AWS_SECRET_ACCESS_KEY }}
+          DO_AUTH_TOKEN: ${{ secrets.DO_AUTH_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
