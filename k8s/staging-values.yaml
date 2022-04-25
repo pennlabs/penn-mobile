@@ -16,7 +16,7 @@ applications:
       - name: DJANGO_SETTINGS_MODULE
         value: pennmobile.settings.production
       - name: DATABASE_URL
-        value: postgres://penn-mobile:gary@penn-mobile-postgres:5432/penn-mobile
+        value: postgres://penn-mobile:gary@penn-mobile-test-postgres:5432/penn-mobile
   - name: react
     image: pennlabs/penn-mobile-frontend-staging
     ingress:
