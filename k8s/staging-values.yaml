@@ -30,6 +30,7 @@ applications:
         value: staging-portal.pennmobile.org
   - name: postgres
     image: postgres:12
+    svc_type: NodePort
     port: 5432
     extraEnv:
       - name: POSTGRES_DB

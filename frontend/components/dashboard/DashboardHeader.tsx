@@ -22,14 +22,14 @@ export const DashboardHeader = ({
 
   return (
     <Row justifyContent="space-between">
-      <Subtitle>
+      {/* <Subtitle>
         {clubsLoading ? (
           <Skeleton width={250} style={{ flexGrow: 1 }} />
         ) : (
           // TODO: add club select
           clubs[0]?.name
         )}
-      </Subtitle>
+      </Subtitle> */}
       <Group horizontal alignItems="center">
         <PostPollToggle
           activeOption={activeOption}
