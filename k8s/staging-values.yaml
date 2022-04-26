@@ -29,7 +29,7 @@ applications:
       - name: DOMAIN
         value: staging-portal.pennmobile.org
   - name: postgres
-    image: postgres:12
+    image: postgres
     svc_type: NodePort
     port: 5432
     extraEnv:
