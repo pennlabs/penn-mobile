@@ -161,6 +161,7 @@ jobs:
           fi
 
           helm repo add pennlabs https://helm.pennlabs.org/
+          helm history $RELEASE_NAME -o yaml
           for i in {1..10}; do
             # This is bash soup, but it'll do.
             # 1. Attempt to install with helm
