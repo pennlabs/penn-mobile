@@ -15,8 +15,8 @@ applications:
         value: staging-portal.pennmobile.org
       - name: DJANGO_SETTINGS_MODULE
         value: pennmobile.settings.production
-      # - name: DATABASE_URL
-      #   value: postgres://penn-mobile:gary@penn-mobile-test-postgres:5432/penn-mobile
+      - name: DATABASE_URL
+        value: postgres://penn-mobile:gary@penn-mobile-test-postgres:5432/penn-mobile
   - name: react
     image: pennlabs/penn-mobile-frontend-staging
     ingress:
@@ -28,14 +28,14 @@ applications:
         value: 80
       - name: DOMAIN
         value: staging-portal.pennmobile.org
-  # - name: postgres
-  #   image: postgres
-  #   svc_type: NodePort
-  #   port: 5432
-  #   extraEnv:
-  #     - name: POSTGRES_DB
-  #       value: penn-mobile
-  #     - name: POSTGRES_PASSWORD
-  #       value: gary
-  #     - name: POSTGRES_USER
-  #       value: penn-mobile
+  - name: postgres
+    image: postgres
+    svc_type: NodePort
+    port: 5432
+    extraEnv:
+      - name: POSTGRES_DB
+        value: penn-mobile
+      - name: POSTGRES_PASSWORD
+        value: gary
+      - name: POSTGRES_USER
+        value: penn-mobile
