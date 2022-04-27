@@ -30,7 +30,10 @@ applications:
   #       value: staging-portal.pennmobile.org
   - name: postgres
     image: postgres 
+    port: 80
     extraEnv:
+      - name: PORT
+        value: 80
       - name: POSTGRES_DB
         value: postgres
       - name: POSTGRES_PASSWORD
