@@ -34,6 +34,10 @@ applications:
     extraEnv:
       - name: MYSQL_ROOT_PASSWORD
         value: password
+      - name: PORT
+        value: 3306
+      - name: DOMAIN
+        value: staging-portal.pennmobile.org
   # - name: postgres
   #   image: postgres 
   #   port: 5432
