@@ -29,8 +29,7 @@ applications:
   #     - name: DOMAIN
   #       value: staging-portal.pennmobile.org
   - name: postgres
-    image: postgres
-    port: 5432
+    image: postgres 
     extraEnv:
       - name: POSTGRES_DB
         value: postgres
