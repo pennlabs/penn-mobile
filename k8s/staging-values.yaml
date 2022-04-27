@@ -31,7 +31,7 @@ applications:
   - name: postgres
     image: postgres 
     port: 5432
-    svc-type: NodePort
+    svc_type: NodePort
     extraEnv:
       - name: POSTGRES_DB
         value: postgres
