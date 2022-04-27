@@ -28,28 +28,28 @@ applications:
   #       value: 80
   #     - name: DOMAIN
   #       value: staging-portal.pennmobile.org
-  - name: mysql
-    image: mysql
-    port: 3306
-    ingress:
-      hosts:
-        - host: staging-portal.pennmobile.org
-          paths: ["/"]
-    extraEnv:
-      - name: MYSQL_ROOT_PASSWORD
-        value: password
-      - name: PORT
-        value: 3306
-      - name: DOMAIN
-        value: staging-portal.pennmobile.org
-  # - name: postgres
-  #   image: postgres 
-  #   port: 5432
-  #   svc_type: NodePort
+  # - name: mysql
+  #   image: mysql
+  #   port: 3306
+  #   ingress:
+  #     hosts:
+  #       - host: staging-portal.pennmobile.org
+  #         paths: ["/"]
   #   extraEnv:
-  #     - name: POSTGRES_DB
-  #       value: postgres
-  #     - name: POSTGRES_PASSWORD
-  #       value: postgres
-  #     - name: POSTGRES_USER
-  #       value: postgres
+  #     - name: MYSQL_ROOT_PASSWORD
+  #       value: password
+  #     - name: PORT
+  #       value: 3306
+  #     - name: DOMAIN
+  #       value: staging-portal.pennmobile.org
+  - name: postgres
+    image: postgres
+    tag: "12"
+    port: 5432
+    extraEnv:
+      - name: POSTGRES_DB
+        value: postgres
+      - name: POSTGRES_PASSWORD
+        value: postgres
+      - name: POSTGRES_USER
+        value: postgres
