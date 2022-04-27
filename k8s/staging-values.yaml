@@ -2,32 +2,32 @@ deploy_version: 0.1.20
 image_tag: latest
 
 applications:
-  - name: django
-    image: pennlabs/penn-mobile-backend-staging
-    secret: penn-mobile
-    replicas: 1
-    ingress:
-      hosts:
-        - host: staging-portal.pennmobile.org
-          paths: ["/api", "/assets"]
-    extraEnv:
-      - name: DOMAINS
-        value: staging-portal.pennmobile.org
-      - name: DJANGO_SETTINGS_MODULE
-        value: pennmobile.settings.production
-      - name: DATABASE_URL
-        value: postgres://postgres:postgres@penn-mobile-test-postgres:5432/postgres
-  - name: react
-    image: pennlabs/penn-mobile-frontend-staging
-    ingress:
-      hosts:
-        - host: staging-portal.pennmobile.org
-          paths: ["/"]
-    extraEnv:
-      - name: PORT
-        value: 80
-      - name: DOMAIN
-        value: staging-portal.pennmobile.org
+  # - name: django
+  #   image: pennlabs/penn-mobile-backend-staging
+  #   secret: penn-mobile
+  #   replicas: 1
+  #   ingress:
+  #     hosts:
+  #       - host: staging-portal.pennmobile.org
+  #         paths: ["/api", "/assets"]
+  #   extraEnv:
+  #     - name: DOMAINS
+  #       value: staging-portal.pennmobile.org
+  #     - name: DJANGO_SETTINGS_MODULE
+  #       value: pennmobile.settings.production
+  #     - name: DATABASE_URL
+  #       value: postgres://postgres:postgres@penn-mobile-test-postgres:5432/postgres
+  # - name: react
+  #   image: pennlabs/penn-mobile-frontend-staging
+  #   ingress:
+  #     hosts:
+  #       - host: staging-portal.pennmobile.org
+  #         paths: ["/"]
+  #   extraEnv:
+  #     - name: PORT
+  #       value: 80
+  #     - name: DOMAIN
+  #       value: staging-portal.pennmobile.org
   - name: postgres
     image: postgres
     port: 5432
