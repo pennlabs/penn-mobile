@@ -169,6 +169,8 @@ jobs:
             # 4. Wait 10s and try again
             # helm upgrade --install --atomic --debug --set=image_tag=$IMAGE_TAG,applications[0].ingress.hosts[0].host=$STAGING_URL,applications[0].extraEnv[0].value=$STAGING_URL,applications[1].ingress.hosts[0].host=$STAGING_URL,applications[1].extraEnv[1].value=$STAGING_URL -f k8s/staging-values.yaml --version "${DEPLOY_TAG}" $RELEASE_NAME pennlabs/icarus && exit 0 || true
             helm upgrade --install --atomic --debug --set=image_tag=$IMAGE_TAG -f k8s/staging-values.yaml --version "${DEPLOY_TAG}" $RELEASE_NAME pennlabs/icarus && exit 0 || true
+            kubectl get pods
+            kubcetl describe penn-mobile-test-postgres
             sleep 10s
             echo "Retrying deploy for $i times"
           done
