@@ -28,14 +28,20 @@ applications:
   #       value: 80
   #     - name: DOMAIN
   #       value: staging-portal.pennmobile.org
-  - name: postgres
-    image: postgres 
-    port: 5432
-    svc_type: NodePort
+  - name: mysql
+    image: mysql
+    port: 3306
     extraEnv:
-      - name: POSTGRES_DB
-        value: postgres
-      - name: POSTGRES_PASSWORD
-        value: postgres
-      - name: POSTGRES_USER
-        value: postgres
+      - name: MYSQL_ROOT_PASSWORD
+        value: password
+  # - name: postgres
+  #   image: postgres 
+  #   port: 5432
+  #   svc_type: NodePort
+  #   extraEnv:
+  #     - name: POSTGRES_DB
+  #       value: postgres
+  #     - name: POSTGRES_PASSWORD
+  #       value: postgres
+  #     - name: POSTGRES_USER
+  #       value: postgres
