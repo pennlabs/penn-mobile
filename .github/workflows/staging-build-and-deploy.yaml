@@ -130,7 +130,7 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache,type=registry,ref=pennlabs/penn-mobile-backend-staging:latest
           cache-to: type=local,dest=/tmp/.buildx-cache
           tags: pennlabs/penn-mobile-backend-staging:latest,pennlabs/penn-mobile-backend-staging:${{ github.sha }}
-    needs: django-check
+   # needs: django-check
   feature-deploy:
     runs-on: ubuntu-latest
     container:
