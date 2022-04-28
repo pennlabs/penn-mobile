@@ -16,7 +16,7 @@ applications:
       - name: DJANGO_SETTINGS_MODULE
         value: pennmobile.settings.production
       - name: DATABASE_URL
-        value: postgres://postgres:postgres@penn-mobile-test-postgres:5432/postgres
+        value: postgres://penn-mobile:password@penn-mobile-test-postgres:5432/penn-mobile-staging
   - name: react
     image: pennlabs/penn-mobile-frontend-staging
     ingress:
@@ -34,8 +34,8 @@ applications:
     port: 5432
     extraEnv:
       - name: POSTGRES_DB
-        value: postgres
+        value: penn-mobile-staging
       - name: POSTGRES_PASSWORD
-        value: postgres
+        value: password
       - name: POSTGRES_USER
-        value: postgres
+        value: penn-mobile
