@@ -142,14 +142,17 @@ jobs:
       - name: Deploy
         run: |-
           aws eks --region us-east-1 update-kubeconfig --name production --role-arn arn:aws:iam::${AWS_ACCOUNT_ID}:role/kubectl
+
           # get repo name (by removing owner/organization)
           RELEASE_NAME=${REPOSITORY#*/}
+
           # this specifies what tag of icarus to pull down
           DEPLOY_TAG=$(yq r k8s/values.yaml deploy_version)
           if [ "$DEPLOY_TAG" = "null" ]; then
               echo "Could not find deploy tag"
               exit 1
           fi
+
           helm repo add pennlabs https://helm.pennlabs.org/
           for i in {1..10}; do
             # This is bash soup, but it'll do.
@@ -161,6 +164,7 @@ jobs:
             sleep 10s
             echo "Retrying deploy for $i times"
           done
+
           # If we get here, all helm installs failed so our command should fail
           exit 1
         env:
@@ -173,3 +177,4 @@ jobs:
     needs:
       - publish-backend
       - publish-frontend
+      
