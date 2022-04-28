@@ -254,7 +254,6 @@ class Posts(viewsets.ModelViewSet):
     serializer_class = PostSerializer
 
     def get_queryset(self):
-        print('hi')
         return (
             Post.objects.all()
             if self.request.user.is_superuser

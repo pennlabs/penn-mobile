@@ -4,82 +4,81 @@ on:
     branches:
       - 'feature/**'
 jobs:
-  # django-check:
-  #   name: Django Check
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Cache
-  #       uses: actions/cache@v2
-  #       with:
-  #         path: ~/.local/share/virtualenvs
-  #         key: v0-${{ hashFiles('backend/Pipfile.lock') }}
-  #     - name: Install Dependencies
-  #       run: |-
-  #         cd backend
-  #         pip install pipenv
-  #         pipenv install --deploy --dev
-  #     - name: Lint (flake8)
-  #       run: |-
-  #         cd backend
-  #         pipenv run flake8 .
-  #     - name: Lint (black)
-  #       run: |-
-  #         cd backend
-  #         pipenv run black --check .
-  #     - name: Test (run in parallel)
-  #       run: |-
-  #         cd backend
-  #         pipenv run coverage run --concurrency=multiprocessing manage.py test --settings=pennmobile.settings.ci --parallel
-  #         pipenv run coverage combine
-  #     - name: Upload Code Coverage
-  #       run: |-
-  #         ROOT=$(pwd)
-  #         cd backend
-  #         pipenv run codecov --root $ROOT --flags backend
-  #   container:
-  #     image: python:3.8-buster
-  #   env:
-  #     DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
-  #   services:
-  #     postgres:
-  #       image: postgres:12
-  #       env:
-  #         POSTGRES_USER: postgres
-  #         POSTGRES_DB: postgres
-  #         POSTGRES_PASSWORD: postgres
-  #       options: "--health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5"
+  django-check:
+    name: Django Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.local/share/virtualenvs
+          key: v0-${{ hashFiles('backend/Pipfile.lock') }}
+      - name: Install Dependencies
+        run: |-
+          cd backend
+          pip install pipenv
+          pipenv install --deploy --dev
+      - name: Lint (flake8)
+        run: |-
+          cd backend
+          pipenv run flake8 .
+      - name: Lint (black)
+        run: |-
+          cd backend
+          pipenv run black --check .
+      - name: Test (run in parallel)
+        run: |-
+          cd backend
+          pipenv run coverage run --concurrency=multiprocessing manage.py test --settings=pennmobile.settings.ci --parallel
+          pipenv run coverage combine
+      - name: Upload Code Coverage
+        run: |-
+          ROOT=$(pwd)
+          cd backend
+          pipenv run codecov --root $ROOT --flags backend
+    container:
+      image: python:3.8-buster
+    env:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+        options: "--health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5"
   
-  # react-check:
-  #   name: React Check
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Cache
-  #       uses: actions/cache@v2
-  #       with:
-  #         path: "**/node_modules"
-  #         key: v0-${{ hashFiles('frontend/yarn.lock') }}
-  #     - name: Install Dependencies
-  #       run: |-
-  #         cd frontend
-  #         yarn install --frozen-lockfile
-  #     - name: Lint
-  #       run: |-
-  #         cd frontend
-  #         yarn lint
-  #     - name: Test
-  #       run: |-
-  #         cd frontend
-  #         yarn test
-  #     - name: Upload Code Coverage
-  #       run: |-
-  #         ROOT=$(pwd)
-  #         cd frontend
-  #         yarn run codecov -p $ROOT -F frontend
-  #   container:
-  #     image: node:14
-  
+  react-check:
+    name: React Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: v0-${{ hashFiles('frontend/yarn.lock') }}
+      - name: Install Dependencies
+        run: |-
+          cd frontend
+          yarn install --frozen-lockfile
+      - name: Lint
+        run: |-
+          cd frontend
+          yarn lint
+      - name: Test
+        run: |-
+          cd frontend
+          yarn test
+      - name: Upload Code Coverage
+        run: |-
+          ROOT=$(pwd)
+          cd frontend
+          yarn run codecov -p $ROOT -F frontend
+    container:
+      image: node:14
   stage-frontend:
     name: Stage frontend
     runs-on: ubuntu-latest
@@ -105,8 +104,7 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache,type=registry,ref=pennlabs/penn-mobile-frontend-staging:latest
           cache-to: type=local,dest=/tmp/.buildx-cache
           tags: pennlabs/penn-mobile-frontend-staging:latest,pennlabs/penn-mobile-frontend-staging:${{ github.sha }}
-    # needs: react-check
-
+    needs: react-check
   stage-backend:
     name: Stage backend
     runs-on: ubuntu-latest
@@ -132,8 +130,7 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache,type=registry,ref=pennlabs/penn-mobile-backend-staging:latest
           cache-to: type=local,dest=/tmp/.buildx-cache
           tags: pennlabs/penn-mobile-backend-staging:latest,pennlabs/penn-mobile-backend-staging:${{ github.sha }}
-    # needs: django-check
-
+    needs: django-check
   feature-deploy:
     runs-on: ubuntu-latest
     container:
@@ -186,7 +183,6 @@ jobs:
     needs:
       - stage-frontend
       - stage-backend
-
   comment:
     runs-on: ubuntu-latest
     steps:
