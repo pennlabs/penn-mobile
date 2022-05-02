@@ -10,5 +10,4 @@ def check_wharton(*args):
 class MobileTestRunner(XMLTestRunner):
     @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def run_tests(self, test_labels, **kwargs):
-        print("i also went here")
         return super().run_tests(test_labels, **kwargs)
