@@ -45,6 +45,7 @@ class GroupMembership(models.Model):
         super().save(*args, **kwargs)
 
     def check_wharton(self):
+        print("i went here")
         # not using api_wrapper.py to prevent circular dependency
         url = f"https://apps.wharton.upenn.edu/gsr/api/v1/{self.user.username}/privileges"
         try:
