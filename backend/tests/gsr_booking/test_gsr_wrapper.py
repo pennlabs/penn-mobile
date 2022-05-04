@@ -13,10 +13,6 @@ from gsr_booking.models import GSR, Group, GSRBooking, Reservation
 User = get_user_model()
 
 
-def check_wharton(*args):
-    return False
-
-
 def mock_requests_get(obj, *args, **kwargs):
     class Mock:
         def __init__(self, json_data, status_code):
@@ -54,7 +50,6 @@ def mock_requests_get(obj, *args, **kwargs):
 
 
 class TestBookingWrapper(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_gsrs")
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")

@@ -15,10 +15,6 @@ from penndata.models import Event, FitnessRoom, FitnessSnapshot
 from portal.models import Poll, Post
 
 
-def check_wharton(*args):
-    return False
-
-
 def fakeFitnessGet(url, *args, **kwargs):
     if "docs.google.com/spreadsheets/" in url:
         with open("tests/penndata/fitness_snapshot.html", "rb") as f:
@@ -90,7 +86,6 @@ class TestEvent(TestCase):
 
 
 class TestHomePage(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_venues")
         call_command("load_laundry_rooms")
@@ -135,7 +130,6 @@ class TestHomePage(TestCase):
 
 
 class TestGetRecentFitness(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_fitness_rooms")
         self.client = APIClient()
@@ -191,7 +185,6 @@ class TestGetFitnessSnapshot(TestCase):
 
 
 class TestAnalytics(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@a.com", "user")

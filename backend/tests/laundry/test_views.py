@@ -11,10 +11,6 @@ from laundry.models import LaundryRoom, LaundrySnapshot
 from tests.laundry.test_commands import fakeLaundryGet
 
 
-def check_wharton(*args):
-    return False
-
-
 User = get_user_model()
 
 
@@ -154,7 +150,6 @@ class HallUsageViewTestCase(TestCase):
 
 @mock.patch("requests.get", fakeLaundryGet)
 class PreferencesTestCase(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         LaundryRoom.objects.get_or_create(
             hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
