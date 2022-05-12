@@ -12,10 +12,6 @@ from rest_framework.test import APIClient
 from portal.models import Poll, PollOption, PollVote
 
 
-def check_wharton(*args):
-    return False
-
-
 User = get_user_model()
 
 
@@ -25,7 +21,6 @@ def mock_get_user_clubs(*args, **kwargs):
 
 
 class PollPermissions(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_target_populations")
 

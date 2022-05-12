@@ -1,5 +1,3 @@
-from unittest import mock
-
 from django.contrib import auth
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -8,15 +6,10 @@ from rest_framework.test import APIClient
 from user.models import Profile
 
 
-def check_wharton(*args):
-    return False
-
-
 User = get_user_model()
 
 
 class UserTestCase(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.user1 = {
             "pennid": 1,
@@ -45,14 +38,12 @@ class UserTestCase(TestCase):
         self.client = APIClient()
         self.client.login(username="user1", password="password")
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def test_user1_profile(self):
         user = auth.authenticate(remote_user=self.user1)
         self.assertEqual(1, Profile.objects.all().count())
         self.assertEqual(user, Profile.objects.all().first().user)
         self.assertEqual("user", str(Profile.objects.all().first()))
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def test_user2_profile(self):
         self.assertEqual(0, Profile.objects.all().count())
         user = auth.authenticate(remote_user=self.user2)

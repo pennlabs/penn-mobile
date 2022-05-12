@@ -37,6 +37,7 @@ export const DesktopWireframes = () => (
       placeholder="blur"
       layout="responsive"
       objectFit="contain"
+      priority={true}
     />
   </DesktopWireframesStyle>
 )

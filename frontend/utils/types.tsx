@@ -2,7 +2,6 @@ export interface User {
   first_name: string
   last_name: string
   email: string
-  clubs: Club[]
 }
 
 export interface Club {
@@ -44,7 +43,8 @@ export interface PostType extends ContentType {
   title: string
   subtitle: string
   post_url: string
-  image_url: string
+  image: File | null
+  image_url?: string
 }
 
 export const initialPoll: PollType = {
@@ -66,8 +66,8 @@ export const initialPost: PostType = {
   subtitle: '',
   club_code: '',
   post_url: '',
-  image_url:
-    'https://www.akc.org/wp-content/uploads/2017/11/Pembroke-Welsh-Corgi-standing-outdoors-in-the-fall.jpg', // TODO: remove corgi :(
+  image: null,
+  image_url: '',
   start_date: null,
   expire_date: null,
   club_comment: '',

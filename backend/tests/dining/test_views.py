@@ -12,10 +12,6 @@ from rest_framework.test import APIClient
 from dining.models import DiningBalance, DiningTransaction, Venue
 
 
-def check_wharton(*args):
-    return False
-
-
 User = get_user_model()
 
 
@@ -99,7 +95,6 @@ class TestItem(TestCase):
 
 
 class TestPreferences(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_venues")
         self.client = APIClient()
@@ -145,7 +140,6 @@ class TestPreferences(TestCase):
 
 
 class TestTransactions(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_venues")
         self.client = APIClient()
@@ -188,7 +182,6 @@ class TestTransactions(TestCase):
 
 
 class TestBalance(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_venues")
         self.client = APIClient()
@@ -232,7 +225,6 @@ class TestBalance(TestCase):
 
 
 class TestAverageBalance(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_venues")
         self.client = APIClient()
@@ -277,7 +269,6 @@ class TestAverageBalance(TestCase):
 
 
 class TestProjection(TestCase):
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_venues")
         self.client = APIClient()

@@ -1,5 +1,7 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import Link from 'next/link'
+import Skeleton from 'react-loading-skeleton'
+import 'react-loading-skeleton/dist/skeleton.css'
 
 import { Group, Row } from '@/components/styles/Layout'
 import { Subtitle } from '@/components/styles/Text'
@@ -7,7 +9,7 @@ import { colors } from '@/components/styles/colors'
 import { PageType } from '@/utils/types'
 import { Button, PostPollToggle } from '@/components/styles/Buttons'
 import { CREATE_POLL_ROUTE, CREATE_POST_ROUTE } from '@/utils/routes'
-import { AuthUserContext } from '@/utils/auth'
+import useClubs from '@/hooks/useClubs'
 
 export const DashboardHeader = ({
   activeOption,
@@ -16,11 +18,18 @@ export const DashboardHeader = ({
   activeOption: PageType
   setActiveOption: React.Dispatch<React.SetStateAction<PageType>>
 }) => {
-  const { user } = useContext(AuthUserContext)
+  const { clubs, clubsLoading } = useClubs()
 
   return (
     <Row justifyContent="space-between">
-      <Subtitle>{user?.clubs[0].name}</Subtitle>
+      <Subtitle>
+        {clubsLoading ? (
+          <Skeleton width={250} style={{ flexGrow: 1 }} />
+        ) : (
+          // TODO: add club select
+          clubs[0]?.name
+        )}
+      </Subtitle>
       <Group horizontal alignItems="center">
         <PostPollToggle
           activeOption={activeOption}

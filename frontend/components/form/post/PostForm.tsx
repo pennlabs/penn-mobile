@@ -21,7 +21,8 @@ const PostForm = ({ state, updateState, filters }: PostFormProps) => {
   const imageFile = useRef<HTMLInputElement | null>(null)
 
   const uploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // const file = e.target.files?.[0]
+    const file = e.target.files?.[0]
+    updateState({ image: file })
   }
 
   return (
@@ -73,7 +74,7 @@ const PostForm = ({ state, updateState, filters }: PostFormProps) => {
           >
             Browse
           </Button>
-          {state.image_url && <Button color={colors.IMAGE_BLUE}>Crop</Button>}
+          {state.image && <Button color={colors.IMAGE_BLUE}>Crop</Button>}
         </Group>
       </Card>
 
