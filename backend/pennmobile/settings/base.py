@@ -12,7 +12,7 @@ import os
 import dj_database_url
 
 
-DOMAINS = os.environ.get("DOMAINS", "example.com")
+DOMAINS = os.environ.get("DOMAINS", "example.com").split(",")
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
