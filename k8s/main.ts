@@ -57,7 +57,7 @@ export class MyChart extends PennLabsChart {
       schedule: cronTime.every(3).hours(),
       image: backendImage,
       secret,
-      cmd: ["python", "manage.py", "get_fitness_snapshots"],
+      cmd: ["python", "manage.py", "get_fitness_snapshot"],
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
   }
