@@ -53,7 +53,7 @@ export class MyChart extends PennLabsChart {
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
 
-    new CronJob(this, 'get-fitness-snapshots', {
+    new CronJob(this, 'get-fitness-snapshot', {
       schedule: cronTime.every(3).hours(),
       image: backendImage,
       secret,
