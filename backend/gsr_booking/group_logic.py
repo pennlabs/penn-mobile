@@ -1,5 +1,4 @@
 import random
-from types import MemberDescriptorType
 
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
@@ -59,6 +58,29 @@ class GroupBook:
         if not gsr:
             raise APIError(f"Unknown GSR GID {gid}")
 
+        minutes = (end - start).total_seconds() / 60
+        users = self.get_wharton_users(group) if gsr.kind == GSR.KIND_WHARTON else self.get_all_users(group)
+        for user in users:
+            credits = self.bw.check_credits(gsr.lid, gid, user)
+            # book until credits are exhausted
+
+
+
+
+            try:
+                self.bw.book_room(gid, rid, room_name, start, end, user)
+                break
+            except APIError:
+                continue
+
+
+
+
+
+
+
+
+
         try:
             if gsr.kind == GSR.KIND_WHARTON:
                 wharton_users = self.get_wharton_users(group)
@@ -86,12 +108,12 @@ class GroupBook:
         """
         Availability function for Group
         """
-
         gsr = GSR.objects.filter(gid=gid).first()
+        if not gsr:
+            raise APIError(f"Unknown GSR GID {gid}")
         if gsr.kind == GSR.KIND_WHARTON:
             # check if wharton users is non-empty
             wharton_user = GroupMembership.objects.filter(group=group, is_wharton=True).first()
             if wharton_user:
                 return self.bw.get_availability(lid, gid, start, end, wharton_user.user)
-
         return self.bw.get_availability(lid, gid, start, end, user)

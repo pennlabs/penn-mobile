@@ -342,6 +342,7 @@ class BookRoom(APIView):
         try:
             group = Group.objects.get(name="Penn Labs")
             if request.user in group.members.all():
+                # TODO: normalize start and end dates
                 GB.book_room(gid, room_id, room_name, start, end, request.user, group)
             else:
                 BW.book_room(gid, room_id, room_name, start, end, request.user)

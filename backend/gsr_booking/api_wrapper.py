@@ -40,7 +40,11 @@ class BookingWrapper:
         if not gsr:
             raise APIError(f"Unknown GSR GID {gid}")
 
-        if not self.check_credits(gsr.lid, gid, user, start, end):
+        start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
+        end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
+        duration = int((end.timestamp() - start.timestamp()) / 60)
+
+        if self.check_credits(gsr.lid, gid, user) > duration:
             raise APIError("Not Enough Credits to Book")
 
         # error catching on view side
@@ -164,7 +168,7 @@ class BookingWrapper:
                         )
         return bookings
 
-    def check_credits(self, lid, gid, user, start, end):
+    def check_credits(self, lid, gid, user):
         """
         Checks credits for a particular room at a particular date
         from gsr_booking.api_wrapper import BookingWrapper
@@ -172,9 +176,9 @@ class BookingWrapper:
         b.check_credits(lid, gid, request.user, "2021-10-27")
         """
 
-        start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
-        end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
-        duration = int((end.timestamp() - start.timestamp()) / 60)
+        # start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
+        # end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
+        # duration = int((end.timestamp() - start.timestamp()) / 60)
 
         gsr = GSR.objects.filter(lid=lid, gid=gid).first()
         # checks if valid gsr
@@ -192,7 +196,7 @@ class BookingWrapper:
                     end = datetime.datetime.strptime(reservation["end"], "%Y-%m-%dT%H:%M:%S%z")
                     total_minutes += int((end.timestamp() - start.timestamp()) / 60)
             # 90 minutes at any given time
-            return (90 - total_minutes) >= duration
+            return (90 - total_minutes)
         else:
             lc_start = make_aware(
                 datetime.datetime.combine(start.date(), datetime.datetime.min.time())
@@ -213,7 +217,7 @@ class BookingWrapper:
                     (reservation.end.timestamp() - reservation.start.timestamp()) / 60
                 )
             # 120 minutes per day
-            return (120 - total_minutes) >= duration
+            return (120 - total_minutes)
 
 
 class WhartonLibWrapper:
