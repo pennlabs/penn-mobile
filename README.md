@@ -3,9 +3,14 @@
 [![Build and Deploy](https://github.com/pennlabs/penn-mobile/actions/workflows/cdkactions_build-and-deploy.yaml/badge.svg)](https://github.com/pennlabs/penn-mobile/actions/workflows/cdkactions_build-and-deploy.yaml)
 [![Coverage Status](https://codecov.io/gh/pennlabs/penn-mobile/branch/master/graph/badge.svg)](https://codecov.io/gh/pennlabs/penn-mobile)
 
-This repository will hopefully be the Django-based successor to `labs-api-server`, containing API routes to help students manage keep track of things around campus that matter to them. Currently, this repo contains:
+This repository is the Django-based successor to `labs-api-server`, containing API routes to help students manage and keep track of things around campus that matter to them. This repo contains:
 
-- Group GSR Booking
+- GSR Booking
+- Laundry Data
+- Dining Data
+- Fitness Data
+- News and Events
+- Posts and Polls
 
 ## Install
 
@@ -14,8 +19,6 @@ This repository will hopefully be the Django-based successor to `labs-api-server
 - `pipenv install --dev`
 - `pipenv run python manage.py migrate`
 - `pipenv run python manage.py runserver 8000`
-
-You should be good to go!
 
 ## Creating Users
 
@@ -26,87 +29,4 @@ To create users, you first have to create a main superuser.
 
 ## Exploring the API
 
-- Go to `localhost:8000/` in your browser to explore the API! This is a really good way to click around and discover stuff.
-
-## Rudimentary API Documentation
-
-Also see the [auto-generated documentation](https://pennmobile.org/api/documentation/)
-
-- `GET /users/`
-  - List all users, with their pennkey and the groups they are members of.
-
-- `GET /users/<pennkey>/`
-  - Detail view on one user.
-
-- `GET /credentials/`
-  - Lists Wharton Session ID (if available), its expiration date, and date updated associated with user requesting information.
-
-- `GET /users/<pennkey>/invites/`
-  - Get all open invites for a user.
-
-- `POST /users/<pennkey>/activate/`
-  - **IMPORTANT** This endpoint should be called when the user logs in. Updates any invites with the user's Pennkey to be associated with their account (now that it exists), and also adds their name and pennkey to the search index (see below)
-
-- `GET /users/search/?q=<search query>`
-  - Returns all users whose name or pennkey matches the search query. Users are only included in the autocomplete if they have an account in the system and their account has been activated -- otherwise users will need to invite based off of Pennkey.
-
-- `POST /membership/invite/`
-  - Invite a user to a group. This is a POST request, where you sent a JSON payload in the following format:
-
-    ```json
-    {
-      "user": <pennkey>,
-      "group": <group id>
-    }
-    ```
-
-    or, for bulk invites,
-
-    ```json
-    {
-      "user": '<pennkey>, <pennkey2>, ...'
-      "group": <group id>
-    }
-    ```
-
-    **Note** that the user with the associated Pennkey *need not* have an account in the system. the invite will be entered either way!
-- `POST /membership/<invite id>/accept/`
-  - Accept an invite. If an invite with the given ID has already been accepted, will return a 400.
-
-- `POST /membership/<invite id>/decline/`
-  - Decline an invite. If the invite has already been accepted, will return a 400.
-
-- `POST /membership/pennkey/`
-  - Update the pennkey for a user. This is a POST request, where you send a JSON payload `{"user": <pennkey>, "group": <group ID>, "allow": <true/false>}`.
-
-- `POST /membership/notification/`
-  - Update the pennkey for a user. This is a POST request, where you send a JSON payload `{"user": <pennkey>, "group": <group ID>, "active": <true/false>}`.
-
-- `GET /groups/`
-  - Get a list of all groups.
-
-- `POST /groups/`
-  - Add a new group. `POST` JSON body needs to include `owner`, `name`, and `color`.
-
-- `GET /groups/<group ID>/book-room/`
-  - Get a group, with a list of members.
-
-- `PUT /groups/<group ID>/`
-  - Update a group's information.
-
-- `GET /groups/<group ID>/invites/`
-  - Get a list of all open invites to this group.
-
-- `POST /groups/<group ID>/book-room/`
-  - Books a room for a group. `POST` JSON body needs to include `room`, `lid`, `start` and `end`. `start` and `end` parameters must be in `ISO 8601` format.
-
-  - `PUT /credentials/`
-    - Updates credentials object with Wharton Session ID & Expiration. If credentials, does not exist, this will create a new credentials object. This is a PUT request, where you can send JSON payload in following format:
-    ```json
-    {
-      "user": <pennkey>,
-      "session_id": <session_id>,
-      "expiration_date": <expiration_date>
-    }
-    ```
-    - Both the ```session_id``` and ```expiration_date``` are optional fields. They can also be set to ```null```.
+- Expore the API via our [auto-generated documentation](https://pennmobile.org/api/documentation/)! This is a really good way to click around and discover stuff.
