@@ -37,17 +37,16 @@ def mock_requests_get(url, *args, **kwargs):
         return Mock(json.load(data), 200)
 
 
-@mock.patch("requests.get", mock_requests_get)
-class TestVenues(TestCase):
-    def setUp(self):
-        call_command("load_venues")
-        self.client = APIClient()
+# @mock.patch("requests.post", mock_requests_get)
+# class TestVenues(TestCase):
+#     def setUp(self):
+#         call_command("load_venues")
+#         self.client = APIClient()
 
-    def test_get(self):
-
-        response = self.client.get(reverse("venues"))
-        res_json = json.loads(response.content)
-        self.assertTrue(len(res_json[0]) > 0)
+#     def test_get(self):
+#         response = self.client.get(reverse("venues"))
+#         res_json = json.loads(response.content)
+#         self.assertTrue(len(res_json[0]) > 0)
 
 
 @mock.patch("requests.get", mock_requests_get)
