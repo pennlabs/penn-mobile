@@ -47,8 +47,7 @@ class TestVenues(TestCase):
 
         response = self.client.get(reverse("venues"))
         res_json = json.loads(response.content)
-        venues = res_json["document"]["venue"]
-        self.assertTrue(len(venues[0]) > 0)
+        self.assertTrue(len(res_json[0]) > 0)
 
 
 @mock.patch("requests.get", mock_requests_get)
