@@ -79,10 +79,14 @@ class DiningAPIWrapper:
             raise APIError("Dining: Error connecting to API")
         venues = response.json()["result_data"]["campuses"]["203"]["cafes"]
         for key, value in venues.items():
+            # TODO: Remove this once Dining API renames Joe's Café
+            if key == "642":
+                value["name"] = "Joe's Café"
             # cleaning up json response
             venue = Venue.objects.filter(venue_id=key).first()
             value["image"] = venue.image_url if venue else None
-            value["id"] = key
+
+            value["id"] = int(key)
             remove_items = [
                 "cor_icons",
                 "city",
@@ -104,6 +108,14 @@ class DiningAPIWrapper:
                 day.pop("message")
                 for daypart in day["dayparts"]:
                     [daypart.pop(item) for item in ["id", "hide"]]
+                    if not daypart["starttime"]:
+                        continue
+                    daypart["starttime"] = datetime.datetime.strptime(
+                        day["date"] + "T" + daypart["starttime"], "%Y-%m-%dT%H:%M"
+                    )
+                    daypart["endtime"] = datetime.datetime.strptime(
+                        day["date"] + "T" + daypart["endtime"], "%Y-%m-%dT%H:%M"
+                    )
             results.append(value)
         return results
 
