@@ -106,15 +106,22 @@ class DiningAPIWrapper:
             [value.pop(item) for item in remove_items]
             for day in value["days"]:
                 day.pop("message")
-                for daypart in day["dayparts"]:
+                removed_dayparts = set()
+                for i in range(len(day["dayparts"])):
+                    daypart = day["dayparts"][i]
                     [daypart.pop(item) for item in ["id", "hide"]]
                     if not daypart["starttime"]:
-                        day["dayparts"].remove(daypart)
+                        removed_dayparts.add(i)
                         continue
                     for time in ["starttime", "endtime"]:
                         daypart[time] = datetime.datetime.strptime(
                             day["date"] + "T" + daypart[time], "%Y-%m-%dT%H:%M"
                         )
+                day["dayparts"] = [
+                    day["dayparts"][i]
+                    for i in range(len(day["dayparts"]))
+                    if i not in removed_dayparts
+                ]
             results.append(value)
         return results
 
