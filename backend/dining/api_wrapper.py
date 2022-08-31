@@ -109,13 +109,12 @@ class DiningAPIWrapper:
                 for daypart in day["dayparts"]:
                     [daypart.pop(item) for item in ["id", "hide"]]
                     if not daypart["starttime"]:
+                        day["dayparts"].remove(daypart)
                         continue
-                    daypart["starttime"] = datetime.datetime.strptime(
-                        day["date"] + "T" + daypart["starttime"], "%Y-%m-%dT%H:%M"
-                    )
-                    daypart["endtime"] = datetime.datetime.strptime(
-                        day["date"] + "T" + daypart["endtime"], "%Y-%m-%dT%H:%M"
-                    )
+                    for time in ["starttime", "endtime"]:
+                        daypart[time] = datetime.datetime.strptime(
+                            day["date"] + "T" + daypart[time], "%Y-%m-%dT%H:%M"
+                        )
             results.append(value)
         return results
 
