@@ -36,6 +36,15 @@ class Venues(APIView):
         return Response(d.get_venues())
 
 
+class Menus(APIView):
+    """
+    GET: returns list of menu data provided by Penn API
+    """
+
+    def get(self, request):
+        return Response(d.get_menus())
+
+
 class Hours(APIView):
     """
     GET: Returns info on open and closing hours for a particular venue

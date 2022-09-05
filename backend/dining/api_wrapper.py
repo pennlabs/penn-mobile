@@ -25,6 +25,9 @@ VENUE_NAMES = {
     "638": "Kosher Dining at Falk",
 }
 
+OPEN_DATA_URL = "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/"
+OPEN_DATA_ENDPOINTS = {"VENUES": OPEN_DATA_URL + "venues", "MENUS": OPEN_DATA_URL + "menus"}
+
 
 class APIError(ValueError):
     pass
@@ -71,9 +74,7 @@ class DiningAPIWrapper:
 
     def get_venues(self):
         results = []
-        venues_route = (
-            "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/venues"
-        )
+        venues_route = OPEN_DATA_ENDPOINTS["VENUES"]
         response = self.request("GET", venues_route)
         if response.status_code != 200:
             raise APIError("Dining: Error connecting to API")
@@ -82,7 +83,7 @@ class DiningAPIWrapper:
             # TODO: Remove this once Dining API renames Joe's Café
             if key == "642":
                 value["name"] = "Joe's Café"
-            # cleaning up json response
+            # Cleaning up json response
             venue = Venue.objects.filter(venue_id=key).first()
             value["image"] = venue.image_url if venue else None
 
@@ -117,6 +118,7 @@ class DiningAPIWrapper:
                         daypart[time] = datetime.datetime.strptime(
                             day["date"] + "T" + daypart[time], "%Y-%m-%dT%H:%M"
                         )
+                # Remove empty dayparts (unavailable meal times)
                 day["dayparts"] = [
                     day["dayparts"][i]
                     for i in range(len(day["dayparts"]))
@@ -124,6 +126,18 @@ class DiningAPIWrapper:
                 ]
             results.append(value)
         return results
+
+    def get_menus(self):
+        menu_base = OPEN_DATA_ENDPOINTS["MENUS"]
+        venues = Venue.objects.all()
+        menu_list = list()
+        for venue in venues:
+            response = self.request(
+                "GET", f"{menu_base}?cafe={str(venue.venue_id)}&date={timezone.now().date()}"
+            ).json()
+            menu_list.append(response["menus"]["days"])
+
+        return menu_list
 
 
 def headers():
