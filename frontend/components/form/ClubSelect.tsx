@@ -1,8 +1,8 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import Select, { SingleValue } from 'react-select'
 
-import { AuthUserContext } from '@/utils/auth'
 import { updateStateType } from '@/utils/types'
+import useClubs from '@/hooks/useClubs'
 
 interface ClubSelectProps {
   updateState: updateStateType
@@ -10,8 +10,9 @@ interface ClubSelectProps {
 }
 
 const ClubSelect = ({ updateState, clubCode }: ClubSelectProps) => {
-  const { user } = useContext(AuthUserContext)
-  const clubOptions = user?.clubs.map((club) => ({
+  const { clubs } = useClubs()
+
+  const clubOptions = clubs?.map((club) => ({
     value: club.club_code,
     label: club.name,
   }))

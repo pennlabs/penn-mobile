@@ -12,7 +12,7 @@ import os
 import dj_database_url
 
 
-DOMAINS = os.environ.get("DOMAINS", "example.com")
+DOMAINS = os.environ.get("DOMAINS", "example.com").split(",")
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -162,12 +162,17 @@ REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
 # Celery
 MESSAGE_BROKER_URL = REDIS_URL
 
+# Override default Django Test Runner to include test suite-wide Mock Patch
+TEST_RUNNER = "pennmobile.test_runner.MobileTestRunner"
+
 # Laundry API URL
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
 
 # Dining API Credentials
 DINING_USERNAME = os.environ.get("DINING_USERNAME", None)
 DINING_PASSWORD = os.environ.get("DINING_PASSWORD", None)
+DINING_ID = os.environ.get("DINING_ID", None)
+DINING_SECRET = os.environ.get("DINING_SECRET", None)
 
 LIBCAL_ID = os.environ.get("LIBCAL_ID", None)
 LIBCAL_SECRET = os.environ.get("LIBCAL_SECRET", None)

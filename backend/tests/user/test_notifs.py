@@ -16,10 +16,6 @@ from user.models import NotificationSetting, NotificationToken
 User = get_user_model()
 
 
-def check_wharton(*args):
-    return False
-
-
 def mock_send_notif(*args, **kwargs):
     # used for mocking notification sends
     return
@@ -33,7 +29,6 @@ def mock_get_path(*args, **kwargs):
 class TestNotificationToken(TestCase):
     """Tests for CRUD Notification Tokens"""
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
@@ -80,7 +75,6 @@ class TestNotificationToken(TestCase):
 class TestNotificationSetting(TestCase):
     """Tests for CRUD Notification Settings"""
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
@@ -136,7 +130,6 @@ class TestNotificationSetting(TestCase):
 class TestNotificationAlert(TestCase):
     """Tests for sending Notification Alerts"""
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.client = APIClient()
 
@@ -205,7 +198,6 @@ class TestNotificationAlert(TestCase):
 class TestSendGSRReminders(TestCase):
     """Test Sending GSR Reminders"""
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         call_command("load_gsrs")
         self.client = APIClient()
@@ -257,7 +249,6 @@ class TestSendGSRReminders(TestCase):
 class TestSendShadowNotifs(TestCase):
     """Test Sending Shadow Notifications"""
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
@@ -282,7 +273,6 @@ class TestSendShadowNotifs(TestCase):
 class TestCallingNotificationsAPI(TestCase):
     """Test Calling API Notifications"""
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def setUp(self):
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")

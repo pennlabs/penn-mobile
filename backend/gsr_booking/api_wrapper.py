@@ -41,7 +41,7 @@ class BookingWrapper:
         penn_labs = Group.objects.get(name="Penn Labs")
         me_group = Group.objects.get(name="Me", owner=user)
         membership = GroupMembership.objects.filter(group=me_group).first()
-        return membership.is_wharton or user in penn_labs.members.all()
+        return membership.check_wharton() or user in penn_labs.members.all()
 
     def book_room(self, gid, rid, room_name, start, end, user, group_book=None):
 

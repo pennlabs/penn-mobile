@@ -14,10 +14,6 @@ from portal.models import Post, TargetPopulation
 User = get_user_model()
 
 
-def check_wharton(*args):
-    return False
-
-
 def mock_get_user_clubs(*args, **kwargs):
     with open("tests/portal/get_user_clubs.json") as data:
         return json.load(data)
@@ -40,7 +36,6 @@ def mock_get_club_info(*args, **kwargs):
 class TestPosts(TestCase):
     """Tests Created/Update/Retrieve for Posts"""
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     def setUp(self):
         call_command("load_target_populations")
@@ -112,7 +107,6 @@ class TestPosts(TestCase):
         # since the user is not an admin, approved should be set to false after update
         self.assertEqual(Post.STATUS_DRAFT, res_json["status"])
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     def test_update_post_admin(self):
@@ -142,7 +136,6 @@ class TestPosts(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertEqual(2, Post.objects.all().count())
 
-    @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def test_review_post_no_admin_comment(self):
         # No admin comment
         Post.objects.create(

@@ -31,8 +31,10 @@ export function doApiRequest(path: string, data?: any): Promise<Response> {
   if (typeof document !== 'undefined') {
     formattedData.headers = formattedData.headers || {}
     if (!(formattedData.body instanceof FormData)) {
-      formattedData.headers.Accept = 'application/json'
-      formattedData.headers['Content-Type'] = 'application/json'
+      formattedData.headers.Accept =
+        formattedData.headers.Accept || 'application/json'
+      formattedData.headers['Content-Type'] =
+        formattedData.headers['Content-Type'] || 'application/json'
     }
     formattedData.headers['X-CSRFToken'] = getCsrf()
   }
