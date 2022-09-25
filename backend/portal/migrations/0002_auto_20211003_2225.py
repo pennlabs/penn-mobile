@@ -11,19 +11,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="poll",
-            name="image_url",
-        ),
+        migrations.RemoveField(model_name="poll", name="image_url",),
         migrations.AddField(
             model_name="poll",
             name="start_date",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AddField(
-            model_name="polloption",
-            name="vote_count",
-            field=models.IntegerField(default=0),
+            model_name="polloption", name="vote_count", field=models.IntegerField(default=0),
         ),
         migrations.AddField(
             model_name="targetpopulation",
