@@ -10,7 +10,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="profile", name="degrees",),
-        migrations.RemoveField(model_name="profile", name="expected_graduation",),
-        migrations.DeleteModel(name="Degree",),
+        migrations.RemoveField(
+            model_name="profile",
+            name="degrees",
+        ),
+        migrations.RemoveField(
+            model_name="profile",
+            name="expected_graduation",
+        ),
+        migrations.DeleteModel(
+            name="Degree",
+        ),
     ]

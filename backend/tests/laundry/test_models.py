@@ -20,7 +20,9 @@ class LaundrySnapshotTestCase(TestCase):
         )
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.snapshot = LaundrySnapshot.objects.create(
-            room=self.laundry_room, available_washers=10, available_dryers=10,
+            room=self.laundry_room,
+            available_washers=10,
+            available_dryers=10,
         )
 
     def test_str(self):
@@ -49,5 +51,6 @@ class LaundryRoomTestCase(TestCase):
 
     def test_str(self):
         self.assertEqual(
-            str(self.room), f"Hall No. {self.room.hall_id} | {self.room.name}",
+            str(self.room),
+            f"Hall No. {self.room.hall_id} | {self.room.name}",
         )

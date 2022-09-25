@@ -10,7 +10,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="gsrbooking", name="reminder_sent",),
+        migrations.RemoveField(
+            model_name="gsrbooking",
+            name="reminder_sent",
+        ),
         migrations.AddField(
             model_name="reservation",
             name="reminder_sent",

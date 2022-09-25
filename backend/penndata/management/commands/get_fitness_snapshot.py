@@ -68,6 +68,8 @@ class Command(BaseCommand):
                 fitness_room = FitnessRoom.objects.get(name=room_name)
 
                 FitnessSnapshot.objects.create(
-                    room=fitness_room, date=now, count=count,
+                    room=fitness_room,
+                    date=now,
+                    count=count,
                 )
         self.stdout.write("Captured fitness snapshots!")
