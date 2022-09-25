@@ -45,7 +45,7 @@ def get_client(isDev):
     """Creates and returns APNsClient based on iOS credentials"""
 
     auth_key_path = os.environ.get(
-        "IOS_KEY_PATH", # for dev purposes
+        "IOS_KEY_PATH",  # for dev purposes
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ios_key.p8"),
     )
     auth_key_id = "443RV92X4F"

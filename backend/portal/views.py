@@ -154,7 +154,10 @@ class Polls(viewsets.ModelViewSet):
     def review(self, request):
         """Returns list of all Polls that admins still need to approve of"""
         return Response(
-            RetrievePollSerializer(Poll.objects.filter(status=Poll.STATUS_DRAFT), many=True,).data
+            RetrievePollSerializer(
+                Poll.objects.filter(status=Poll.STATUS_DRAFT),
+                many=True,
+            ).data
         )
 
     @action(detail=True, methods=["get"])
@@ -300,5 +303,8 @@ class Posts(viewsets.ModelViewSet):
     def review(self, request):
         """Returns a list of all Posts that admins still need to approve of"""
         return Response(
-            PostSerializer(Post.objects.filter(status=Poll.STATUS_DRAFT), many=True,).data
+            PostSerializer(
+                Post.objects.filter(status=Poll.STATUS_DRAFT),
+                many=True,
+            ).data
         )
