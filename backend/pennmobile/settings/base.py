@@ -156,11 +156,12 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Redis
-REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
+# Redis for Celery & Caching
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost")
 
 # Celery
-MESSAGE_BROKER_URL = REDIS_URL
+CELERY_BROKER_URL = REDIS_URL
+CELERY_TIMEZONE = TIME_ZONE
 
 # Override default Django Test Runner to include test suite-wide Mock Patch
 TEST_RUNNER = "pennmobile.test_runner.MobileTestRunner"
