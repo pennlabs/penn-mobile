@@ -14,9 +14,9 @@ class NotificationTokenSerializer(serializers.ModelSerializer):
         token = NotificationToken.objects.filter(user=validated_data["user"]).first()
 
         if token:
-            # if token already exists, just update it
             token.kind = validated_data["kind"]
             token.token = validated_data["token"]
+            token.dev = validated_data["dev"]
             token.save()
             return token
         else:
