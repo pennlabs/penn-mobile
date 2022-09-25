@@ -119,7 +119,10 @@ class NotificationAlertView(APIView):
         )
 
         # unpack list of tuples
-        success_users, tokens = zip(*tokens)
+        if tokens:
+            success_users, tokens = zip(*tokens)
+        else:
+            success_users = list()
         failed_users = list(set(usernames) - set(success_users))
 
         if len(tokens) == 1:
