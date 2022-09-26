@@ -4,6 +4,9 @@ from pennmobile.settings.base import *  # noqa: F401, F403
 from pennmobile.settings.base import INSTALLED_APPS, MIDDLEWARE
 
 
+# Override default Django Test Runner to include test suite-wide Mock Patch
+TEST_RUNNER = "pennmobile.test_runner.MobileTestLocalRunner"
+
 # Development extensions
 INSTALLED_APPS += ["django_extensions"]
 

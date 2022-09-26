@@ -163,9 +163,6 @@ REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
 CELERY_BROKER_URL = REDIS_URL
 CELERY_TIMEZONE = TIME_ZONE
 
-# Override default Django Test Runner to include test suite-wide Mock Patch
-TEST_RUNNER = "pennmobile.test_runner.MobileTestRunner"
-
 # Laundry API URL
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
 
