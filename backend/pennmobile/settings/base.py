@@ -157,7 +157,7 @@ REST_FRAMEWORK = {
 }
 
 # Redis for Celery & Caching
-REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost")
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
 
 # Celery
 CELERY_BROKER_URL = REDIS_URL

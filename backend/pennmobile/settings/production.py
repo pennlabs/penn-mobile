@@ -24,3 +24,14 @@ sentry_sdk.init(dsn=SENTRY_URL, integrations=[CeleryIntegration(), DjangoIntegra
 
 # DLA settings
 PLATFORM_ACCOUNTS = {"ADMIN_PERMISSION": "penn_mobile_admin"}
+
+# Cache settings
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
