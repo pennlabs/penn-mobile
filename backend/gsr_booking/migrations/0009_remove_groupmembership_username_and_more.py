@@ -10,10 +10,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="groupmembership",
-            name="username",
-        ),
+        migrations.RemoveField(model_name="groupmembership", name="username",),
         migrations.AddField(
             model_name="groupmembership",
             name="is_wharton",

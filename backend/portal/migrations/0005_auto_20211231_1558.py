@@ -12,30 +12,14 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameField(
-            model_name="poll",
-            old_name="user_comment",
-            new_name="club_comment",
+            model_name="poll", old_name="user_comment", new_name="club_comment",
         ),
-        migrations.RemoveField(
-            model_name="poll",
-            name="approved",
-        ),
-        migrations.RemoveField(
-            model_name="poll",
-            name="source",
-        ),
-        migrations.RemoveField(
-            model_name="poll",
-            name="user",
-        ),
-        migrations.RemoveField(
-            model_name="pollvote",
-            name="user",
-        ),
+        migrations.RemoveField(model_name="poll", name="approved",),
+        migrations.RemoveField(model_name="poll", name="source",),
+        migrations.RemoveField(model_name="poll", name="user",),
+        migrations.RemoveField(model_name="pollvote", name="user",),
         migrations.AddField(
-            model_name="poll",
-            name="club_code",
-            field=models.CharField(blank=True, max_length=255),
+            model_name="poll", name="club_code", field=models.CharField(blank=True, max_length=255),
         ),
         migrations.AddField(
             model_name="poll",
