@@ -4,7 +4,7 @@ import sentry_sdk
 from sentry_sdk.integrations.django import CeleryIntegration, DjangoIntegration
 
 from pennmobile.settings.base import *  # noqa: F401, F403
-from pennmobile.settings.base import DOMAINS
+from pennmobile.settings.base import DOMAINS, REDIS_URL
 
 
 DEBUG = False
@@ -30,8 +30,6 @@ CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": REDIS_URL,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
     }
 }

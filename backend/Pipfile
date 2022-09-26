@@ -41,7 +41,6 @@ apns2 = "*"
 numpy = "*"
 redis = "*"
 celery = "*"
-black = "*"
 django-extensions = "*"
 
 [requires]
