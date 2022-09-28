@@ -1,6 +1,6 @@
 import { Construct } from 'constructs';
 import { App } from 'cdk8s';
-import { PennLabsChart, ReactApplication, DjangoApplication, CronJob } from '@pennlabs/kittyhawk';
+import { PennLabsChart, ReactApplication, DjangoApplication, CronJob, RedisApplication } from '@pennlabs/kittyhawk';
 
 const cronTime = require('cron-time-generator');
 
@@ -11,6 +11,17 @@ export class MyChart extends PennLabsChart {
     const secret = "penn-mobile";
     const backendImage = "pennlabs/penn-mobile-backend"
     const frontendImage = "pennlabs/penn-mobile-frontend"
+
+    new RedisApplication(this, 'redis', { deployment: { tag: '4.0' } });
+
+    new DjangoApplication(this, 'celery', {
+      deployment: {
+        image: backendImage,
+        secret,
+        cmd: ['celery', 'worker', '-A', 'PennMobile', '-linfo'],
+      },
+      djangoSettingsModule: 'pennmobile.settings.production',
+    });
 
     new DjangoApplication(this, 'django', {
       deployment: {

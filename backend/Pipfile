@@ -42,6 +42,7 @@ numpy = "*"
 redis = "*"
 celery = "*"
 django-extensions = "*"
+django-redis = "*"
 
 [requires]
 python_version = "3"
