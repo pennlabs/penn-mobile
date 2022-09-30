@@ -14,39 +14,44 @@ from user.models import NotificationToken
 Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
-def send_push_notifications(usernames, service, title, body, delay, isShadow=False) -> Tuple[List[str], List[str]]:
+def send_push_notifications(
+    usernames, service, title, body, delay=0, isShadow=False
+) -> Tuple[List[str], List[str]]:
     """
-    Sends push notifications using token object(s).
+    Sends push notifications.
 
-    :param token_objects: list of token objects (from Model)
-    :param title: title of notif
-    :param body: message of notif
-
-    :return: list of success usernames, list of failed usernames
+    :param usernames: list of usernames to send notifications to or 'None' if to all
+    :param service: service to send notifications for
+    :param title: title of notification
+    :param body: body of notification
+    :param delay: delay in seconds before sending notification
+    :param isShadow: whether to send a shadow notification
+    :return: tuple of lists of successful and failed usernames
     """
 
-    # filters by pennkey, service, device type, and user settings
-    # returns usernames, tokens, dev status
-    token_objects = (
-        NotificationToken.objects.select_related("user")
-        .filter(
-            kind=NotificationToken.KIND_IOS,  # NOTE: until Android implementation
-            user__username__in=usernames,
-            notificationsetting__service=service,
-            notificationsetting__enabled=True,
-        )
-        .exclude(token="")
-        .values_list("user__username", "token")
-    )
-
+    token_objects = get_tokens(usernames, service)
     if not token_objects:
         return [], usernames
 
     success_users, tokens = zip(*token_objects)
-    failed_users = list(set(usernames) - set(success_users))
     send_notifications(tokens, title, body, delay, isDev=False, isShadow=isShadow)
-
+    if not usernames:  # if to all users, can't be any failed pennkeys
+        return success_users, []
+    failed_users = list(set(usernames) - set(success_users))
     return success_users, failed_users
+
+
+def get_tokens(usernames=None, service=None):
+    """Returns list of token objects (with username & token value) for specified users"""
+
+    tokens = NotificationToken.objects.select_related("user").filter(
+        kind=NotificationToken.KIND_IOS  # NOTE: until Android implementation
+    )
+    if usernames:
+        tokens = tokens.filter(user__username__in=usernames)
+    if service:
+        tokens = tokens.filter(settings__service=service, settings__enabled=True)
+    return tokens.exclude(tokens="").values_list("user__username", "token")
 
 
 def send_notifications(tokens, title, body, delay, isDev, isShadow):
@@ -60,14 +65,14 @@ def send_notifications(tokens, title, body, delay, isDev, isShadow):
         payload = Payload(alert=alert, sound="default", badge=0)
     notifications = [Notification(token, payload) for token in tokens]
     topic = "org.pennlabs.PennMobile" + (".dev" if isDev else "")
-    
+
     if delay:
         send_delayed_notifications(client, notifications, topic, delay)
     else:
         send_immediate_notifications(client, notifications, topic)
 
 
-def send_immediate_notifications(client, notifications, topic):    
+def send_immediate_notifications(client, notifications, topic):
     if len(notifications) > 1:
         client.send_notification_batch(notifications=notifications, topic=topic)
     else:

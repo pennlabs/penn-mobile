@@ -159,7 +159,7 @@ REST_FRAMEWORK = {
 # Redis for Celery & Caching
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
 
-# Celery
+# Celery Settings (read automatically by celery.py)
 CELERY_BROKER_URL = REDIS_URL
 CELERY_TIMEZONE = TIME_ZONE
 

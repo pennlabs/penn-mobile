@@ -5,13 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from user.models import NotificationSetting, NotificationToken
-from user.notifications import (
-    send_delayed_push_notif,
-    send_delayed_push_notif_batch,
-    send_push_notif,
-    send_push_notif_batch,
-    send_push_notifications,
-)
+from user.notifications import send_push_notifications
 from user.serializers import (
     NotificationSettingSerializer,
     NotificationTokenSerializer,
