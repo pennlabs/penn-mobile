@@ -1,56 +1,82 @@
 import collections
 import os
+from typing import List, Tuple
 
 from apns2.client import APNsClient
 from apns2.credentials import TokenCredentials
 from apns2.payload import Payload
 from celery import shared_task
 
+from user.models import NotificationToken
+
 
 # taken from the apns2 method for batch notifications
 Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
-# celery delayed tasks
-def send_delayed_push_notif(token, title, body, countdown, isDev=False):
-    send_push_notif.apply_async(args=[token, title, body, isDev], countdown=countdown)
+def send_push_notifications(usernames, service, title, body, delay, isShadow=False) -> Tuple[List[str], List[str]]:
+    """
+    Sends push notifications using token object(s).
+
+    :param token_objects: list of token objects (from Model)
+    :param title: title of notif
+    :param body: message of notif
+
+    :return: list of success usernames, list of failed usernames
+    """
+
+    # filters by pennkey, service, device type, and user settings
+    # returns usernames, tokens, dev status
+    token_objects = (
+        NotificationToken.objects.select_related("user")
+        .filter(
+            kind=NotificationToken.KIND_IOS,  # NOTE: until Android implementation
+            user__username__in=usernames,
+            notificationsetting__service=service,
+            notificationsetting__enabled=True,
+        )
+        .exclude(token="")
+        .values_list("user__username", "token")
+    )
+
+    if not token_objects:
+        return [], usernames
+
+    success_users, tokens = zip(*token_objects)
+    failed_users = list(set(usernames) - set(success_users))
+    send_notifications(tokens, title, body, delay, isDev=False, isShadow=isShadow)
+
+    return success_users, failed_users
 
 
-def send_delayed_push_notif_batch(tokens, title, body, countdown, isDev=False):
-    send_push_notif_batch.apply_async(args=[tokens, title, body, isDev], countdown=countdown)
-
-
-@shared_task(name="tasks.send_push_notif")
-def send_push_notif(token, title, body, isDev=False):
-    """Sends single push notification to token object"""
+def send_notifications(tokens, title, body, delay, isDev, isShadow):
+    """Formulates and pushes notifications to APNs"""
 
     client = get_client(isDev)
     alert = {"title": title, "body": body}
-    payload = Payload(alert=alert, sound="default", badge=0)
-    topic = "org.pennlabs.PennMobile" + (".dev" if isDev else "")
-    client.send_notification(token, payload, topic)
-
-
-@shared_task(name="tasks.send_push_notif_batch")
-def send_push_notif_batch(tokens, title, body, isDev=False):
-    """Sends push notifications to group of token objects"""
-
-    client = get_client(isDev)
-    alert = {"title": title, "body": body}
-    payload = Payload(alert=alert, sound="default", badge=0)
+    if isShadow:
+        payload = Payload(content_available=True, custom=body)
+    else:
+        payload = Payload(alert=alert, sound="default", badge=0)
     notifications = [Notification(token, payload) for token in tokens]
     topic = "org.pennlabs.PennMobile" + (".dev" if isDev else "")
-    client.send_notification_batch(notifications=notifications, topic=topic)
+    
+    if delay:
+        send_delayed_notifications(client, notifications, topic, delay)
+    else:
+        send_immediate_notifications(client, notifications, topic)
 
 
-def send_shadow_push_notif_batch(tokens, body, isDev=False):
-    """Sends shadow push notifications to group of token objects"""
+def send_immediate_notifications(client, notifications, topic):    
+    if len(notifications) > 1:
+        client.send_notification_batch(notifications=notifications, topic=topic)
+    else:
+        client.send_notification(notification=notifications[0], topic=topic)
 
-    client = get_client(isDev)
-    payload = Payload(content_available=True, custom=body)
-    notifications = [Notification(token, payload) for token in tokens]
-    topic = "org.pennlabs.PennMobile" + (".dev" if isDev else "")
-    client.send_notification_batch(notifications=notifications, topic=topic)
+
+@shared_task(name="notifications.send_delayed_notifications")
+def send_delayed_notifications(client, notifications, topic, delay):
+    send_immediate_notifications.apply_async(args=[client, notifications, topic], countdown=delay)
 
 
 def get_client(isDev):

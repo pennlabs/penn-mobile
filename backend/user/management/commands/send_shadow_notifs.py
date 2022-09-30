@@ -59,12 +59,12 @@ class Command(BaseCommand):
             # unpack list of tuples
             success_users, tokens = zip(*tokens)
             failed_users = list(set(usernames) - set(success_users))
+            
+            # output list of targeted users without tokens if such a list exists
+            if len(failed_users) > 0:
+                self.stdout.write("Unavailable token(s) for " + ", ".join(failed_users) + ".")
 
         # send shadow notifications
         send_shadow_push_notif_batch(tokens=tokens, body=message, isDev=isDev)
 
-        if not send_to_all:
-            # output list of targeted users without tokens if such a list exists
-            if len(failed_users) > 0:
-                self.stdout.write("Unavailable token(s) for " + ", ".join(failed_users) + ".")
         self.stdout.write("Notifications sent out!")

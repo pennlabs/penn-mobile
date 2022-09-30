@@ -20,8 +20,5 @@ htmlcov/
 # Test database
 db.sqlite3
 
-# Redis
-backend/dump.rdb
-
 # Mac
 .DS_Store
