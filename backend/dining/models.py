@@ -32,3 +32,9 @@ class DiningBalance(models.Model):
 
     def __str__(self):
         return f"{self.profile} - {self.date}"
+
+class DiningItems(models.Model):
+    item_id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255)
+    ingredients = models.CharField(max_length=255)
