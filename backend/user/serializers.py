@@ -7,20 +7,14 @@ from user.models import NotificationSetting, NotificationToken, Profile
 class NotificationTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationToken
-        fields = ("kind", "dev", "token")
+        fields = ("id", "kind", "dev", "token")
 
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user
         token_obj = NotificationToken.objects.filter(user=validated_data["user"]).first()
-
         if token_obj:
-            token_obj.kind = validated_data.get("kind", token_obj.kind)
-            token_obj.token = validated_data.get("token", token_obj.token)
-            token_obj.dev = validated_data.get("dev", token_obj.dev)
-            token_obj.save()
-            return token_obj
-        else:
-            return super().create(validated_data)
+            raise serializers.ValidationError(detail={"detail": "Token already created."})
+        return super().create(validated_data)
 
 
 class NotificationSettingSerializer(serializers.ModelSerializer):
