@@ -156,9 +156,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Override default Django Test Runner to include test suite-wide Mock Patch
-TEST_RUNNER = "pennmobile.test_runner.MobileTestRunner"
-
 # Laundry API URL
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
 
