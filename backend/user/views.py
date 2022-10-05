@@ -75,11 +75,10 @@ class NotificationSettingView(viewsets.ModelViewSet):
 
         token = NotificationToken.objects.filter(user=self.request.user).exclude(token="").first()
         if not token:
-            # assumes that if token is missing, enabled should be returned as 'False'
-            return Response({"enabled": False, "missing_token": True})
+            return Response({"service": pk, "enabled": False})
 
         setting, _ = NotificationSetting.objects.get_or_create(token=token, service=pk)
-        return Response({"enabled": setting.enabled, "missing_token": False})
+        return Response(NotificationSettingSerializer(setting).data)
 
 
 class NotificationAlertView(APIView):
