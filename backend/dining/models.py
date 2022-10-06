@@ -33,8 +33,31 @@ class DiningBalance(models.Model):
     def __str__(self):
         return f"{self.profile} - {self.date}"
 
-class DiningItems(models.Model):
+class DiningItem(models.Model):
     item_id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     ingredients = models.CharField(max_length=255)
+
+class DiningStation(models.Model):
+    name = models.CharField(max_length=255)
+    items = models.ManyToManyField(DiningItem)
+
+class DiningMenu(models.Model):
+    MEAL_BREAKFAST = "BREAKFAST"
+    MEAL_BRUNCH = "BRUNCH"
+    MEAL_LUNCH = "LUNCH"
+    MEAL_DINNER = "DINNER"
+    MEAL_OPTIONS = (
+        (MEAL_BREAKFAST, "Breakfast"),
+        (MEAL_BRUNCH, "Brunch"),
+        (MEAL_LUNCH, "Lunch"),
+        (MEAL_DINNER, "Dinner")
+    )
+
+    venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
+    date = models.DateField(default=timezone.now)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    stations = models.ManyToManyField(DiningStation)
+    service = models.CharField(max_length=30, choices=MEAL_OPTIONS)
