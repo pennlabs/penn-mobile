@@ -7,40 +7,34 @@ from user.models import NotificationSetting, NotificationToken, Profile
 class NotificationTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationToken
-        fields = ("kind", "dev", "token")
+        fields = ("id", "kind", "dev", "token")
 
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user
-        token = NotificationToken.objects.filter(user=validated_data["user"]).first()
-
-        if token:
-            # if token already exists, just update it
-            token.kind = validated_data["kind"]
-            token.token = validated_data["token"]
-            token.save()
-            return token
-        else:
-            return super().create(validated_data)
+        token_obj = NotificationToken.objects.filter(user=validated_data["user"]).first()
+        if token_obj:
+            raise serializers.ValidationError(detail={"detail": "Token already created."})
+        return super().create(validated_data)
 
 
 class NotificationSettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationSetting
-        fields = ("service", "enabled")
+        fields = ("id", "service", "enabled")
 
     def create(self, validated_data):
         validated_data["token"] = NotificationToken.objects.get(user=self.context["request"].user)
         setting = NotificationSetting.objects.filter(
             token=validated_data["token"], service=validated_data["service"]
         ).first()
-
         if setting:
-            # if setting already exists, just update it
-            setting.enabled = validated_data["enabled"]
-            setting.save()
-            return setting
-        else:
-            return super().create(validated_data)
+            raise serializers.ValidationError(detail={"detail": "Setting already created."})
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if instance.service != validated_data["service"]:
+            raise serializers.ValidationError(detail={"detail": "Cannot change setting service."})
+        return super().update(instance, validated_data)
 
 
 class ProfileSerializer(serializers.ModelSerializer):
