@@ -4,9 +4,10 @@ from json.decoder import JSONDecodeError
 import requests
 from django.conf import settings
 from django.utils import timezone
+from django.utils.timezone import make_aware
 from requests.exceptions import ConnectTimeout, ReadTimeout
 
-from dining.models import Venue
+from dining.models import DiningItem, DiningMenu, DiningStation, Venue
 
 
 V2_BASE_URL = "https://esb.isc-seo.upenn.edu/8091/open_data/dining/v2/?service="
@@ -128,16 +129,86 @@ class DiningAPIWrapper:
         return results
 
     def get_menus(self):
+        self.load_weekly_menu()
+        return []
+
+    def load_weekly_menu(self):
+        """
+        Loads the weeks menu starting from today
+        """
+        date = timezone.now().date()
+        for i in range(7):
+            self.load_daily_menu(date + datetime.timedelta(days=i))
+
+    def load_daily_menu(self, date):
+        # Venues without a menu should not be parsed
+        skipped_venues = [747, 1163, 1731, 1732, 1733, 1464004, 1464009]
+
+        # TODO: Handle API responses during empty menus (holidays)
         menu_base = OPEN_DATA_ENDPOINTS["MENUS"]
         venues = Venue.objects.all()
-        menu_list = list()
         for venue in venues:
-            response = self.request(
-                "GET", f"{menu_base}?cafe={str(venue.venue_id)}&date={timezone.now().date()}"
-            ).json()
-            menu_list.append(response["menus"]["days"])
+            if venue.venue_id in skipped_venues:
+                continue
+            response = self.request("GET", f"{menu_base}?cafe={venue.venue_id}&date={date}").json()
 
-        return menu_list
+            # Load new items into database
+            # TODO: There is something called a "goitem" for venues like English House.
+            # We are currently not loading them in
+            self.load_items(response["menus"]["items"])
+
+            menu = response["menus"]["days"][0]
+            dayparts = menu["cafes"][str(venue.venue_id)]["dayparts"][0]
+            for daypart in dayparts:
+                # Parse the dates in data
+                for time in ["starttime", "endtime"]:
+                    daypart[time] = make_aware(
+                        datetime.datetime.strptime(
+                            menu["date"] + "T" + daypart[time], "%Y-%m-%dT%H:%M"
+                        )
+                    )
+                dining_menu = DiningMenu.objects.create(
+                    venue=venue,
+                    date=menu["date"],
+                    start_time=daypart["starttime"],
+                    end_time=daypart["endtime"],
+                    service=daypart["label"],
+                )
+                # Append stations to dining menu
+                stations = self.load_stations(daypart["stations"])
+                dining_menu.stations.add(*stations)
+                dining_menu.save()
+
+    def load_stations(self, station_response):
+        # Store stations into list
+        stations = list()
+        for station_data in station_response:
+            # TODO: This is inefficient for venues such as Houston Market
+            station = DiningStation.objects.create(name=station_data["label"])
+            item_ids = [int(item) for item in station_data["items"]]
+            # Bulk add the items into the station
+            items = DiningItem.objects.filter(item_id__in=item_ids)
+            station.items.add(*items)
+            station.save()
+            stations.append(station)
+        # NOTE: use generator here?
+        return stations
+
+    def load_items(self, item_response):
+        # NOTE: If there are performance issues, we can initialize
+        # the list with the size of item_response
+        item_list = list()
+        for key, value in item_response.items():
+            item_list.append(
+                DiningItem(
+                    item_id=key,
+                    name=value["label"],
+                    description=value["description"],
+                    ingredients=value["ingredients"],
+                )
+            )
+        # Ignore conflicts because possibility of duplicate items
+        DiningItem.objects.bulk_create(item_list, ignore_conflicts=True)
 
 
 def headers():
