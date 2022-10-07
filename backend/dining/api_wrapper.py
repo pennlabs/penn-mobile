@@ -52,7 +52,7 @@ class DiningAPIWrapper:
         }
         response = requests.post(self.openid_endpoint, data=body).json()
         if "error" in response:
-            raise APIError(f"LibCal: {response['error']}, {response.get('error_description')}")
+            raise APIError(f"Dining: {response['error']}, {response.get('error_description')}")
         self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
         self.token = response["access_token"]
 
@@ -135,6 +135,8 @@ class DiningAPIWrapper:
     def load_weekly_menu(self):
         """
         Loads the weeks menu starting from today
+        NOTE: This method should only be used in load_weekly_menus.py, which is
+        run based on a cron job every Sunday
         """
         date = timezone.now().date()
         for i in range(7):
