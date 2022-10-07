@@ -6,7 +6,7 @@ jobs:
     uses: pennlabs/shared-actions/.github/workflows/labs-application.yaml@main
     with:
       djangoProjectName: pennmobile
-      dockerImageBaseName: pennlabs/penn-mobile
+      dockerImageBaseName: penn-mobile
     secrets:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
