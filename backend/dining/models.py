@@ -6,6 +6,7 @@ from user.models import Profile
 
 class Venue(models.Model):
     venue_id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=255, null=True)
     image_url = models.URLField()
 
     def __str__(self):

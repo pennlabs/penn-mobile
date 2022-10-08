@@ -81,11 +81,9 @@ class DiningAPIWrapper:
             raise APIError("Dining: Error connecting to API")
         venues = response.json()["result_data"]["campuses"]["203"]["cafes"]
         for key, value in venues.items():
-            # TODO: Remove this once Dining API renames Joe's Café
-            if key == "642":
-                value["name"] = "Joe's Café"
             # Cleaning up json response
             venue = Venue.objects.filter(venue_id=key).first()
+            value["name"] = venue.name
             value["image"] = venue.image_url if venue else None
 
             value["id"] = int(key)
