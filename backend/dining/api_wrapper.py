@@ -129,8 +129,8 @@ class DiningAPIWrapper:
     def load_menu(self, date=timezone.now().date()):
         """
         Loads the weeks menu starting from today
-        NOTE: This method should only be used in load_weekly_menus.py, which is
-        run based on a cron job every Sunday
+        NOTE: This method should only be used in load_next_menu.py, which is
+        run based on a cron job every day
         """
 
         # Venues without a menu should not be parsed
