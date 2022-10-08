@@ -135,6 +135,7 @@ class DiningAPIWrapper:
         Loads the weeks menu starting from today
         NOTE: This method should only be used in load_weekly_menus.py, which is
         run based on a cron job every Sunday
+        TODO: Fix this functionality so that users can view all menus 1 week in advance
         """
         date = timezone.now().date()
         for i in range(7):

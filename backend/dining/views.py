@@ -7,6 +7,7 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
+from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -20,8 +21,12 @@ from dining.api_wrapper import (
     get_meals,
     normalize_weekly,
 )
-from dining.models import DiningBalance, DiningTransaction, Venue
-from dining.serializers import DiningBalanceSerializer, DiningTransactionSerializer
+from dining.models import DiningBalance, DiningMenu, DiningTransaction, Venue
+from dining.serializers import (
+    DiningBalanceSerializer,
+    DiningMenuSerializer,
+    DiningTransactionSerializer,
+)
 
 
 d = DiningAPIWrapper()
@@ -36,13 +41,18 @@ class Venues(APIView):
         return Response(d.get_venues())
 
 
-class Menus(APIView):
-    """
-    GET: returns list of menu data provided by Penn API
-    """
+# class Menus(APIView):
+#     """
+#     GET: returns list of menu data provided by Penn API
+#     """
 
-    def get(self, request):
-        return Response(d.get_menus())
+#     def get(self, request):
+#         return Response(d.get_menus())
+
+
+class Menus(generics.ListAPIView):
+    serializer_class = DiningMenuSerializer
+    queryset = DiningMenu.objects.all()
 
 
 class Hours(APIView):
