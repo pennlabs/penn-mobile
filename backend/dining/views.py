@@ -41,18 +41,18 @@ class Venues(APIView):
         return Response(d.get_venues())
 
 
-# class Menus(APIView):
-#     """
-#     GET: returns list of menu data provided by Penn API
-#     """
-
-#     def get(self, request):
-#         return Response(d.get_menus())
-
-
 class Menus(generics.ListAPIView):
+    """
+    GET: returns list of all menu data for within the week
+    """
+
     serializer_class = DiningMenuSerializer
-    queryset = DiningMenu.objects.all()
+
+    def get_queryset(self):
+        # Return all menus within start_date and end_date
+        start_date = timezone.now().date()
+        end_date = timezone.now().date() + datetime.timedelta(days=6)
+        return DiningMenu.objects.filter(date__gte=start_date, date__lte=end_date)
 
 
 class Hours(APIView):

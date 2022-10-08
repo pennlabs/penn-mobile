@@ -62,7 +62,7 @@ export class MyChart extends PennLabsChart {
     });
 
     new CronJob(this, 'load-dining-menus', {
-      schedule: cronTime.everySunday(),
+      schedule: cronTime.everyDay(),
       image: backendImage,
       secret,
       cmd: ["python", "manage.py", "load_weekly_menus"],

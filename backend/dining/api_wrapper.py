@@ -126,22 +126,13 @@ class DiningAPIWrapper:
             results.append(value)
         return results
 
-    def get_menus(self):
-        self.load_weekly_menu()
-        return []
-
-    def load_weekly_menu(self):
+    def load_menu(self, date=timezone.now().date()):
         """
         Loads the weeks menu starting from today
         NOTE: This method should only be used in load_weekly_menus.py, which is
         run based on a cron job every Sunday
-        TODO: Fix this functionality so that users can view all menus 1 week in advance
         """
-        date = timezone.now().date()
-        for i in range(7):
-            self.load_daily_menu(date + datetime.timedelta(days=i))
 
-    def load_daily_menu(self, date):
         # Venues without a menu should not be parsed
         skipped_venues = [747, 1163, 1731, 1732, 1733, 1464004, 1464009]
 
