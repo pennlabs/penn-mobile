@@ -13,7 +13,7 @@ from user.models import NotificationToken
 Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
-def send_push_notifications(usernames, service, title, body, delay=0, isShadow=False):
+def send_push_notifications(usernames, service, title, body, delay=0, is_shadow=False):
     """
     Sends push notifications.
 
@@ -33,11 +33,11 @@ def send_push_notifications(usernames, service, title, body, delay=0, isShadow=F
     success_users, tokens = zip(*token_objects)
 
     # send notifications
-    isDev = False  # NOTE: fix dev settings eventually
+    is_dev = False  # NOTE: fix dev settings eventually
     if delay:
-        send_delayed_notifications(tokens, title, body, isDev, isShadow, delay)
+        send_delayed_notifications(tokens, title, body, is_dev, is_shadow, delay)
     else:
-        send_immediate_notifications(tokens, title, body, isDev, isShadow)
+        send_immediate_notifications(tokens, title, body, is_dev, is_shadow)
 
     if not usernames:  # if to all users, can't be any failed pennkeys
         return success_users, []
@@ -61,14 +61,14 @@ def get_tokens(usernames=None, service=None):
 
 
 @shared_task(name="notifications.send_immediate_notifications")
-def send_immediate_notifications(tokens, title, body, isDev, isShadow):
-    client = get_client(isDev)
-    if isShadow:
+def send_immediate_notifications(tokens, title, body, is_dev, is_shadow):
+    client = get_client(is_dev)
+    if is_shadow:
         payload = Payload(content_available=True, custom=body)
     else:
         alert = {"title": title, "body": body}
         payload = Payload(alert=alert, sound="default", badge=0)
-    topic = "org.pennlabs.PennMobile" + (".dev" if isDev else "")
+    topic = "org.pennlabs.PennMobile" + (".dev" if is_dev else "")
 
     if len(tokens) > 1:
         notifications = [Notification(token, payload) for token in tokens]
@@ -83,7 +83,7 @@ def send_delayed_notifications(tokens, title, body, isDev, isShadow, delay):
     )
 
 
-def get_client(isDev):
+def get_client(is_dev):
     """Creates and returns APNsClient based on iOS credentials"""
 
     auth_key_path = os.environ.get(
@@ -95,5 +95,5 @@ def get_client(isDev):
     token_credentials = TokenCredentials(
         auth_key_path=auth_key_path, auth_key_id=auth_key_id, team_id=team_id
     )
-    client = APNsClient(credentials=token_credentials, use_sandbox=isDev)
+    client = APNsClient(credentials=token_credentials, use_sandbox=is_dev)
     return client

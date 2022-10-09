@@ -29,14 +29,14 @@ class Command(BaseCommand):
 
         # optional argument
         parser.add_argument("--usernames", type=str, help="list of usernames")
-        parser.add_argument("--isDev", type=str, default="no")
+        parser.add_argument("--is_dev", type=str, default="no")
 
     def handle(self, *args, **kwargs):
         send_to_all = kwargs["send_to_all"].lower() == "yes"
         message = json.loads(kwargs["message"])
         names = kwargs["usernames"]
         # NOTE: uncomment once fixed
-        # isDev = kwargs["isDev"].lower() == "yes"
+        # is_dev = kwargs["is_dev"].lower() == "yes"
 
         # get list of targeted users if not to everyone
         if not send_to_all:
@@ -45,7 +45,7 @@ class Command(BaseCommand):
             usernames = None
 
         # send notifications
-        _, failed_users = send_push_notifications(usernames, None, None, message, isShadow=True)
+        _, failed_users = send_push_notifications(usernames, None, None, message, is_shadow=True)
 
         if len(failed_users) > 0:
             self.stdout.write("Unavailable token(s) for " + ", ".join(failed_users) + ".")
