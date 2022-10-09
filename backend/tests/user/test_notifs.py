@@ -14,6 +14,7 @@ from user.models import NotificationSetting, NotificationToken
 
 User = get_user_model()
 
+
 class MockAPNsClient:
     def __init__(self, credentials, use_sandbox):
         del credentials, use_sandbox
@@ -113,7 +114,7 @@ class TestNotificationSetting(TestCase):
     def test_invalid_settings_update(self):
         NotificationToken.objects.all().delete()
         payload = {"kind": "IOS", "dev": False, "token": "test123"}
-        response = self.client.post(f"/user/notifications/tokens/", payload)
+        response = self.client.post("/user/notifications/tokens/", payload)
         res_json = json.loads(response.content)
 
         response = self.client.get("/user/notifications/settings/PENN_MOBILE/check/")
@@ -125,15 +126,14 @@ class TestNotificationSetting(TestCase):
         self.assertEqual(res_json["service"], "PENN_MOBILE")
         self.assertTrue(res_json["enabled"])
 
-
     def test_valid_settings_update(self):
         NotificationToken.objects.all().delete()
         response = self.client.get("/user/notifications/settings/PENN_MOBILE/check/")
         res_json = json.loads(response.content)
-        self.assertFalse(res_json['enabled'])
+        self.assertFalse(res_json["enabled"])
 
         payload = {"kind": "IOS", "dev": False, "token": "test123"}
-        response = self.client.post(f"/user/notifications/tokens/", payload)
+        response = self.client.post("/user/notifications/tokens/", payload)
         res_json = json.loads(response.content)
 
         response = self.client.get("/user/notifications/settings/PENN_MOBILE/check/")
@@ -142,7 +142,6 @@ class TestNotificationSetting(TestCase):
         payload = {"service": "OHQ", "enabled": True}
         response = self.client.patch(f"/user/notifications/settings/{settings_id}/", payload)
         self.assertEqual(response.status_code, 400)
-
 
     def test_create_update_check_settings(self):
         # test that invalid settings are rejected
@@ -308,7 +307,6 @@ class TestSendGSRReminders(TestCase):
         # test that reservation reminder was sent
         r = Reservation.objects.all().first()
         self.assertTrue(r.reminder_sent)
-
 
     def test_send_reminder_no_gsrs(self):
         GSRBooking.objects.all().delete()
