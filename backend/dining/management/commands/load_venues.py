@@ -12,10 +12,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
 
-        with open("dining/data/dining_images.csv") as data:
+        with open("dining/data/dining_venues.csv") as data:
             reader = csv.reader(data)
             for i, row in enumerate(reader):
-                venue_id, image_url = row
-                Venue.objects.get_or_create(venue_id=venue_id, image_url=image_url)
+                venue_id, image_url, name = row
+                Venue.objects.get_or_create(venue_id=venue_id, image_url=image_url, name=name)
 
         self.stdout.write("Uploaded Venues!")
