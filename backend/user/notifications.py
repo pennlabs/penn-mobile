@@ -83,13 +83,17 @@ def send_delayed_notifications(tokens, title, body, isDev, isShadow, delay):
     )
 
 
-def get_client(is_dev):
-    """Creates and returns APNsClient based on iOS credentials"""
-
-    auth_key_path = os.environ.get(
+def get_auth_key_path():
+    return os.environ.get(
         "IOS_KEY_PATH",  # for dev purposes
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ios_key.p8"),
     )
+
+
+def get_client(is_dev):
+    """Creates and returns APNsClient based on iOS credentials"""
+
+    auth_key_path = get_auth_key_path()
     auth_key_id = "2VX9TC37TB"
     team_id = "VU59R57FGM"
     token_credentials = TokenCredentials(

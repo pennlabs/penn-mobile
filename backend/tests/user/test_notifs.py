@@ -16,10 +16,6 @@ User = get_user_model()
 
 
 class MockAPNsClient:
-    def __init__(self, credentials, use_sandbox):
-        del credentials, use_sandbox
-        pass
-
     def send_notification(self, token, payload, topic):
         del token, payload, topic
         pass
@@ -27,6 +23,10 @@ class MockAPNsClient:
     def send_notification_batch(self, notifications, topic):
         del notifications, topic
         pass
+
+
+def mock_client(is_dev):
+    return MockAPNsClient()
 
 
 class TestNotificationToken(TestCase):
@@ -198,7 +198,7 @@ class TestNotificationAlert(TestCase):
         setting.enabled = True
         setting.save()
 
-    @mock.patch("user.notifications.APNsClient", MockAPNsClient)
+    @mock.patch("user.notifications.get_client", mock_client)
     def test_failed_notif(self):
         # missing title
         payload = {"body": ":D", "service": "PENN_MOBILE"}
@@ -214,7 +214,7 @@ class TestNotificationAlert(TestCase):
         response = self.client.post("/user/notifications/alerts/", payload)
         self.assertEqual(response.status_code, 400)
 
-    @mock.patch("user.notifications.APNsClient", MockAPNsClient)
+    @mock.patch("user.notifications.get_client", mock_client)
     def test_single_notif(self):
         # test notif fail when setting is false
         payload = {"title": "Test", "body": ":D", "service": "OHQ"}
@@ -230,7 +230,7 @@ class TestNotificationAlert(TestCase):
         self.assertEqual(1, len(res_json["success_users"]))
         self.assertEqual(0, len(res_json["failed_users"]))
 
-    @mock.patch("user.notifications.APNsClient", MockAPNsClient)
+    @mock.patch("user.notifications.get_client", mock_client)
     def test_batch_notif(self):
         # update all settings to be enabled
         NotificationSetting.objects.all().update(enabled=True)
@@ -290,7 +290,7 @@ class TestSendGSRReminders(TestCase):
         g.reservation = r
         g.save()
 
-    @mock.patch("user.notifications.APNsClient", MockAPNsClient)
+    @mock.patch("user.notifications.get_client", mock_client)
     def test_send_reminder(self):
         call_command("send_gsr_reminders")
         r = Reservation.objects.all().first()
@@ -314,7 +314,7 @@ class TestSendShadowNotifs(TestCase):
         token_obj.token = "test123"
         token_obj.save()
 
-    @mock.patch("user.notifications.APNsClient", MockAPNsClient)
+    @mock.patch("user.notifications.get_client", mock_client)
     def test_shadow_notifications(self):
         # call command on every user
         call_command("send_shadow_notifs", "yes", '{"test":"test"}')

@@ -43,6 +43,7 @@ click = "==8.0.4"
 celery = "5"
 django-redis = "*"
 redis = "*"
+"backports.zoneinfo" = "*"
 
 [requires]
 python_version = "3"
