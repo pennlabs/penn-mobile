@@ -73,7 +73,7 @@ class NotificationSettingView(viewsets.ModelViewSet):
         if pk not in dict(NotificationSetting.SERVICE_OPTIONS):
             return Response({"detail": "Invalid service."}, status=400)
 
-        token = NotificationToken.objects.filter(user=self.request.user).exclude(token="").first()
+        token = NotificationToken.objects.filter(user=self.request.user).first()
         if not token:
             return Response({"service": pk, "enabled": False})
 

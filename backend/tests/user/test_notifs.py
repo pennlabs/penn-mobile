@@ -14,6 +14,19 @@ from user.models import NotificationSetting, NotificationToken
 
 User = get_user_model()
 
+class MockAPNsClient:
+    def __init__(self, credentials, use_sandbox):
+        del credentials, use_sandbox
+        pass
+
+    def send_notification(self, token, payload, topic):
+        del token, payload, topic
+        pass
+
+    def send_notification_batch(self, notifications, topic):
+        del notifications, topic
+        pass
+
 
 def mock_send_notif(*args, **kwargs):
     # used for mocking notification sends
@@ -58,6 +71,12 @@ class TestNotificationToken(TestCase):
         self.assertEqual("newtoken", res_json["token"])
         self.assertEqual(1, NotificationToken.objects.all().count())
 
+    def test_create_token_again_fail(self):
+        # test that creating token returns correct response
+        payload = {"kind": "IOS", "dev": "false", "token": "test123"}
+        response = self.client.post("/user/notifications/tokens/", payload)
+        self.assertEqual(response.status_code, 400)
+
     def test_get_token(self):
         NotificationToken.objects.all().delete()
 
@@ -91,6 +110,40 @@ class TestNotificationSetting(TestCase):
         for setting in res_json:
             self.assertFalse(setting["enabled"])
 
+    def test_invalid_settings_update(self):
+        NotificationToken.objects.all().delete()
+        payload = {"kind": "IOS", "dev": False, "token": "test123"}
+        response = self.client.post(f"/user/notifications/tokens/", payload)
+        res_json = json.loads(response.content)
+
+        response = self.client.get("/user/notifications/settings/PENN_MOBILE/check/")
+        res_json = json.loads(response.content)
+        settings_id = res_json["id"]
+        payload = {"service": "PENN_MOBILE", "enabled": True}
+        response = self.client.patch(f"/user/notifications/settings/{settings_id}/", payload)
+        res_json = json.loads(response.content)
+        self.assertEqual(res_json["service"], "PENN_MOBILE")
+        self.assertTrue(res_json["enabled"])
+
+
+    def test_valid_settings_update(self):
+        NotificationToken.objects.all().delete()
+        response = self.client.get("/user/notifications/settings/PENN_MOBILE/check/")
+        res_json = json.loads(response.content)
+        self.assertFalse(res_json['enabled'])
+
+        payload = {"kind": "IOS", "dev": False, "token": "test123"}
+        response = self.client.post(f"/user/notifications/tokens/", payload)
+        res_json = json.loads(response.content)
+
+        response = self.client.get("/user/notifications/settings/PENN_MOBILE/check/")
+        res_json = json.loads(response.content)
+        settings_id = res_json["id"]
+        payload = {"service": "OHQ", "enabled": True}
+        response = self.client.patch(f"/user/notifications/settings/{settings_id}/", payload)
+        self.assertEqual(response.status_code, 400)
+
+
     def test_create_update_check_settings(self):
         # test that invalid settings are rejected
         NotificationSetting.objects.filter(service="PENN_MOBILE").delete()
@@ -106,10 +159,9 @@ class TestNotificationSetting(TestCase):
         self.assertEqual(res_json["service"], "PENN_MOBILE")
         self.assertTrue(res_json["enabled"])
 
-        # since token empty, should still return false
-        response = self.client.get("/user/notifications/settings/PENN_MOBILE/check/")
-        res_json = json.loads(response.content)
-        self.assertFalse(res_json["enabled"])
+        # test fail of re-creating settings
+        response = self.client.post("/user/notifications/settings/", payload)
+        self.assertEqual(response.status_code, 400)
 
         # since token empty, should still return false
         response = self.client.get("/user/notifications/tokens/")
@@ -157,7 +209,23 @@ class TestNotificationAlert(TestCase):
         setting.enabled = True
         setting.save()
 
-    @mock.patch("user.notifications.send_immediate_notifications", mock_send_notif)
+    @mock.patch("user.notifications.APNsClient", MockAPNsClient)
+    def test_failed_notif(self):
+        # missing title
+        payload = {"body": ":D", "service": "PENN_MOBILE"}
+        response = self.client.post("/user/notifications/alerts/", payload)
+        self.assertEqual(response.status_code, 400)
+
+        payload["title"] = "Test"
+        response = self.client.post("/user/notifications/alerts/", payload)
+        self.assertEqual(response.status_code, 200)
+
+        # invalid service
+        payload = {"body": ":D", "service": "OHS"}
+        response = self.client.post("/user/notifications/alerts/", payload)
+        self.assertEqual(response.status_code, 400)
+
+    @mock.patch("user.notifications.APNsClient", MockAPNsClient)
     def test_single_notif(self):
         # test notif fail when setting is false
         payload = {"title": "Test", "body": ":D", "service": "OHQ"}
@@ -173,7 +241,7 @@ class TestNotificationAlert(TestCase):
         self.assertEqual(1, len(res_json["success_users"]))
         self.assertEqual(0, len(res_json["failed_users"]))
 
-    @mock.patch("user.notifications.send_immediate_notifications", mock_send_notif)
+    @mock.patch("user.notifications.APNsClient", MockAPNsClient)
     def test_batch_notif(self):
         # update all settings to be enabled
         NotificationSetting.objects.all().update(enabled=True)
@@ -233,13 +301,21 @@ class TestSendGSRReminders(TestCase):
         g.reservation = r
         g.save()
 
-    @mock.patch("user.notifications.send_immediate_notifications", mock_send_notif)
+    @mock.patch("user.notifications.APNsClient", MockAPNsClient)
     def test_send_reminder(self):
         # mock the notification send via mock_send_notif
         call_command("send_gsr_reminders")
         # test that reservation reminder was sent
         r = Reservation.objects.all().first()
         self.assertTrue(r.reminder_sent)
+
+
+    def test_send_reminder_no_gsrs(self):
+        GSRBooking.objects.all().delete()
+        call_command("send_gsr_reminders")
+        # test that reservation reminder was sent
+        r = Reservation.objects.all().first()
+        self.assertFalse(r.reminder_sent)
 
 
 class TestSendShadowNotifs(TestCase):
@@ -253,7 +329,7 @@ class TestSendShadowNotifs(TestCase):
         token_obj.token = "test123"
         token_obj.save()
 
-    @mock.patch("user.notifications.send_immediate_notifications", mock_send_notif)
+    @mock.patch("user.notifications.APNsClient", MockAPNsClient)
     def test_shadow_notifications(self):
         # mock the notification send via mock_send_notif
 

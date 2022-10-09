@@ -20,21 +20,19 @@ class Command(BaseCommand):
             start__lte=timezone.now() + datetime.timedelta(minutes=10),
         ):
             booking = reservation.gsrbooking_set.first()
-            if not booking:
-                continue
-
-            title = "GSR Booking!"
-            body = (
-                f"You have reserved {booking.room_name} "
-                + f"{booking.room_id} starting in 10 minutes!"
-            )
-            send_push_notifications(
-                reservation.creator.username,
-                NotificationSetting.SERVICE_GSR_BOOKING,
-                title=title,
-                body=body,
-            )
-            reservation.reminder_sent = True
-            reservation.save()
+            if booking:
+                title = "GSR Booking!"
+                body = (
+                    f"You have reserved {booking.room_name} "
+                    + f"{booking.room_id} starting in 10 minutes!"
+                )
+                send_push_notifications(
+                    reservation.creator.username,
+                    NotificationSetting.SERVICE_GSR_BOOKING,
+                    title=title,
+                    body=body,
+                )
+                reservation.reminder_sent = True
+                reservation.save()
 
         self.stdout.write("Sent out notifications!")
