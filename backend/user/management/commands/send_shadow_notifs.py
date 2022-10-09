@@ -35,7 +35,8 @@ class Command(BaseCommand):
         send_to_all = kwargs["send_to_all"].lower() == "yes"
         message = json.loads(kwargs["message"])
         names = kwargs["usernames"]
-        isDev = kwargs["isDev"].lower() == "yes"
+        # NOTE: uncomment once fixed
+        # isDev = kwargs["isDev"].lower() == "yes" 
 
         # get list of targeted users if not to everyone
         if not send_to_all:
@@ -45,7 +46,7 @@ class Command(BaseCommand):
 
         # send notifications
         _, failed_users = send_push_notifications(
-            usernames, None, None, message, isShadow=True, isDev=isDev
+            usernames, None, None, message, isShadow=True
         )
 
         if len(failed_users) > 0:
