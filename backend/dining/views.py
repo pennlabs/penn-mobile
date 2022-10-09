@@ -15,6 +15,7 @@ from dining.api_wrapper import (
     V2_ENDPOINTS,
     VENUE_NAMES,
     APIError,
+    DiningAPIWrapper,
     dining_request,
     get_meals,
     normalize_weekly,
@@ -23,39 +24,16 @@ from dining.models import DiningBalance, DiningTransaction, Venue
 from dining.serializers import DiningBalanceSerializer, DiningTransactionSerializer
 
 
+d = DiningAPIWrapper()
+
+
 class Venues(APIView):
     """
     GET: returns list of venue data provided by Penn API, as well as an image of the venue
     """
 
     def get(self, request):
-        try:
-            response = dining_request(V2_ENDPOINTS["VENUES"])["result_data"]
-        except APIError as e:
-            return Response({"error": str(e)}, status=400)
-
-        venues = response["document"]["venue"]
-
-        # adds dining hall image to associated dining hall
-        for venue in venues:
-            if Venue.objects.filter(venue_id=str(venue["id"])).exists():
-                image_url = Venue.objects.get(venue_id=str(venue["id"])).image_url
-            else:
-                image_url = None
-            venue["imageURL"] = image_url
-
-            if "dateHours" in venue:
-                meals = venue["dateHours"]
-                if not isinstance(meals, list):
-                    venue["dateHours"] = [meals]
-                    meals = venue["dateHours"]
-
-                for i in range(len(meals)):
-                    if not isinstance(meals[i]["meal"], list):
-                        meals[i]["meal"] = [meals[i]["meal"]]
-                    meals[i]["meal"].sort(key=lambda x: x["open"])
-
-        return Response(response)
+        return Response(d.get_venues())
 
 
 class Hours(APIView):
