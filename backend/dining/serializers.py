@@ -1,32 +1,20 @@
 from rest_framework import serializers
 
-from dining.models import DiningItem, DiningMenu, DiningStation, Venue
+from dining.models import DiningBalance, DiningTransaction
 
 
-class VenueSerializer(serializers.ModelSerializer):
+class DiningTransactionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Venue
-        fields = ("venue_id", "name", "image_url")
+        model = DiningTransaction
+        fields = ("date", "description", "amount", "balance")
+
+    def to_representation(self, instance):
+        date_format = "%Y-%m-%dT%H:%M:%S"
+        instance.date = instance.date.strftime(date_format)
+        return super().to_representation(instance)
 
 
-class DiningItemSerializer(serializers.ModelSerializer):
+class DiningBalanceSerializer(serializers.ModelSerializer):
     class Meta:
-        model = DiningItem
-        fields = ("item_id", "name", "description", "ingredients")
-
-
-class DiningStationSerializer(serializers.ModelSerializer):
-    items = DiningItemSerializer(many=True)
-
-    class Meta:
-        model = DiningStation
-        fields = ("name", "items")
-
-
-class DiningMenuSerializer(serializers.ModelSerializer):
-    venue = VenueSerializer()
-    stations = DiningStationSerializer(many=True)
-
-    class Meta:
-        model = DiningMenu
-        fields = ("venue", "date", "start_time", "end_time", "stations", "service")
+        model = DiningBalance
+        fields = ("dining_dollars", "swipes", "guest_swipes")

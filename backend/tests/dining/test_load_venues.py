@@ -11,7 +11,7 @@ class TestLoadVenues(TestCase):
         out = StringIO()
         call_command("load_venues", stdout=out)
 
-        self.assertEqual(len(Venue.objects.all()), 16)
+        self.assertEqual(len(Venue.objects.all()), 14)
 
         list_of_ids = []
         for venue in Venue.objects.all():
@@ -20,6 +20,4 @@ class TestLoadVenues(TestCase):
 
         call_command("load_venues", stdout=out)
 
-        # load_venues script should be idempotent
-        self.assertEqual(len(Venue.objects.all()), 16)
-        self.assertEqual("1920 Commons-593", str(Venue.objects.get(venue_id=593)))
+        self.assertEqual(len(Venue.objects.all()), 14)

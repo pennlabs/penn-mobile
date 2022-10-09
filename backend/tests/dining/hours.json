@@ -1,0 +1,90 @@
+{
+    "result_data": {
+        "cafes": {
+            "593": {
+                "name": "1920 Commons",
+                "days": [
+                    {
+                        "date": "2021-03-23",
+                        "dayparts": [
+                            {
+                                "id": "4",
+                                "starttime": "17:00",
+                                "endtime": "21:00",
+                                "message": "",
+                                "label": "Dinner",
+                                "hide": "0"
+                            }
+                        ],
+                        "status": "open",
+                        "message": ""
+                    },
+                    {
+                        "date": "2021-03-27",
+                        "dayparts": [
+                            {
+                                "id": "2",
+                                "starttime": "11:00",
+                                "endtime": "15:00",
+                                "message": "",
+                                "label": "Brunch",
+                                "hide": "0"
+                            },
+                            {
+                                "id": "4",
+                                "starttime": "17:00",
+                                "endtime": "19:30",
+                                "message": "",
+                                "label": "Dinner",
+                                "hide": "0"
+                            }
+                        ],
+                        "status": "open",
+                        "message": ""
+                    },
+                    {
+                        "date": "2021-03-28",
+                        "dayparts": [
+                            {
+                                "id": "2",
+                                "starttime": "11:00",
+                                "endtime": "15:00",
+                                "message": "",
+                                "label": "Brunch",
+                                "hide": "0"
+                            },
+                            {
+                                "id": "4",
+                                "starttime": "17:00",
+                                "endtime": "20:00",
+                                "message": "",
+                                "label": "Dinner",
+                                "hide": "0"
+                            }
+                        ],
+                        "status": "open",
+                        "message": ""
+                    } 
+                ],
+                "cor_icons": {
+                    "1": {
+                        "sort": "1",
+                        "label": "Vegetarian",
+                        "description": "Vegetarian: Contains no meat, fish, poultry, shellfish or products derived from these sources but may contain dairy or eggs",
+                        "image": "https://legacy.cafebonappetit.com/assets/cor_icons/menu-item-type-c9d18b.png?v=1528869517",
+                        "is_filter": "Y",
+                        "allergen": 0
+                    }
+                }
+            }
+        }
+    },
+    "service_meta": {
+        "current_page_number": 0,
+        "error_text": "",
+        "next_page_number": 0,
+        "number_of_pages": 0,
+        "previous_page_number": 0,
+        "results_per_page": 0
+    }
+}
