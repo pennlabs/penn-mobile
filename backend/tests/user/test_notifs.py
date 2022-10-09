@@ -29,16 +29,6 @@ class MockAPNsClient:
         pass
 
 
-def mock_send_notif(*args, **kwargs):
-    # used for mocking notification sends
-    return
-
-
-def mock_get_path(*args, **kwargs):
-    # used for mocking notification sends
-    return ""
-
-
 class TestNotificationToken(TestCase):
     """Tests for CRUD Notification Tokens"""
 
@@ -302,16 +292,13 @@ class TestSendGSRReminders(TestCase):
 
     @mock.patch("user.notifications.APNsClient", MockAPNsClient)
     def test_send_reminder(self):
-        # mock the notification send via mock_send_notif
         call_command("send_gsr_reminders")
-        # test that reservation reminder was sent
         r = Reservation.objects.all().first()
         self.assertTrue(r.reminder_sent)
 
     def test_send_reminder_no_gsrs(self):
         GSRBooking.objects.all().delete()
         call_command("send_gsr_reminders")
-        # test that reservation reminder was sent
         r = Reservation.objects.all().first()
         self.assertFalse(r.reminder_sent)
 
@@ -329,8 +316,6 @@ class TestSendShadowNotifs(TestCase):
 
     @mock.patch("user.notifications.APNsClient", MockAPNsClient)
     def test_shadow_notifications(self):
-        # mock the notification send via mock_send_notif
-
         # call command on every user
         call_command("send_shadow_notifs", "yes", '{"test":"test"}')
 
