@@ -132,8 +132,7 @@ class TestNotificationSetting(TestCase):
     def test_check_fail(self):
         # since invalid setting, should return error
         response = self.client.get("/user/notifications/settings/PENN_MOBIL/check/")
-        res_json = json.loads(response.content)
-        self.assertTrue("error" in res_json)
+        self.assertEqual(response.status_code, 400)
 
 
 class TestNotificationAlert(TestCase):
@@ -159,7 +158,7 @@ class TestNotificationAlert(TestCase):
         setting.enabled = True
         setting.save()
 
-    @mock.patch("user.views.send_push_notif", mock_send_notif)
+    @mock.patch("user.notifications.send_immediate_notifications", mock_send_notif)
     def test_single_notif(self):
         # test notif fail when setting is false
         payload = {"title": "Test", "body": ":D", "service": "OHQ"}
@@ -175,7 +174,7 @@ class TestNotificationAlert(TestCase):
         self.assertEqual(1, len(res_json["success_users"]))
         self.assertEqual(0, len(res_json["failed_users"]))
 
-    @mock.patch("user.views.send_push_notif_batch", mock_send_notif)
+    @mock.patch("user.notifications.send_immediate_notifications", mock_send_notif)
     def test_batch_notif(self):
         # update all settings to be enabled
         NotificationSetting.objects.all().update(enabled=True)
@@ -236,7 +235,7 @@ class TestSendGSRReminders(TestCase):
         g.save()
 
     @mock.patch(
-        "gsr_booking.management.commands.send_gsr_reminders.send_push_notif", mock_send_notif
+        "user.notifications.send_immediate_notifications", mock_send_notif
     )
     def test_send_reminder(self):
         # mock the notification send via mock_send_notif
@@ -258,7 +257,7 @@ class TestSendShadowNotifs(TestCase):
         token_obj.save()
 
     @mock.patch(
-        "user.management.commands.send_shadow_notifs.send_shadow_push_notif_batch", mock_send_notif
+        "user.notifications.send_immediate_notifications", mock_send_notif
     )
     def test_shadow_notifications(self):
         # mock the notification send via mock_send_notif
@@ -268,33 +267,3 @@ class TestSendShadowNotifs(TestCase):
 
         # call command on specific set of users
         call_command("send_shadow_notifs", "no", '{"test":"test"}', usernames="user1")
-
-
-class TestCallingNotificationsAPI(TestCase):
-    """Test Calling API Notifications"""
-
-    def setUp(self):
-        self.client = APIClient()
-        self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
-        self.client.force_authenticate(user=self.test_user)
-        token_obj = NotificationToken.objects.get(user=self.test_user)
-        token_obj.token = "test123"
-        token_obj.save()
-
-    @mock.patch("os.path.join", mock_get_path)
-    @mock.patch("apns2.client.APNsClient.send_notification", mock_send_notif)
-    def test_send_push_notif(self):
-        token_obj = NotificationToken.objects.first()
-        notif.send_push_notif(token=token_obj, title="title", body="body")
-
-    @mock.patch("os.path.join", mock_get_path)
-    @mock.patch("apns2.client.APNsClient.send_notification_batch", mock_send_notif)
-    def test_send_push_notif_batch(self):
-        token = NotificationToken.objects.first()
-        notif.send_push_notif_batch(tokens=[token.token], title="title", body="body")
-
-    @mock.patch("os.path.join", mock_get_path)
-    @mock.patch("apns2.client.APNsClient.send_notification_batch", mock_send_notif)
-    def test_send_shadow_push_notif_batch(self):
-        token = NotificationToken.objects.first()
-        notif.send_shadow_push_notif_batch(tokens=[token.token], body=dict())
