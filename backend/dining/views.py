@@ -43,16 +43,20 @@ class Venues(APIView):
 
 class Menus(generics.ListAPIView):
     """
-    GET: returns list of all menu data for within the week
+    GET: returns list of menus, defaulted to all objects within the week,
+    and can specify the filter for a particular day
     """
 
     serializer_class = DiningMenuSerializer
 
     def get_queryset(self):
-        # Return all menus within start_date and end_date
-        start_date = timezone.now().date()
-        end_date = timezone.now().date() + datetime.timedelta(days=6)
-        return DiningMenu.objects.filter(date__gte=start_date, date__lte=end_date)
+        if date_param := self.kwargs.get("date"):
+            date = make_aware(datetime.datetime.strptime(date_param, "%Y-%m-%d"))
+            return DiningMenu.objects.filter(date=date)
+        else:
+            start_date = timezone.now().date()
+            end_date = start_date + datetime.timedelta(days=6)
+            return DiningMenu.objects.filter(date__gte=start_date, date__lte=end_date)
 
 
 class Hours(APIView):

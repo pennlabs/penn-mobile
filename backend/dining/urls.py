@@ -17,7 +17,8 @@ from dining.views import (
 
 urlpatterns = [
     path("venues/", Venues.as_view(), name="venues"),
-    path("menus/", Menus.as_view(), name="Menus"),
+    path("menus/", Menus.as_view(), name="menu"),
+    path("menus/<date>/", Menus.as_view(), name="menu-with-date"),
     path("hours/<venue_id>/", Hours.as_view(), name="hours"),
     path("weekly_menu/<venue_id>/", WeeklyMenu.as_view(), name="weekly-menu"),
     path("daily_menu/<venue_id>/", DailyMenu.as_view(), name="daily-menu"),
