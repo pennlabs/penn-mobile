@@ -1,8 +1,12 @@
+import datetime
 from json.decoder import JSONDecodeError
 
 import requests
 from django.conf import settings
-from requests.exceptions import ReadTimeout
+from django.utils import timezone
+from requests.exceptions import ConnectTimeout, ReadTimeout
+
+from dining.models import Venue
 
 
 V2_BASE_URL = "https://esb.isc-seo.upenn.edu/8091/open_data/dining/v2/?service="
@@ -26,6 +30,102 @@ class APIError(ValueError):
     pass
 
 
+class DiningAPIWrapper:
+    def __init__(self):
+        self.token = None
+        self.expiration = timezone.localtime()
+        self.openid_endpoint = (
+            "https://sso.apps.k8s.upenn.edu/auth/realms/master/protocol/openid-connect/token"
+        )
+
+    def update_token(self):
+        if self.expiration > timezone.localtime():
+            return
+        body = {
+            "client_id": settings.DINING_ID,
+            "client_secret": settings.DINING_SECRET,
+            "grant_type": "client_credentials",
+        }
+        response = requests.post(self.openid_endpoint, data=body).json()
+        if "error" in response:
+            raise APIError(f"LibCal: {response['error']}, {response.get('error_description')}")
+        self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
+        self.token = response["access_token"]
+
+    def request(self, *args, **kwargs):
+        """Make a signed request to the dining API."""
+        self.update_token()
+
+        headers = {"Authorization": f"Bearer {self.token}"}
+
+        # add authorization headers
+        if "headers" in kwargs:
+            kwargs["headers"].update(headers)
+        else:
+            kwargs["headers"] = headers
+
+        try:
+            return requests.request(*args, **kwargs)
+        except (ConnectTimeout, ReadTimeout, ConnectionError):
+            raise APIError("Dining: Connection timeout")
+
+    def get_venues(self):
+        results = []
+        venues_route = (
+            "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/venues"
+        )
+        response = self.request("GET", venues_route)
+        if response.status_code != 200:
+            raise APIError("Dining: Error connecting to API")
+        venues = response.json()["result_data"]["campuses"]["203"]["cafes"]
+        for key, value in venues.items():
+            # TODO: Remove this once Dining API renames Joe's Café
+            if key == "642":
+                value["name"] = "Joe's Café"
+            # cleaning up json response
+            venue = Venue.objects.filter(venue_id=key).first()
+            value["image"] = venue.image_url if venue else None
+
+            value["id"] = int(key)
+            remove_items = [
+                "cor_icons",
+                "city",
+                "state",
+                "zip",
+                "latitude",
+                "longitude",
+                "description",
+                "message",
+                "eod",
+                "timezone",
+                "menu_type",
+                "menu_html",
+                "location_detail",
+                "weekly_schedule",
+            ]
+            [value.pop(item) for item in remove_items]
+            for day in value["days"]:
+                day.pop("message")
+                removed_dayparts = set()
+                for i in range(len(day["dayparts"])):
+                    daypart = day["dayparts"][i]
+                    [daypart.pop(item) for item in ["id", "hide"]]
+                    if not daypart["starttime"]:
+                        removed_dayparts.add(i)
+                        continue
+                    for time in ["starttime", "endtime"]:
+                        daypart[time] = datetime.datetime.strptime(
+                            day["date"] + "T" + daypart[time], "%Y-%m-%dT%H:%M"
+                        )
+                day["dayparts"] = [
+                    day["dayparts"][i]
+                    for i in range(len(day["dayparts"]))
+                    if i not in removed_dayparts
+                ]
+            results.append(value)
+        return results
+
+
 def headers():
     """
     Returns headers necessary for Penn Dining API access
@@ -41,10 +141,6 @@ def dining_request(url):
     """
     Makes GET request to Penn Dining API and returns the response
     """
-
-    def sortByStart(elem):
-        print(elem)
-        return elem["open"]
 
     try:
         response = requests.get(url, params=None, headers=headers(), timeout=30)
