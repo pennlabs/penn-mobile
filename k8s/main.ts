@@ -18,7 +18,7 @@ export class MyChart extends PennLabsChart {
       deployment: {
         image: backendImage,
         secret,
-        cmd: ['celery', 'worker', '-A', 'PennMobile', '-linfo'],
+        cmd: ['celery', '-A', 'pennmobile', 'worker', '-linfo'],
       },
       djangoSettingsModule: 'pennmobile.settings.production',
     });

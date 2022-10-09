@@ -39,7 +39,7 @@ boto3 = "*"
 apns2 = "*"
 numpy = "*"
 click = "==8.0.4"
-celery = "*"
+celery = "5"
 django-redis = "*"
 redis = "*"
 
