@@ -22,7 +22,7 @@ class Command(BaseCommand):
             booking = reservation.gsrbooking_set.first()
             if not booking:
                 continue
-            
+
             title = "GSR Booking!"
             body = (
                 f"You have reserved {booking.room_name} "
@@ -32,7 +32,7 @@ class Command(BaseCommand):
                 reservation.creator.username,
                 NotificationSetting.SERVICE_GSR_BOOKING,
                 title=title,
-                body=body
+                body=body,
             )
             reservation.reminder_sent = True
             reservation.save()

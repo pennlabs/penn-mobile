@@ -13,9 +13,7 @@ from user.models import NotificationToken
 Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
-def send_push_notifications(
-    usernames, service, title, body, delay=0, isShadow=False
-):
+def send_push_notifications(usernames, service, title, body, delay=0, isShadow=False):
     """
     Sends push notifications.
 
@@ -35,12 +33,12 @@ def send_push_notifications(
     success_users, tokens = zip(*token_objects)
 
     # send notifications
-    isDev = False # NOTE: fix dev settings eventually
+    isDev = False  # NOTE: fix dev settings eventually
     if delay:
         send_delayed_notifications(tokens, title, body, isDev, isShadow, delay)
     else:
         send_immediate_notifications(tokens, title, body, isDev, isShadow)
-    
+
     if not usernames:  # if to all users, can't be any failed pennkeys
         return success_users, []
     failed_users = list(set(usernames) - set(success_users))
@@ -56,8 +54,11 @@ def get_tokens(usernames=None, service=None):
     if usernames:
         token_objs = token_objs.filter(user__username__in=usernames)
     if service:
-        token_objs = token_objs.filter(notificationsetting__service=service, notificationsetting__enabled=True)
+        token_objs = token_objs.filter(
+            notificationsetting__service=service, notificationsetting__enabled=True
+        )
     return token_objs.exclude(token="").values_list("user__username", "token")
+
 
 @shared_task(name="notifications.send_immediate_notifications")
 def send_immediate_notifications(tokens, title, body, isDev, isShadow):
@@ -77,7 +78,9 @@ def send_immediate_notifications(tokens, title, body, isDev, isShadow):
 
 
 def send_delayed_notifications(tokens, title, body, isDev, isShadow, delay):
-    send_immediate_notifications.apply_async((tokens, title, body, isDev, isShadow), countdown=delay)
+    send_immediate_notifications.apply_async(
+        (tokens, title, body, isDev, isShadow), countdown=delay
+    )
 
 
 def get_client(isDev):

@@ -8,7 +8,6 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-import user.notifications as notif
 from gsr_booking.models import GSR, Group, GSRBooking, Reservation
 from user.models import NotificationSetting, NotificationToken
 
@@ -234,9 +233,7 @@ class TestSendGSRReminders(TestCase):
         g.reservation = r
         g.save()
 
-    @mock.patch(
-        "user.notifications.send_immediate_notifications", mock_send_notif
-    )
+    @mock.patch("user.notifications.send_immediate_notifications", mock_send_notif)
     def test_send_reminder(self):
         # mock the notification send via mock_send_notif
         call_command("send_gsr_reminders")
@@ -256,9 +253,7 @@ class TestSendShadowNotifs(TestCase):
         token_obj.token = "test123"
         token_obj.save()
 
-    @mock.patch(
-        "user.notifications.send_immediate_notifications", mock_send_notif
-    )
+    @mock.patch("user.notifications.send_immediate_notifications", mock_send_notif)
     def test_shadow_notifications(self):
         # mock the notification send via mock_send_notif
 
