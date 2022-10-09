@@ -183,7 +183,6 @@ class DiningAPIWrapper:
             station.items.add(*items)
             station.save()
             stations.append(station)
-        # NOTE: use generator here?
         return stations
 
     def load_items(self, item_response):
