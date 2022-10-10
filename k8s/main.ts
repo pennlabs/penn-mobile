@@ -12,7 +12,7 @@ export class MyChart extends PennLabsChart {
     const backendImage = "pennlabs/penn-mobile-backend"
     const frontendImage = "pennlabs/penn-mobile-frontend"
 
-    new RedisApplication(this, 'redis', { deployment: { tag: '4.0' } });
+    new RedisApplication(this, 'redis', {});
 
     new DjangoApplication(this, 'celery', {
       deployment: {
