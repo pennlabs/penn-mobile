@@ -14,8 +14,8 @@ class Venue(models.Model):
 class DiningItem(models.Model):
     item_id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
-    description = models.CharField(max_length=255)
-    ingredients = models.CharField(max_length=255)
+    description = models.CharField(max_length=1000)
+    ingredients = models.CharField(max_length=1000)
 
 
 class DiningStation(models.Model):
