@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
+from rest_framework.test import APIClient
 
 from dining.models import Venue
 
@@ -91,3 +92,48 @@ class TestMenus(TestCase):
     def test_get_date(self):
         response = self.client.get("/dining/menus/2022-10-04/")
         self.try_structure(response.json())
+
+
+class TestPreferences(TestCase):
+    def setUp(self):
+        call_command("load_venues")
+        self.client = APIClient()
+
+        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+
+        preference = self.test_user.profile.dining_preferences
+        preference.add(Venue.objects.get(venue_id=593))
+        preference.add(Venue.objects.get(venue_id=593))
+        preference.add(Venue.objects.get(venue_id=593))
+        preference.add(Venue.objects.get(venue_id=636))
+        preference.add(Venue.objects.get(venue_id=636))
+        preference.add(Venue.objects.get(venue_id=637))
+
+    def test_get(self):
+        self.client.force_authenticate(user=self.test_user)
+
+        response = self.client.get(reverse("dining-preferences"))
+        res_json = json.loads(response.content)["preferences"]
+
+        for item in res_json:
+            if item["venue_id"] == 593:
+                self.assertEqual(item["count"], 1)
+            elif item["venue_id"] == 636:
+                self.assertEqual(item["count"], 1)
+            else:
+                self.assertEqual(item["count"], 1)
+
+    def test_post(self):
+        self.client.force_authenticate(user=self.test_user)
+        self.client.post(
+            reverse("dining-preferences"),
+            json.dumps({"venues": ["641", "641", "641", "1733"]}),
+            content_type="application/json",
+        )
+
+        preference = self.test_user.profile.dining_preferences
+
+        self.assertEqual(preference.count(), 2)
+
+        self.assertIn(Venue.objects.get(venue_id=641), preference.all())
+        self.assertIn(Venue.objects.get(venue_id=1733), preference.all())
