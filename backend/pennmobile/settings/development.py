@@ -17,3 +17,5 @@ CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
 
 # Allow http callback for DLA
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}}

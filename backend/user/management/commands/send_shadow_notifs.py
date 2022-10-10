@@ -2,8 +2,7 @@ import json
 
 from django.core.management.base import BaseCommand
 
-from user.models import NotificationToken
-from user.notifications import send_shadow_push_notif_batch
+from user.notifications import send_push_notifications
 
 
 class Command(BaseCommand):
@@ -30,38 +29,24 @@ class Command(BaseCommand):
 
         # optional argument
         parser.add_argument("--usernames", type=str, help="list of usernames")
-        parser.add_argument("--isDev", type=str, default="no")
+        parser.add_argument("--is_dev", type=str, default="no")
 
     def handle(self, *args, **kwargs):
         send_to_all = kwargs["send_to_all"].lower() == "yes"
+        message = json.loads(kwargs["message"])
+        names = kwargs["usernames"]
+        # NOTE: uncomment once fixed
+        # is_dev = kwargs["is_dev"].lower() == "yes"
 
         # get list of targeted users if not to everyone
         if not send_to_all:
-            names = kwargs["usernames"]
             usernames = names.split(",") if "," in names else [names]
-
-        isDev = kwargs["isDev"].lower() == "yes"
-        message = json.loads(kwargs["message"])
-
-        # get list of tokens
-        if send_to_all:
-            tokens = NotificationToken.objects.exclude(token="")
         else:
-            tokens = (
-                NotificationToken.objects.select_related("user")
-                .filter(
-                    kind=NotificationToken.KIND_IOS,  # NOTE: until Android implementation
-                    user__username__in=usernames,
-                )
-                .exclude(token="")
-            )
+            usernames = None
 
-        # send shadow notifications
-        send_shadow_push_notif_batch(tokens=tokens, body=message, isDev=isDev)
+        # send notifications
+        _, failed_users = send_push_notifications(usernames, None, None, message, is_shadow=True)
 
-        if not send_to_all:
-            failed_users = list(set(usernames) - set([token.user.username for token in tokens]))
-            # output list of targeted users without tokens if such a list exists
-            if len(failed_users) > 0:
-                self.stdout.write("Unavailable token(s) for " + ", ".join(failed_users) + ".")
+        if len(failed_users) > 0:
+            self.stdout.write("Unavailable token(s) for " + ", ".join(failed_users) + ".")
         self.stdout.write("Notifications sent out!")
