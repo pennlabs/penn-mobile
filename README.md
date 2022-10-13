@@ -19,9 +19,10 @@ This repository is the Django-based successor to `labs-api-server`, containing A
 - `cd penn-mobile/backend`
 - `pipenv install --dev --python 3.9`
 
-Note that the above command might throw some ugly errors at you with regards to the `mysqlclient` and `psychopg2` packages. If that is the case, just manually install them:
+Note that the above command will likely throw some ugly errors at you with regards to the `mysqlclient` and `psychopg2` packages. If that is the case, just manually install them:
 - `pipenv install mysqlclient`
 - `pipenv install psycopg2`
+- `pipenv install --dev`
 
 Final Steps:
 - `pipenv run python manage.py migrate`
@@ -33,6 +34,13 @@ To create users, you first have to create a main superuser.
 
 - `pipenv run python manage.py createsuperuser` and follow the instructions
 - Then, you can go to `localhost:8000/admin/auth/user/add/` to add more users.
+
+## Testing Delayed Notifications
+- `brew install redis`
+
+In separate terminal windows, run the following commands:
+- `redis-server`
+- `celery -A pennmobile worker -linfo`
 
 ## Exploring the API
 
