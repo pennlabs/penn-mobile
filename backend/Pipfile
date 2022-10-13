@@ -44,3 +44,6 @@ celery = "*"
 django-redis = "*"
 redis = "*"
 "backports.zoneinfo" = "*"
+
+[requires]
+python_version = "3"
