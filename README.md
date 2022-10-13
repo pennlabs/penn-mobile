@@ -17,8 +17,13 @@ This repository is the Django-based successor to `labs-api-server`, containing A
 
 - `git clone https://github.com/pennlabs/penn-mobile.git`
 - `cd penn-mobile/backend`
-- `brew install mysql`
-- `pipenv install --dev`
+- `pipenv install --dev --python 3.9`
+
+Note that the above command might throw some ugly errors at you with regards to the `mysqlclient` and `psychopg2` packages. If that is the case, just manually install them:
+- `pipenv install mysqlclient`
+- `pipenv install psycopg2`
+
+Final Steps:
 - `pipenv run python manage.py migrate`
 - `pipenv run python manage.py runserver 8000`
 
