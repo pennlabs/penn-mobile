@@ -11,11 +11,13 @@ This repository is the Django-based successor to `labs-api-server`, containing A
 - Fitness Data
 - News and Events
 - Posts and Polls
+- Notifications
 
 ## Install
 
 - `git clone https://github.com/pennlabs/penn-mobile.git`
 - `cd penn-mobile/backend`
+- `brew install mysql`
 - `pipenv install --dev`
 - `pipenv run python manage.py migrate`
 - `pipenv run python manage.py runserver 8000`
