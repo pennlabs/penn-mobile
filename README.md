@@ -20,8 +20,7 @@ This repository is the Django-based successor to `labs-api-server`, containing A
 - `brew install postgres`
 - `pipenv install --dev --python 3.9`
 
-Note that the above command will likely throw some ugly errors at you with regards to the `mysqlclient` and `psychopg2` packages. If that is the case, just manually install them:
-- `pipenv install mysqlclient`
+Note that the above command will likely throw some ugly errors at you with regards to the `psycopg2` packages. If that is the case, just manually install them:
 - `pipenv install psycopg2`
 - `pipenv install --dev`
 
