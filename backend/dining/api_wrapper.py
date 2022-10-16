@@ -172,12 +172,11 @@ class DiningAPIWrapper:
         item_list = [None] * len(item_response)
         for i, key in enumerate(item_response):
             value = item_response[key]
-            item_list[i] =
-                DiningItem(
-                    item_id=key,
-                    name=value["label"],
-                    description=value["description"],
-                    ingredients=value["ingredients"],
-                )
+            item_list[i] = DiningItem(
+                item_id=key,
+                name=value["label"],
+                description=value["description"],
+                ingredients=value["ingredients"],
+            )
         # Ignore conflicts because possibility of duplicate items
         DiningItem.objects.bulk_create(item_list, ignore_conflicts=True)
