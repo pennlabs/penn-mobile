@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from user.models import NotificationSetting, NotificationToken
-from user.notifications import send_push_notif, send_push_notif_batch
+from user.notifications import send_push_notifications
 from user.serializers import (
     NotificationSettingSerializer,
     NotificationTokenSerializer,
@@ -71,9 +71,9 @@ class NotificationSettingView(viewsets.ModelViewSet):
         :param pk: service name
         """
         if pk not in dict(NotificationSetting.SERVICE_OPTIONS):
-            return Response({"error": "invalid service"})
+            return Response({"detail": "Invalid service."}, status=400)
 
-        token = NotificationToken.objects.filter(user=self.request.user).exclude(token="").first()
+        token = NotificationToken.objects.filter(user=self.request.user).first()
         if not token:
             return Response({"service": pk, "enabled": False})
 
@@ -90,32 +90,19 @@ class NotificationAlertView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        usernames = (
-            request.data["users"] if "users" in request.data else [self.request.user.username]
-        )
-        service = request.data["service"]
-        title = request.data["title"]
-        body = request.data["body"]
-        isDev = request.data["isDev"] if "isDev" in request.data else False
+        usernames = request.data.get("users", [self.request.user.username])
+        service = request.data.get("service", None)
+        title = request.data.get("title", None)
+        body = request.data.get("body", None)
+        delay = request.data.get("delay", 0)
 
-        # queries tokens, filters by pennkey, service, and whether notif enabled
-        tokens = (
-            NotificationToken.objects.select_related("user")
-            .filter(
-                kind=NotificationToken.KIND_IOS,  # NOTE: until Android implementation
-                user__username__in=usernames,
-                notificationsetting__service=service,
-                notificationsetting__enabled=True,
-            )
-            .exclude(token="")
+        if None in [service, title, body]:
+            return Response({"detail": "Missing required parameters."}, status=400)
+        if service not in dict(NotificationSetting.SERVICE_OPTIONS):
+            return Response({"detail": "Invalid service."}, status=400)
+
+        success_users, failed_users = send_push_notifications(
+            usernames, service, title, body, delay
         )
 
-        if len(tokens) == 1:
-            send_push_notif(tokens[0], title, body, isDev)
-        elif len(tokens) > 1:
-            send_push_notif_batch(tokens, title, body, isDev)
-
-        # get users that are not being sent notifs
-        success_users = [token.user.username for token in tokens]
-        failed_users = list(set(usernames) - set(success_users))
         return Response({"success_users": success_users, "failed_users": failed_users})

@@ -4,8 +4,8 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from gsr_booking.models import Reservation
-from user.models import NotificationSetting, NotificationToken
-from user.notifications import send_push_notif
+from user.models import NotificationSetting
+from user.notifications import send_push_notifications
 
 
 class Command(BaseCommand):
@@ -19,32 +19,20 @@ class Command(BaseCommand):
             start__gt=timezone.now(),
             start__lte=timezone.now() + datetime.timedelta(minutes=10),
         ):
-            # NOTE: only iOS for now, change when Android gets set up
-            token = (
-                NotificationToken.objects.filter(
-                    user=reservation.creator, kind=NotificationToken.KIND_IOS
+            booking = reservation.gsrbooking_set.first()
+            if booking:
+                title = "GSR Booking!"
+                body = (
+                    f"You have reserved {booking.room_name} "
+                    + f"{booking.room_id} starting in 10 minutes!"
                 )
-                .exclude(token="")
-                .first()
-            )
-
-            if token:
-                # skip user if their setting is disabled for GSR Notifs
-                setting = NotificationSetting.objects.filter(
-                    token=token, service=NotificationSetting.SERVICE_GSR_BOOKING
-                ).first()
-                if not setting or not setting.enabled:
-                    continue
-
-                booking = reservation.gsrbooking_set.first()
-                if booking:
-                    title = "GSR Booking!"
-                    body = (
-                        f"You have reserved {booking.room_name} "
-                        + f"{booking.room_id} starting in 10 minutes!"
-                    )
-                    send_push_notif(token.token, title, body)
-                    reservation.reminder_sent = True
-                    reservation.save()
+                send_push_notifications(
+                    reservation.creator.username,
+                    NotificationSetting.SERVICE_GSR_BOOKING,
+                    title=title,
+                    body=body,
+                )
+                reservation.reminder_sent = True
+                reservation.save()
 
         self.stdout.write("Sent out notifications!")

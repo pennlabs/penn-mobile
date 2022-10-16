@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     "debug_toolbar",
     "gsr_booking",
     "portal",
-    "legacy",
     "options.apps.OptionsConfig",
 ]
 
@@ -85,17 +84,9 @@ WSGI_APPLICATION = "pennmobile.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
-LEGACY_DATABASE_URL = os.environ.get(
-    "LEGACY_DATABASE_URL", "sqlite:///" + os.path.join(BASE_DIR, "db.sqlite3")
-)
-
 DATABASES = {
     "default": dj_database_url.config(default="sqlite:///" + os.path.join(BASE_DIR, "db.sqlite3")),
-    "legacy": dj_database_url.parse(LEGACY_DATABASE_URL),
 }
-
-DATABASE_ROUTERS = ["pennmobile.dbrouters.LegacyRouter"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
@@ -155,6 +146,13 @@ REST_FRAMEWORK = {
         "accounts.authentication.PlatformAuthentication",
     ],
 }
+
+# Redis for Celery & Caching
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
+
+# Celery Settings (read automatically by celery.py)
+CELERY_BROKER_URL = REDIS_URL
+CELERY_TIMEZONE = TIME_ZONE
 
 # Laundry API URL
 LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
