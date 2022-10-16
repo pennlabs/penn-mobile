@@ -169,17 +169,14 @@ class DiningAPIWrapper:
         return stations
 
     def load_items(self, item_response):
-        # NOTE: If there are performance issues, we can initialize
-        # the list with the size of item_response
-        item_list = list()
-        for key, value in item_response.items():
-            item_list.append(
-                DiningItem(
-                    item_id=key,
-                    name=value["label"],
-                    description=value["description"],
-                    ingredients=value["ingredients"],
-                )
+        item_list = [None] * len(item_response)
+        for i, key in enumerate(item_response):
+            value = item_response[key]
+            item_list[i] = DiningItem(
+                item_id=key,
+                name=value["label"],
+                description=value["description"],
+                ingredients=value["ingredients"],
             )
         # Ignore conflicts because possibility of duplicate items
         DiningItem.objects.bulk_create(item_list, ignore_conflicts=True)
