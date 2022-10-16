@@ -16,7 +16,7 @@ export class MyChart extends PennLabsChart {
       deployment: {
         image: backendImage,
         secret,
-        replicas: 8,
+        replicas: 5,
       },
       domains: [
         { host: 'studentlife.pennlabs.org', isSubdomain: true, paths: ['/'] },
