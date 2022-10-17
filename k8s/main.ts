@@ -19,6 +19,13 @@ export class MyChart extends PennLabsChart {
         image: backendImage,
         secret,
         cmd: ['celery', '-A', 'pennmobile', 'worker', '-linfo'],
+        secretMounts: [
+          {
+            name: "penn-mobile",
+            subPath: "ios-key",
+            mountPath: "/app/ios_key.p8",
+          }
+        ]
       },
       djangoSettingsModule: 'pennmobile.settings.production',
     });
