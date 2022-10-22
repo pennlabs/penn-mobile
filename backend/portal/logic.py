@@ -1,16 +1,32 @@
 import json
 
+configfile = '~/Penn Labs/django-labs-accounts/identity/'
+
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
+from identity import authenticated_b2b_request, get_platform_jwks, attest
+
 from accounts.ipc import authenticated_request
 from django.contrib.auth import get_user_model
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 
+# print()
 
+get_platform_jwks()
+attest()
 User = get_user_model()
 
 
 def get_user_info(user):
     """Returns Platform user information"""
+    print('wtf')
+    x = authenticated_b2b_request("POST", "https://penncourseplan.com/api/plan/recommendations/", {})
+    print(x.content)
+
+
     response = authenticated_request(user, "GET", "https://platform.pennlabs.org/accounts/me/")
     return json.loads(response.content)
 

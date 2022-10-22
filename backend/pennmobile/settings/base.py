@@ -29,6 +29,15 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 
+
+configfile = '~/Penn Labs/django-labs-accounts/identity/'
+
+# import os
+# import sys
+
+# sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
+# import identity
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -49,6 +58,7 @@ INSTALLED_APPS = [
     "gsr_booking",
     "portal",
     "options.apps.OptionsConfig",
+    # 'identity.apps.IdentityConfig'
 ]
 
 MIDDLEWARE = [
