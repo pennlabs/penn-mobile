@@ -13,7 +13,9 @@ from user.models import NotificationToken
 Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
-def send_push_notifications(usernames, service, title, body, delay=0, is_shadow=False):
+def send_push_notifications(
+    usernames, service, title, body, delay=0, is_dev=False, is_shadow=False
+):
     """
     Sends push notifications.
 
@@ -33,7 +35,6 @@ def send_push_notifications(usernames, service, title, body, delay=0, is_shadow=
     success_users, tokens = zip(*token_objects)
 
     # send notifications
-    is_dev = False  # NOTE: fix dev settings eventually
     if delay:
         send_delayed_notifications(tokens, title, body, is_dev, is_shadow, delay)
     else:
