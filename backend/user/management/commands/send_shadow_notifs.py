@@ -28,26 +28,26 @@ class Command(BaseCommand):
         parser.add_argument("message", type=str, help="JSON-formatted message to send")
 
         # optional argument
-        parser.add_argument("--usernames", type=str, help="list of usernames")
+        parser.add_argument("--users", type=str, help="list of usernames")
         parser.add_argument("--delay", type=int, default=0)
         parser.add_argument("--is_dev", type=str, default="no")
 
     def handle(self, *args, **kwargs):
         send_to_all = kwargs["send_to_all"].lower() == "yes"
         message = json.loads(kwargs["message"])
-        names = kwargs["usernames"]
+        names = kwargs["users"]
         delay = kwargs["delay"]
         is_dev = kwargs["is_dev"].lower() == "yes"
 
         # get list of targeted users if not to everyone
         if not send_to_all:
-            usernames = names.split(",") if "," in names else [names]
+            users = names.split(",") if "," in names else [names]
         else:
-            usernames = None
+            users = None
 
         # send notifications
         _, failed_users = send_push_notifications(
-            usernames, None, None, message, delay=delay, is_dev=is_dev, is_shadow=True
+            users, None, None, message, delay, is_dev, is_shadow=True
         )
 
         if len(failed_users) > 0:

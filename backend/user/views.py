@@ -90,12 +90,12 @@ class NotificationAlertView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        usernames = request.data.get("users", [self.request.user.username])
+        users = request.data.get("users", [self.request.user.username])
         service = request.data.get("service", None)
         title = request.data.get("title", None)
         body = request.data.get("body", None)
-        delay = request.data.get("delay", 0)
-        is_dev = request.data.get("isDev", False)
+        delay = max(request.data.get("delay", 0), 0)
+        is_dev = request.data.get("is_dev", False)
 
         if None in [service, title, body]:
             return Response({"detail": "Missing required parameters."}, status=400)
@@ -103,7 +103,7 @@ class NotificationAlertView(APIView):
             return Response({"detail": "Invalid service."}, status=400)
 
         success_users, failed_users = send_push_notifications(
-            usernames, service, title, body, delay=delay, is_dev=is_dev
+            users, service, title, body, delay, is_dev
         )
 
         return Response({"success_users": success_users, "failed_users": failed_users})
