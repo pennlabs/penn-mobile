@@ -42,7 +42,7 @@ class GroupBook:
         gsr = GSR.objects.filter(gid=gid).first()
         if not gsr:
             raise APIError(f"Unknown GSR GID {gid}")
-        
+
         start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
         end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
 
@@ -59,10 +59,8 @@ class GroupBook:
             raise APIError("Not Enough Credits to Book")
         if duration % 30 != 0:
             raise APIError("Invalid duration")
-        
-        reservation = Reservation.objects.create(
-            start=start, end=end, creator=user, group=group
-        )
+
+        reservation = Reservation.objects.create(start=start, end=end, creator=user, group=group)
         while duration > 0:
             for usr in users:
                 credit = self.bw.check_credits(usr.user).get(credit_id, 0)
@@ -70,8 +68,13 @@ class GroupBook:
                     continue
                 curr_end = start + datetime.timedelta(minutes=30)
                 booking = self.bw.book_room(
-                    gid, rid, room_name, start.strftime("%Y-%m-%dT%H:%M:%S%z"), 
-                    curr_end.strftime("%Y-%m-%dT%H:%M:%S%z"), usr.user, group_book=True
+                    gid,
+                    rid,
+                    room_name,
+                    start.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                    curr_end.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                    usr.user,
+                    group_book=True,
                 )
                 booking.reservation = reservation
                 booking.save()
@@ -80,7 +83,6 @@ class GroupBook:
                 if duration <= 0:
                     break
         return reservation
-
 
         #         try:
         #             booking = self.bw.book_room(

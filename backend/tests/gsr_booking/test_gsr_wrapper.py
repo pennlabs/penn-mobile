@@ -1,6 +1,5 @@
-from datetime import timedelta
 import json
-import time
+from datetime import timedelta
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -8,10 +7,9 @@ from django.core.management import call_command
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from gsr_booking.models import GroupMembership
-from gsr_booking.group_logic import GroupBook
 from gsr_booking.api_wrapper import BookingWrapper
-from gsr_booking.models import GSR, Group, GSRBooking, Reservation
+from gsr_booking.group_logic import GroupBook
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 
 
 User = get_user_model()
@@ -52,9 +50,11 @@ def mock_requests_get(obj, *args, **kwargs):
     with open(file_path) as data:
         return Mock(json.load(data), 200)
 
+
 def mock_check_credits(self, user):
     wharton_lids = GSR.objects.filter(kind=GSR.KIND_WHARTON).values_list("lid", flat=True)
     return {lid: 90 for lid in wharton_lids}
+
 
 class TestBookingWrapper(TestCase):
     def setUp(self):
@@ -155,31 +155,43 @@ class TestBookingWrapper(TestCase):
         membership1 = GroupMembership.objects.filter(group=self.group).first()
         membership1.is_wharton = True
         membership1.save()
-        GroupMembership.objects.create(user=self.user, group=self.group, accepted=True, is_wharton=True)
+        GroupMembership.objects.create(
+            user=self.user, group=self.group, accepted=True, is_wharton=True
+        )
         reservation = self.gb.book_room(
-            1, 94, "241", "2021-12-05T16:00:00-05:00", "2021-12-05T18:00:00-05:00", self.user, self.group
+            1,
+            94,
+            "241",
+            "2021-12-05T16:00:00-05:00",
+            "2021-12-05T18:00:00-05:00",
+            self.user,
+            self.group,
         )
         bookings = list(reservation.gsrbooking_set.all())
         self.assertEqual(len(bookings), 4)
         bookings.sort(key=lambda x: x.start)
         for i in range(len(bookings) - 1):
-            self.assertEqual(bookings[i].end, bookings[i+1].start)
+            self.assertEqual(bookings[i].end, bookings[i + 1].start)
         for booking in bookings:
             self.assertEqual(booking.end - booking.start, timedelta(minutes=30))
         self.assertIsNotNone(Reservation.objects.get(pk=reservation.id))
-
 
     @mock.patch("gsr_booking.api_wrapper.LibCalWrapper.request", mock_requests_get)
     def test_group_book_libcal(self):
         GroupMembership.objects.create(user=self.user, group=self.group, accepted=True)
         reservation = self.gb.book_room(
-            1889, 7192, "VP WIC Booth 01", "2021-12-05T16:00:00-05:00", "2021-12-05T18:00:00-05:00", self.user, self.group
+            1889,
+            7192,
+            "VP WIC Booth 01",
+            "2021-12-05T16:00:00-05:00",
+            "2021-12-05T18:00:00-05:00",
+            self.user,
+            self.group,
         )
         bookings = list(reservation.gsrbooking_set.all())
         bookings.sort(key=lambda x: x.start)
         for i in range(len(bookings) - 1):
-            self.assertEqual(bookings[i].end, bookings[i+1].start)
+            self.assertEqual(bookings[i].end, bookings[i + 1].start)
         for booking in bookings:
             self.assertEqual(booking.end - booking.start, timedelta(minutes=30))
         self.assertIsNotNone(Reservation.objects.get(pk=reservation.id))
-            
