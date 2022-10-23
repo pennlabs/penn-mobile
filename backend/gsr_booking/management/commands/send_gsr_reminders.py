@@ -30,7 +30,7 @@ class Command(BaseCommand):
                     [reservation.creator.username],
                     NotificationSetting.SERVICE_GSR_BOOKING,
                     title,
-                    body
+                    body,
                 )
                 reservation.reminder_sent = True
                 reservation.save()

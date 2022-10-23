@@ -13,9 +13,7 @@ from user.models import NotificationToken
 Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
-def send_push_notifications(
-    users, service, title, body, delay=0, is_dev=False, is_shadow=False
-):
+def send_push_notifications(users, service, title, body, delay=0, is_dev=False, is_shadow=False):
     """
     Sends push notifications.
 
