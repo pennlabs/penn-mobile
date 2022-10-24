@@ -28,7 +28,7 @@ class Command(BaseCommand):
         parser.add_argument("message", type=str, help="JSON-formatted message to send")
 
         # optional argument
-        parser.add_argument("--users", type=str, help="list of usernames")
+        parser.add_argument("--users", type=str, help="list of pennkeys")
         parser.add_argument("--delay", type=int, default=0)
         parser.add_argument("--is_dev", type=str, default="no")
 
