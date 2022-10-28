@@ -64,14 +64,16 @@ class GroupBook:
         # creates reservation object to be used to group each booking
         reservation = Reservation.objects.create(start=start, end=end, creator=user, group=group)
 
-        # we could potentially repeat using a user to make a 30 min booking so loop until total duration booked
+        # we could potentially repeat using a user to make a 30 min booking so
+        # loop until total duration booked
         while duration > 0:
-            # loop through each user and try to make a 30 min booking under that user if they have enough credits
+            # loop through each user and try to make a 30 min booking
+            # under that user if they have enough credits
             for usr in users:
                 credit = self.bw.check_credits(usr.user).get(credit_id, 0)
                 if credit < 30:
                     continue
-                curr_end = start + datetime.timedelta(minutes=30) #end of current booking
+                curr_end = start + datetime.timedelta(minutes=30)  # end of current booking
                 booking = self.bw.book_room(
                     gid,
                     rid,
