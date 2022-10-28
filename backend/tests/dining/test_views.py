@@ -45,16 +45,13 @@ class TestVenues(TestCase):
         response = self.client.get(reverse("venues"))
         for entry in response.json():
             self.assertIn("name", entry)
-            self.assertIn("address", entry)
             self.assertIn("days", entry)
             self.assertIn("image", entry)
             self.assertIn("id", entry)
             for day in entry["days"]:
                 self.assertIn("date", day)
-                self.assertIn("status", day)
                 self.assertIn("dayparts", day)
-        # Should be 16, however Lauder Retail is closed
-        self.assertEqual(15, len(response.json()))
+        self.assertEqual(16, len(response.json()))
 
 
 class TestMenus(TestCase):
