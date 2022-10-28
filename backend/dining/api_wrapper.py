@@ -57,57 +57,29 @@ class DiningAPIWrapper:
             raise APIError("Dining: Connection timeout")
 
     def get_venues(self):
-        results = []
-        venues_route = OPEN_DATA_ENDPOINTS["VENUES"]
-        response = self.request("GET", venues_route)
-        if response.status_code != 200:
-            raise APIError("Dining: Error connecting to API")
-        venues = response.json()["result_data"]["campuses"]["203"]["cafes"]
-        for key, value in venues.items():
-            # Cleaning up json response
-            venue = Venue.objects.filter(venue_id=key).first()
-            value["name"] = venue.name
-            value["image"] = venue.image_url if venue else None
+        venues = Venue.objects.all()
+        res = []
+        for venue in venues:
+            venues_obj = {"id": venue.venue_id, "name": venue.name, "image": venue.image_url}
 
-            value["id"] = int(key)
-            remove_items = [
-                "cor_icons",
-                "city",
-                "state",
-                "zip",
-                "latitude",
-                "longitude",
-                "description",
-                "message",
-                "eod",
-                "timezone",
-                "menu_type",
-                "menu_html",
-                "location_detail",
-                "weekly_schedule",
-            ]
-            [value.pop(item) for item in remove_items]
-            for day in value["days"]:
-                day.pop("message")
-                removed_dayparts = set()
-                for i in range(len(day["dayparts"])):
-                    daypart = day["dayparts"][i]
-                    [daypart.pop(item) for item in ["id", "hide"]]
-                    if not daypart["starttime"]:
-                        removed_dayparts.add(i)
-                        continue
-                    for time in ["starttime", "endtime"]:
-                        daypart[time] = datetime.datetime.strptime(
-                            day["date"] + "T" + daypart[time], "%Y-%m-%dT%H:%M"
-                        )
-                # Remove empty dayparts (unavailable meal times)
-                day["dayparts"] = [
-                    day["dayparts"][i]
-                    for i in range(len(day["dayparts"]))
-                    if i not in removed_dayparts
+            days = []
+            # get info for a week
+            for day_offset in range(7):
+                days_obj = dict()
+
+                date = datetime.datetime.today() + datetime.timedelta(days=day_offset)
+                date = date.strftime("%Y-%m-%d")
+                days_obj["date"] = date
+
+                # get starttimes and endtimes from DiningMenu objects
+                days_obj["dayparts"] = [
+                    {"starttime": menu.start_time, "endtime": menu.end_time, "label": menu.service}
+                    for menu in DiningMenu.objects.filter(venue=venue, date=date).all()
                 ]
-            results.append(value)
-        return results
+                days.append(days_obj)
+            venues_obj["days"] = days
+            res.append(venues_obj)
+        return res
 
     def load_menu(self, date=timezone.now().date()):
         """
@@ -155,17 +127,17 @@ class DiningAPIWrapper:
                 dining_menu.save()
 
     def load_stations(self, station_response):
-        # Store stations into list
-        stations = list()
-        for station_data in station_response:
+        stations = [None] * len(station_response)
+        for i, station_data in enumerate(station_response):
             # TODO: This is inefficient for venues such as Houston Market
             station = DiningStation.objects.create(name=station_data["label"])
             item_ids = [int(item) for item in station_data["items"]]
+
             # Bulk add the items into the station
             items = DiningItem.objects.filter(item_id__in=item_ids)
             station.items.add(*items)
             station.save()
-            stations.append(station)
+            stations[i] = station
         return stations
 
     def load_items(self, item_response):
