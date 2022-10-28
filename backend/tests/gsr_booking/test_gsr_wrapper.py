@@ -149,15 +149,20 @@ class TestBookingWrapper(TestCase):
         cancel = self.bw.cancel_room("123", self.user)
         self.assertIsNone(cancel)
 
-    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.check_credits", mock_check_credits)
+    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.check_credits", mock_check_credits) #purposefully use mock_check_credits to mock being wharton user with credits
     @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
     def test_group_book_wharton(self):
+        # make sure group_user is treated as a wharton user so they are returned in list of wharton users in gb.book_room
         membership1 = GroupMembership.objects.filter(group=self.group).first()
-        membership1.is_wharton = True
+        membership1.is_wharton = True 
         membership1.save()
+        
+        # adds user to the group as a wharton user
         GroupMembership.objects.create(
             user=self.user, group=self.group, accepted=True, is_wharton=True
         )
+
+        # reservation under user with group
         reservation = self.gb.book_room(
             1,
             94,
@@ -167,18 +172,23 @@ class TestBookingWrapper(TestCase):
             self.user,
             self.group,
         )
+
         bookings = list(reservation.gsrbooking_set.all())
         self.assertEqual(len(bookings), 4)
         bookings.sort(key=lambda x: x.start)
+        # check bookings cover entire range and enough time
         for i in range(len(bookings) - 1):
             self.assertEqual(bookings[i].end, bookings[i + 1].start)
         for booking in bookings:
             self.assertEqual(booking.end - booking.start, timedelta(minutes=30))
+        # check reservation exists
         self.assertIsNotNone(Reservation.objects.get(pk=reservation.id))
 
     @mock.patch("gsr_booking.api_wrapper.LibCalWrapper.request", mock_requests_get)
     def test_group_book_libcal(self):
+        # add user to the group
         GroupMembership.objects.create(user=self.user, group=self.group, accepted=True)
+        
         reservation = self.gb.book_room(
             1889,
             7192,
@@ -188,10 +198,13 @@ class TestBookingWrapper(TestCase):
             self.user,
             self.group,
         )
+
         bookings = list(reservation.gsrbooking_set.all())
         bookings.sort(key=lambda x: x.start)
+        # check bookings cover entire range and enough time
         for i in range(len(bookings) - 1):
             self.assertEqual(bookings[i].end, bookings[i + 1].start)
         for booking in bookings:
             self.assertEqual(booking.end - booking.start, timedelta(minutes=30))
+        # check reservation exists
         self.assertIsNotNone(Reservation.objects.get(pk=reservation.id))

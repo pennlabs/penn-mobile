@@ -46,6 +46,7 @@ class GroupBook:
         start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
         end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
 
+        # sets users and credit_id depending on the gsr type
         if gsr.kind == GSR.KIND_WHARTON:
             users = self.get_wharton_users(group)
             credit_id = gsr.lid
@@ -60,13 +61,17 @@ class GroupBook:
         if duration % 30 != 0:
             raise APIError("Invalid duration")
 
+        # creates reservation object to be used to group each booking
         reservation = Reservation.objects.create(start=start, end=end, creator=user, group=group)
+
+        # we could potentially repeat using a user to make a 30 min booking so loop until total duration booked
         while duration > 0:
+            # loop through each user and try to make a 30 min booking under that user if they have enough credits
             for usr in users:
                 credit = self.bw.check_credits(usr.user).get(credit_id, 0)
                 if credit < 30:
                     continue
-                curr_end = start + datetime.timedelta(minutes=30)
+                curr_end = start + datetime.timedelta(minutes=30) #end of current booking
                 booking = self.bw.book_room(
                     gid,
                     rid,
@@ -78,39 +83,12 @@ class GroupBook:
                 )
                 booking.reservation = reservation
                 booking.save()
+                # update new start and duration appropriately
                 start = curr_end
                 duration -= 30
                 if duration <= 0:
                     break
         return reservation
-
-        #         try:
-        #             booking = self.bw.book_room(
-        #                 gid, rid, room_name, start, end, wharton_user.user, group_book=True
-        #             )
-        #             reservation = Reservation.objects.create(
-        #                 start=start, end=end, creator=user, group=group
-        #             )
-        #             booking.reservation = reservation
-        #             booking.save()
-        #             break
-        #         except APIError:
-        #             pass
-        # else:
-        #     all_users = self.get_all_users(group)
-        #     for all_user in all_users:
-        #         try:
-        #             booking = self.bw.book_room(
-        #                 gid, rid, room_name, start, end, all_user.user, group_book=True
-        #             )
-        #             reservation = Reservation.objects.create(
-        #                 start=start, end=end, creator=user, group=group
-        #             )
-        #             booking.reservation = reservation
-        #             booking.save()
-        #             break
-        #         except APIError:
-        #             pass
 
     def get_availability(self, lid, gid, start, end, user, group):
         """
