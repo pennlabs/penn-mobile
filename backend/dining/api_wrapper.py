@@ -58,8 +58,8 @@ class DiningAPIWrapper:
 
     def get_venues(self):
         venues = Venue.objects.all()
-        res = []
-        for venue in venues:
+        res = [None] * len(venues)
+        for i, venue in enumerate(venues):
             venues_obj = {"id": venue.venue_id, "name": venue.name, "image": venue.image_url}
 
             days = []
@@ -78,7 +78,7 @@ class DiningAPIWrapper:
                 ]
                 days.append(days_obj)
             venues_obj["days"] = days
-            res.append(venues_obj)
+            res[i] = venues_obj
         return res
 
     def load_menu(self, date=timezone.now().date()):
