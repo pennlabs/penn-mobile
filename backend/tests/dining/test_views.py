@@ -1,3 +1,4 @@
+import datetime
 import json
 from unittest import mock
 
@@ -7,6 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from dining.api_wrapper import APIError, DiningAPIWrapper
 from dining.models import Venue
 
 
@@ -33,6 +35,48 @@ def mock_dining_requests(url, *args, **kwargs):
 
     with open(file_path) as data:
         return Mock(json.load(data), 200)
+
+def mock_request_raise_error(*args, **kwargs):
+    raise ConnectionError
+
+def mock_request_post_error(*args, **kwargs):
+    class Mock:
+        def json(self):
+            return {"error": None}
+    return Mock()
+
+class TestTokenAndRequest(TestCase):
+    def test_expired_token(self):
+        wrapper = DiningAPIWrapper()
+        wrapper.expiration += datetime.timedelta(days=1)
+        prev_token = wrapper.token
+        prev_expiration = wrapper.expiration
+
+        wrapper.update_token()
+
+        # assert that nothing has changed
+        self.assertEqual(prev_token, wrapper.token)
+        self.assertEqual(prev_expiration, wrapper.expiration)
+
+    @mock.patch("requests.post", mock_request_post_error)
+    def test_update_token_error(self):
+        wrapper = DiningAPIWrapper()
+        with self.assertRaises(APIError):
+            wrapper.update_token()
+
+    @mock.patch("requests.post", mock_dining_requests)
+    @mock.patch("requests.request", lambda **kwargs: None)
+    def test_request_headers_update(self):
+        wrapper = DiningAPIWrapper()
+        res = wrapper.request(headers=dict())
+        self.assertIsNone(res)
+
+    @mock.patch("requests.post", mock_dining_requests)
+    @mock.patch("requests.request", mock_request_raise_error)
+    def test_request_api_error(self):
+        wrapper = DiningAPIWrapper()
+        with self.assertRaises(APIError):
+            wrapper.request()
 
 
 @mock.patch("requests.post", mock_dining_requests)
@@ -89,6 +133,16 @@ class TestMenus(TestCase):
     def test_get_date(self):
         response = self.client.get("/dining/menus/2022-10-04/")
         self.try_structure(response.json())
+
+    @mock.patch("requests.request", mock_request_raise_error)
+    def test_skip_vanue(self):
+        Venue.objects.all().delete()
+        Venue.objects.create(venue_id=747, name="Skip", image_url="URL")
+        wrapper = DiningAPIWrapper()
+        try:
+            wrapper.load_menu()
+        except APIError:
+            self.fail("Venue was not skipped.")
 
 
 class TestPreferences(TestCase):
