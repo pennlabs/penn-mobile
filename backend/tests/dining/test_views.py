@@ -50,37 +50,36 @@ def mock_request_post_error(*args, **kwargs):
 
 
 class TestTokenAndRequest(TestCase):
-    def test_expired_token(self):
-        wrapper = DiningAPIWrapper()
-        wrapper.expiration += datetime.timedelta(days=1)
-        prev_token = wrapper.token
-        prev_expiration = wrapper.expiration
+    def setUp(self):
+        self.wrapper = DiningAPIWrapper()
 
-        wrapper.update_token()
+    def test_expired_token(self):
+        self.wrapper.expiration += datetime.timedelta(days=1)
+        prev_token = self.wrapper.token
+        prev_expiration = self.wrapper.expiration
+
+        self.wrapper.update_token()
 
         # assert that nothing has changed
-        self.assertEqual(prev_token, wrapper.token)
-        self.assertEqual(prev_expiration, wrapper.expiration)
+        self.assertEqual(prev_token, self.wrapper.token)
+        self.assertEqual(prev_expiration, self.wrapper.expiration)
 
     @mock.patch("requests.post", mock_request_post_error)
     def test_update_token_error(self):
-        wrapper = DiningAPIWrapper()
         with self.assertRaises(APIError):
-            wrapper.update_token()
+            self.wrapper.update_token()
 
     @mock.patch("requests.post", mock_dining_requests)
     @mock.patch("requests.request", lambda **kwargs: None)
     def test_request_headers_update(self):
-        wrapper = DiningAPIWrapper()
-        res = wrapper.request(headers=dict())
+        res = self.wrapper.request(headers=dict())
         self.assertIsNone(res)
 
     @mock.patch("requests.post", mock_dining_requests)
     @mock.patch("requests.request", mock_request_raise_error)
     def test_request_api_error(self):
-        wrapper = DiningAPIWrapper()
         with self.assertRaises(APIError):
-            wrapper.request()
+            self.wrapper.request()
 
 
 @mock.patch("requests.post", mock_dining_requests)
@@ -139,7 +138,7 @@ class TestMenus(TestCase):
         self.try_structure(response.json())
 
     @mock.patch("requests.request", mock_request_raise_error)
-    def test_skip_vanue(self):
+    def test_skip_venue(self):
         Venue.objects.all().delete()
         Venue.objects.create(venue_id=747, name="Skip", image_url="URL")
         wrapper = DiningAPIWrapper()
