@@ -36,14 +36,18 @@ def mock_dining_requests(url, *args, **kwargs):
     with open(file_path) as data:
         return Mock(json.load(data), 200)
 
+
 def mock_request_raise_error(*args, **kwargs):
     raise ConnectionError
+
 
 def mock_request_post_error(*args, **kwargs):
     class Mock:
         def json(self):
             return {"error": None}
+
     return Mock()
+
 
 class TestTokenAndRequest(TestCase):
     def test_expired_token(self):
