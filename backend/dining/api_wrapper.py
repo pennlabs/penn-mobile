@@ -67,7 +67,7 @@ class DiningAPIWrapper:
             for day_offset in range(7):
                 days_obj = dict()
 
-                date = datetime.datetime.today() + datetime.timedelta(days=day_offset)
+                date = timezone.now() + datetime.timedelta(days=day_offset)
                 date = date.strftime("%Y-%m-%d")
                 days_obj["date"] = date
 
