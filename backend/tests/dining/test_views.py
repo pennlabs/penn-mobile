@@ -9,7 +9,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from dining.api_wrapper import APIError, DiningAPIWrapper
-from dining.models import Venue
+from dining.models import Venue, DiningMenu
 
 
 User = get_user_model()
@@ -137,15 +137,13 @@ class TestMenus(TestCase):
         response = self.client.get("/dining/menus/2022-10-04/")
         self.try_structure(response.json())
 
-    @mock.patch("requests.request", mock_request_raise_error)
+    @mock.patch("requests.request", mock_dining_requests)
     def test_skip_venue(self):
         Venue.objects.all().delete()
         Venue.objects.create(venue_id=747, name="Skip", image_url="URL")
         wrapper = DiningAPIWrapper()
-        try:
-            wrapper.load_menu()
-        except APIError:
-            self.fail("Venue was not skipped.")
+        wrapper.load_menu()
+        self.assertEqual(DiningMenu.objects.count(), 0)
 
 
 class TestPreferences(TestCase):
