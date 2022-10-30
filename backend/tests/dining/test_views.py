@@ -9,7 +9,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from dining.api_wrapper import APIError, DiningAPIWrapper
-from dining.models import Venue, DiningMenu
+from dining.models import DiningMenu, Venue
 
 
 User = get_user_model()
