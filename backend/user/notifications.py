@@ -34,9 +34,9 @@ def send_push_notifications(users, service, title, body, delay=0, is_dev=False, 
 
     # send notifications
     if delay:
-        send_delayed_notifications(tokens, title, body, is_dev, is_shadow, delay)
+        send_delayed_notifications(tokens, title, body, service, is_dev, is_shadow, delay)
     else:
-        send_immediate_notifications(tokens, title, body, is_dev, is_shadow)
+        send_immediate_notifications(tokens, title, body, service, is_dev, is_shadow)
 
     if not users:  # if to all users, can't be any failed pennkeys
         return success_users, []
@@ -60,13 +60,17 @@ def get_tokens(users=None, service=None):
 
 
 @shared_task(name="notifications.send_immediate_notifications")
-def send_immediate_notifications(tokens, title, body, is_dev, is_shadow):
+def send_immediate_notifications(tokens, title, body, category, is_dev, is_shadow):
     client = get_client(is_dev)
     if is_shadow:
-        payload = Payload(content_available=True, custom=body)
+        payload = Payload(
+            content_available=True, custom=body, mutable_content=True, category=category
+        )
     else:
         alert = {"title": title, "body": body}
-        payload = Payload(alert=alert, sound="default", badge=0)
+        payload = Payload(
+            alert=alert, sound="default", badge=0, mutable_content=True, category=category
+        )
     topic = "org.pennlabs.PennMobile" + (".dev" if is_dev else "")
 
     if len(tokens) > 1:
@@ -76,9 +80,9 @@ def send_immediate_notifications(tokens, title, body, is_dev, is_shadow):
         client.send_notification(tokens[0], payload, topic)
 
 
-def send_delayed_notifications(tokens, title, body, isDev, isShadow, delay):
+def send_delayed_notifications(tokens, title, body, category, is_dev, is_shadow, delay):
     send_immediate_notifications.apply_async(
-        (tokens, title, body, isDev, isShadow), countdown=delay
+        (tokens, title, body, category, is_dev, is_shadow), countdown=delay
     )
 
 
