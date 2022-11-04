@@ -1,9 +1,9 @@
 import collections
 import os
 
-from apns2.client import APNsClient
-from apns2.credentials import TokenCredentials
-from apns2.payload import Payload
+# from apns2.client import APNsClient
+# from apns2.credentials import TokenCredentials
+# from apns2.payload import Payload
 from celery import shared_task
 
 from user.models import NotificationToken
@@ -61,19 +61,20 @@ def get_tokens(users=None, service=None):
 
 @shared_task(name="notifications.send_immediate_notifications")
 def send_immediate_notifications(tokens, title, body, is_dev, is_shadow):
-    client = get_client(is_dev)
-    if is_shadow:
-        payload = Payload(content_available=True, custom=body)
-    else:
-        alert = {"title": title, "body": body}
-        payload = Payload(alert=alert, sound="default", badge=0)
-    topic = "org.pennlabs.PennMobile" + (".dev" if is_dev else "")
+    pass
+    # client = get_client(is_dev)
+    # if is_shadow:
+    #     payload = Payload(content_available=True, custom=body)
+    # else:
+    #     alert = {"title": title, "body": body}
+    #     payload = Payload(alert=alert, sound="default", badge=0)
+    # topic = "org.pennlabs.PennMobile" + (".dev" if is_dev else "")
 
-    if len(tokens) > 1:
-        notifications = [Notification(token, payload) for token in tokens]
-        client.send_notification_batch(notifications=notifications, topic=topic)
-    else:
-        client.send_notification(tokens[0], payload, topic)
+    # if len(tokens) > 1:
+    #     notifications = [Notification(token, payload) for token in tokens]
+    #     client.send_notification_batch(notifications=notifications, topic=topic)
+    # else:
+    #     client.send_notification(tokens[0], payload, topic)
 
 
 def send_delayed_notifications(tokens, title, body, isDev, isShadow, delay):
@@ -91,12 +92,12 @@ def get_auth_key_path():
 
 def get_client(is_dev):
     """Creates and returns APNsClient based on iOS credentials"""
-
-    auth_key_path = get_auth_key_path()
-    auth_key_id = "2VX9TC37TB"
-    team_id = "VU59R57FGM"
-    token_credentials = TokenCredentials(
-        auth_key_path=auth_key_path, auth_key_id=auth_key_id, team_id=team_id
-    )
-    client = APNsClient(credentials=token_credentials, use_sandbox=is_dev)
-    return client
+    pass
+    # auth_key_path = get_auth_key_path()
+    # auth_key_id = "2VX9TC37TB"
+    # team_id = "VU59R57FGM"
+    # token_credentials = TokenCredentials(
+    #     auth_key_path=auth_key_path, auth_key_id=auth_key_id, team_id=team_id
+    # )
+    # # client = APNsClient(credentials=token_credentials, use_sandbox=is_dev)
+    # return client

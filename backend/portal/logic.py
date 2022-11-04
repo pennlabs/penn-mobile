@@ -5,14 +5,27 @@ from django.contrib.auth import get_user_model
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 
+configfile = './../../../django-labs-accounts/'
+
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
+
+from identity.identity import get_platform_jwks, attest, authenticated_b2b_request
+get_platform_jwks()
+attest()
 
 User = get_user_model()
 
 
 def get_user_info(user):
     """Returns Platform user information"""
-    response = authenticated_request(user, "GET", "https://platform.pennlabs.org/accounts/me/")
-    return json.loads(response.content)
+    # response = authenticated_request(user, "GET", "https://platform.pennlabs.org/accounts/me/")
+    result = authenticated_b2b_request('GET', 'http://127.0.0.1:8080/api/semesters/')
+    print(result)
+    return result
+    # return json.loads(response.content)
 
 
 def get_user_clubs(user):

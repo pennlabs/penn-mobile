@@ -12,6 +12,19 @@ from user.serializers import (
     UserSerializer,
 )
 
+# SNIP -- Remove Below for Prod
+configfile = './../../../django-labs-accounts/'
+
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
+
+from identity.identity import get_platform_jwks, attest
+from identity.permissions import B2BPermission
+get_platform_jwks()
+attest()
+# END SNIP --
 
 class UserView(generics.RetrieveUpdateAPIView):
     """
@@ -87,7 +100,7 @@ class NotificationAlertView(APIView):
     sends push notification alert if one exists
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, B2BPermission("urn:pennlabs:*")]
 
     def post(self, request):
         users = request.data.get("users", [self.request.user.username])
