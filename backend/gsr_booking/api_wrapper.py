@@ -334,7 +334,8 @@ class WhartonLibWrapper:
         # gets all current reservations from wharton availability route
         wharton_lids = GSR.objects.filter(kind=GSR.KIND_WHARTON).values_list("lid", flat=True)
         # wharton get 90 minutes of credit at any moment
-        wharton_credits = {lid: 90 for lid in wharton_lids}
+        default_credit = 90 if self.is_wharton(user.username) else 0
+        wharton_credits = {lid: default_credit for lid in wharton_lids}
         reservations = self.get_reservations(user)
         for reservation in reservations:
             # determines if ARB or Huntsman

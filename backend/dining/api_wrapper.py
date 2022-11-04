@@ -59,7 +59,7 @@ class DiningAPIWrapper:
     def get_venues(self):
         venues = Venue.objects.all()
         dates = [timezone.now() + datetime.timedelta(days=i) for i in range(7)]
-        menus = DiningMenu.objects.filter(date__gt=dates[0], date__lte=dates[-1])
+        menus = DiningMenu.objects.filter(date__gte=dates[0], date__lte=dates[-1])
 
         res = [None] * len(venues)
         for i, venue in enumerate(venues):
