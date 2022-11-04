@@ -320,4 +320,4 @@ class TestSendShadowNotifs(TestCase):
         call_command("send_shadow_notifs", "yes", '{"test":"test"}')
 
         # call command on specific set of users
-        call_command("send_shadow_notifs", "no", '{"test":"test"}', usernames="user1")
+        call_command("send_shadow_notifs", "no", '{"test":"test"}', users="user1")

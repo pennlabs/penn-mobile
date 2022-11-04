@@ -27,10 +27,10 @@ class Command(BaseCommand):
                     + f"{booking.room_id} starting in 10 minutes!"
                 )
                 send_push_notifications(
-                    reservation.creator.username,
+                    [reservation.creator.username],
                     NotificationSetting.SERVICE_GSR_BOOKING,
-                    title=title,
-                    body=body,
+                    title,
+                    body,
                 )
                 reservation.reminder_sent = True
                 reservation.save()
