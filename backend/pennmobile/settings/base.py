@@ -28,7 +28,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-
+configfile = './../../../django-labs-accounts/'
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
+import accounts
 # Application definition
 
 INSTALLED_APPS = [

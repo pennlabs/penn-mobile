@@ -26,6 +26,7 @@ get_platform_jwks()
 attest()
 # END SNIP --
 
+
 class UserView(generics.RetrieveUpdateAPIView):
     """
     get:
@@ -100,7 +101,7 @@ class NotificationAlertView(APIView):
     sends push notification alert if one exists
     """
 
-    permission_classes = [IsAuthenticated, B2BPermission("urn:pennlabs:*")]
+    permission_classes = [B2BPermission("urn:pennlabs:*")]
 
     def post(self, request):
         users = request.data.get("users", [self.request.user.username])
@@ -110,6 +111,8 @@ class NotificationAlertView(APIView):
         delay = max(request.data.get("delay", 0), 0)
         is_dev = request.data.get("is_dev", False)
 
+        print(service, title, body)
+        print("woah")
         if None in [service, title, body]:
             return Response({"detail": "Missing required parameters."}, status=400)
         if service not in dict(NotificationSetting.SERVICE_OPTIONS):

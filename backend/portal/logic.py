@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 
-configfile = './../../../django-labs-accounts/'
+configfile = './../../django-labs-accounts/'
 
 import os
 import sys
