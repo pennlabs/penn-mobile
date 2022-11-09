@@ -50,7 +50,7 @@ class Preferences(APIView):
     """
     GET: returns list of a User's diningpreferences
     POST: updates User dining preferences by clearing past preferences
-    and resetting them with request data
+    and resetting them with request data.
     """
 
     permission_classes = [IsAuthenticated]
