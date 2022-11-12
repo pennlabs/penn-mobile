@@ -37,7 +37,7 @@ jobs:
           cd backend
           pipenv run codecov --root $ROOT --flags backend
     container:
-      image: python:3.8-buster
+      image: python:3.9.14-slim-buster
     env:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
     services:
