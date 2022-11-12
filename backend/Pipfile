@@ -46,4 +46,4 @@ redis = "*"
 "backports.zoneinfo" = "*"
 
 [requires]
-python_version = "3"
+python_version = "3.9.14"
