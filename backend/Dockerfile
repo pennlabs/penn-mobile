@@ -6,7 +6,7 @@ LABEL maintainer="Penn Labs"
 COPY Pipfile* /app/
 
 # Install project dependencies
-RUN pipenv install --system --deploy
+RUN pipenv install --system --sequential
 
 # Copy project files
 COPY . /app/
