@@ -25,7 +25,7 @@ def send_push_notifications(
     :param body: string body of notification
     :param custom: data passed along in notification that iOS can read
     :param delay: delay in seconds before sending notification
-    :param is_dev: whether to dev user
+    :param is_dev: whether dev user
     :param is_shadow: whether to send a shadow notification
     :return: tuple of (list of success usernames, list of failed usernames)
     """
