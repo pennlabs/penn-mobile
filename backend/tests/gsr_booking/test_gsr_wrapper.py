@@ -7,7 +7,7 @@ from django.core.management import call_command
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from gsr_booking.api_wrapper import BookingWrapper
+from gsr_booking.api_wrapper import BookingWrapper, APIError
 from gsr_booking.group_logic import GroupBook
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 
@@ -211,3 +211,26 @@ class TestBookingWrapper(TestCase):
             self.assertEqual(booking.end - booking.start, timedelta(minutes=30))
         # check reservation exists
         self.assertIsNotNone(Reservation.objects.get(pk=reservation.id))
+
+    def test_book_room_no_gid(self):
+        with self.assertRaises(APIError):
+            self.bw.book_room(
+                1198273812973, # invalid gid
+                94,
+                "241",
+                "2021-12-05T16:00:00-05:00",
+                "2021-12-05T18:00:00-05:00",
+                self.user,
+            )
+    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.check_credits", mock_check_credits)
+    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
+    def test_book_room_unknown_user(self):
+        Group.objects.filter(owner=self.user).first().delete()
+        with self.assertRaises(APIError):
+            self.bw.book_room(
+                1, 94, "241", "2021-12-05T16:00:00-05:00", "2021-12-05T16:30:00-05:00", self.user
+            )
+
+    def test_get_availability_no_lid(self):
+        with self.assertRaises(APIError):
+            self.bw.get_availability("JMHH_Fake", 1, "2021-01-07", "2022-01-08", self.user)
