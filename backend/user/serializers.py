@@ -7,7 +7,7 @@ from user.models import NotificationSetting, NotificationToken, Profile
 class NotificationTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationToken
-        fields = ("id", "kind", "dev", "token")
+        fields = ("id", "kind", "token")
 
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user

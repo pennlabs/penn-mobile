@@ -17,7 +17,6 @@ class NotificationToken(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     kind = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_IOS)
-    dev = models.BooleanField(default=False)
     token = models.CharField(max_length=255)
 
 
