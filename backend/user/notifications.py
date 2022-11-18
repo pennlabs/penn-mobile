@@ -6,7 +6,6 @@ from apns2.credentials import TokenCredentials
 from apns2.payload import Payload
 from celery import shared_task
 
-from dining.models import DiningMenu
 from user.models import NotificationToken
 
 
@@ -36,7 +35,7 @@ def send_push_notifications(
     if not token_objects:
         return [], users
     success_users, tokens = zip(*token_objects)
-    
+
     # send notifications
     args = (tokens, title, body, custom, service, is_dev, is_shadow)
     if delay:

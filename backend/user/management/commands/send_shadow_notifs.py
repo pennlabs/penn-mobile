@@ -25,7 +25,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("send_to_all", type=str, help="whether to send to all")
-        parser.add_argument("message", type=str, help="JSON-formatted message to send")
+        parser.add_argument("custom", type=str, help="JSON-formatted message to send")
 
         # optional argument
         parser.add_argument("--users", type=str, help="list of pennkeys")
@@ -34,7 +34,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         send_to_all = kwargs["send_to_all"].lower() == "yes"
-        message = json.loads(kwargs["message"])
+        custom = json.loads(kwargs["custom"])
         names = kwargs["users"]
         delay = kwargs["delay"]
         is_dev = kwargs["is_dev"].lower() == "yes"
@@ -47,7 +47,7 @@ class Command(BaseCommand):
 
         # send notifications
         _, failed_users = send_push_notifications(
-            users, None, None, message, delay, is_dev, is_shadow=True
+            users, None, None, None, custom, delay, is_dev, is_shadow=True
         )
 
         if len(failed_users) > 0:
