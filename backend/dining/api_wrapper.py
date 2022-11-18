@@ -57,26 +57,6 @@ class DiningAPIWrapper:
             raise APIError("Dining: Connection timeout")
 
     def get_venues(self):
-        # venues = Venue.objects.all()
-        # dates = [timezone.now() + datetime.timedelta(days=i) for i in range(7)]
-        # menus = DiningMenu.objects.filter(date__gte=dates[0], date__lte=dates[-1])
-
-        # res = [None] * len(venues)
-        # for i, venue in enumerate(venues):
-        #     venue_obj = {"id": venue.venue_id, "name": venue.name, "image": venue.image_url}
-        #     venue_menus = menus.filter(venue=venue)
-        #     days = []
-        #     for date in dates:
-        #         days_obj = dict()
-        #         days_obj["date"] = date.strftime("%Y-%m-%d")
-        #         days_obj["dayparts"] = [
-        #             {"starttime": menu.start_time, "endtime": menu.end_time, "label": menu.service}
-        #             for menu in venue_menus.filter(date=date).all()
-        #         ]
-        #         days.append(days_obj)
-        #     venue_obj["days"] = days
-        #     res[i] = venue_obj
-        # return res
         results = []
         venues_route = OPEN_DATA_ENDPOINTS["VENUES"]
         response = self.request("GET", venues_route)
