@@ -19,6 +19,16 @@ export class MyChart extends PennLabsChart {
         image: backendImage,
         secret,
         cmd: ['celery', '-A', 'pennmobile', 'worker', '-linfo'],
+        secretMounts: [
+          {
+            name: "penn-mobile",
+            subPath: "ios-key",
+            mountPath: "/app/ios_key.p8",
+          }
+        ],
+        env: [
+          { name: 'REDIS_URL', value: 'redis://penn-mobile-redis:6379' },
+        ],
       },
       djangoSettingsModule: 'pennmobile.settings.production',
     });
@@ -27,7 +37,14 @@ export class MyChart extends PennLabsChart {
       deployment: {
         image: backendImage,
         secret,
-        replicas: 8,
+        replicas: 5,
+        secretMounts: [
+          {
+            name: "penn-mobile",
+            subPath: "ios-key",
+            mountPath: "/app/ios_key.p8",
+          }
+        ]
       },
       domains: [
         { host: 'studentlife.pennlabs.org', isSubdomain: true, paths: ['/'] },

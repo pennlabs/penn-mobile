@@ -1,3 +1,4 @@
+import datetime
 import json
 from unittest import mock
 
@@ -7,7 +8,8 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from dining.models import Venue
+from dining.api_wrapper import APIError, DiningAPIWrapper
+from dining.models import DiningMenu, Venue
 
 
 User = get_user_model()
@@ -35,6 +37,51 @@ def mock_dining_requests(url, *args, **kwargs):
         return Mock(json.load(data), 200)
 
 
+def mock_request_raise_error(*args, **kwargs):
+    raise ConnectionError
+
+
+def mock_request_post_error(*args, **kwargs):
+    class Mock:
+        def json(self):
+            return {"error": None}
+
+    return Mock()
+
+
+class TestTokenAndRequest(TestCase):
+    def setUp(self):
+        self.wrapper = DiningAPIWrapper()
+
+    def test_expired_token(self):
+        self.wrapper.expiration += datetime.timedelta(days=1)
+        prev_token = self.wrapper.token
+        prev_expiration = self.wrapper.expiration
+
+        self.wrapper.update_token()
+
+        # assert that nothing has changed
+        self.assertEqual(prev_token, self.wrapper.token)
+        self.assertEqual(prev_expiration, self.wrapper.expiration)
+
+    @mock.patch("requests.post", mock_request_post_error)
+    def test_update_token_error(self):
+        with self.assertRaises(APIError):
+            self.wrapper.update_token()
+
+    @mock.patch("requests.post", mock_dining_requests)
+    @mock.patch("requests.request", lambda **kwargs: None)
+    def test_request_headers_update(self):
+        res = self.wrapper.request(headers=dict())
+        self.assertIsNone(res)
+
+    @mock.patch("requests.post", mock_dining_requests)
+    @mock.patch("requests.request", mock_request_raise_error)
+    def test_request_api_error(self):
+        with self.assertRaises(APIError):
+            self.wrapper.request()
+
+
 @mock.patch("requests.post", mock_dining_requests)
 @mock.patch("requests.request", mock_dining_requests)
 class TestVenues(TestCase):
@@ -45,16 +92,13 @@ class TestVenues(TestCase):
         response = self.client.get(reverse("venues"))
         for entry in response.json():
             self.assertIn("name", entry)
-            self.assertIn("address", entry)
             self.assertIn("days", entry)
             self.assertIn("image", entry)
             self.assertIn("id", entry)
             for day in entry["days"]:
                 self.assertIn("date", day)
-                self.assertIn("status", day)
                 self.assertIn("dayparts", day)
-        # Should be 16, however Lauder Retail is closed
-        self.assertEqual(15, len(response.json()))
+        self.assertEqual(16, len(response.json()))
 
 
 class TestMenus(TestCase):
@@ -92,6 +136,14 @@ class TestMenus(TestCase):
     def test_get_date(self):
         response = self.client.get("/dining/menus/2022-10-04/")
         self.try_structure(response.json())
+
+    @mock.patch("requests.request", mock_dining_requests)
+    def test_skip_venue(self):
+        Venue.objects.all().delete()
+        Venue.objects.create(venue_id=747, name="Skip", image_url="URL")
+        wrapper = DiningAPIWrapper()
+        wrapper.load_menu()
+        self.assertEqual(DiningMenu.objects.count(), 0)
 
 
 class TestPreferences(TestCase):
