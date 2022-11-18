@@ -57,26 +57,57 @@ class DiningAPIWrapper:
             raise APIError("Dining: Connection timeout")
 
     def get_venues(self):
-        venues = Venue.objects.all()
-        dates = [timezone.now() + datetime.timedelta(days=i) for i in range(7)]
-        menus = DiningMenu.objects.filter(date__gte=dates[0], date__lte=dates[-1])
+        results = []
+        venues_route = OPEN_DATA_ENDPOINTS["VENUES"]
+        response = self.request("GET", venues_route)
+        if response.status_code != 200:
+            raise APIError("Dining: Error connecting to API")
+        venues = response.json()["result_data"]["campuses"]["203"]["cafes"]
+        for key, value in venues.items():
+            # Cleaning up json response
+            venue = Venue.objects.filter(venue_id=key).first()
+            value["name"] = venue.name
+            value["image"] = venue.image_url if venue else None
 
-        res = [None] * len(venues)
-        for i, venue in enumerate(venues):
-            venue_obj = {"id": venue.venue_id, "name": venue.name, "image": venue.image_url}
-            venue_menus = menus.filter(venue=venue)
-            days = []
-            for date in dates:
-                days_obj = dict()
-                days_obj["date"] = date.strftime("%Y-%m-%d")
-                days_obj["dayparts"] = [
-                    {"starttime": menu.start_time, "endtime": menu.end_time, "label": menu.service}
-                    for menu in venue_menus.filter(date=date).all()
+            value["id"] = int(key)
+            remove_items = [
+                "cor_icons",
+                "city",
+                "state",
+                "zip",
+                "latitude",
+                "longitude",
+                "description",
+                "message",
+                "eod",
+                "timezone",
+                "menu_type",
+                "menu_html",
+                "location_detail",
+                "weekly_schedule",
+            ]
+            [value.pop(item) for item in remove_items]
+            for day in value["days"]:
+                day.pop("message")
+                removed_dayparts = set()
+                for i in range(len(day["dayparts"])):
+                    daypart = day["dayparts"][i]
+                    [daypart.pop(item) for item in ["id", "hide"]]
+                    if not daypart["starttime"]:
+                        removed_dayparts.add(i)
+                        continue
+                    for time in ["starttime", "endtime"]:
+                        daypart[time] = datetime.datetime.strptime(
+                            day["date"] + "T" + daypart[time], "%Y-%m-%dT%H:%M"
+                        )
+                # Remove empty dayparts (unavailable meal times)
+                day["dayparts"] = [
+                    day["dayparts"][i]
+                    for i in range(len(day["dayparts"]))
+                    if i not in removed_dayparts
                 ]
-                days.append(days_obj)
-            venue_obj["days"] = days
-            res[i] = venue_obj
-        return res
+            results.append(value)
+        return results
 
     def load_menu(self, date=timezone.now().date()):
         """
