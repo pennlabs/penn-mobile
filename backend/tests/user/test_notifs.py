@@ -46,13 +46,12 @@ class TestNotificationToken(TestCase):
         NotificationToken.objects.all().delete()
 
         # test that creating token returns correct response
-        payload = {"kind": "IOS", "dev": "false", "token": "test123"}
+        payload = {"kind": "IOS", "token": "test123"}
         response = self.client.post("/user/notifications/tokens/", payload)
         res_json = json.loads(response.content)
         self.assertEqual("IOS", res_json["kind"])
-        self.assertFalse(res_json["dev"])
         self.assertEqual("test123", res_json["token"])
-        self.assertEqual(4, len(res_json))
+        self.assertEqual(3, len(res_json))
         self.assertEqual(1, NotificationToken.objects.all().count())
 
         # update token
@@ -64,7 +63,7 @@ class TestNotificationToken(TestCase):
 
     def test_create_token_again_fail(self):
         # test that creating token returns correct response
-        payload = {"kind": "IOS", "dev": "false", "token": "test123"}
+        payload = {"kind": "IOS", "token": "test123"}
         response = self.client.post("/user/notifications/tokens/", payload)
         self.assertEqual(response.status_code, 400)
 
@@ -72,16 +71,15 @@ class TestNotificationToken(TestCase):
         NotificationToken.objects.all().delete()
 
         # create token
-        payload = {"kind": "IOS", "dev": "false", "token": "test123"}
+        payload = {"kind": "IOS", "token": "test123"}
         response = self.client.post("/user/notifications/tokens/", payload)
 
         response = self.client.get("/user/notifications/tokens/")
         res_json = json.loads(response.content)
         self.assertEqual("IOS", res_json[0]["kind"])
-        self.assertFalse(res_json[0]["dev"])
         self.assertEqual("test123", res_json[0]["token"])
         self.assertEqual(1, len(res_json))
-        self.assertEqual(4, len(res_json[0]))
+        self.assertEqual(3, len(res_json[0]))
         self.assertEqual(1, NotificationToken.objects.all().count())
 
 
@@ -103,7 +101,7 @@ class TestNotificationSetting(TestCase):
 
     def test_invalid_settings_update(self):
         NotificationToken.objects.all().delete()
-        payload = {"kind": "IOS", "dev": False, "token": "test123"}
+        payload = {"kind": "IOS", "token": "test123"}
         response = self.client.post("/user/notifications/tokens/", payload)
         res_json = json.loads(response.content)
 
@@ -122,7 +120,7 @@ class TestNotificationSetting(TestCase):
         res_json = json.loads(response.content)
         self.assertFalse(res_json["enabled"])
 
-        payload = {"kind": "IOS", "dev": False, "token": "test123"}
+        payload = {"kind": "IOS", "token": "test123"}
         response = self.client.post("/user/notifications/tokens/", payload)
         res_json = json.loads(response.content)
 
@@ -158,7 +156,7 @@ class TestNotificationSetting(TestCase):
         token_id = res_json[0]["id"]
 
         # update token to nonempty value
-        payload = {"kind": "IOS", "dev": False, "token": "test123"}
+        payload = {"kind": "IOS", "token": "test123"}
         response = self.client.put(f"/user/notifications/tokens/{token_id}/", payload)
         res_json = json.loads(response.content)
         self.assertEqual("test123", res_json["token"])
