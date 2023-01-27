@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+from gsr_booking.api_wrapper import APIError
 
 
 User = get_user_model()
@@ -115,6 +116,9 @@ class GSR(models.Model):
     def __str__(self):
         return f"{self.lid}-{self.gid}"
 
+    def get_or_error(self, **kwargs):
+        gsr = GSR.objects.filter(**kwargs).first()
+        return gsr if gsr else APIError(f"Unknown GSR object {kwargs}")
 
 class Reservation(models.Model):
     start = models.DateTimeField(default=timezone.now)

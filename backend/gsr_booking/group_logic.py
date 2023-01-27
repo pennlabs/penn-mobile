@@ -39,9 +39,7 @@ class GroupBook:
         Book function for Group
         """
         # TODO: check credits
-        gsr = GSR.objects.filter(gid=gid).first()
-        if not gsr:
-            raise APIError(f"Unknown GSR GID {gid}")
+        gsr = GSR.objects.get_or_error(gid=gid) 
 
         start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
         end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
@@ -96,8 +94,8 @@ class GroupBook:
         """
         Availability function for Group
         """
-
-        gsr = GSR.objects.filter(gid=gid).first()
+        
+        gsr = GSR.objects.get_or_error(gid=gid)
         if gsr.kind == GSR.KIND_WHARTON:
             # check if wharton users is non-empty
             wharton_user = GroupMembership.objects.filter(group=group, is_wharton=True).first()
