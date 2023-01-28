@@ -3,7 +3,6 @@ import datetime
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.utils.timezone import make_aware
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -12,6 +11,7 @@ from rest_framework.views import APIView
 from dining.api_wrapper import DiningAPIWrapper
 from dining.models import DiningMenu, Venue
 from dining.serializers import DiningMenuSerializer
+from pennmobile.utils.time_formatter import parse_time
 
 
 d = DiningAPIWrapper()
@@ -38,7 +38,7 @@ class Menus(generics.ListAPIView):
         # TODO: We only have data for the next week, so we should 404
         # if date_param is out of bounds
         if date_param := self.kwargs.get("date"):
-            date = make_aware(datetime.datetime.strptime(date_param, "%Y-%m-%d"))
+            date = parse_time(date_param)
             return DiningMenu.objects.filter(date=date)
         else:
             start_date = timezone.now().date()
@@ -48,15 +48,13 @@ class Menus(generics.ListAPIView):
 
 class Preferences(APIView):
     """
-    GET: returns list of a User's diningpreferences
-    POST: updates User dining preferences by clearing past preferences
-    and resetting them with request data
+    GET: returns list of a User's dining preferences
+    POST: updates User dining preferences with request data
     """
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         preferences = request.user.profile.dining_preferences
 
         # aggregates venues and puts it in form {"venue_id": x, "count": x}
@@ -65,19 +63,17 @@ class Preferences(APIView):
         )
 
     def post(self, request):
-
         profile = request.user.profile
-
         preferences = profile.dining_preferences
+        venue_ids = request.data["venues"]
+
+        # first check that all are valid objects
+        venues = [get_object_or_404(Venue, venue_id=int(id)) for id in venue_ids]
 
         # clears all previous preferences associated with the profile
         preferences.clear()
 
-        venue_ids = request.data["venues"]
-
-        for venue_id in venue_ids:
-            venue = get_object_or_404(Venue, venue_id=int(venue_id))
-            # adds all of the preferences given by the request
-            preferences.add(venue)
+        # adds all of the preferences given by the request
+        preferences.add(*venues)
 
         return Response({"success": True, "error": None})

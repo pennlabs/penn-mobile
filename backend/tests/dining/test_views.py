@@ -9,7 +9,8 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from dining.api_wrapper import APIError, DiningAPIWrapper
-from dining.models import DiningMenu, Venue
+from dining.models import DiningItem, DiningMenu, DiningStation, Venue
+from pennmobile.utils.time_formatter import stringify_date
 
 
 User = get_user_model()
@@ -49,7 +50,15 @@ def mock_request_post_error(*args, **kwargs):
     return Mock()
 
 
-class TestTokenAndRequest(TestCase):
+def mock_failed_request(*args, **kwargs):
+    class Mock:
+        def __init__(self):
+            self.status_code = 400
+
+    return Mock()
+
+
+class TestAPIWrapper(TestCase):
     def setUp(self):
         self.wrapper = DiningAPIWrapper()
 
@@ -80,6 +89,11 @@ class TestTokenAndRequest(TestCase):
     def test_request_api_error(self):
         with self.assertRaises(APIError):
             self.wrapper.request()
+
+    @mock.patch("dining.api_wrapper.DiningAPIWrapper.request", mock_failed_request)
+    def test_request_failure(self):
+        with self.assertRaises(APIError):
+            self.wrapper.get_venues()
 
 
 @mock.patch("requests.post", mock_dining_requests)
@@ -189,3 +203,29 @@ class TestPreferences(TestCase):
 
         self.assertIn(Venue.objects.get(venue_id=641), preference.all())
         self.assertIn(Venue.objects.get(venue_id=1733), preference.all())
+
+
+class TestStringify(TestCase):
+    def test_venue(self):
+        o = Venue.objects.create(venue_id=123, name="name", image_url="url")
+        self.assertEqual(str(o), "Venue-name-123")
+
+    def test_dining_item(self):
+        o = DiningItem.objects.create(
+            item_id=123, name="name", description="description", ingredients="ingredients"
+        )
+        self.assertEqual(str(o), "DiningItem-name-123")
+
+    def test_dining_station(self):
+        o = DiningStation.objects.create(name="name")
+        self.assertEqual(str(o), "DiningStation-name")
+
+    def test_dining_menu(self):
+        v = Venue.objects.create(venue_id=123, name="name", image_url="url")
+        o = DiningMenu.objects.create(
+            venue=v,
+            start_time=datetime.datetime.now(),
+            end_time=datetime.datetime.now(),
+            service="service",
+        )
+        self.assertEqual(str(o), f"DiningMenu-{stringify_date(datetime.datetime.now())}-service")

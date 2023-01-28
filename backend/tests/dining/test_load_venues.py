@@ -22,4 +22,4 @@ class TestLoadVenues(TestCase):
 
         # load_venues script should be idempotent
         self.assertEqual(len(Venue.objects.all()), 16)
-        self.assertEqual("1920 Commons-593", str(Venue.objects.get(venue_id=593)))
+        self.assertEqual("Venue-1920 Commons-593", str(Venue.objects.get(venue_id=593)))
