@@ -12,6 +12,7 @@ from user.serializers import (
     UserSerializer,
 )
 
+from identity.permissions import B2BPermission
 
 class UserView(generics.RetrieveUpdateAPIView):
     """
@@ -39,7 +40,8 @@ class NotificationTokenView(viewsets.ModelViewSet):
     Return notification tokens of user.
     """
 
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
+    permission_classes = [B2BPermission("urn:pennlabs:*")]
     serializer_class = NotificationTokenSerializer
 
     def get_queryset(self):
@@ -87,9 +89,16 @@ class NotificationAlertView(APIView):
     sends push notification alert if one exists
     """
 
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
+    permission_classes = [B2BPermission("urn:pennlabsa:*")]
 
     def post(self, request):
+        return Response({"answer": "check!"})
+
+
+        print('came in here')
+
+
         users = request.data.get("users", [self.request.user.username])
         service = request.data.get("service", None)
         title = request.data.get("title", None)
