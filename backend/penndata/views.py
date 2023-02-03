@@ -280,4 +280,4 @@ class UniqueCounterView(APIView):
             return Response({"detail": "missing poll/post id"}, status=400)
         query = {k: request.data[k] for k in ["post", "poll", "is_interaction"] if k in request.data}
         events = AnalyticsEvent.objects.filter(**query)
-        return Response({"unique_views": len(events)})
+        return Response({"unique_views": events.count()})
