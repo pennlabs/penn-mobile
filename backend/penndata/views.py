@@ -276,8 +276,12 @@ class UniqueCounterView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        if not (("post_id" in request.data) ^ ("poll_id" in request.data)):
+        query = dict()
+        if "post_id" in request.query_params:
+            query["post__id"] = request.query_params["post_id"]
+        if "poll_id" in request.query_params:
+            query["poll__id"] = request.query_params["poll_id"]
+        if len(query) != 1:
             return Response({"detail": "missing poll/post id"}, status=400)
-        query = {k: request.data[k] for k in ["post", "poll", "is_interaction"] if k in request.data}
-        events = AnalyticsEvent.objects.filter(**query)
-        return Response({"unique_views": len(events)})
+        query["is_interaction"] = request.query_params.get("is_interaction", "false").lower() == "true"
+        return Response({"count": AnalyticsEvent.objects.filter(**query).count()})

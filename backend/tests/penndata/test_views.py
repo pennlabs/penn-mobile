@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 
 from dining.models import Venue
 from laundry.models import LaundryRoom
-from penndata.models import Event, FitnessRoom, FitnessSnapshot
+from penndata.models import Event, FitnessRoom, FitnessSnapshot, AnalyticsEvent
 from portal.models import Poll, Post
 
 
@@ -270,3 +270,37 @@ class TestAnalytics(TestCase):
         res_json = response.json()
         self.assertEqual(400, response.status_code)
         self.assertEqual("Poll and Post interactions are mutually exclusive.", res_json["detail"])
+
+
+class TestUniqueCounterView(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+        self.client.force_authenticate(user=self.test_user)
+
+    def test_get_unique_counter(self):
+        post = Post.objects.create(club_code="pennlabs", title="Test title", subtitle="Test subtitle", expire_date=timezone.localtime() + datetime.timedelta(days=1))
+        
+        AnalyticsEvent.objects.create(
+            user=self.test_user,
+            cell_type="dining",
+            index=0,
+            is_interaction=False,
+            poll=None,
+            post=post,
+        )
+        response = self.client.get(reverse("eventcounter"), {"post_id": post.id})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+
+        response = self.client.get(reverse("eventcounter"), {"poll_id": 1})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 0)
+
+        response = self.client.get(reverse("eventcounter"), {"post_id": post.id, "is_interaction": True})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 0)
+
+        
+        
+        
