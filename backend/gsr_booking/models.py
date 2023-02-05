@@ -5,6 +5,8 @@ from django.db import models
 from django.utils import timezone
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
+from pennmobile.utils.time_formatter import stringify_date
+
 
 User = get_user_model()
 
@@ -15,7 +17,6 @@ class GroupMembership(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="memberships", blank=True, null=True,
     )
-
     group = models.ForeignKey("Group", on_delete=models.CASCADE, related_name="memberships")
 
     # When accepted is False, this is a request, otherwise this is an active membership.
@@ -26,9 +27,7 @@ class GroupMembership(models.Model):
     type = models.CharField(max_length=10, choices=[(ADMIN, "Admin"), (MEMBER, "Member")])
 
     pennkey_allow = models.BooleanField(default=False)
-
     notifications = models.BooleanField(default=True)
-
     is_wharton = models.BooleanField(blank=True, null=True, default=None)
 
     @property
@@ -36,7 +35,7 @@ class GroupMembership(models.Model):
         return not self.accepted
 
     def __str__(self):
-        return f"{self.user}<->{self.group}"
+        return f"{self.user}-{self.group}"
 
     def save(self, *args, **kwargs):
         # determines whether user is wharton or not
@@ -74,34 +73,28 @@ class Group(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    ADMIN = "A"
-    MEMBER = "M"
-
-    def __str__(self):
-        return f"{self.pk}: {self.name}"
-
     def has_member(self, user):
-        memberships = GroupMembership.objects.filter(group=self, user=user)
-        return memberships.all().exists()
+        return self.members.filter(user=user).exists()
 
     def has_admin(self, user):
-        memberships = GroupMembership.objects.filter(group=self, accepted=True)
-        return memberships.all().filter(type="A").filter(user=user).exists()
+        return self.memberships.filter(
+            user=user, type=GroupMembership.ADMIN, accepted=True
+        ).exists()
 
     def get_pennkey_active_members(self):
-        memberships = GroupMembership.objects.filter(group=self, accepted=True)
-        pennkey_active_members_list = memberships.all().filter(pennkey_allow=True).all()
-        return [member for member in pennkey_active_members_list]
+        return [
+            member for member in self.memberships.filter(accepted=True, pennkey_allow=True).all()
+        ]
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        GroupMembership.objects.get_or_create(
-            group=self, user=self.owner, type=GroupMembership.ADMIN, accepted=True
-        )
+        self.memberships.get_or_create(user=self.owner, type=GroupMembership.ADMIN, accepted=True)
+
+    def __str__(self):
+        return f"{self.name}-{self.owner}"
 
 
 class GSR(models.Model):
-
     KIND_WHARTON = "WHARTON"
     KIND_LIBCAL = "LIBCAL"
     KIND_OPTIONS = ((KIND_WHARTON, "Wharton"), (KIND_LIBCAL, "Libcal"))
@@ -124,6 +117,12 @@ class Reservation(models.Model):
     is_cancelled = models.BooleanField(default=False)
     reminder_sent = models.BooleanField(default=False)
 
+    def __str__(self):
+        name = self.creator.username
+        start_date = stringify_date(self.start)
+        end_date = stringify_date(self.end)
+        return f"{name}-{self.group.name}-{start_date}-{end_date}-{self.gid}"
+
 
 class GSRBooking(models.Model):
     # TODO: change to non-null after reservations are created for current bookings
@@ -136,3 +135,6 @@ class GSRBooking(models.Model):
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(default=timezone.now)
     is_cancelled = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.room_name} {stringify_date(self.start)}-{stringify_date(self.end)}"
