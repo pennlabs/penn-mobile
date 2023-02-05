@@ -26,11 +26,21 @@ class Command(BaseCommand):
                     f"You have reserved {booking.room_name} "
                     + f"{booking.room_id} starting in 10 minutes!"
                 )
+                custom = {
+                    "service": "GSR Booking",
+                    "reservation": {
+                        "room_name": booking.room_name,
+                        "start": str(booking.start),
+                        "end": str(booking.end),
+                        "booking_id": booking.booking_id,
+                    },
+                }
                 send_push_notifications(
                     [reservation.creator.username],
                     NotificationSetting.SERVICE_GSR_BOOKING,
                     title,
                     body,
+                    custom,
                 )
                 reservation.reminder_sent = True
                 reservation.save()

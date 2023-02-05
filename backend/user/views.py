@@ -94,6 +94,7 @@ class NotificationAlertView(APIView):
         service = request.data.get("service", None)
         title = request.data.get("title", None)
         body = request.data.get("body", None)
+        custom = request.data.get("custom", dict())
         delay = max(request.data.get("delay", 0), 0)
         is_dev = request.data.get("is_dev", False)
 
@@ -103,7 +104,7 @@ class NotificationAlertView(APIView):
             return Response({"detail": "Invalid service."}, status=400)
 
         success_users, failed_users = send_push_notifications(
-            users, service, title, body, delay, is_dev
+            users, service, title, body, custom, delay, is_dev
         )
 
         return Response({"success_users": success_users, "failed_users": failed_users})
