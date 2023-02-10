@@ -283,5 +283,7 @@ class UniqueCounterView(APIView):
             query["poll__id"] = request.query_params["poll_id"]
         if len(query) != 1:
             return Response({"detail": "missing poll/post id"}, status=400)
-        query["is_interaction"] = request.query_params.get("is_interaction", "false").lower() == "true"
+        query["is_interaction"] = (
+            request.query_params.get("is_interaction", "false").lower() == "true"
+        )
         return Response({"count": AnalyticsEvent.objects.filter(**query).count()})

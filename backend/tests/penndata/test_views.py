@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 
 from dining.models import Venue
 from laundry.models import LaundryRoom
-from penndata.models import Event, FitnessRoom, FitnessSnapshot, AnalyticsEvent
+from penndata.models import AnalyticsEvent, Event, FitnessRoom, FitnessSnapshot
 from portal.models import Poll, Post
 
 
@@ -279,8 +279,13 @@ class TestUniqueCounterView(TestCase):
         self.client.force_authenticate(user=self.test_user)
 
     def test_get_unique_counter(self):
-        post = Post.objects.create(club_code="pennlabs", title="Test title", subtitle="Test subtitle", expire_date=timezone.localtime() + datetime.timedelta(days=1))
-        
+        post = Post.objects.create(
+            club_code="pennlabs",
+            title="Test title",
+            subtitle="Test subtitle",
+            expire_date=timezone.localtime() + datetime.timedelta(days=1),
+        )
+
         AnalyticsEvent.objects.create(
             user=self.test_user,
             cell_type="dining",
@@ -297,10 +302,8 @@ class TestUniqueCounterView(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 0)
 
-        response = self.client.get(reverse("eventcounter"), {"post_id": post.id, "is_interaction": True})
+        response = self.client.get(
+            reverse("eventcounter"), {"post_id": post.id, "is_interaction": True}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 0)
-
-        
-        
-        
