@@ -155,7 +155,8 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_TIMEZONE = TIME_ZONE
 
 # Laundry API URL
-LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
+# LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
+LAUNDRY_URL = "http://laundry.sketchy.dev/"
 
 # Dining API Credentials
 DINING_USERNAME = os.environ.get("DINING_USERNAME", None)
