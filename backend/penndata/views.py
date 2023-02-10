@@ -282,7 +282,7 @@ class UniqueCounterView(APIView):
         if "poll_id" in request.query_params:
             query["poll__id"] = request.query_params["poll_id"]
         if len(query) != 1:
-            return Response({"detail": "missing poll/post id"}, status=400)
+            return Response({"detail": "require 1 id out of post_id or poll_id"}, status=400)
         query["is_interaction"] = (
             request.query_params.get("is_interaction", "false").lower() == "true"
         )
