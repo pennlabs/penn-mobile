@@ -49,12 +49,7 @@ def parse_a_hall(hall_link):
     detailed = []
 
     try:
-        page = requests.get(
-            hall_link,
-            timeout=60,
-            headers={"Authorization": "Basic Sure-Nothing-Could-Go-Wrong-With-This-HaHa-Not"},
-        )
-        # page = requests.get(hall_link, timeout=60)
+        page = requests.get(hall_link, timeout=60)
     except (ConnectTimeout, ReadTimeout):
         return {"washers": washers, "dryers": dryers, "details": detailed}
 

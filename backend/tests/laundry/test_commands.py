@@ -2,7 +2,6 @@ import csv
 from io import StringIO
 from unittest import mock
 
-from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase
 
@@ -10,7 +9,7 @@ from laundry.models import LaundryRoom, LaundrySnapshot
 
 
 def fakeLaundryGet(url, *args, **kwargs):
-    if settings.LAUNDRY_URL in url:
+    if "suds.kite.upenn.edu" in url:
         with open("tests/laundry/laundry_snapshot.html", "rb") as f:
             m = mock.MagicMock(content=f.read())
         return m
