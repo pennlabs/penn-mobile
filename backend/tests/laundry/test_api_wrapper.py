@@ -1,8 +1,7 @@
-import os
 from unittest import mock
 
-from django.test import TestCase
 from django.conf import settings
+from django.test import TestCase
 
 from laundry.api_wrapper import all_status, hall_status, save_data
 from laundry.models import LaundryRoom, LaundrySnapshot
