@@ -2,14 +2,14 @@ import os
 from unittest import mock
 
 from django.test import TestCase
+from django.conf import settings
 
 from laundry.api_wrapper import all_status, hall_status, save_data
 from laundry.models import LaundryRoom, LaundrySnapshot
 from tests.laundry.test_commands import fakeLaundryGet
 
 
-LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
-ALL_URL = f"{LAUNDRY_URL}/?location="
+ALL_URL = f"{settings.LAUNDRY_URL}/?location="
 
 
 @mock.patch("requests.get", fakeLaundryGet)
