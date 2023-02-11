@@ -96,6 +96,7 @@ def check_is_working():
         r = requests.post(
             "{}/".format(settings.LAUNDRY_URL),
             timeout=60,
+            headers={"Authorization": "Basic Sure-Nothing-Could-Go-Wrong-With-This-HaHa-Not"},
             data={
                 "locationid": "5faec7e9-a4aa-47c2-a514-950c03fac460",
                 "email": "pennappslabs@gmail.com",
