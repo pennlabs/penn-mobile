@@ -1,6 +1,6 @@
-import json
+# import json
 
-from accounts.ipc import authenticated_request
+# from accounts.ipc import authenticated_request
 from django.contrib.auth import get_user_model
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation

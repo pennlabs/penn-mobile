@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.utils import timezone
-from requests.exceptions import ConnectTimeout, HTTPError, ReadTimeout
+from requests.exceptions import ConnectTimeout, ReadTimeout  # HTTPError
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 
