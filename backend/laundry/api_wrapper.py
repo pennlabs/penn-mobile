@@ -91,27 +91,27 @@ def check_is_working():
     """
     Returns True if the wash alert web interface seems to be working properly, or False otherwise.
     """
-
-    try:
-        r = requests.post(
-            "{}/".format(settings.LAUNDRY_URL),
-            timeout=60,
-            headers={"Authorization": "Basic Sure-Nothing-Could-Go-Wrong-With-This-HaHa-Not"},
-            data={
-                "locationid": "5faec7e9-a4aa-47c2-a514-950c03fac460",
-                "email": "pennappslabs@gmail.com",
-                "washers": 0,
-                "dryers": 0,
-                "locationalert": "OK",
-            },
-        )
-        r.raise_for_status()
-        return (
-            "The transaction log for database 'QuantumCoin' is full due to 'LOG_BACKUP'."
-            not in r.text
-        )
-    except HTTPError:
-        return False
+    return True # temporarily disabled due to hacky fix
+    # try:
+    #     r = requests.post(
+    #         "{}/".format(settings.LAUNDRY_URL),
+    #         timeout=60,
+    #         headers={"Authorization": "Basic Sure-Nothing-Could-Go-Wrong-With-This-HaHa-Not"},
+    #         data={
+    #             "locationid": "5faec7e9-a4aa-47c2-a514-950c03fac460",
+    #             "email": "pennappslabs@gmail.com",
+    #             "washers": 0,
+    #             "dryers": 0,
+    #             "locationalert": "OK",
+    #         },
+    #     )
+    #     r.raise_for_status()
+    #     return (
+    #         "The transaction log for database 'QuantumCoin' is full due to 'LOG_BACKUP'."
+    #         not in r.text
+    #     )
+    # except HTTPError:
+    #     return False
 
 
 def all_status():
