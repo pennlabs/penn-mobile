@@ -21,6 +21,7 @@ class Command(BaseCommand):
     --start     flag to specify start date; expected format: YYYY-MM-DD
     --end       flag to specify end date; expected format: YYYY-MM-DD
     --current   flag to specify current reservations
+    --time      flag to specify total time of reservations
 
     Note: --start/--end and --current are mutually exclusive
     """
@@ -31,12 +32,14 @@ class Command(BaseCommand):
         parser.add_argument("--start", type=datetime, default=None)
         parser.add_argument("--end", type=str, default=None)
         parser.add_argument("--current", type=bool, default=False)
+        parser.add_argument("--time", type=bool, default=False)
 
     def handle(self, *args, **kwargs):
         group = kwargs["group"]
         start = kwargs["start"]
         end = kwargs["end"]
         current = kwargs["current"]
+        time = kwargs["time"]
 
         if start and not (start := self.__convert_date(start)):
             self.stdout.write("Error: invalid start date format")
@@ -62,6 +65,12 @@ class Command(BaseCommand):
         else:
             reservations = Reservation.objects.filter(reservation_filter)
 
+        if time:
+            total_time = sum(
+                (reservation.end - reservation.start).total_seconds()
+                for reservation in reservations
+            ) / 3600
+            self.stdout.write(f"Total time: {total_time}")
         self.stdout.write(f"Number of reservations: {reservations.count()}")
 
     """
