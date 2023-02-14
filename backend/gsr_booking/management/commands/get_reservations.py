@@ -17,9 +17,12 @@ class Command(BaseCommand):
 
     Defaulted to current number. Use --start or --end to specify date range.
 
-    --group flag to specify group
-    --start flag to specify start date; expected format: YYYY-MM-DD
-    --end   flag to specify end date; expected format: YYYY-MM-DD
+    --group     flag to specify group
+    --start     flag to specify start date; expected format: YYYY-MM-DD
+    --end       flag to specify end date; expected format: YYYY-MM-DD
+    --current   flag to specify current reservations
+
+    Note: --start/--end and --current are mutually exclusive
     """
 
     def add_arguments(self, parser):
@@ -27,11 +30,13 @@ class Command(BaseCommand):
         parser.add_argument("--group", type=str, default=None)
         parser.add_argument("--start", type=datetime, default=None)
         parser.add_argument("--end", type=str, default=None)
+        parser.add_argument("--current", type=bool, default=False)
 
     def handle(self, *args, **kwargs):
         group = kwargs["group"]
         start = kwargs["start"]
         end = kwargs["end"]
+        current = kwargs["current"]
 
         if start and not (start := self.__convert_date(start)):
             self.stdout.write("Error: invalid start date format")
@@ -41,10 +46,13 @@ class Command(BaseCommand):
             return
 
         reservation_filter = Q()
-        if start:
-            reservation_filter &= Q(start__gte=start)
-        if end:
-            reservation_filter &= Q(end__lte=end)
+        if current:
+            reservation_filter &= Q(start__lte=datetime.now()) & Q(end__gte=datetime.now())
+        else:
+            if start:
+                reservation_filter &= Q(start__gte=start)
+            if end:
+                reservation_filter &= Q(end__lte=end)
 
         if group:
             if not (group := Group.objects.filter(name=group).first()):
