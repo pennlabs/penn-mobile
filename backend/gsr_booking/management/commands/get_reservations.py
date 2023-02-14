@@ -66,10 +66,13 @@ class Command(BaseCommand):
             reservations = Reservation.objects.filter(reservation_filter)
 
         if time:
-            total_time = sum(
-                (reservation.end - reservation.start).total_seconds()
-                for reservation in reservations
-            ) / 3600
+            total_time = (
+                sum(
+                    (reservation.end - reservation.start).total_seconds()
+                    for reservation in reservations
+                )
+                / 3600
+            )
             self.stdout.write(f"Total time: {total_time}")
         self.stdout.write(f"Number of reservations: {reservations.count()}")
 
