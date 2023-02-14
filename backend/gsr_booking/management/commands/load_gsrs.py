@@ -10,14 +10,8 @@ class Command(BaseCommand):
 
         with open("gsr_booking/data/gsr_data.csv") as data:
             reader = csv.reader(data)
-
-            for i, row in enumerate(reader):
-                if i == 0:
-                    continue
-
-                # collects room information from csv
-                lid, gid, name, service = row
-
+            next(reader)
+            for lid, gid, name, service in reader:
                 # gets image from s3 given the lid and gid
                 # TODO: fix image url!
                 image_url = (
