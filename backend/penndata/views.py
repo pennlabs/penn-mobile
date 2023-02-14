@@ -9,7 +9,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from penndata.models import Event, FitnessRoom, FitnessSnapshot, HomePageOrder
+from penndata.models import AnalyticsEvent, Event, FitnessRoom, FitnessSnapshot, HomePageOrder
 from penndata.serializers import (
     AnalyticsEventSerializer,
     EventSerializer,
@@ -266,3 +266,24 @@ class Fitness(generics.ListAPIView):
             # append to recent snapshots to most recent snapshot for particular room
             recent_snapshots |= snapshots.filter(room=room)[:1]
         return recent_snapshots
+
+
+class UniqueCounterView(APIView):
+    """
+    get: determines number of unique visits for a given post or poll
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        query = dict()
+        if "post_id" in request.query_params:
+            query["post__id"] = request.query_params["post_id"]
+        if "poll_id" in request.query_params:
+            query["poll__id"] = request.query_params["poll_id"]
+        if len(query) != 1:
+            return Response({"detail": "require 1 id out of post_id or poll_id"}, status=400)
+        query["is_interaction"] = (
+            request.query_params.get("is_interaction", "false").lower() == "true"
+        )
+        return Response({"count": AnalyticsEvent.objects.filter(**query).count()})
