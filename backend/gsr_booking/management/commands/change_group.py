@@ -10,25 +10,34 @@ User = get_user_model()
 
 class Command(BaseCommand):
     help = """
-    Adds users to a group.
-    --reset flag
-    Sets all group members to be the users specified in the command.
+    Adds/remove users to a group.
+
+    --remove flag for users to be removed from the group
+    --reset flag to set group to be all users specified in command
+
+    Note: --remove and --reset are mutually exclusive
     """
 
     def add_arguments(self, parser):
         parser.add_argument("usernames", type=str, help="list of pennkeys")
         parser.add_argument("group", type=str, help="group name")
 
-        # optional flag to set group to be all users
+        # optional flags
+        parser.add_argument("--remove", type=bool, default=False)
         parser.add_argument("--reset", type=bool, default=False)
 
     def handle(self, *args, **kwargs):
         usernames = kwargs["usernames"].split(",")
         group = kwargs["group"]
+        remove = kwargs["remove"]
         reset = kwargs["reset"]
 
+        if not usernames:
+            self.stdout.write("Error: no users specified")
+            return
+
         if not (group := Group.objects.filter(name=group).first()):
-            self.stdout.write("Group not found.")
+            self.stdout.write("Error: group not found")
             return
 
         users = []
@@ -40,20 +49,28 @@ class Command(BaseCommand):
             else:
                 users.append(user)
 
-        if reset and failed_users:
-            self.stdout.write("Failed users: " + ", ".join(failed_users))
-            self.stdout.write("Exiting now...")
+        if failed_users:
+            self.stdout.write("Error: users not found: " + ", ".join(failed_users))
             return
 
         if reset:
             group.memberships.exclude(Q(user__in=users) | Q(user=group.owner)).delete()
-        for user in users:
-            group.memberships.get_or_create(
-                user=user,
-                defaults={"accepted": True, "type": GroupMembership.MEMBER, "pennkey_allow": True},
-            )
+        if reset or not remove:
+            for user in users:
+                group.memberships.get_or_create(
+                    user=user,
+                    defaults={
+                        "accepted": True,
+                        "type": GroupMembership.MEMBER,
+                        "pennkey_allow": True,
+                    },
+                )
+        elif remove:
+            group.memberships.filter(user__in=users).delete()
 
-        if failed_users:
-            self.stdout.write("Failed users: " + ", ".join(failed_users))
-        if users:
-            self.stdout.write("Members added to group!")
+        if reset:
+            self.stdout.write("Group successfully reset!")
+        elif remove:
+            self.stdout.write("Members successfully removed from group!")
+        else:
+            self.stdout.write("Members successfully added to group!")
