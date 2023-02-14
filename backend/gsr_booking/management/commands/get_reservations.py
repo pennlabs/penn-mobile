@@ -76,15 +76,14 @@ class Command(BaseCommand):
             self.stdout.write(f"Total time: {total_time}")
         self.stdout.write(f"Number of reservations: {reservations.count()}")
 
-    """
-    Converts string in format YYYY-MM-DD to datetime object.
-    Returns None if string is not in correct format.
-
-    :param date_str: string in format YYYY-MM-DD
-    :return: datetime object
-    """
-
     def __convert_date(self, date_str):
+        """
+        Converts string in format YYYY-MM-DD to datetime object.
+        Returns None if string is not in correct format.
+
+        :param date_str: string in format YYYY-MM-DD
+        :return: datetime object
+        """
         try:
             return datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
