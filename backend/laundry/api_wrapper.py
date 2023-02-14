@@ -91,7 +91,7 @@ def check_is_working():
     """
     Returns True if the wash alert web interface seems to be working properly, or False otherwise.
     """
-    return True # temporarily disabled due to hacky fix
+    return True  # temporarily disabled due to hacky fix
     # try:
     #     r = requests.post(
     #         "{}/".format(settings.LAUNDRY_URL),
