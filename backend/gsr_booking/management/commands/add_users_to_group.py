@@ -47,9 +47,7 @@ class Command(BaseCommand):
             return
 
         if reset:
-            group.memberships.exclude(
-                            Q(user__in=users) | Q(user=group.owner)
-                        ).delete()
+            group.memberships.exclude(Q(user__in=users) | Q(user=group.owner)).delete()
         for user in users:
             group.memberships.get_or_create(
                 user=user,
