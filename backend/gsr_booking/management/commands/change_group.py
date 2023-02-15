@@ -11,27 +11,23 @@ User = get_user_model()
 class Command(BaseCommand):
     help = """
     Adds/remove users to a group.
-
-    --remove flag for users to be removed from the group
-    --reset flag to set group to be all users specified in command
-
-    Note: --remove and --reset are mutually exclusive
     """
 
     def add_arguments(self, parser):
         parser.add_argument("usernames", type=str, help="list of pennkeys")
         parser.add_argument("group", type=str, help="group name")
-
-        # optional flags
-        parser.add_argument("--remove", type=bool, default=False)
-        parser.add_argument("--reset", type=bool, default=False)
+        parser.add_argument("mode", type=str, help="mode of operation (add/remove/reset)")
 
     def handle(self, *args, **kwargs):
         usernames = kwargs["usernames"].split(",")
         group = kwargs["group"]
-        remove = kwargs["remove"]
-        reset = kwargs["reset"]
+        mode = kwargs['mode'].lower()
 
+        if mode not in ['add', 'remove', 'reset']:
+            self.stdout.write("Error: invalid mode")
+            self.stdout.write("Options are add, remove, reset.")
+            return
+        
         if not usernames:
             self.stdout.write("Error: no users specified")
             return
@@ -53,9 +49,11 @@ class Command(BaseCommand):
             self.stdout.write("Error: users not found: " + ", ".join(failed_users))
             return
 
-        if reset:
+        if mode == 'reset':
             group.memberships.exclude(Q(user__in=users) | Q(user=group.owner)).delete()
-        if reset or not remove:
+        elif mode == 'remove':
+            group.memberships.filter(Q(user__in=users) & ~Q(user=group.owner)).delete()
+        if mode != 'remove':
             for user in users:
                 group.memberships.get_or_create(
                     user=user,
@@ -65,12 +63,10 @@ class Command(BaseCommand):
                         "pennkey_allow": True,
                     },
                 )
-        elif remove:
-            group.memberships.filter(user__in=users).delete()
 
-        if reset:
+        if mode == 'reset':
             self.stdout.write("Group successfully reset!")
-        elif remove:
+        elif mode == 'remove':
             self.stdout.write("Members successfully removed from group!")
         else:
             self.stdout.write("Members successfully added to group!")
