@@ -21,13 +21,13 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         usernames = kwargs["usernames"].split(",")
         group = kwargs["group"]
-        mode = kwargs['mode'].lower()
+        mode = kwargs["mode"].lower()
 
-        if mode not in ['add', 'remove', 'reset']:
+        if mode not in ["add", "remove", "reset"]:
             self.stdout.write("Error: invalid mode")
             self.stdout.write("Options are add, remove, reset.")
             return
-        
+
         if not usernames:
             self.stdout.write("Error: no users specified")
             return
@@ -49,11 +49,11 @@ class Command(BaseCommand):
             self.stdout.write("Error: users not found: " + ", ".join(failed_users))
             return
 
-        if mode == 'reset':
+        if mode == "reset":
             group.memberships.exclude(Q(user__in=users) | Q(user=group.owner)).delete()
-        elif mode == 'remove':
+        elif mode == "remove":
             group.memberships.filter(Q(user__in=users) & ~Q(user=group.owner)).delete()
-        if mode != 'remove':
+        if mode != "remove":
             for user in users:
                 group.memberships.get_or_create(
                     user=user,
@@ -64,9 +64,9 @@ class Command(BaseCommand):
                     },
                 )
 
-        if mode == 'reset':
+        if mode == "reset":
             self.stdout.write("Group successfully reset!")
-        elif mode == 'remove':
+        elif mode == "remove":
             self.stdout.write("Members successfully removed from group!")
         else:
             self.stdout.write("Members successfully added to group!")
