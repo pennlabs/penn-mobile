@@ -98,7 +98,7 @@ class TestVenues(TestCase):
             for day in entry["days"]:
                 self.assertIn("date", day)
                 self.assertIn("dayparts", day)
-        self.assertEqual(16, len(response.json()))
+        self.assertEqual(15, len(response.json()))
 
 
 class TestMenus(TestCase):
