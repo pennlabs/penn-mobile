@@ -44,10 +44,7 @@ class BookingWrapper:
         return membership.check_wharton() or user in penn_labs.members.all()
 
     def book_room(self, gid, rid, room_name, start, end, user, group_book=None):
-
-        gsr = GSR.objects.filter(gid=gid).first()
-        if not gsr:
-            raise APIError(f"Unknown GSR GID {gid}")
+        gsr = get_object_or_404(GSR, gid=gid)
 
         # error catching on view side
         if gsr.kind == GSR.KIND_WHARTON:
@@ -70,9 +67,7 @@ class BookingWrapper:
         # create reservation with single-person-group containing user
         # TODO: create reservation with group that frontend passes in
         if not group_book:
-            single_person_group = Group.objects.filter(owner=user).first()
-            if not single_person_group:
-                raise APIError("Unknown User")
+            single_person_group = get_object_or_404(Group, owner=user)
             reservation = Reservation.objects.create(
                 start=start, end=end, creator=user, group=single_person_group
             )
@@ -83,9 +78,8 @@ class BookingWrapper:
 
     def get_availability(self, lid, gid, start, end, user):
         # checks which GSR class to use
-        gsr = GSR.objects.filter(lid=lid).first()
-        if not gsr:
-            raise APIError(f"Unknown GSR LID {lid}")
+        gsr = get_object_or_404(GSR, lid=lid)
+
         if gsr.kind == GSR.KIND_WHARTON:
             rooms = self.WLW.get_availability(lid, start, end, user.username)
             return {"name": gsr.name, "gid": gsr.gid, "rooms": rooms}

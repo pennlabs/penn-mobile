@@ -2,6 +2,7 @@ import datetime
 import random
 
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 
 from gsr_booking.api_wrapper import APIError, BookingWrapper, CreditType
 from gsr_booking.models import GSR, GroupMembership, Reservation
@@ -39,9 +40,7 @@ class GroupBook:
         Book function for Group
         """
         # TODO: check credits
-        gsr = GSR.objects.filter(gid=gid).first()
-        if not gsr:
-            raise APIError(f"Unknown GSR GID {gid}")
+        gsr = get_object_or_404(GSR, gid=gid)
 
         start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
         end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
