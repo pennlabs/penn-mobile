@@ -78,7 +78,7 @@ class BookingWrapper:
 
     def get_availability(self, lid, gid, start, end, user):
         # checks which GSR class to use
-        gsr = get_object_or_404(GSR, lid=lid)
+        gsr = get_object_or_404(GSR, gid=gid)
 
         if gsr.kind == GSR.KIND_WHARTON:
             rooms = self.WLW.get_availability(lid, start, end, user.username)
