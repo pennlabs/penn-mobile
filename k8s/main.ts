@@ -100,6 +100,6 @@ export class MyChart extends PennLabsChart {
   }
 }
 
-const app = new App();
+const app = new App({recordConstructMetadata: false});
 new MyChart(app);
 app.synth();
