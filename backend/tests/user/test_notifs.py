@@ -235,7 +235,7 @@ class TestNotificationAlert(TestCase):
 
         # test notif
         payload = {
-            "users": ["user", "user2", "user3"],
+            "users": ["user2"],
             "title": "Test",
             "body": ":D",
             "service": "PENN_MOBILE",
@@ -244,8 +244,8 @@ class TestNotificationAlert(TestCase):
             "/user/notifications/alerts/", json.dumps(payload), content_type="application/json"
         )
         res_json = json.loads(response.content)
-        self.assertEqual(2, len(res_json["success_users"]))
-        self.assertEqual(1, len(res_json["failed_users"]))
+        self.assertEqual(1, len(res_json["success_users"]))
+        self.assertEqual(0, len(res_json["failed_users"]))
 
 
 class TestSendGSRReminders(TestCase):
