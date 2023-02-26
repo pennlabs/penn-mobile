@@ -67,8 +67,11 @@ class NotificationSettingView(viewsets.ModelViewSet):
     permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
     serializer_class = NotificationSettingSerializer
 
+    def is_authorized(self, request):
+        return request.user and request.user.is_authenticated
+
     def get_queryset(self):
-        if self.request.user.is_authenticated:
+        if self.is_authorized(self.request):
             return NotificationSetting.objects.filter(token__user=self.request.user)
         return NotificationSetting.objects.none()
 
@@ -85,7 +88,7 @@ class NotificationSettingView(viewsets.ModelViewSet):
         pennkey = request.GET.get("pennkey")
         user = (
             request.user
-            if request.user.is_authenticated
+            if self.is_authorized(request)
             else get_object_or_404(User, username=pennkey)
         )
 
@@ -107,7 +110,7 @@ class NotificationAlertView(APIView):
     def post(self, request):
         users = (
             [self.request.user.username]
-            if request.user.is_authenticated
+            if request.user and request.user.is_authenticated
             else request.data.get("users", list())
         )
         service = request.data.get("service")
