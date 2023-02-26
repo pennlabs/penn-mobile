@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
+from identity.identity import attest, container, get_platform_jwks
 from rest_framework.test import APIClient
 
 from gsr_booking.models import GSR, Group, GSRBooking, Reservation
@@ -13,6 +14,18 @@ from user.models import NotificationSetting, NotificationToken
 
 
 User = get_user_model()
+
+
+def initialize_b2b():
+    get_platform_jwks()
+    attest()
+
+
+def get_b2b_client():
+    client = APIClient()
+    client.logout()
+    client.credentials(HTTP_AUTHORIZATION="Bearer " + container.access_jwt.serialize())
+    return client
 
 
 class MockAPNsClient:
@@ -90,6 +103,7 @@ class TestNotificationSetting(TestCase):
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client.force_authenticate(user=self.test_user)
+        initialize_b2b()
 
     def test_get_settings(self):
         # test that settings visible via GET
@@ -172,6 +186,28 @@ class TestNotificationSetting(TestCase):
         response = self.client.get("/user/notifications/settings/PENN_MOBIL/check/")
         self.assertEqual(response.status_code, 400)
 
+    def test_b2b_queryset_empty(self):
+        self.client.logout()
+        b2b_client = get_b2b_client()
+        response = b2b_client.get("/user/notifications/settings/")
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content)
+        self.assertEqual(0, len(res_json))
+
+    def test_b2b_check(self):
+        self.client.logout()
+        b2b_client = get_b2b_client()
+        response = b2b_client.get("/user/notifications/settings/PENN_MOBILE/check/?pennkey=user")
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content)
+        self.assertEqual(res_json["service"], "PENN_MOBILE")
+        self.assertFalse(res_json["enabled"])
+
+    def test_b2b_auth_fails(self):
+        self.client.logout()
+        response = self.client.get("/user/notifications/settings/PENN_MOBILE/check/?pennkey=user")
+        self.assertEqual(response.status_code, 403)
+
 
 class TestNotificationAlert(TestCase):
     """Tests for sending Notification Alerts"""
@@ -195,6 +231,17 @@ class TestNotificationAlert(TestCase):
         setting = NotificationSetting.objects.get(token=token_obj, service="PENN_MOBILE")
         setting.enabled = True
         setting.save()
+
+        # create user3
+        user3 = User.objects.create_user("user3", "user3@seas.upenn.edu", "user3")
+        token_obj = NotificationToken.objects.get(user=user3)
+        token_obj.token = "test234"
+        token_obj.save()
+        setting = NotificationSetting.objects.get(token=token_obj, service="PENN_MOBILE")
+        setting.enabled = True
+        setting.save()
+
+        initialize_b2b()
 
     @mock.patch("user.notifications.get_client", mock_client)
     def test_failed_notif(self):
@@ -235,12 +282,29 @@ class TestNotificationAlert(TestCase):
 
         # test notif
         payload = {
-            "users": ["user", "user2", "user3"],
+            "users": ["user2", "user1", "user3"],
             "title": "Test",
             "body": ":D",
             "service": "PENN_MOBILE",
         }
         response = self.client.post(
+            "/user/notifications/alerts/", json.dumps(payload), content_type="application/json"
+        )
+        res_json = json.loads(response.content)
+        self.assertEqual(1, len(res_json["success_users"]))
+        self.assertEqual(0, len(res_json["failed_users"]))
+
+    @mock.patch("user.notifications.get_client", mock_client)
+    def test_b2b_batch_alert(self):
+        self.client.logout()
+        b2b_client = get_b2b_client()
+        payload = {
+            "users": ["user", "user2", "user3"],
+            "title": "Test",
+            "body": ":D",
+            "service": "PENN_MOBILE",
+        }
+        response = b2b_client.post(
             "/user/notifications/alerts/", json.dumps(payload), content_type="application/json"
         )
         res_json = json.loads(response.content)
