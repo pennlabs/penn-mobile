@@ -16,9 +16,6 @@ from user.models import NotificationSetting, NotificationToken
 User = get_user_model()
 
 
-print("hi")
-
-
 def initialize_b2b():
     get_platform_jwks()
     attest()
