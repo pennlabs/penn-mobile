@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 
 from user.models import NotificationSetting, NotificationToken
 from user.notifications import send_push_notifications
@@ -11,6 +13,11 @@ from user.serializers import (
     NotificationTokenSerializer,
     UserSerializer,
 )
+
+from identity.permissions import B2BPermission
+
+
+User = get_user_model()
 
 
 class UserView(generics.RetrieveUpdateAPIView):
@@ -58,28 +65,30 @@ class NotificationSettingView(viewsets.ModelViewSet):
     Checks if user wants notification for specified serice.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
     serializer_class = NotificationSettingSerializer
 
     def get_queryset(self):
-        return NotificationSetting.objects.filter(token__user=self.request.user)
+        if self.request.user.is_authenticated:
+            return NotificationSetting.objects.filter(token__user=self.request.user)
+        return NotificationSetting.objects.none()
 
-    @action(detail=True, methods=["get"])
+    @action(detail=True, methods=["get"], permission_classes=[B2BPermission("urn:pennlabs:*")])
     def check(self, request, pk=None):
         """
         Returns whether the user wants notification for specified service.
         :param pk: service name
         """
-        if pk not in dict(NotificationSetting.SERVICE_OPTIONS):
-            return Response({"detail": "Invalid service."}, status=400)
 
-        token = NotificationToken.objects.filter(user=self.request.user).first()
-        if not token:
-            return Response({"service": pk, "enabled": False})
+        if (pennkey := request.GET.get('pennkey')) and pk in dict(NotificationSetting.SERVICE_OPTIONS):
+            user = get_object_or_404(User, username=pennkey)
+            token = NotificationToken.objects.filter(user=user).first()
+            if not token:
+                return Response({"service": pk, "enabled": False})
+            setting, _ = NotificationSetting.objects.get_or_create(token=token, service=pk)
+            return Response(NotificationSettingSerializer(setting).data)
 
-        setting, _ = NotificationSetting.objects.get_or_create(token=token, service=pk)
-        return Response(NotificationSettingSerializer(setting).data)
-
+        return Response({"detail": "Invalid Parameters."}, status=400)
 
 class NotificationAlertView(APIView):
     """
@@ -87,13 +96,13 @@ class NotificationAlertView(APIView):
     sends push notification alert if one exists
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
 
     def post(self, request):
-        users = request.data.get("users", [self.request.user.username])
-        service = request.data.get("service", None)
-        title = request.data.get("title", None)
-        body = request.data.get("body", None)
+        users = [self.request.user.username] if request.user.is_authenticated else request.data.get("users", list())
+        service = request.data.get("service")
+        title = request.data.get("title")
+        body = request.data.get("body")
         delay = max(request.data.get("delay", 0), 0)
         is_dev = request.data.get("is_dev", False)
 
