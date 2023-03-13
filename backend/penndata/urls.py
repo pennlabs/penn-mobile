@@ -5,6 +5,7 @@ from penndata.views import (
     Calendar,
     Events,
     Fitness,
+    FitnessUsage,
     HomePage,
     HomePageOrdering,
     News,
@@ -19,6 +20,7 @@ urlpatterns = [
     path("events/<type>/", Events.as_view(), name="events"),
     path("order/", HomePageOrdering.as_view(), name="home-page-order"),
     path("fitness/", Fitness.as_view(), name="fitness"),
+    path("fitness/usage/<room_id>/", FitnessUsage.as_view(), name="fitness-usage"),
     path("analytics/", Analytics.as_view(), name="analytics"),
     path("eventcount/", UniqueCounterView.as_view(), name="eventcounter"),
 ]
