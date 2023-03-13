@@ -353,6 +353,11 @@ class FitnessUsage(APIView):
         return ret, min_date, max_date
 
     def get(self, request, room_id):
+        """
+        GET: returns the usage in terms of count or capacity of a fitness center for a given date
+        per hour aggregated by day or week for a given number of days
+        """
+
         room = get_object_or_404(FitnessRoom, pk=room_id)
         try:
             if (date := request.query_params.get("date")) is None:
