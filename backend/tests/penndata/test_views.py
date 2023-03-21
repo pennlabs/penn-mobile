@@ -181,7 +181,8 @@ class TestGetFitnessSnapshot(TestCase):
 
         call_command("get_fitness_snapshot")
 
-        self.assertEqual(FitnessSnapshot.objects.all().count(), 18)
+        # does not create duplicate snapshots
+        self.assertEqual(FitnessSnapshot.objects.all().count(), 9)
 
 
 class TestFitnessUsage(TestCase):
