@@ -10,7 +10,7 @@ from penndata.models import FitnessRoom, FitnessSnapshot
 
 def get_usages():
 
-    # count and capacities default to 0 because spreadsheet number appears blank if 0 people at location
+    # count/capacities default to 0 since spreadsheet number appears blank if no one there
     locations = [
         "4th Floor Fitness",
         "3rd Floor Fitness",
