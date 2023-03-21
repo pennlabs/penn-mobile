@@ -47,6 +47,10 @@ class FitnessSnapshot(models.Model):
 
 
 class AnalyticsEvent(models.Model):
+    # TODO: would it be better to just have a type field, similar to that
+    # of the NotificationSettings model, where we limit type
+    # that way, we can get rid of the post/portal fields since this should be
+    # more generic?
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
     cell_type = models.CharField(max_length=255)

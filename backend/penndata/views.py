@@ -1,4 +1,5 @@
 import datetime
+import json
 
 import requests
 from bs4 import BeautifulSoup
@@ -287,3 +288,30 @@ class UniqueCounterView(APIView):
             request.query_params.get("is_interaction", "false").lower() == "true"
         )
         return Response({"count": AnalyticsEvent.objects.filter(**query).count()})
+
+
+class NewsAnalyticsView(APIView):
+    """
+    GET: determines number of unique visits for a given link
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """
+        Creates AnalyticsEvent for user when they click on a news article
+        """
+        title = request.data.get("title")
+        link = request.data.get("link")
+        is_interaction = request.data.get("is_interaction", False)
+        if not link or not title:
+            return Response({"error": "Missing title or link."}, status=400)
+
+        data = json.dumps({"title": title, "link": link})
+        AnalyticsEvent.objects.create(
+            user=request.user,
+            cell_type="news",
+            is_interaction=is_interaction,
+            data=data,
+        )
+        return Response({"success": "Analytics event created"})
