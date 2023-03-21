@@ -295,7 +295,7 @@ class FitnessUsage(APIView):
             try:
                 # consider the :30 mark of each hour
                 hour_date = timezone.make_aware(
-                    datetime.datetime.combine(date, datetime.time(hour)), is_dst=None
+                    datetime.datetime.combine(date, datetime.time(hour))
                 ) + datetime.timedelta(minutes=30)
             except NonExistentTimeError:
                 # daylight savings time
@@ -320,23 +320,27 @@ class FitnessUsage(APIView):
             else:
                 # linear interpolation
                 usage[hour] = (
-                    before_val
-                    + (after_val - before_val)
-                    * (hour_date - before.date).total_seconds()
-                    / (after.date - before.date).total_seconds()
+                    (
+                        before_val
+                        + (after_val - before_val)
+                        * (hour_date - before.date).total_seconds()
+                        / (after.date - before.date).total_seconds()
+                    )
+                    if before.date != after.date
+                    else after_val
                 )
 
         if all(x == 0 for x in usage):  # location probably closed - don't count in aggregate
             return [None] * 24
         return usage
 
-    def get_usage(self, room, date, per_hour, group_by, field):
+    def get_usage(self, room, date, num_samples, group_by, field):
         unit = 1 if group_by == "day" else 7  # skip by 1 or 7 days
         usage_agg = [(None, 0)] * 24  # (sum, count) for each hour
         min_date = timezone.localtime().date()
-        max_date = timezone.localtime().date() - datetime.timedelta(days=unit * (per_hour - 1))
+        max_date = date - datetime.timedelta(days=unit * (num_samples - 1))
 
-        for i in range(per_hour):
+        for i in range(num_samples):
             curr = date - datetime.timedelta(days=i * unit)
             usage = self.get_usage_on_date(room, curr, field)  # usage for curr
             # incoporate usage safely considering None (no data) values
@@ -360,17 +364,18 @@ class FitnessUsage(APIView):
 
         room = get_object_or_404(FitnessRoom, pk=room_id)
         try:
-            if (date := request.query_params.get("date")) is None:
-                date = timezone.localtime().date()
-            else:
-                date = timezone.make_aware(datetime.datetime.strptime(date, "%Y-%m-%d")).date()
+            date_param = request.query_params.get("date")
+            date = (
+                timezone.make_aware(datetime.datetime.strptime(date_param, "%Y-%m-%d")).date()
+                if date_param
+                else timezone.localtime().date()
+            )
         except ValueError:
             return Response({"detail": "date must be in the format YYYY-MM-DD"}, status=400)
-
         try:
-            per_hour = int(request.query_params.get("per_hour", 1))
+            num_samples = int(request.query_params.get("num_samples", 1))
         except ValueError:
-            return Response({"detail": "per_hour must be an integer"}, status=400)
+            return Response({"detail": "num_samples must be an integer"}, status=400)
 
         if (group_by := request.query_params.get("group_by", "day")) not in ("day", "week"):
             return Response({"detail": "group_by must be either 'day' or 'week'"}, status=400)
@@ -378,7 +383,7 @@ class FitnessUsage(APIView):
         if (field := request.query_params.get("field", "count")) not in ("count", "capacity"):
             return Response({"detail": "field must be either 'count' or 'capacity'"}, status=400)
 
-        res, min_date, max_date = self.get_usage(room, date, per_hour, group_by, field)
+        res, min_date, max_date = self.get_usage(room, date, num_samples, group_by, field)
         return Response(
             {
                 "room_name": room.name,

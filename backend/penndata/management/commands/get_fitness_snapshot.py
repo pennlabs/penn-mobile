@@ -8,9 +8,9 @@ from django.utils import timezone
 from penndata.models import FitnessRoom, FitnessSnapshot
 
 
-def get_capacities():
+def get_usages():
 
-    # capacities default to 0 because spreadsheet number appears blank if 0 people at location
+    # count and capacities default to 0 because spreadsheet number appears blank if 0 people at location
     locations = [
         "4th Floor Fitness",
         "3rd Floor Fitness",
@@ -22,9 +22,9 @@ def get_capacities():
         "Pool-Shallow",
         "Pool-Deep",
     ]
-    capacities = {location: {"count": 0, "capacity": 0} for location in locations}
+    usages = {location: {"count": 0, "capacity": 0} for location in locations}
 
-    date = timezone.localtime()
+    date = timezone.localtime()  # default if can't get date from spreadsheet
 
     try:
         resp = requests.get(
@@ -48,21 +48,21 @@ def get_capacities():
         cells = row.findChildren("td")
         if i == 0:
             date = timezone.make_aware(datetime.strptime(cells[1].getText(), "%m/%d/%Y %H:%M:%S"))
-        elif (location := cells[0].getText()) in capacities:
+        elif (location := cells[0].getText()) in usages:
             try:
                 count = int(cells[1].getText())
                 capacity = float(cells[2].getText().strip("%"))
-                capacities[location] = {"count": count, "capacity": capacity}
+                usages[location] = {"count": count, "capacity": capacity}
             except ValueError:
                 pass
-    return capacities, date
+    return usages, date
 
 
 class Command(BaseCommand):
     help = "Captures a new Fitness Snapshot for every Laundry room."
 
     def handle(self, *args, **kwargs):
-        data, date = get_capacities()
+        usage_by_location, date = get_usages()
 
         # prevent double creating FitnessSnapshots
         if FitnessSnapshot.objects.filter(date=date).exists():
@@ -74,10 +74,10 @@ class Command(BaseCommand):
                 FitnessSnapshot(
                     room=FitnessRoom.objects.get_or_create(name=room_name)[0],
                     date=date,
-                    count=info["count"],
-                    capacity=info["capacity"],
+                    count=room_usage["count"],
+                    capacity=room_usage["capacity"],
                 )
-                for room_name, info in data.items()
+                for room_name, room_usage in usage_by_location.items()
             ]
         )
 

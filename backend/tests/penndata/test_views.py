@@ -184,6 +184,180 @@ class TestGetFitnessSnapshot(TestCase):
         self.assertEqual(FitnessSnapshot.objects.all().count(), 18)
 
 
+class TestFitnessUsage(TestCase):
+    def load_snapshots_1(self, date):
+        FitnessSnapshot.objects.create(
+            room=self.room, date=date + datetime.timedelta(hours=6), count=0, capacity=0.0
+        )
+        FitnessSnapshot.objects.create(
+            room=self.room,
+            date=date + datetime.timedelta(hours=6, minutes=10),
+            count=10,
+            capacity=10.0,
+        )
+        FitnessSnapshot.objects.create(
+            room=self.room, date=date + datetime.timedelta(hours=8), count=65, capacity=65.0
+        )
+        FitnessSnapshot.objects.create(
+            room=self.room,
+            date=date + datetime.timedelta(hours=8, minutes=30),
+            count=0,
+            capacity=0.0,
+        )
+        FitnessSnapshot.objects.create(
+            room=self.room, date=date + datetime.timedelta(hours=10), count=60, capacity=60.0
+        )
+        FitnessSnapshot.objects.create(
+            room=self.room,
+            date=date + datetime.timedelta(hours=20, minutes=0),
+            count=0,
+            capacity=0.0,
+        )
+
+    def load_snapshots_2(self, date):
+        FitnessSnapshot.objects.create(
+            room=self.room,
+            date=date + datetime.timedelta(hours=4, minutes=30),
+            count=1,
+            capacity=1.0,
+        )
+        FitnessSnapshot.objects.create(
+            room=self.room,
+            date=date + datetime.timedelta(hours=16, minutes=30),
+            count=97,
+            capacity=97.0,
+        )
+
+        
+
+    def setUp(self):
+        self.client = APIClient()
+        self.date = timezone.make_aware(datetime.datetime(2023, 1, 22, 0, 0, 0))
+        self.room = FitnessRoom.objects.create(name="test")
+
+    def test_get_fitness_usage_1(self):
+        self.load_snapshots_1(self.date)
+        response = self.client.get(
+            reverse("fitness-usage", args=[self.room.id]), {"date": self.date.strftime("%Y-%m-%d"), "field": "capacity"}
+        )
+        res_json = json.loads(response.content)
+        usage = [0, 0, 0, 0, 0, 0, 20, 50, 0, 40, 57, 51, 45, 39, 33, 27, 21, 15, 9, 3, 0, 0, 0, 0]
+
+        expected = {
+            "room_name": self.room.name,
+            "start_date": self.date.strftime("%Y-%m-%d"),
+            "end_date": self.date.strftime("%Y-%m-%d"),
+            "usage": {str(i): x for i, x in enumerate(usage)},
+        }
+
+        self.assertEqual(res_json, expected)
+
+    def test_get_fitness_usage_2(self):
+        self.load_snapshots_2(self.date)
+        response = self.client.get(
+            reverse("fitness-usage", args=[self.room.id]), {"date": (self.date).strftime("%Y-%m-%d")},
+        )
+        res_json = json.loads(response.content)
+        usage = [1, 1, 1, 1, 1, 9, 17, 25, 33, 41, 49, 57, 65, 73, 81, 89, 97, 97, 0, 0, 0, 0, 0, 0]
+
+        expected = {
+            "room_name": self.room.name,
+            "start_date": (self.date).strftime("%Y-%m-%d"),
+            "end_date": (self.date).strftime("%Y-%m-%d"),
+            "usage": {str(i): x for i, x in enumerate(usage)},
+        }
+
+        self.assertEqual(res_json, expected)
+
+    def test_get_usage_2_samples_week(self):
+        self.load_snapshots_1(self.date)
+        self.load_snapshots_2(self.date - datetime.timedelta(days=7))
+        response = self.client.get(
+            reverse("fitness-usage", args=[self.room.id]),
+            {"date": (self.date).strftime("%Y-%m-%d"), "num_samples": 2, "group_by": "week", "field": "capacity"},
+        )
+        res_json = json.loads(response.content)
+        usage = [0.5, 0.5, 0.5, 0.5, 0.5, 4.5, 18.5, 37.5, 16.5, 40.5, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 56.0, 9.0, 3.0, 0.0, 0.0, 0.0, 0.0]
+
+        expected = {
+            "room_name": self.room.name,
+            "start_date": (self.date - datetime.timedelta(days=7)).strftime("%Y-%m-%d"),
+            "end_date": (self.date).strftime("%Y-%m-%d"),
+            "usage": {str(i): x for i, x in enumerate(usage)},
+        }
+        
+        self.assertEqual(res_json, expected)
+    
+    def test_get_usage_2_sample_day(self):
+        self.load_snapshots_2(self.date)
+        self.load_snapshots_1(self.date - datetime.timedelta(days=1))
+        response = self.client.get(
+            reverse("fitness-usage", args=[self.room.id]),
+            {"date": (self.date).strftime("%Y-%m-%d"), "num_samples": 2},
+        )
+        res_json = json.loads(response.content)
+
+        usage = [4.5/17, 5.5/17, 6.5/17, 7.5/17, 0.5, 4.5, 18.5, 37.5, 16.5, 40.5, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 56.0, 9.0, 3.0, 0.0, 0.0, 0.0, 0.0]
+
+        expected = {
+            "room_name": self.room.name,
+            "start_date": (self.date - datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
+            "end_date": (self.date).strftime("%Y-%m-%d"),
+            "usage": {str(i): x for i, x in enumerate(usage)},
+        }
+
+        self.assertEqual(res_json, expected)
+
+    def test_day_light_savings(self):
+        date = timezone.make_aware(datetime.datetime(2023, 3, 12, 0, 0, 0))
+        self.load_snapshots_2(date)
+        response = self.client.get(
+            reverse("fitness-usage", args=[self.room.id]), {"date": (date).strftime("%Y-%m-%d"), "field": "capacity"},
+        )
+        res_json = json.loads(response.content)
+        usage = [1, 1, 0, 1, 1, 1, 9, 17, 25, 33, 41, 49, 57, 65, 73, 81, 89, 97, 97, 0, 0, 0, 0, 0]
+
+        expected = {
+            "room_name": self.room.name,
+            "start_date": (date).strftime("%Y-%m-%d"),
+            "end_date": (date).strftime("%Y-%m-%d"),
+            "usage": {str(i): x for i, x in enumerate(usage)},
+        }
+
+        self.assertEqual(res_json, expected)
+
+    def test_day_closed(self):
+        FitnessSnapshot.objects.create(
+            room=self.room, date=self.date, count=0, capacity=0.0
+        )
+        FitnessSnapshot.objects.create(
+            room=self.room, date=self.date + datetime.timedelta(days=1), count=0, capacity=0.0
+        )
+        response = self.client.get(
+            reverse("fitness-usage", args=[self.room.id]),
+            {"date": (self.date).strftime("%Y-%m-%d")},
+        )
+        res_json = json.loads(response.content)
+
+        expected = {
+            "room_name": self.room.name,
+            "start_date": (timezone.localtime()).strftime("%Y-%m-%d"),
+            "end_date": (self.date).strftime("%Y-%m-%d"),
+            "usage": {str(i): 0 for i in range(24)},
+        }
+
+        self.assertEqual(res_json, expected)
+
+    def test_get_fitness_usage_error(self):
+        response = self.client.get(reverse("fitness-usage", args=[self.room.id+1]))
+        self.assertEqual(response.status_code, 404)
+
+        for param in ["date", "num_samples", "group_by", "field"]:
+            response = self.client.get(reverse("fitness-usage", args=[self.room.id]), {param: "hi"})
+            self.assertEqual(response.status_code, 400)
+
+
+
 class TestAnalytics(TestCase):
     def setUp(self):
         self.client = APIClient()
