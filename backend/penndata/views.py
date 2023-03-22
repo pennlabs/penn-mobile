@@ -353,7 +353,10 @@ class FitnessUsage(APIView):
                 min_date = min(min_date, curr)
                 max_date = max(max_date, curr)
 
-        ret = [usage_agg[0] / usage_agg[1] if usage_agg[0] and usage_agg[1] else 0 for usage_agg in usage_aggs]
+        ret = [
+            usage_agg[0] / usage_agg[1] if usage_agg[0] and usage_agg[1] else 0
+            for usage_agg in usage_aggs
+        ]
         return ret, min_date, max_date
 
     def get(self, request, room_id):
@@ -383,7 +386,9 @@ class FitnessUsage(APIView):
         if (field := request.query_params.get("field", "count")) not in ("count", "capacity"):
             return Response({"detail": "field must be either 'count' or 'capacity'"}, status=400)
 
-        usage_per_hour, min_date, max_date = self.get_usage(room, date, num_samples, group_by, field)
+        usage_per_hour, min_date, max_date = self.get_usage(
+            room, date, num_samples, group_by, field
+        )
         return Response(
             {
                 "room_name": room.name,
