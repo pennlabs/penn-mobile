@@ -330,30 +330,30 @@ class FitnessUsage(APIView):
                     else after_val
                 )
 
-        if all(x == 0 for x in usage):  # location probably closed - don't count in aggregate
+        if all(amt == 0 for amt in usage):  # location probably closed - don't count in aggregate
             return [None] * 24
         return usage
 
     def get_usage(self, room, date, num_samples, group_by, field):
         unit = 1 if group_by == "day" else 7  # skip by 1 or 7 days
-        usage_agg = [(None, 0)] * 24  # (sum, count) for each hour
+        usage_aggs = [(None, 0)] * 24  # (sum, count) for each hour
         min_date = timezone.localtime().date()
         max_date = date - datetime.timedelta(days=unit * (num_samples - 1))
 
         for i in range(num_samples):
             curr = date - datetime.timedelta(days=i * unit)
             usage = self.get_usage_on_date(room, curr, field)  # usage for curr
-            # incoporate usage safely considering None (no data) values
-            usage_agg = [
+            # incorporate usage safely considering None (no data) values
+            usage_aggs = [
                 (self.safe_add(acc[0], val), acc[1] + (1 if val is not None else 0))
-                for acc, val in zip(usage_agg, usage)
+                for acc, val in zip(usage_aggs, usage)
             ]
             # update min and max date if any data was logged
             if any(usage):
                 min_date = min(min_date, curr)
                 max_date = max(max_date, curr)
 
-        ret = [x[0] / x[1] if x[0] and x[1] else 0 for x in usage_agg]
+        ret = [usage_agg[0] / usage_agg[1] if usage_agg[0] and usage_agg[1] else 0 for usage_agg in usage_aggs]
         return ret, min_date, max_date
 
     def get(self, request, room_id):
@@ -383,13 +383,13 @@ class FitnessUsage(APIView):
         if (field := request.query_params.get("field", "count")) not in ("count", "capacity"):
             return Response({"detail": "field must be either 'count' or 'capacity'"}, status=400)
 
-        res, min_date, max_date = self.get_usage(room, date, num_samples, group_by, field)
+        usage_per_hour, min_date, max_date = self.get_usage(room, date, num_samples, group_by, field)
         return Response(
             {
                 "room_name": room.name,
                 "start_date": min_date,
                 "end_date": max_date,
-                "usage": {i: x for i, x in enumerate(res)},
+                "usage": {i: amt for i, amt in enumerate(usage_per_hour)},
             }
         )
 

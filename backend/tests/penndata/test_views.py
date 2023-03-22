@@ -247,7 +247,7 @@ class TestFitnessUsage(TestCase):
             "room_name": self.room.name,
             "start_date": self.date.strftime("%Y-%m-%d"),
             "end_date": self.date.strftime("%Y-%m-%d"),
-            "usage": {str(i): x for i, x in enumerate(usage)},
+            "usage": {str(i): amt for i, amt in enumerate(usage)},
         }
 
         self.assertEqual(res_json, expected)
@@ -265,7 +265,7 @@ class TestFitnessUsage(TestCase):
             "room_name": self.room.name,
             "start_date": (self.date).strftime("%Y-%m-%d"),
             "end_date": (self.date).strftime("%Y-%m-%d"),
-            "usage": {str(i): x for i, x in enumerate(usage)},
+            "usage": {str(i): amt for i, amt in enumerate(usage)},
         }
 
         self.assertEqual(res_json, expected)
@@ -314,7 +314,7 @@ class TestFitnessUsage(TestCase):
             "room_name": self.room.name,
             "start_date": (self.date - datetime.timedelta(days=7)).strftime("%Y-%m-%d"),
             "end_date": (self.date).strftime("%Y-%m-%d"),
-            "usage": {str(i): x for i, x in enumerate(usage)},
+            "usage": {str(i): amt for i, amt in enumerate(usage)},
         }
 
         self.assertEqual(res_json, expected)
@@ -359,7 +359,7 @@ class TestFitnessUsage(TestCase):
             "room_name": self.room.name,
             "start_date": (self.date - datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
             "end_date": (self.date).strftime("%Y-%m-%d"),
-            "usage": {str(i): x for i, x in enumerate(usage)},
+            "usage": {str(i): amt for i, amt in enumerate(usage)},
         }
 
         self.assertEqual(res_json, expected)
@@ -378,7 +378,7 @@ class TestFitnessUsage(TestCase):
             "room_name": self.room.name,
             "start_date": (date).strftime("%Y-%m-%d"),
             "end_date": (date).strftime("%Y-%m-%d"),
-            "usage": {str(i): x for i, x in enumerate(usage)},
+            "usage": {str(i): amt for i, amt in enumerate(usage)},
         }
 
         self.assertEqual(res_json, expected)
