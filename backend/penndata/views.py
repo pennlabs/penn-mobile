@@ -278,57 +278,92 @@ class FitnessUsage(APIView):
             return a
         return a + b
 
+    def linear_interpolate(self, before_val, after_val, before_date, current_date, after_date):
+        return (
+            before_val
+            + (after_val - before_val)
+            * (current_date - before_date).total_seconds()
+            / (after_date - before_date).total_seconds()
+        )
+
     def get_usage_on_date(self, room, date, field):
         """
         Returns the number of people in the fitness center on a given date per hour
         """
 
-        # get all snapshots for a given room on a given date and the days before and after
-        snapshots = FitnessSnapshot.objects.filter(
-            room=room,
-            date__gte=date - datetime.timedelta(days=1),
-            date__lte=date + datetime.timedelta(days=1),
-        )
+        # Rounded closing times down
+        # TODO: get the API for accurate open and close times
+        open_times = {
+            0: (6, 23),
+            1: (6, 23),
+            2: (6, 23),
+            3: (6, 23),
+            4: (6, 22),
+            5: (8, 20),
+            6: (9, 20),
+        }
 
-        usage = [None] * 24  # None represents no data so initialize to all None
-        for hour in range(24):
-            try:
-                # consider the :30 mark of each hour
-                hour_date = timezone.make_aware(
-                    datetime.datetime.combine(date, datetime.time(hour))
-                ) + datetime.timedelta(minutes=30)
-            except NonExistentTimeError:
-                # daylight savings time
-                continue
+        day = date.weekday()
+        open, close = open_times[day]
+
+        is_today = date == timezone.localtime().date()
+
+        # If query is asking for today, take minimum between current time and close time
+        if is_today:
+            close = min(timezone.localtime().hour, close)
+
+        # get all snapshots for a given room on a given date and the days before and after
+        snapshots = FitnessSnapshot.objects.filter(room=room, date__date=date)
+
+        # For usage, None represents no data
+        usage = [0] * 24
+        for hour in range(open, close + 1):
+            # consider the :30 mark of each hour
+            hour_date = timezone.make_aware(
+                datetime.datetime.combine(date, datetime.time(hour))
+            ) + datetime.timedelta(minutes=30)
 
             # use snapshots before and after the hour_date to interpolate
             before = snapshots.filter(date__lte=hour_date).order_by("-date").first()
             after = snapshots.filter(date__gte=hour_date).order_by("date").first()
 
-            before_val = getattr(before, field, None)
-            after_val = getattr(after, field, None)
+            # print("Hour " + str(hour))
+            # print(before)
+            # print(after)
 
-            if before_val is None or after_val is None:
-                usage[hour] = self.safe_add(before_val, after_val)
-                # set to None if latest entry was more than an hour ago (to avoid extrapolation)
-                if (
-                    after_val is None
-                    and before
-                    and hour_date - datetime.timedelta(hours=1) > before.date
-                ):
-                    usage[hour] = None
-            else:
-                # linear interpolation
-                usage[hour] = (
-                    (
-                        before_val
-                        + (after_val - before_val)
-                        * (hour_date - before.date).total_seconds()
-                        / (after.date - before.date).total_seconds()
-                    )
-                    if before.date != after.date
-                    else after_val
+            before_date, before_val = getattr(before, "date", None), getattr(before, field, None)
+            after_date, after_val = getattr(after, "date", None), getattr(after, field, None)
+
+            # This condition should only activate during morning times
+            if before is None:
+                before_date, before_val = (
+                    timezone.make_aware(datetime.datetime.combine(date, datetime.time(open))),
+                    0,
                 )
+                print("Got here")
+                print(before_date)
+                print(before_val)
+
+            # This can happen either on the current day or at last entries of other days
+            if after is None:
+                if is_today:
+                    # Set value to None if the last retrieved data was 2 hours old to avoid extrapolation
+                    if hour_date - datetime.timedelta(hours=2) > before_date:
+                        usage[hour] = None
+                        continue
+                    else:
+                        after_date, after_val = timezone.localtime(), before_val
+                else:
+                    after_date, after_val = (
+                        timezone.make_aware(datetime.datetime.combine(date, datetime.time(close))),
+                        0,
+                    )
+
+            usage[hour] = (
+                self.linear_interpolate(before_val, after_val, before_date, hour_date, after_date)
+                if before_date != after_date
+                else after_val
+            )
 
         if all(amt == 0 for amt in usage):  # location probably closed - don't count in aggregate
             return [None] * 24
