@@ -4,7 +4,6 @@ import requests
 from bs4 import BeautifulSoup
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from pytz.exceptions import NonExistentTimeError
 from requests.exceptions import ConnectionError
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -15,7 +14,7 @@ from penndata.models import AnalyticsEvent, Event, FitnessRoom, FitnessSnapshot,
 from penndata.serializers import (
     AnalyticsEventSerializer,
     EventSerializer,
-    FitnessSnapshotSerializer,
+    FitnessRoomSerializer,
     HomePageOrderSerializer,
 )
 
@@ -249,25 +248,16 @@ class HomePage(APIView):
         return Response({"cells": [x.getCell() for x in cells]})
 
 
-class Fitness(generics.ListAPIView):
+class FitnessRoomView(generics.ListAPIView):
     """
     GET: Get Fitness Usage
     """
 
     permission_classes = [IsAuthenticated]
-    serializer_class = FitnessSnapshotSerializer
+    serializer_class = FitnessRoomSerializer
 
     def get_queryset(self):
-        # recent snapshots initialized to empty set
-        recent_snapshots = FitnessSnapshot.objects.none()
-
-        # query for all snapshots intiailly, sorted decreasing order of date
-        snapshots = FitnessSnapshot.objects.all().order_by("-date")
-        rooms = FitnessRoom.objects.all()
-        for room in rooms:
-            # append to recent snapshots to most recent snapshot for particular room
-            recent_snapshots |= snapshots.filter(room=room)[:1]
-        return recent_snapshots
+        return FitnessRoom.objects.all()
 
 
 class FitnessUsage(APIView):
@@ -347,7 +337,8 @@ class FitnessUsage(APIView):
             # This can happen either on the current day or at last entries of other days
             if after is None:
                 if is_today:
-                    # Set value to None if the last retrieved data was 2 hours old to avoid extrapolation
+                    # Set value to None if the last retrieved data was
+                    # over 2 hours old to avoid extrapolation
                     if hour_date - datetime.timedelta(hours=2) > before_date:
                         usage[hour] = None
                         continue

@@ -251,31 +251,12 @@ class TestFitnessUsage(TestCase):
 
         # usage = [0, 0, 0, 0, 0, 0, 0]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         res_json = json.loads(response.content)
 
         print(res_json)
         self.assertEqual(0, 1)
 
         # usage = []
-
-
-
 
         # usage = [0, 0, 0, 0, 0, 0, 20, 50, 0, 40, 57, 51, 45, 39, 33, 27, 21, 15, 9, 3, 0, 0, 0, 0]
 
