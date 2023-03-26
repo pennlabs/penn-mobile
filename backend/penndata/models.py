@@ -45,6 +45,10 @@ class FitnessSnapshot(models.Model):
     def __str__(self):
         return f"Room Name: {self.room.name} | {self.date.date()}"
 
+class AnalyticsType(models.Model):
+    name = models.CharField(max_length=255)
+    data_str_required = models.BooleanField()
+    data_num_required = models.BooleanField()
 
 class AnalyticsEvent(models.Model):
     # TODO: would it be better to just have a type field, similar to that
@@ -52,13 +56,11 @@ class AnalyticsEvent(models.Model):
     # that way, we can get rid of the post/portal fields since this should be
     # more generic?
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    type = models.ForeignKey(AnalyticsType, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
-    cell_type = models.CharField(max_length=255)
-    index = models.IntegerField(default=0)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
-    poll = models.ForeignKey(Poll, on_delete=models.CASCADE, null=True)
-    is_interaction = models.BooleanField(default=False)
-    data = models.CharField(max_length=255, null=True)
+    clicked = models.CharField(max_length=255)
+    data_str = models.CharField(max_length=512, null=True)
+    data_num = models.FloatField(null=True)
 
     def __str__(self):
-        return f"{self.cell_type}-{self.user.username}"
+        return f"{self.type.name}-{self.user.username}"
