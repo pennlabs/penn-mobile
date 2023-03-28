@@ -41,7 +41,6 @@ class FitnessSnapshot(models.Model):
     room = models.ForeignKey(FitnessRoom, on_delete=models.CASCADE, null=True)
     date = models.DateTimeField(default=timezone.now)
     count = models.IntegerField()
-    capacity = models.FloatField(null=True)
 
     def __str__(self):
         return f"Room Name: {self.room.name} | {self.date.date()}"

@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import requests
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
@@ -8,24 +6,20 @@ from django.utils import timezone
 from penndata.models import FitnessRoom, FitnessSnapshot
 
 
-def get_usages():
+def get_capacities():
 
-    # count/capacities default to 0 since spreadsheet number appears blank if no one there
-    locations = [
-        "4th Floor Fitness",
-        "3rd Floor Fitness",
-        "2nd Floor Strength",
-        "Basketball Courts",
-        "MPR",
-        "Climbing Wall",
-        "1st floor Fitness",
-        "Pool-Shallow",
-        "Pool-Deep",
-    ]
-    usages = {location: {"count": 0, "capacity": 0} for location in locations}
-
-    date = timezone.localtime()  # default if can't get date from spreadsheet
-
+    # capacities default to 0 because spreadsheet number appears blank if 0 people at location
+    capacities = {
+        "4th Floor Fitness": 0,
+        "3rd Floor Fitness": 0,
+        "2nd Floor Strength": 0,
+        "Basketball Courts": 0,
+        "MPR": 0,
+        "Climbing Wall": 0,
+        "1st floor Fitness": 0,
+        "Pool-Shallow": 0,
+        "Pool-Deep": 0,
+    }
     try:
         resp = requests.get(
             (
@@ -39,46 +33,41 @@ def get_usages():
         return None
 
     html = resp.content.decode("utf8")
-    soup = BeautifulSoup(html, "html5lib")
-    if not (embedded_spreadsheet := soup.find("tbody")):
-        return None
 
+    soup = BeautifulSoup(html, "html5lib")
+
+    embedded_spreadsheet = soup.find("body", {"class": "docs-gm"})
     table_rows = embedded_spreadsheet.findChildren("tr")
-    for i, row in enumerate(table_rows):
+    for row in table_rows:
         cells = row.findChildren("td")
-        if i == 0:
-            date = timezone.make_aware(datetime.strptime(cells[1].getText(), "%m/%d/%Y %H:%M:%S"))
-        elif (location := cells[0].getText()) in usages:
-            try:
-                count = int(cells[1].getText())
-                capacity = float(cells[2].getText().strip("%"))
-                usages[location] = {"count": count, "capacity": capacity}
-            except ValueError:
-                pass
-    return usages, date
+        if len(cells) >= 2:
+            location = cells[0].getText()
+            if location in capacities:
+                try:
+                    count = int(cells[1].getText())
+                    capacities[location] = count
+                except ValueError:
+                    capacities[location] = 0
+
+    return capacities
 
 
 class Command(BaseCommand):
     help = "Captures a new Fitness Snapshot for every Laundry room."
 
     def handle(self, *args, **kwargs):
-        usage_by_location, date = get_usages()
+        now = timezone.localtime()
 
         # prevent double creating FitnessSnapshots
-        if FitnessSnapshot.objects.filter(date=date).exists():
-            self.stdout.write("FitnessSnapshots already exist for this date!")
-            return
+        if FitnessSnapshot.objects.filter(date=now).count() == 0:
 
-        FitnessSnapshot.objects.bulk_create(
-            [
-                FitnessSnapshot(
-                    room=FitnessRoom.objects.get_or_create(name=room_name)[0],
-                    date=date,
-                    count=room_usage["count"],
-                    capacity=room_usage["capacity"],
+            data = get_capacities()
+
+            for room_name, count in data.items():
+
+                fitness_room = FitnessRoom.objects.get(name=room_name)
+
+                FitnessSnapshot.objects.create(
+                    room=fitness_room, date=now, count=count,
                 )
-                for room_name, room_usage in usage_by_location.items()
-            ]
-        )
-
         self.stdout.write("Captured fitness snapshots!")
