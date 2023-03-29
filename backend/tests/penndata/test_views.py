@@ -153,11 +153,38 @@ class TestGetRecentFitness(TestCase):
     def test_get_recent(self):
         response = self.client.get(reverse("fitness"))
         res_json = json.loads(response.content)
-        self.assertEqual(1, len(res_json))
-        self.assertEqual(str(self.fitness_room), res_json[0]["room"]["name"])
-        # remove last 6 characters for timezone, %z doesn't have colon
-        self.assertEqual(self.new_time.strftime("%Y-%m-%dT%H:%M:%S.%f"), res_json[0]["date"][:-6])
-        self.assertEqual(self.new_count, res_json[0]["count"])
+        for room_obj in res_json:
+            room_obj.pop("open")
+            room_obj.pop("close")
+
+        expected = [
+            {
+                "id": room.id,
+                "name": room.name,
+                "last_updated": None,
+                "count": None,
+                "capacity": None,
+            }
+            for room in FitnessRoom.objects.all()
+            if room.id != self.fitness_room.id
+        ]
+        expected.append(
+            {
+                "id": self.fitness_room.id,
+                "name": self.fitness_room.name,
+                "last_updated": self.new_time.astimezone(timezone.utc).strftime(
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
+                ),  # format in way django returns
+                "count": self.new_count,
+                "capacity": None,
+            }
+        )
+
+        # sort both
+        expected.sort(key=lambda x: x["id"])
+        res_json.sort(key=lambda x: x["id"])
+
+        self.assertEqual(expected, res_json)
 
 
 @mock.patch("requests.get", fakeFitnessGet)
@@ -250,7 +277,32 @@ class TestFitnessUsage(TestCase):
         )
         res_json = json.loads(response.content)
 
-        usage = [0, 0, 0, 0, 0, 0, 0.0, 6.666666666666667, 65.0, 20.0, 60.0, 54.0, 48.0, 42.0, 36.0, 30.0, 24.0, 18.0, 12.0, 6.0, 0.0, 0.0, 0.0, 0.0]
+        usage = [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            6.666666666666667,
+            65.0,
+            20.0,
+            60.0,
+            54.0,
+            48.0,
+            42.0,
+            36.0,
+            30.0,
+            24.0,
+            18.0,
+            12.0,
+            6.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
 
         expected = {
             "room_name": self.room.name,
@@ -268,7 +320,32 @@ class TestFitnessUsage(TestCase):
             {"date": (self.date).strftime("%Y-%m-%d")},
         )
         res_json = json.loads(response.content)
-        usage = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 8.0, 18.0, 28.0, 38.0, 48.0, 58.0, 68.0, 78.0, 88.0, 86.35714285714286, 73.07142857142857, 59.785714285714285, 46.5, 33.214285714285715, 19.92857142857143, 6.642857142857139]
+        usage = [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            2.0,
+            8.0,
+            18.0,
+            28.0,
+            38.0,
+            48.0,
+            58.0,
+            68.0,
+            78.0,
+            88.0,
+            86.35714285714286,
+            73.07142857142857,
+            59.785714285714285,
+            46.5,
+            33.214285714285715,
+            19.92857142857143,
+            6.642857142857139,
+        ]
 
         expected = {
             "room_name": self.room.name,
@@ -292,9 +369,59 @@ class TestFitnessUsage(TestCase):
             },
         )
         res_json = json.loads(response.content)
-        usage1 = [0, 0, 0, 0, 0, 0, 0.0, 6.666666666666667, 65.0, 20.0, 60.0, 54.0, 48.0, 42.0, 36.0, 30.0, 24.0, 18.0, 12.0, 6.0, 0.0, 0.0, 0.0, 0.0]
-        usage2 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 8.0, 18.0, 28.0, 38.0, 48.0, 58.0, 68.0, 78.0, 88.0, 86.35714285714286, 73.07142857142857, 59.785714285714285, 46.5, 33.214285714285715, 19.92857142857143, 6.642857142857139]
-        usage = [(x+y)/2 for x,y in zip(usage1, usage2)]
+        usage1 = [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            6.666666666666667,
+            65.0,
+            20.0,
+            60.0,
+            54.0,
+            48.0,
+            42.0,
+            36.0,
+            30.0,
+            24.0,
+            18.0,
+            12.0,
+            6.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
+        usage2 = [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            2.0,
+            8.0,
+            18.0,
+            28.0,
+            38.0,
+            48.0,
+            58.0,
+            68.0,
+            78.0,
+            88.0,
+            86.35714285714286,
+            73.07142857142857,
+            59.785714285714285,
+            46.5,
+            33.214285714285715,
+            19.92857142857143,
+            6.642857142857139,
+        ]
+        usage = [(x + y) / 2 for x, y in zip(usage1, usage2)]
 
         expected = {
             "room_name": self.room.name,
@@ -314,9 +441,59 @@ class TestFitnessUsage(TestCase):
         )
         res_json = json.loads(response.content)
 
-        usage1 = [0, 0, 0, 0, 0, 0, 0.0, 6.666666666666667, 65.0, 20.0, 60.0, 54.0, 48.0, 42.0, 36.0, 30.0, 24.0, 18.0, 12.0, 6.0, 0.0, 0.0, 0.0, 0.0]
-        usage2 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 8.0, 18.0, 28.0, 38.0, 48.0, 58.0, 68.0, 78.0, 88.0, 86.35714285714286, 73.07142857142857, 59.785714285714285, 46.5, 33.214285714285715, 19.92857142857143, 6.642857142857139]
-        usage = [(x+y)/2 for x,y in zip(usage1, usage2)]
+        usage1 = [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            6.666666666666667,
+            65.0,
+            20.0,
+            60.0,
+            54.0,
+            48.0,
+            42.0,
+            36.0,
+            30.0,
+            24.0,
+            18.0,
+            12.0,
+            6.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
+        usage2 = [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            2.0,
+            8.0,
+            18.0,
+            28.0,
+            38.0,
+            48.0,
+            58.0,
+            68.0,
+            78.0,
+            88.0,
+            86.35714285714286,
+            73.07142857142857,
+            59.785714285714285,
+            46.5,
+            33.214285714285715,
+            19.92857142857143,
+            6.642857142857139,
+        ]
+        usage = [(x + y) / 2 for x, y in zip(usage1, usage2)]
 
         expected = {
             "room_name": self.room.name,
@@ -348,7 +525,32 @@ class TestFitnessUsage(TestCase):
             {"date": (self.date - datetime.timedelta(days=1)).strftime("%Y-%m-%d")},
         )
         res_json = json.loads(response.content)
-        usage = [0, 0, 0, 0, 0, 0, 0.0, 6.666666666666667, 65.0, 20.0, 60.0, 54.0, 48.0, 42.0, 36.0, 30.0, 24.0, 18.0, 12.0, 6.0, 0.0, 0.0, 0.0, 0.0]
+        usage = [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            6.666666666666667,
+            65.0,
+            20.0,
+            60.0,
+            54.0,
+            48.0,
+            42.0,
+            36.0,
+            30.0,
+            24.0,
+            18.0,
+            12.0,
+            6.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
         expected = {
             "room_name": self.room.name,
             "start_date": (self.date - datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
@@ -364,7 +566,6 @@ class TestFitnessUsage(TestCase):
         for param in ["date", "num_samples", "group_by", "field"]:
             response = self.client.get(reverse("fitness-usage", args=[self.room.id]), {param: "hi"})
             self.assertEqual(response.status_code, 400)
-        
 
 
 class TestAnalytics(TestCase):

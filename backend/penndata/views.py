@@ -15,7 +15,6 @@ from penndata.serializers import (
     AnalyticsEventSerializer,
     EventSerializer,
     FitnessRoomSerializer,
-    FitnessSnapshotSerializer,
     HomePageOrderSerializer,
 )
 
@@ -253,6 +252,7 @@ class FitnessRoomView(generics.ListAPIView):
     """
     GET: Get Fitness Usage
     """
+
     queryset = FitnessRoom.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = FitnessRoomSerializer
@@ -272,9 +272,12 @@ class FitnessRoomView(generics.ListAPIView):
         # also add last_updated and open/close times to each room in response
         for room in response.data:
             ss = FitnessSnapshot.objects.filter(room__id=room["id"]).order_by("-date").first()
-            room["last_updated"], room["count"], room["capacity"] = ss.date, ss.count, ss.capacity
+            room["last_updated"] = getattr(ss, "date", None)
+            room["count"] = getattr(ss, "count", None)
+            room["capacity"] = getattr(ss, "capacity", None)
             room["open"], room["close"] = self.open_times[timezone.localtime().weekday()]
         return response
+
 
 class FitnessUsage(APIView):
     def safe_add(self, a, b):
@@ -305,9 +308,7 @@ class FitnessUsage(APIView):
         usage = [0] * 24
         for hour in range(open, close + 1):
             # consider the :30 mark of each hour
-            hour_date = timezone.make_aware(
-                datetime.datetime.combine(date, datetime.time(hour))
-            )
+            hour_date = timezone.make_aware(datetime.datetime.combine(date, datetime.time(hour)))
 
             # use snapshots before and after the hour_date to interpolate
             before = snapshots.filter(date__lte=hour_date).order_by("-date").first()
@@ -336,7 +337,8 @@ class FitnessUsage(APIView):
                         after_date, after_val = timezone.localtime(), before_val
                 else:
                     after_date, after_val = (
-                        timezone.make_aware(datetime.datetime.combine(date, datetime.time(close))) + datetime.timedelta(minutes=30),
+                        timezone.make_aware(datetime.datetime.combine(date, datetime.time(close)))
+                        + datetime.timedelta(minutes=30),
                         0,
                     )
 
@@ -367,10 +369,7 @@ class FitnessUsage(APIView):
             if any(usage):
                 min_date = min(min_date, curr)
                 max_date = max(max_date, curr)
-        ret = [
-            usage_agg[0] / usage_agg[1] if usage_agg[1] else None
-            for usage_agg in usage_aggs
-        ]
+        ret = [usage_agg[0] / usage_agg[1] if usage_agg[1] else None for usage_agg in usage_aggs]
         return ret, min_date, max_date
 
     def get(self, request, room_id):
