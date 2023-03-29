@@ -86,21 +86,17 @@ def get_demographic_breakdown(poll_id):
     # poll info is already serialized
     poll = Poll.objects.get(id=poll_id)
     data = []
-    breakdown = defaultdict(lambda: defaultdict(int))
 
     # gets all options for the poll
     options = PollOption.objects.filter(poll=poll)
     for option in options:
-        context = {"option": option.choice, "breakdown": breakdown.copy()}
+        context = {"option": option.choice, "breakdown": defaultdict(lambda: defaultdict(int))}
         # gets all votes for the option
         votes = PollVote.objects.filter(poll_options__in=[option])
         for vote in votes:
             # goes through each vote and adds +1 to the
             # target populations that the voter belongs to
             for target_population in vote.target_populations.all():
-                if target_population.population in context["breakdown"]:
-                    context["breakdown"][target_population.kind][target_population.population] += 1
-                else:
-                    context["breakdown"][target_population.kind][target_population.population] = 1
+                context["breakdown"][target_population.kind][target_population.population] += 1
         data.append(context)
     return data

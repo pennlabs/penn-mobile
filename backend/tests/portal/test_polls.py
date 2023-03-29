@@ -348,3 +348,11 @@ class TestPollVotes(TestCase):
         self.assertIn("poll_statistics", res_json)
         self.assertEqual(3, len(res_json["poll_statistics"]))
         self.assertIn("Computer Science, BSE", res_json["poll_statistics"][0]["breakdown"]["MAJOR"])
+        self.assertEquals(
+            3, res_json["poll_statistics"][0]["breakdown"]["MAJOR"]["Computer Science, BSE"]
+        )
+
+        self.assertIn(
+            "School of Engineering and Applied Science",
+            res_json["poll_statistics"][0]["breakdown"]["SCHOOL"],
+        )
