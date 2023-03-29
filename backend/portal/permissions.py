@@ -23,7 +23,7 @@ class PollOwnerPermission(permissions.BasePermission):
         # only creator can edit
         if view.action in ["partial_update", "update", "destroy"]:
             return obj.club_code in [x["club"]["code"] for x in get_user_clubs(request.user)]
-        return True
+        return request.user.is_authenticated
 
     def has_permission(self, request, view):
         return request.user.is_authenticated

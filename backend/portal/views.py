@@ -213,6 +213,14 @@ class PollVotes(viewsets.ModelViewSet):
         poll_votes = PollVote.objects.filter(id_hash=id_hash).order_by("-created_date").first()
         return Response(RetrievePollVoteSerializer(poll_votes).data)
 
+    @action(detail=False, methods=["post"])
+    def all(self, request):
+
+        id_hash = request.data["id_hash"]
+
+        poll_votes = PollVote.objects.filter(id_hash=id_hash).order_by("-created_date")
+        return Response(RetrievePollVoteSerializer(poll_votes, many=True).data)
+
 
 class PollVoteStatistics(APIView):
     """Returns time series of all votes for a particular poll"""

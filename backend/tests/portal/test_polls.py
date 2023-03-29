@@ -317,6 +317,19 @@ class TestPollVotes(TestCase):
         self.assertEquals(self.p4_id, res_json2["poll"]["id"])
 
     @mock.patch("portal.logic.get_user_info", mock_get_user_info)
+    def test_all_votes(self):
+        payload_1 = {"id_hash": 1, "poll_options": [self.p1_op1_id]}
+        self.client.post("/portal/votes/", payload_1)
+        payload_2 = {"id_hash": 1, "poll_options": [self.p4_op1_id]}
+        self.client.post("/portal/votes/", payload_2)
+        # Assert there are exactly 2 votes, and that the first id is greater
+        # than the second, because we sort in decreasing order of created date
+        response = self.client.post("/portal/votes/all/", {"id_hash": 1})
+        res_json = json.loads(response.content)
+        self.assertEquals(2, len(res_json))
+        self.assertGreater(res_json[0]["id"], res_json[1]["id"])
+
+    @mock.patch("portal.logic.get_user_info", mock_get_user_info)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     def test_demographic_breakdown(self):
         # plugging in votes for breakdown
