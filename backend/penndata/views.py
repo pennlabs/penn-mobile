@@ -15,6 +15,7 @@ from penndata.serializers import (
     AnalyticsEventSerializer,
     EventSerializer,
     FitnessRoomSerializer,
+    FitnessSnapshotSerializer,
     HomePageOrderSerializer,
 )
 
@@ -252,21 +253,32 @@ class FitnessRoomView(generics.ListAPIView):
     """
     GET: Get Fitness Usage
     """
-
+    queryset = FitnessRoom.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = FitnessRoomSerializer
 
-    def get_queryset(self):
-        return FitnessRoom.objects.all()
+    open_times = {
+        0: (6, 23),
+        1: (6, 23),
+        2: (6, 23),
+        3: (6, 23),
+        4: (6, 22),
+        5: (8, 20),
+        6: (9, 20),
+    }
 
+    def get(self, request):
+        response = super().get(self, request)
+        # also add last_updated and open/close times to each room in response
+        for room in response.data:
+            ss = FitnessSnapshot.objects.filter(room__id=room["id"]).order_by("-date").first()
+            room["last_updated"], room["count"], room["capacity"] = ss.date, ss.count, ss.capacity
+            room["open"], room["close"] = self.open_times[timezone.localtime().weekday()]
+        return response
 
 class FitnessUsage(APIView):
     def safe_add(self, a, b):
-        if a is None:
-            return b
-        if b is None:
-            return a
-        return a + b
+        return a + b if a and b else (a if a else b)
 
     def linear_interpolate(self, before_val, after_val, before_date, current_date, after_date):
         return (
@@ -283,24 +295,8 @@ class FitnessUsage(APIView):
 
         # Rounded closing times down
         # TODO: get the API for accurate open and close times
-        open_times = {
-            0: (6, 23),
-            1: (6, 23),
-            2: (6, 23),
-            3: (6, 23),
-            4: (6, 22),
-            5: (8, 20),
-            6: (9, 20),
-        }
 
-        day = date.weekday()
-        open, close = open_times[day]
-
-        is_today = date == timezone.localtime().date()
-
-        # If query is asking for today, take minimum between current time and close time
-        if is_today:
-            close = min(timezone.localtime().hour, close)
+        open, close = FitnessRoomView.open_times[date.weekday()]
 
         # get all snapshots for a given room on a given date and the days before and after
         snapshots = FitnessSnapshot.objects.filter(room=room, date__date=date)
@@ -311,15 +307,11 @@ class FitnessUsage(APIView):
             # consider the :30 mark of each hour
             hour_date = timezone.make_aware(
                 datetime.datetime.combine(date, datetime.time(hour))
-            ) + datetime.timedelta(minutes=30)
+            )
 
             # use snapshots before and after the hour_date to interpolate
             before = snapshots.filter(date__lte=hour_date).order_by("-date").first()
             after = snapshots.filter(date__gte=hour_date).order_by("date").first()
-
-            # print("Hour " + str(hour))
-            # print(before)
-            # print(after)
 
             before_date, before_val = getattr(before, "date", None), getattr(before, field, None)
             after_date, after_val = getattr(after, "date", None), getattr(after, field, None)
@@ -330,23 +322,21 @@ class FitnessUsage(APIView):
                     timezone.make_aware(datetime.datetime.combine(date, datetime.time(open))),
                     0,
                 )
-                print("Got here")
-                print(before_date)
-                print(before_val)
 
             # This can happen either on the current day or at last entries of other days
             if after is None:
-                if is_today:
+                if date == timezone.localtime().date():
                     # Set value to None if the last retrieved data was
                     # over 2 hours old to avoid extrapolation
-                    if hour_date - datetime.timedelta(hours=2) > before_date:
-                        usage[hour] = None
-                        continue
+                    if hour_date - datetime.timedelta(hours=1) > before_date:
+                        for i in range(hour, 24):
+                            usage[i] = None
+                        break
                     else:
                         after_date, after_val = timezone.localtime(), before_val
                 else:
                     after_date, after_val = (
-                        timezone.make_aware(datetime.datetime.combine(date, datetime.time(close))),
+                        timezone.make_aware(datetime.datetime.combine(date, datetime.time(close))) + datetime.timedelta(minutes=30),
                         0,
                     )
 
@@ -355,7 +345,6 @@ class FitnessUsage(APIView):
                 if before_date != after_date
                 else after_val
             )
-
         if all(amt == 0 for amt in usage):  # location probably closed - don't count in aggregate
             return [None] * 24
         return usage
@@ -378,9 +367,8 @@ class FitnessUsage(APIView):
             if any(usage):
                 min_date = min(min_date, curr)
                 max_date = max(max_date, curr)
-
         ret = [
-            usage_agg[0] / usage_agg[1] if usage_agg[0] and usage_agg[1] else 0
+            usage_agg[0] / usage_agg[1] if usage_agg[1] else None
             for usage_agg in usage_aggs
         ]
         return ret, min_date, max_date
