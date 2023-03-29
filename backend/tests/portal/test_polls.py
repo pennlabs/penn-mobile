@@ -347,4 +347,4 @@ class TestPollVotes(TestCase):
         self.assertEqual(1, len(res_json["time_series"]))
         self.assertIn("poll_statistics", res_json)
         self.assertEqual(3, len(res_json["poll_statistics"]))
-        self.assertIn("Computer Science, BSE", res_json["poll_statistics"][0]["breakdown"])
+        self.assertIn("Computer Science, BSE", res_json["poll_statistics"][0]["breakdown"]["MAJOR"])
