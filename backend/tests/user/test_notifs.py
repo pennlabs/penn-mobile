@@ -6,10 +6,10 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
+from identity.identity import attest, container, get_platform_jwks
 from rest_framework.test import APIClient
 
 from gsr_booking.models import GSR, Group, GSRBooking, Reservation
-from identity.identity import attest, container, get_platform_jwks
 from user.models import NotificationSetting, NotificationToken
 
 
