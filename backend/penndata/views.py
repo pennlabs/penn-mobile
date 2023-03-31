@@ -273,12 +273,15 @@ class FitnessRoomView(generics.ListAPIView):
         for room in response.data:
             ss = FitnessSnapshot.objects.filter(room__id=room["id"]).order_by("-date").first()
             room["last_updated"] = timezone.localtime(ss.date) if ss else None
-            print(timezone.localtime(ss.date) if ss else None)
             room["count"] = getattr(ss, "count", None)
             room["capacity"] = getattr(ss, "capacity", None)
             open, close = self.open_times[timezone.localtime().weekday()]
-            room["open"] = timezone.localtime().replace(hour=int(open), minute=int((open % 1) * 60), second=0, microsecond=0)
-            room["close"] = timezone.localtime().replace(hour=int(close), minute=int((close % 1) * 60), second=0, microsecond=0)
+            room["open"] = timezone.localtime().replace(
+                hour=int(open), minute=int((open % 1) * 60), second=0, microsecond=0
+            )
+            room["close"] = timezone.localtime().replace(
+                hour=int(close), minute=int((close % 1) * 60), second=0, microsecond=0
+            )
         return response
 
 
