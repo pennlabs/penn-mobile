@@ -258,10 +258,10 @@ class FitnessRoomView(generics.ListAPIView):
     serializer_class = FitnessRoomSerializer
 
     open_times = {
-        0: (6, 23),
-        1: (6, 23),
-        2: (6, 23),
-        3: (6, 23),
+        0: (6, 23.5),
+        1: (6, 23.5),
+        2: (6, 23.5),
+        3: (6, 23.5),
         4: (6, 22),
         5: (8, 20),
         6: (9, 20),
@@ -272,10 +272,13 @@ class FitnessRoomView(generics.ListAPIView):
         # also add last_updated and open/close times to each room in response
         for room in response.data:
             ss = FitnessSnapshot.objects.filter(room__id=room["id"]).order_by("-date").first()
-            room["last_updated"] = getattr(ss, "date", None)
+            room["last_updated"] = timezone.localtime(ss.date) if ss else None
+            print(timezone.localtime(ss.date) if ss else None)
             room["count"] = getattr(ss, "count", None)
             room["capacity"] = getattr(ss, "capacity", None)
-            room["open"], room["close"] = self.open_times[timezone.localtime().weekday()]
+            open, close = self.open_times[timezone.localtime().weekday()]
+            room["open"] = timezone.localtime().replace(hour=int(open), minute=int((open % 1) * 60), second=0, microsecond=0)
+            room["close"] = timezone.localtime().replace(hour=int(close), minute=int((close % 1) * 60), second=0, microsecond=0)
         return response
 
 
@@ -300,6 +303,7 @@ class FitnessUsage(APIView):
         # TODO: get the API for accurate open and close times
 
         open, close = FitnessRoomView.open_times[date.weekday()]
+        open, close = int(open), int(close)
 
         # get all snapshots for a given room on a given date and the days before and after
         snapshots = FitnessSnapshot.objects.filter(room=room, date__date=date)

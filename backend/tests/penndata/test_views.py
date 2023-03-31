@@ -138,7 +138,7 @@ class TestGetRecentFitness(TestCase):
 
         self.fitness_room = FitnessRoom.objects.first()
         self.new_count = 20
-        self.new_time = timezone.localtime()
+        self.new_time = timezone.localtime().replace(second=0, microsecond=0)
         old_count = 10
         old_time = self.new_time - datetime.timedelta(days=1)
 
@@ -172,9 +172,8 @@ class TestGetRecentFitness(TestCase):
             {
                 "id": self.fitness_room.id,
                 "name": self.fitness_room.name,
-                "last_updated": self.new_time.astimezone(timezone.utc).strftime(
-                    "%Y-%m-%dT%H:%M:%S.%fZ"
-                ),  # format in way django returns
+                # this format: 2023-03-12T16:56:51-04:00
+                "last_updated": self.new_time.strftime("%Y-%m-%dT%H:%M:%S%z")[:-2] + ":00",
                 "count": self.new_count,
                 "capacity": None,
             }
