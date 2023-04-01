@@ -4,7 +4,6 @@ import requests
 from bs4 import BeautifulSoup
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from pytz.exceptions import NonExistentTimeError
 from requests.exceptions import ConnectionError
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -15,7 +14,7 @@ from penndata.models import AnalyticsEvent, Event, FitnessRoom, FitnessSnapshot,
 from penndata.serializers import (
     AnalyticsEventSerializer,
     EventSerializer,
-    FitnessSnapshotSerializer,
+    FitnessRoomSerializer,
     HomePageOrderSerializer,
 )
 
@@ -249,87 +248,112 @@ class HomePage(APIView):
         return Response({"cells": [x.getCell() for x in cells]})
 
 
-class Fitness(generics.ListAPIView):
+class FitnessRoomView(generics.ListAPIView):
     """
     GET: Get Fitness Usage
     """
 
+    queryset = FitnessRoom.objects.all()
     permission_classes = [IsAuthenticated]
-    serializer_class = FitnessSnapshotSerializer
+    serializer_class = FitnessRoomSerializer
 
-    def get_queryset(self):
-        # recent snapshots initialized to empty set
-        recent_snapshots = FitnessSnapshot.objects.none()
+    open_times = {
+        0: (6, 23.5),
+        1: (6, 23.5),
+        2: (6, 23.5),
+        3: (6, 23.5),
+        4: (6, 22),
+        5: (8, 20),
+        6: (9, 20),
+    }
 
-        # query for all snapshots intiailly, sorted decreasing order of date
-        snapshots = FitnessSnapshot.objects.all().order_by("-date")
-        rooms = FitnessRoom.objects.all()
-        for room in rooms:
-            # append to recent snapshots to most recent snapshot for particular room
-            recent_snapshots |= snapshots.filter(room=room)[:1]
-        return recent_snapshots
+    def get(self, request):
+        response = super().get(self, request)
+        # also add last_updated and open/close times to each room in response
+        for room in response.data:
+            ss = FitnessSnapshot.objects.filter(room__id=room["id"]).order_by("-date").first()
+            room["last_updated"] = timezone.localtime(ss.date) if ss else None
+            room["count"] = getattr(ss, "count", None)
+            room["capacity"] = getattr(ss, "capacity", None)
+            open, close = self.open_times[timezone.localtime().weekday()]
+            room["open"] = timezone.localtime().replace(
+                hour=int(open), minute=int((open % 1) * 60), second=0, microsecond=0
+            )
+            room["close"] = timezone.localtime().replace(
+                hour=int(close), minute=int((close % 1) * 60), second=0, microsecond=0
+            )
+        return response
 
 
 class FitnessUsage(APIView):
     def safe_add(self, a, b):
-        if a is None:
-            return b
-        if b is None:
-            return a
-        return a + b
+        return a + b if a and b else (a if a else b)
+
+    def linear_interpolate(self, before_val, after_val, before_date, current_date, after_date):
+        return (
+            before_val
+            + (after_val - before_val)
+            * (current_date - before_date).total_seconds()
+            / (after_date - before_date).total_seconds()
+        )
 
     def get_usage_on_date(self, room, date, field):
         """
         Returns the number of people in the fitness center on a given date per hour
         """
 
-        # get all snapshots for a given room on a given date and the days before and after
-        snapshots = FitnessSnapshot.objects.filter(
-            room=room,
-            date__gte=date - datetime.timedelta(days=1),
-            date__lte=date + datetime.timedelta(days=1),
-        )
+        # Rounded closing times down
+        # TODO: get the API for accurate open and close times
 
-        usage = [None] * 24  # None represents no data so initialize to all None
-        for hour in range(24):
-            try:
-                # consider the :30 mark of each hour
-                hour_date = timezone.make_aware(
-                    datetime.datetime.combine(date, datetime.time(hour))
-                ) + datetime.timedelta(minutes=30)
-            except NonExistentTimeError:
-                # daylight savings time
-                continue
+        open, close = FitnessRoomView.open_times[date.weekday()]
+        open, close = int(open), int(close)
+
+        # get all snapshots for a given room on a given date and the days before and after
+        snapshots = FitnessSnapshot.objects.filter(room=room, date__date=date)
+
+        # For usage, None represents no data
+        usage = [0] * 24
+        for hour in range(open, close + 1):
+            # consider the :30 mark of each hour
+            hour_date = timezone.make_aware(datetime.datetime.combine(date, datetime.time(hour)))
 
             # use snapshots before and after the hour_date to interpolate
             before = snapshots.filter(date__lte=hour_date).order_by("-date").first()
             after = snapshots.filter(date__gte=hour_date).order_by("date").first()
 
-            before_val = getattr(before, field, None)
-            after_val = getattr(after, field, None)
+            before_date, before_val = getattr(before, "date", None), getattr(before, field, None)
+            after_date, after_val = getattr(after, "date", None), getattr(after, field, None)
 
-            if before_val is None or after_val is None:
-                usage[hour] = self.safe_add(before_val, after_val)
-                # set to None if latest entry was more than an hour ago (to avoid extrapolation)
-                if (
-                    after_val is None
-                    and before
-                    and hour_date - datetime.timedelta(hours=1) > before.date
-                ):
-                    usage[hour] = None
-            else:
-                # linear interpolation
-                usage[hour] = (
-                    (
-                        before_val
-                        + (after_val - before_val)
-                        * (hour_date - before.date).total_seconds()
-                        / (after.date - before.date).total_seconds()
-                    )
-                    if before.date != after.date
-                    else after_val
+            # This condition should only activate during morning times
+            if before is None:
+                before_date, before_val = (
+                    timezone.make_aware(datetime.datetime.combine(date, datetime.time(open))),
+                    0,
                 )
 
+            # This can happen either on the current day or at last entries of other days
+            if after is None:
+                if date == timezone.localtime().date():
+                    # Set value to None if the last retrieved data was
+                    # over 2 hours old to avoid extrapolation
+                    if hour_date - datetime.timedelta(hours=1) > before_date:
+                        for i in range(hour, 24):
+                            usage[i] = None
+                        break
+                    else:
+                        after_date, after_val = timezone.localtime(), before_val
+                else:
+                    after_date, after_val = (
+                        timezone.make_aware(datetime.datetime.combine(date, datetime.time(close)))
+                        + datetime.timedelta(minutes=30),
+                        0,
+                    )
+
+            usage[hour] = (
+                self.linear_interpolate(before_val, after_val, before_date, hour_date, after_date)
+                if before_date != after_date
+                else after_val
+            )
         if all(amt == 0 for amt in usage):  # location probably closed - don't count in aggregate
             return [None] * 24
         return usage
@@ -352,11 +376,7 @@ class FitnessUsage(APIView):
             if any(usage):
                 min_date = min(min_date, curr)
                 max_date = max(max_date, curr)
-
-        ret = [
-            usage_agg[0] / usage_agg[1] if usage_agg[0] and usage_agg[1] else 0
-            for usage_agg in usage_aggs
-        ]
+        ret = [usage_agg[0] / usage_agg[1] if usage_agg[1] else None for usage_agg in usage_aggs]
         return ret, min_date, max_date
 
     def get(self, request, room_id):

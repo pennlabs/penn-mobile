@@ -28,7 +28,7 @@ class HomePageOrderSerializer(serializers.ModelSerializer):
 class FitnessRoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = FitnessRoom
-        fields = ("name",)
+        fields = ("id", "name")
 
 
 class FitnessSnapshotSerializer(serializers.ModelSerializer):
@@ -37,7 +37,7 @@ class FitnessSnapshotSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = FitnessSnapshot
-        fields = ("room", "date", "count")
+        fields = ("room", "date", "count", "capacity")
 
 
 class AnalyticsEventSerializer(serializers.ModelSerializer):
