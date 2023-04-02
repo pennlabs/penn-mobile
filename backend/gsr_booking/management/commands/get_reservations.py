@@ -5,8 +5,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Q
 from django.utils import timezone
 
-from gsr_booking.models import Reservation
-from gsr_booking.models import Group
+from gsr_booking.models import Group, Reservation
 
 
 User = get_user_model()
@@ -36,7 +35,6 @@ class Command(BaseCommand):
         parser.add_argument("--current", type=bool, default=False)
         parser.add_argument("--time", type=bool, default=False)
         parser.add_argument("--user", type=bool, default=False)
-        
 
     def handle(self, *args, **kwargs):
         group = kwargs["group"]
@@ -93,7 +91,7 @@ class Command(BaseCommand):
         :param date_str: string in format YYYY-MM-DD
         :return: datetime object
         """
-        
+
         try:
             return timezone.make_aware(datetime.strptime(date_str, "%Y-%m-%d"))
         except ValueError:
