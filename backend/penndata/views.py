@@ -254,7 +254,6 @@ class FitnessRoomView(generics.ListAPIView):
     """
 
     queryset = FitnessRoom.objects.all()
-    permission_classes = [IsAuthenticated]
     serializer_class = FitnessRoomSerializer
 
     open_times = {
