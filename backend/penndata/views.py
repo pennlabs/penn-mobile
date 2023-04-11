@@ -262,8 +262,8 @@ class FitnessRoomView(generics.ListAPIView):
         2: (6, 23.5),
         3: (6, 23.5),
         4: (6, 22),
-        5: (8, 20),
-        6: (9, 20),
+        5: (8, 22),
+        6: (9, 22),
     }
 
     def get(self, request):
