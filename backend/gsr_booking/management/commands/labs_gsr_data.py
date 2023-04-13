@@ -18,7 +18,7 @@ class Command(BaseCommand):
         time_used = 0
         print("| Owner:\t | Taken From:\t | Location:\t | Time Start:\t\t | Duration:")
         for res in reservations:
-            bookings = GSRBooking.objects.filter(reservation=res)
+            bookings = GSRBooking.objects.filter(reservation=res, is_cancelled=False)
             for booking in bookings:
                 duration = (booking.end - booking.start).total_seconds() / 60
                 start = localtime(booking.start).strftime("%m/%d/%Y @ %H:%M")
