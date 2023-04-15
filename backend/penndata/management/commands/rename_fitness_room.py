@@ -1,11 +1,7 @@
-from datetime import datetime
-
-import requests
-from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
-from penndata.models import FitnessRoom, FitnessSnapshot
+from penndata.models import FitnessRoom
+
 
 class Command(BaseCommand):
     help = "Renames a fitness room."
