@@ -9,7 +9,7 @@ from penndata.models import FitnessRoom, FitnessSnapshot
 
 
 def cap_string(s):
-    return " ".join([word[0].upper() + word[1:] for word in s.split(" ")])
+    return " ".join([word[0].upper() + word[1:] for word in s.split()])
 
 
 def get_usages():
