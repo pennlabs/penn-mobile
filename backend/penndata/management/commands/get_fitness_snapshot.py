@@ -8,6 +8,10 @@ from django.utils import timezone
 from penndata.models import FitnessRoom, FitnessSnapshot
 
 
+def cap_string(s):
+    return " ".join([word[0].upper() + word[1:] for word in s.split()])
+
+
 def get_usages():
 
     # count/capacities default to 0 since spreadsheet number appears blank if no one there
@@ -18,7 +22,7 @@ def get_usages():
         "Basketball Courts",
         "MPR",
         "Climbing Wall",
-        "1st floor Fitness",
+        "1st Floor Fitness",
         "Pool-Shallow",
         "Pool-Deep",
     ]
@@ -48,13 +52,15 @@ def get_usages():
         cells = row.findChildren("td")
         if i == 0:
             date = timezone.make_aware(datetime.strptime(cells[1].getText(), "%m/%d/%Y %H:%M:%S"))
-        elif (location := cells[0].getText()) in usages:
+        elif (location := cap_string(cells[0].getText())) in usages:
             try:
                 count = int(cells[1].getText())
                 capacity = float(cells[2].getText().strip("%"))
                 usages[location] = {"count": count, "capacity": capacity}
             except ValueError:
                 pass
+        else:
+            print(f"Unknown location: {location}")
     return usages, date
 
 
