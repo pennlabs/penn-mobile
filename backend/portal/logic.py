@@ -35,25 +35,32 @@ def get_user_populations(user):
 
     user_info = get_user_info(user)
 
-    year = [
-        TargetPopulation.objects.get(
-            kind=TargetPopulation.KIND_YEAR, population=user_info["student"]["graduation_year"]
-        )
-    ]
+    year = (
+        [
+            TargetPopulation.objects.get(
+                kind=TargetPopulation.KIND_YEAR, population=user_info["student"]["graduation_year"]
+            )
+        ]
+        if user_info["student"]["graduation_year"]
+        else []
+    )
 
     school = [
         TargetPopulation.objects.get(kind=TargetPopulation.KIND_SCHOOL, population=x["name"])
         for x in user_info["student"]["school"]
+        if user_info["student"]["school"]
     ]
 
     major = [
         TargetPopulation.objects.get(kind=TargetPopulation.KIND_MAJOR, population=x["name"])
         for x in user_info["student"]["major"]
+        if user_info["student"]["major"]
     ]
 
     degree = [
         TargetPopulation.objects.get(kind=TargetPopulation.KIND_DEGREE, population=x["degree_type"])
         for x in user_info["student"]["major"]
+        if user_info["student"]["major"]
     ]
 
     return [year, school, major, degree]
