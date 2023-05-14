@@ -566,6 +566,35 @@ class TestFitnessUsage(TestCase):
             response = self.client.get(reverse("fitness-usage", args=[self.room.id]), {param: "hi"})
             self.assertEqual(response.status_code, 400)
 
+@mock.patch("requests.get", fakeFitnessGet)
+class FitnessPreferencesTestCase(TestCase):
+    def setUp(self):
+        FitnessRoom.objects.get_or_create(id=0, name="1st Floor Fitness")
+        FitnessRoom.objects.get_or_create(id=1, name="MPR")
+        FitnessRoom.objects.get_or_create(id=2, name="Pool-Deep")
+        FitnessRoom.objects.get_or_create(id=3, name="4th Floor Fitness")
+        self.client = APIClient()
+        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+        self.fitness_room = FitnessRoom.objects.get(id=0, name="1st Floor Fitness")
+        self.other_fitness_room = FitnessRoom.objects.get(id=1, name="MPR")
+        self.test_user.profile.fitness_preferences.add(self.fitness_room)
+
+    def test_get(self):
+        self.client.force_authenticate(user=self.test_user)
+        response = self.client.get(reverse("fitness-preferences"))
+        res_json = json.loads(response.content)
+
+        self.assertIn(self.fitness_room.id, res_json["rooms"])
+
+    def test_post(self):
+        self.client.force_authenticate(user=self.test_user)
+        self.client.post(reverse("fitness-preferences"), {"rooms": [self.other_fitness_room.id]})
+
+        response = self.client.get(reverse("fitness-preferences"))
+        res_json = json.loads(response.content)
+
+        self.assertIn(self.other_fitness_room.id, res_json["rooms"])
+
 
 class TestAnalytics(TestCase):
     def setUp(self):
