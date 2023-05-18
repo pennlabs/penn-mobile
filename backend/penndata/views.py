@@ -429,6 +429,10 @@ class FitnessPreferences(APIView):
 
     def get(self, request):
 
+        # check fitness preferences existence first
+        if not hasattr(request.user.profile, "fitness_preferences"):
+            return Response({"rooms": []})
+
         preferences = request.user.profile.fitness_preferences.all()
 
         # returns all ids in a person's preferences
@@ -436,17 +440,20 @@ class FitnessPreferences(APIView):
 
     def post(self, request):
 
+        if "rooms" not in request.data:
+            return Response({"success": False, "error": "No rooms provided"})
+
         profile = request.user.profile
+
+        ids = request.data["rooms"]
+
+        halls = [get_object_or_404(FitnessRoom, id=int(id)) for id in ids]
 
         # clears all previous preferences in many-to-many
         profile.fitness_preferences.clear()
 
-        ids = request.data["rooms"]
-
-        for id in ids:
-            hall = get_object_or_404(FitnessRoom, id=int(id))
-            # adds all of the preferences given by the request
-            profile.fitness_preferences.add(hall)
+        # adds all of the preferences given by the request
+        profile.fitness_preferences.add(*halls)
 
         profile.save()
 
