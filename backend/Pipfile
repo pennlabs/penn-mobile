@@ -5,6 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 codecov = "*"
+black = "==19.10b0"
 unittest-xml-reporting = "*"
 flake8 = "*"
 flake8-isort = "*"
