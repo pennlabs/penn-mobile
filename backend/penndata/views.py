@@ -429,10 +429,6 @@ class FitnessPreferences(APIView):
 
     def get(self, request):
 
-        # check fitness preferences existence first
-        if not hasattr(request.user.profile, "fitness_preferences"):
-            return Response({"rooms": []})
-
         preferences = request.user.profile.fitness_preferences.all()
 
         # returns all ids in a person's preferences
