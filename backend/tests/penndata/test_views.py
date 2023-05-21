@@ -144,10 +144,14 @@ class TestGetRecentFitness(TestCase):
 
         # create old snapshot and new snapshot
         FitnessSnapshot.objects.create(
-            room=self.fitness_room, date=old_time, count=old_count,
+            room=self.fitness_room,
+            date=old_time,
+            count=old_count,
         )
         FitnessSnapshot.objects.create(
-            room=self.fitness_room, date=self.new_time, count=self.new_count,
+            room=self.fitness_room,
+            date=self.new_time,
+            count=self.new_count,
         )
 
     def test_get_recent(self):
@@ -565,6 +569,7 @@ class TestFitnessUsage(TestCase):
         for param in ["date", "num_samples", "group_by", "field"]:
             response = self.client.get(reverse("fitness-usage", args=[self.room.id]), {param: "hi"})
             self.assertEqual(response.status_code, 400)
+
 
 @mock.patch("requests.get", fakeFitnessGet)
 class FitnessPreferencesTestCase(TestCase):
