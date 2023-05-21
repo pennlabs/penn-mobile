@@ -416,7 +416,44 @@ class FitnessUsage(APIView):
                 "usage": {i: amt for i, amt in enumerate(usage_per_hour)},
             }
         )
+    
+class FitnessPreferences(APIView):
+    """
+    GET: returns list of a User's fitness preferences
 
+    POST: updates User fitness preferences by clearing past preferences
+    and resetting them with request data
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        preferences = request.user.profile.fitness_preferences.all()
+
+        # returns all ids in a person's preferences
+        return Response({"rooms": preferences.values_list("id", flat=True)})
+
+    def post(self, request):
+
+        if "rooms" not in request.data:
+            return Response({"success": False, "error": "No rooms provided"})
+
+        profile = request.user.profile
+
+        ids = request.data["rooms"]
+
+        halls = [get_object_or_404(FitnessRoom, id=int(id)) for id in ids]
+
+        # clears all previous preferences in many-to-many
+        profile.fitness_preferences.clear()
+
+        # adds all of the preferences given by the request
+        profile.fitness_preferences.add(*halls)
+
+        profile.save()
+
+        return Response({"success": True, "error": None})
 
 class UniqueCounterView(APIView):
     """

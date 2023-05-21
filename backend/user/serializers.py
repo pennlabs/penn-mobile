@@ -40,7 +40,7 @@ class NotificationSettingSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ("laundry_preferences", "dining_preferences")
+        fields = ("laundry_preferences", "fitness_preferences", "dining_preferences")
 
 
 class UserSerializer(serializers.ModelSerializer):

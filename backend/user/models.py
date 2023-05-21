@@ -5,6 +5,7 @@ from django.dispatch import receiver
 
 from gsr_booking.models import Group
 from laundry.models import LaundryRoom
+from penndata.models import FitnessRoom
 
 
 User = get_user_model()
@@ -56,6 +57,7 @@ class NotificationSetting(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)
+    fitness_preferences = models.ManyToManyField(FitnessRoom, blank=True)
     dining_preferences = models.ManyToManyField("dining.Venue", blank=True)
 
     def __str__(self):
