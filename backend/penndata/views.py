@@ -416,7 +416,8 @@ class FitnessUsage(APIView):
                 "usage": {i: amt for i, amt in enumerate(usage_per_hour)},
             }
         )
-    
+
+
 class FitnessPreferences(APIView):
     """
     GET: returns list of a User's fitness preferences
@@ -454,6 +455,7 @@ class FitnessPreferences(APIView):
         profile.save()
 
         return Response({"success": True, "error": None})
+
 
 class UniqueCounterView(APIView):
     """

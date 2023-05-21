@@ -566,6 +566,7 @@ class TestFitnessUsage(TestCase):
             response = self.client.get(reverse("fitness-usage", args=[self.room.id]), {param: "hi"})
             self.assertEqual(response.status_code, 400)
 
+
 @mock.patch("requests.get", fakeFitnessGet)
 class FitnessPreferencesTestCase(TestCase):
     def setUp(self):
