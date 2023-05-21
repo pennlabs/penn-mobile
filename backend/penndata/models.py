@@ -25,7 +25,7 @@ class HomePageOrder(models.Model):
     rank = models.IntegerField()
 
     def __str__(self):
-        return self.cell
+        return self.cell 
 
 
 class FitnessRoom(models.Model):
