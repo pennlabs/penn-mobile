@@ -144,14 +144,10 @@ class TestGetRecentFitness(TestCase):
 
         # create old snapshot and new snapshot
         FitnessSnapshot.objects.create(
-            room=self.fitness_room,
-            date=old_time,
-            count=old_count,
+            room=self.fitness_room, date=old_time, count=old_count,
         )
         FitnessSnapshot.objects.create(
-            room=self.fitness_room,
-            date=self.new_time,
-            count=self.new_count,
+            room=self.fitness_room, date=self.new_time, count=self.new_count,
         )
 
     def test_get_recent(self):
