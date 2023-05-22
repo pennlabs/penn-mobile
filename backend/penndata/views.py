@@ -275,8 +275,14 @@ class FitnessRoomView(generics.ListAPIView):
             room["count"] = getattr(ss, "count", None)
             room["capacity"] = getattr(ss, "capacity", None)
 
-            room["open"] = [datetime.time(hour=int(hours), minute=int((hours % 1) * 60)) for hours, _ in self.open_times.values()]
-            room["close"] = [datetime.time(hour=int(hours), minute=int((hours % 1) * 60)) for _, hours in self.open_times.values()]
+            room["open"] = [
+                datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
+                for hours, _ in self.open_times.values()
+            ]
+            room["close"] = [
+                datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
+                for _, hours in self.open_times.values()
+            ]
         return response
 
 
