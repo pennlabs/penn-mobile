@@ -274,13 +274,15 @@ class FitnessRoomView(generics.ListAPIView):
             room["last_updated"] = timezone.localtime(ss.date) if ss else None
             room["count"] = getattr(ss, "count", None)
             room["capacity"] = getattr(ss, "capacity", None)
-            open, close = self.open_times[timezone.localtime().weekday()]
-            room["open"] = timezone.localtime().replace(
-                hour=int(open), minute=int((open % 1) * 60), second=0, microsecond=0
-            )
-            room["close"] = timezone.localtime().replace(
-                hour=int(close), minute=int((close % 1) * 60), second=0, microsecond=0
-            )
+
+            room["open"] = [
+                datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
+                for hours, _ in self.open_times.values()
+            ]
+            room["close"] = [
+                datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
+                for _, hours in self.open_times.values()
+            ]
         return response
 
 
