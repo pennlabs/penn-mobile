@@ -1,8 +1,6 @@
-from datetime import datetime
-from dateutil import parser
-
 import requests
 from bs4 import BeautifulSoup
+from dateutil import parser
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
