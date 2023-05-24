@@ -1,4 +1,5 @@
 from datetime import datetime
+from dateutil import parser
 
 import requests
 from bs4 import BeautifulSoup
@@ -51,9 +52,7 @@ def get_usages():
     for i, row in enumerate(table_rows):
         cells = row.findChildren("td")
         if i == 0:
-            date = timezone.make_aware(
-                datetime.strptime(cells[1].getText(), "%m/%d/%Y at %I:%M %p")
-            )
+            date = timezone.make_aware(parser.parse(cells[1].getText()))
         elif (location := cap_string(cells[0].getText())) in usages:
             try:
                 count = int(cells[1].getText())

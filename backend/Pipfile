@@ -41,6 +41,7 @@ click = "==8.0.4"
 celery = "*"
 django-redis = "*"
 redis = "*"
+python-dateutil = "*"
 
 [requires]
 python_version = "3.9.14"
