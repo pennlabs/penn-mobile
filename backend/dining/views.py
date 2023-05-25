@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from dining.api_wrapper import DiningAPIWrapper
+from dining.api_wrapper import APIError, DiningAPIWrapper
 from dining.models import DiningMenu, Venue
 from dining.serializers import DiningMenuSerializer
 
@@ -23,7 +23,10 @@ class Venues(APIView):
     """
 
     def get(self, request):
-        return Response(d.get_venues())
+        try: 
+          return Response(d.get_venues())
+        except APIError as e:
+          return Response({"error": str(e)}, status=500)
 
 
 class Menus(generics.ListAPIView):
