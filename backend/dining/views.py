@@ -68,19 +68,17 @@ class Preferences(APIView):
         )
 
     def post(self, request):
-
         profile = request.user.profile
 
+        # check if valid venues
+        if not request.data["venues"]:
+            return Response({"success": False, "error": "No venues provided"})
+        
+        venues = [get_object_or_404(Venue, venue_id=int(venue_id)) for venue_id in request.data["venues"]]
+
+        # update preferences
         preferences = profile.dining_preferences
 
         # clears all previous preferences associated with the profile
-        preferences.clear()
-
-        venue_ids = request.data["venues"]
-
-        for venue_id in venue_ids:
-            venue = get_object_or_404(Venue, venue_id=int(venue_id))
-            # adds all of the preferences given by the request
-            preferences.add(venue)
-
+        preferences.set(venues)
         return Response({"success": True, "error": None})
