@@ -23,10 +23,10 @@ class Venues(APIView):
     """
 
     def get(self, request):
-        try: 
-          return Response(d.get_venues())
+        try:
+            return Response(d.get_venues())
         except APIError as e:
-          return Response({"error": str(e)}, status=500)
+            return Response({"error": str(e)}, status=500)
 
 
 class Menus(generics.ListAPIView):
@@ -73,8 +73,10 @@ class Preferences(APIView):
         # check if valid venues
         if not request.data["venues"]:
             return Response({"success": False, "error": "No venues provided"})
-        
-        venues = [get_object_or_404(Venue, venue_id=int(venue_id)) for venue_id in request.data["venues"]]
+
+        venues = [
+            get_object_or_404(Venue, venue_id=int(venue_id)) for venue_id in request.data["venues"]
+        ]
 
         # update preferences
         preferences = profile.dining_preferences
