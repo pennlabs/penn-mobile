@@ -355,12 +355,12 @@
         },
         "django-labs-accounts": {
             "hashes": [
-                "sha256:62771f151aabe679010e14344f24aacff6271dc56eb1c4613180c607591c1181",
-                "sha256:92948bca990b4b7adce4950e679fa7563b3d0e0f6f3756196158e5f09625fa84"
+                "sha256:1f6174c8f27864a250ba9039e9d694473dab8b5fad305f355bb811265e9a4241",
+                "sha256:c6ff38b90939472f4b0ce02eebbf0af868ade3206219fbfc65003f07f953a9e9"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8' and python_version < '4.0'",
-            "version": "==0.9.3"
+            "version": "==0.9.4"
         },
         "django-redis": {
             "hashes": [
