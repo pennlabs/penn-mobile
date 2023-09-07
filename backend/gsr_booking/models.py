@@ -78,7 +78,7 @@ class Group(models.Model):
     MEMBER = "M"
 
     def __str__(self):
-        return f"{self.pk}: {self.name}"
+        return f"{self.name}-{self.pk}"
 
     def has_member(self, user):
         memberships = GroupMembership.objects.filter(group=self, user=user)
