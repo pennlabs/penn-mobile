@@ -40,6 +40,8 @@ User = get_user_model()
 class UserInfo(APIView):
     """Returns User information"""
 
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         return Response({"user": get_user_info(request.user)})
 
