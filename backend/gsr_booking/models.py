@@ -50,10 +50,15 @@ class GroupMembership(models.Model):
         try:
             response = requests.get(
                 url, headers={"Authorization": f"Token {settings.WHARTON_TOKEN}"}
-            ).json()
-            if "type" in response:
+            )
+
+            if response.status_code != 200:
+                return None
+
+            res_json = response.json()
+            if "type" in res_json:
                 # check if user is wharton
-                return response["type"] == "whartonMBA" or response["type"] == "whartonUGR"
+                return res_json["type"] == "whartonMBA" or res_json["type"] == "whartonUGR"
             else:
                 # accomodate for inconsistent responses
                 return False
