@@ -56,12 +56,7 @@ class GroupMembership(models.Model):
                 return None
 
             res_json = response.json()
-            if "type" in res_json:
-                # check if user is wharton
-                return res_json["type"] == "whartonMBA" or res_json["type"] == "whartonUGR"
-            else:
-                # accomodate for inconsistent responses
-                return False
+            return res_json.get("type") == "whartonMBA" or res_json.get("type") == "whartonUGR"
         except (ConnectTimeout, ReadTimeout, KeyError, ConnectionError):
             return None
 
