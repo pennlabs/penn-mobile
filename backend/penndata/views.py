@@ -370,7 +370,7 @@ class FitnessUsage(APIView):
             usage = self.get_usage_on_date(room, curr, field)  # usage for curr
             # incorporate usage safely considering None (no data) values
             usage_aggs = [
-                (self.safe_add(sum, val), count + (val is not None))
+                (self.safe_add(sum, val), count + (1 if val is not None else 0))
                 for (sum, count), val in zip(usage_aggs, usage)
             ]
             # update min and max date if any data was logged
