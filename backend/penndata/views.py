@@ -283,6 +283,9 @@ class FitnessRoomView(generics.ListAPIView):
                 datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
                 for _, hours in self.open_times.values()
             ]
+            # TODO: either unify naming OR add a field to model to indicate which image to use
+            s3_image_name = room["name"].replace(" ", "_") + (".png" if "2nd" in room["name"] else ".jpg") if "Pool" not in room["name"] else "Pool.jpeg" 
+            room["image"] = f"https://s3.us-east-2.amazonaws.com/penn.mobile/pottruck/{s3_image_name}"
         return response
 
 
