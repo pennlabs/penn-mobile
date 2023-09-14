@@ -288,7 +288,7 @@ class FitnessRoomView(generics.ListAPIView):
 
 class FitnessUsage(APIView):
     def safe_add(self, a, b):
-        return a + b if a and b else (a if a else b)
+        return None if a is None and b is None else (a or 0) + (b or 0)
 
     def linear_interpolate(self, before_val, after_val, before_date, current_date, after_date):
         return (
@@ -370,14 +370,14 @@ class FitnessUsage(APIView):
             usage = self.get_usage_on_date(room, curr, field)  # usage for curr
             # incorporate usage safely considering None (no data) values
             usage_aggs = [
-                (self.safe_add(acc[0], val), acc[1] + (1 if val is not None else 0))
-                for acc, val in zip(usage_aggs, usage)
+                (self.safe_add(sum, val), count + (1 if val is not None else 0))
+                for (sum, count), val in zip(usage_aggs, usage)
             ]
             # update min and max date if any data was logged
             if any(usage):
                 min_date = min(min_date, curr)
                 max_date = max(max_date, curr)
-        ret = [usage_agg[0] / usage_agg[1] if usage_agg[1] else None for usage_agg in usage_aggs]
+        ret = [(sum / count) if count else None for (sum, count) in usage_aggs]
         return ret, min_date, max_date
 
     def get(self, request, room_id):
