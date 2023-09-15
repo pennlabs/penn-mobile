@@ -274,19 +274,21 @@ class FitnessRoomView(generics.ListAPIView):
             room["last_updated"] = timezone.localtime(ss.date) if ss else None
             room["count"] = getattr(ss, "count", None)
             room["capacity"] = getattr(ss, "capacity", None)
-            open, close = self.open_times[timezone.localtime().weekday()]
-            room["open"] = timezone.localtime().replace(
-                hour=int(open), minute=int((open % 1) * 60), second=0, microsecond=0
-            )
-            room["close"] = timezone.localtime().replace(
-                hour=int(close), minute=int((close % 1) * 60), second=0, microsecond=0
-            )
+
+            room["open"] = [
+                datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
+                for hours, _ in self.open_times.values()
+            ]
+            room["close"] = [
+                datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
+                for _, hours in self.open_times.values()
+            ]
         return response
 
 
 class FitnessUsage(APIView):
     def safe_add(self, a, b):
-        return a + b if a and b else (a if a else b)
+        return None if a is None and b is None else (a or 0) + (b or 0)
 
     def linear_interpolate(self, before_val, after_val, before_date, current_date, after_date):
         return (
@@ -368,14 +370,14 @@ class FitnessUsage(APIView):
             usage = self.get_usage_on_date(room, curr, field)  # usage for curr
             # incorporate usage safely considering None (no data) values
             usage_aggs = [
-                (self.safe_add(acc[0], val), acc[1] + (1 if val is not None else 0))
-                for acc, val in zip(usage_aggs, usage)
+                (self.safe_add(sum, val), count + (1 if val is not None else 0))
+                for (sum, count), val in zip(usage_aggs, usage)
             ]
             # update min and max date if any data was logged
             if any(usage):
                 min_date = min(min_date, curr)
                 max_date = max(max_date, curr)
-        ret = [usage_agg[0] / usage_agg[1] if usage_agg[1] else None for usage_agg in usage_aggs]
+        ret = [(sum / count) if count else None for (sum, count) in usage_aggs]
         return ret, min_date, max_date
 
     def get(self, request, room_id):
@@ -416,6 +418,45 @@ class FitnessUsage(APIView):
                 "usage": {i: amt for i, amt in enumerate(usage_per_hour)},
             }
         )
+
+
+class FitnessPreferences(APIView):
+    """
+    GET: returns list of a User's fitness preferences
+
+    POST: updates User fitness preferences by clearing past preferences
+    and resetting them with request data
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        preferences = request.user.profile.fitness_preferences.all()
+
+        # returns all ids in a person's preferences
+        return Response({"rooms": preferences.values_list("id", flat=True)})
+
+    def post(self, request):
+
+        if "rooms" not in request.data:
+            return Response({"success": False, "error": "No rooms provided"})
+
+        profile = request.user.profile
+
+        ids = request.data["rooms"]
+
+        halls = [get_object_or_404(FitnessRoom, id=int(id)) for id in ids]
+
+        # clears all previous preferences in many-to-many
+        profile.fitness_preferences.clear()
+
+        # adds all of the preferences given by the request
+        profile.fitness_preferences.add(*halls)
+
+        profile.save()
+
+        return Response({"success": True, "error": None})
 
 
 class UniqueCounterView(APIView):

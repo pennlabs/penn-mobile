@@ -24,6 +24,11 @@ def mock_get_user_info(*args, **kwargs):
         return json.load(data)
 
 
+def mock_get_null_user_info(*args, **kwargs):
+    with open("tests/portal/get_null_user_info.json") as data:
+        return json.load(data)
+
+
 def mock_get_club_info(*args, **kwargs):
     with open("tests/portal/get_club_info.json") as data:
         return json.load(data)
@@ -92,8 +97,6 @@ class TestPolls(TestCase):
             poll.save()
 
         poll_1 = Poll.objects.get(question="How is your day")
-        poll_1.status = Poll.STATUS_APPROVED
-        poll_1.save()
         self.id = poll_1.id
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
@@ -141,6 +144,15 @@ class TestPolls(TestCase):
         res_json = json.loads(response.content)
         self.assertEqual(1, len(res_json))
         self.assertEqual(3, Poll.objects.all().count())
+
+    @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.logic.get_user_info", mock_get_null_user_info)
+    def test_null_user_info_browse(self):
+        # Asserts that a user with empty user info can access all available polls
+        response = self.client.post("/portal/polls/browse/", {"id_hash": 1})
+        res_json = json.loads(response.content)
+        self.assertEqual(2, len(res_json))
+        self.assertEqual(2, Poll.objects.all().count())
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)

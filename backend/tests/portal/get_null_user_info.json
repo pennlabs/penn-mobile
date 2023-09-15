@@ -1,0 +1,35 @@
+{
+    "pennid": 12345678,
+    "first_name": "User",
+    "last_name": "Name",
+    "username": "username",
+    "email": "username@seas.upenn.edu",
+    "groups": [
+        "member",
+        "student",
+        "employee"
+    ],
+    "product_permission": [],
+    "user_permissions": [],
+    "student": {
+        "major": [],
+        "school": [],
+        "graduation_year": null
+    },
+    "phone_numbers": [
+        {
+            "id": 90,
+            "value": "+123456789",
+            "primary": true,
+            "verified": true
+        }
+    ],
+    "emails": [
+        {
+            "id": 16844,
+            "value": "username@seas.upenn.edu",
+            "primary": true,
+            "verified": true
+        }
+    ]
+}

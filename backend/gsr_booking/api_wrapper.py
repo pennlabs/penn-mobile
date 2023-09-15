@@ -482,21 +482,25 @@ class LibCalWrapper:
             "q16804": "Yes",
         }
 
-        response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=payload).json()
+        response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=payload)
 
+        if response.status_code != 200:
+            raise APIError(f"GSR Reserve: Error {response.status_code} when reserving data")
+
+        res_json = response.json()
         # corrects keys in response
-        if "error" not in response:
-            if "errors" in response:
-                errors = response["errors"]
+        if "error" not in res_json:
+            if "errors" in res_json:
+                errors = res_json["errors"]
                 if isinstance(errors, list):
                     errors = " ".join(errors)
-                response["error"] = BeautifulSoup(
+                res_json["error"] = BeautifulSoup(
                     errors.replace("\n", " "), "html.parser"
                 ).text.strip()
-                del response["errors"]
-        if "error" in response:
-            raise APIError("LibCal: " + response["error"])
-        return response
+                del res_json["errors"]
+        if "error" in res_json:
+            raise APIError("LibCal: " + res_json["error"])
+        return res_json
 
     def get_reservations(self, user):
 
