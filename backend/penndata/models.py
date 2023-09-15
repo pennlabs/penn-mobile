@@ -30,8 +30,7 @@ class HomePageOrder(models.Model):
 
 class FitnessRoom(models.Model):
     name = models.CharField(max_length=255)
-    # TODO "portal/images" does not exist, add back images
-    # image = models.ImageField(upload_to="portal/images", blank=False)
+    image_url = models.URLField()
 
     def __str__(self):
         return str(self.name)
