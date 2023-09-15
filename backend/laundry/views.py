@@ -161,20 +161,22 @@ class Preferences(APIView):
         return Response({"rooms": preferences.values_list("hall_id", flat=True)})
 
     def post(self, request):
-
         profile = request.user.profile
+        preferences = profile.laundry_preferences
+
+        if "rooms" not in request.data:
+            return Response(
+                {"success": False, "error": "No rooms provided"}, status=400
+            )
+
+        halls = [
+            get_object_or_404(LaundryRoom, hall_id=int(hall_id))
+            for hall_id in request.data["rooms"]
+        ]
 
         # clears all previous preferences in many-to-many
-        profile.laundry_preferences.clear()
-
-        hall_ids = request.data["rooms"]
-
-        for hall_id in hall_ids:
-            hall = get_object_or_404(LaundryRoom, hall_id=int(hall_id))
-            # adds all of the preferences given by the request
-            profile.laundry_preferences.add(hall)
-
-        profile.save()
+        preferences.clear()
+        preferences.add(*halls)
 
         return Response({"success": True, "error": None})
 
