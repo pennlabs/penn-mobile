@@ -8,17 +8,17 @@ from dining.views import Menus, Preferences, Venues
 urlpatterns = [
     path(
         "venues/",
-        cache_page(1 * MONTH_IN_SECONDS_APPROX)(Venues),
+        cache_page(MONTH_IN_SECONDS_APPROX)(Venues),
         name="venues",
     ),
     path(
         "menus/",
-        cache_page(1 * HOUR_IN_SECONDS)(Menus),
+        cache_page(HOUR_IN_SECONDS)(Menus),
         name="menus",
     ),
     path(
         "menus/<date>/",
-        cache_page(1 * HOUR_IN_SECONDS)(Menus),
+        cache_page(HOUR_IN_SECONDS)(Menus),
         name="menus-with-date",
     ),
     path(
