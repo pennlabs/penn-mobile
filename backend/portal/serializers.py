@@ -193,6 +193,7 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
 
     poll = RetrievePollSerializer()
     poll_options = PollOptionSerializer(many=True)
+    created_date = serializers.DateTimeField()
 
     class Meta:
         model = PollVote
