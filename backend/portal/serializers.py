@@ -197,6 +197,10 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
         fields = ("id", "id_hash", "poll", "poll_options", "created_date")
+        read_only_fields = (
+            "id",
+            "created_date",
+        )
 
 
 class PostSerializer(serializers.ModelSerializer):
