@@ -8,6 +8,7 @@ from requests.exceptions import HTTPError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.core.cache import cache
 
 from laundry.api_wrapper import check_is_working, hall_status
 from laundry.models import LaundryRoom, LaundrySnapshot
@@ -20,7 +21,9 @@ class Ids(APIView):
     """
 
     def get(self, request):
-        return Response(LaundryRoomSerializer(LaundryRoom.objects.all(), many=True).data)
+        return Response(
+            LaundryRoomSerializer(LaundryRoom.objects.all(), many=True).data
+        )
 
 
 class HallInfo(APIView):
@@ -30,9 +33,13 @@ class HallInfo(APIView):
 
     def get(self, request, hall_id):
         try:
-            return Response(hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id)))
+            return Response(
+                hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id))
+            )
         except HTTPError:
-            return Response({"error": "The laundry api is currently unavailable."}, status=503)
+            return Response(
+                {"error": "The laundry api is currently unavailable."}, status=503
+            )
 
 
 class MultipleHallInfo(APIView):
@@ -65,13 +72,17 @@ class HallUsage(APIView):
         now = timezone.localtime()
 
         # start is beginning of day, end is 27 hours after start
-        start = make_aware(datetime.datetime(year=now.year, month=now.month, day=now.day))
+        start = make_aware(
+            datetime.datetime(year=now.year, month=now.month, day=now.day)
+        )
         end = start + datetime.timedelta(hours=27)
 
         # filters for LaundrySnapshots within timeframe
         room = get_object_or_404(LaundryRoom, hall_id=hall_id)
 
-        snapshots = LaundrySnapshot.objects.filter(room=room, date__gt=start, date__lte=end)
+        snapshots = LaundrySnapshot.objects.filter(
+            room=room, date__gt=start, date__lte=end
+        )
 
         # adds all the LaundrySnapshots from the same weekday within the previous 28 days
         for week in range(1, 4):
@@ -130,8 +141,12 @@ class HallUsage(APIView):
             "day_of_week": calendar.day_name[timezone.localtime().weekday()],
             "start_date": min_date.date(),
             "end_date": max_date.date(),
-            "washer_data": {x: HallUsage.safe_division(data[x][0], data[x][2]) for x in range(27)},
-            "dryer_data": {x: HallUsage.safe_division(data[x][1], data[x][2]) for x in range(27)},
+            "washer_data": {
+                x: HallUsage.safe_division(data[x][0], data[x][2]) for x in range(27)
+            },
+            "dryer_data": {
+                x: HallUsage.safe_division(data[x][1], data[x][2]) for x in range(27)
+            },
             "total_number_of_washers": room.total_washers,
             "total_number_of_dryers": room.total_dryers,
         }
@@ -139,7 +154,6 @@ class HallUsage(APIView):
         return content
 
     def get(self, request, hall_id):
-
         return Response(HallUsage.compute_usage(hall_id))
 
 
@@ -152,29 +166,39 @@ class Preferences(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    key_prefix = "laundry_preferences"
 
     def get(self, request):
+        key = f"{self.key_prefix}:{request.user.id}"
+        cached_preferences = cache.get(key)
+        if cached_preferences is None:
+            preferences = request.user.profile.laundry_preferences.all()
+            cached_preferences = preferences.values_list("hall_id", flat=True)
+            cache.set(key, cached_preferences, MONTH_IN_SECONDS_APPROX)
 
-        preferences = request.user.profile.laundry_preferences.all()
-
-        # returns all hall_ids in a person's preferences
-        return Response({"rooms": preferences.values_list("hall_id", flat=True)})
+        return Response({"rooms": cached_preferences})
 
     def post(self, request):
-
+        key = f"{self.key_prefix}:{request.user.id}"
         profile = request.user.profile
+        preferences = profile.laundry_preferences
+
+        if "rooms" not in request.data:
+            return Response(
+                {"success": False, "error": "No rooms provided"}, status=400
+            )
+
+        halls = [
+            get_object_or_404(LaundryRoom, hall_id=int(hall_id))
+            for hall_id in request.data["rooms"]
+        ]
 
         # clears all previous preferences in many-to-many
-        profile.laundry_preferences.clear()
+        preferences.clear()
+        preferences.add(*halls)
 
-        hall_ids = request.data["rooms"]
-
-        for hall_id in hall_ids:
-            hall = get_object_or_404(LaundryRoom, hall_id=int(hall_id))
-            # adds all of the preferences given by the request
-            profile.laundry_preferences.add(hall)
-
-        profile.save()
+        # clear cache
+        cache.delete(key)
 
         return Response({"success": True, "error": None})
 
