@@ -1,6 +1,7 @@
 import calendar
 import datetime
 
+from django.core.cache import cache
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
@@ -8,11 +9,11 @@ from requests.exceptions import HTTPError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.core.cache import cache
 
 from laundry.api_wrapper import check_is_working, hall_status
 from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundryRoomSerializer
+from utils.cache import MONTH_IN_SECONDS_APPROX
 
 
 class Ids(APIView):
@@ -21,9 +22,7 @@ class Ids(APIView):
     """
 
     def get(self, request):
-        return Response(
-            LaundryRoomSerializer(LaundryRoom.objects.all(), many=True).data
-        )
+        return Response(LaundryRoomSerializer(LaundryRoom.objects.all(), many=True).data)
 
 
 class HallInfo(APIView):
@@ -33,13 +32,9 @@ class HallInfo(APIView):
 
     def get(self, request, hall_id):
         try:
-            return Response(
-                hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id))
-            )
+            return Response(hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id)))
         except HTTPError:
-            return Response(
-                {"error": "The laundry api is currently unavailable."}, status=503
-            )
+            return Response({"error": "The laundry api is currently unavailable."}, status=503)
 
 
 class MultipleHallInfo(APIView):
@@ -72,17 +67,13 @@ class HallUsage(APIView):
         now = timezone.localtime()
 
         # start is beginning of day, end is 27 hours after start
-        start = make_aware(
-            datetime.datetime(year=now.year, month=now.month, day=now.day)
-        )
+        start = make_aware(datetime.datetime(year=now.year, month=now.month, day=now.day))
         end = start + datetime.timedelta(hours=27)
 
         # filters for LaundrySnapshots within timeframe
         room = get_object_or_404(LaundryRoom, hall_id=hall_id)
 
-        snapshots = LaundrySnapshot.objects.filter(
-            room=room, date__gt=start, date__lte=end
-        )
+        snapshots = LaundrySnapshot.objects.filter(room=room, date__gt=start, date__lte=end)
 
         # adds all the LaundrySnapshots from the same weekday within the previous 28 days
         for week in range(1, 4):
@@ -141,12 +132,8 @@ class HallUsage(APIView):
             "day_of_week": calendar.day_name[timezone.localtime().weekday()],
             "start_date": min_date.date(),
             "end_date": max_date.date(),
-            "washer_data": {
-                x: HallUsage.safe_division(data[x][0], data[x][2]) for x in range(27)
-            },
-            "dryer_data": {
-                x: HallUsage.safe_division(data[x][1], data[x][2]) for x in range(27)
-            },
+            "washer_data": {x: HallUsage.safe_division(data[x][0], data[x][2]) for x in range(27)},
+            "dryer_data": {x: HallUsage.safe_division(data[x][1], data[x][2]) for x in range(27)},
             "total_number_of_washers": room.total_washers,
             "total_number_of_dryers": room.total_dryers,
         }
@@ -184,9 +171,7 @@ class Preferences(APIView):
         preferences = profile.laundry_preferences
 
         if "rooms" not in request.data:
-            return Response(
-                {"success": False, "error": "No rooms provided"}, status=400
-            )
+            return Response({"success": False, "error": "No rooms provided"}, status=400)
 
         halls = [
             get_object_or_404(LaundryRoom, hall_id=int(hall_id))
