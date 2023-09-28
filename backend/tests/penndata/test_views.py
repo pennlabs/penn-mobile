@@ -109,15 +109,9 @@ class TestHomePage(TestCase):
         self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=1733))
         self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=638))
 
-        self.test_user.profile.laundry_preferences.add(
-            LaundryRoom.objects.get(hall_id=3)
-        )
-        self.test_user.profile.laundry_preferences.add(
-            LaundryRoom.objects.get(hall_id=4)
-        )
-        self.test_user.profile.laundry_preferences.add(
-            LaundryRoom.objects.get(hall_id=5)
-        )
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=3))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=4))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=5))
 
         new_response = self.client.get(reverse("homepage"))
         new_res_json = json.loads(new_response.content)["cells"]
@@ -149,14 +143,10 @@ class TestGetRecentFitness(TestCase):
 
         # create old snapshot and new snapshot
         FitnessSnapshot.objects.create(
-            room=self.fitness_room,
-            date=old_time,
-            count=old_count,
+            room=self.fitness_room, date=old_time, count=old_count,
         )
         FitnessSnapshot.objects.create(
-            room=self.fitness_room,
-            date=self.new_time,
-            count=self.new_count,
+            room=self.fitness_room, date=self.new_time, count=self.new_count,
         )
 
     def test_get_recent(self):
@@ -183,8 +173,7 @@ class TestGetRecentFitness(TestCase):
                 "id": self.fitness_room.id,
                 "name": self.fitness_room.name,
                 # this format: 2023-03-12T16:56:51-04:00
-                "last_updated": self.new_time.strftime("%Y-%m-%dT%H:%M:%S%z")[:-2]
-                + ":00",
+                "last_updated": self.new_time.strftime("%Y-%m-%dT%H:%M:%S%z")[:-2] + ":00",
                 "image_url": self.fitness_room.image_url,
                 "count": self.new_count,
                 "capacity": None,
@@ -226,10 +215,7 @@ class TestFitnessUsage(TestCase):
     def load_snapshots_1(self, date):
         # 6:00, 0
         FitnessSnapshot.objects.create(
-            room=self.room,
-            date=date + datetime.timedelta(hours=6),
-            count=0,
-            capacity=0.0,
+            room=self.room, date=date + datetime.timedelta(hours=6), count=0, capacity=0.0,
         )
         # 7:30, 10
         FitnessSnapshot.objects.create(
@@ -240,10 +226,7 @@ class TestFitnessUsage(TestCase):
         )
         # 8:00, 65
         FitnessSnapshot.objects.create(
-            room=self.room,
-            date=date + datetime.timedelta(hours=8),
-            count=65,
-            capacity=65.0,
+            room=self.room, date=date + datetime.timedelta(hours=8), count=65, capacity=65.0,
         )
         # 8:30, 0
         FitnessSnapshot.objects.create(
@@ -254,10 +237,7 @@ class TestFitnessUsage(TestCase):
         )
         # 10:00, 60
         FitnessSnapshot.objects.create(
-            room=self.room,
-            date=date + datetime.timedelta(hours=10),
-            count=60,
-            capacity=60.0,
+            room=self.room, date=date + datetime.timedelta(hours=10), count=60, capacity=60.0,
         )
         # 20:00, 0
         FitnessSnapshot.objects.create(
@@ -578,14 +558,12 @@ class TestFitnessUsage(TestCase):
         }
         self.assertEqual(res_json, expected)
 
-    def test_get_fitness_usage_error(sel):
+    def test_get_fitness_usage_error(self):
         response = self.client.get(reverse("fitness-usage", args=[self.room.id + 1]))
         self.assertEqual(response.status_code, 404)
 
         for param in ["date", "num_samples", "group_by", "field"]:
-            response = self.client.get(
-                reverse("fitness-usage", args=[self.room.id]), {param: "hi"}
-            )
+            response = self.client.get(reverse("fitness-usage", args=[self.room.id]), {param: "hi"})
             self.assertEqual(response.status_code, 400)
 
 
@@ -611,9 +589,7 @@ class FitnessPreferencesTestCase(TestCase):
 
     def test_post(self):
         self.client.force_authenticate(user=self.test_user)
-        self.client.post(
-            reverse("fitness-preferences"), {"rooms": [self.other_fitness_room.id]}
-        )
+        self.client.post(reverse("fitness-preferences"), {"rooms": [self.other_fitness_room.id]})
 
         response = self.client.get(reverse("fitness-preferences"))
         res_json = json.loads(response.content)
@@ -706,9 +682,7 @@ class TestAnalytics(TestCase):
         response = self.client.post(reverse("analytics"), payload)
         res_json = response.json()
         self.assertEqual(400, response.status_code)
-        self.assertEqual(
-            "Poll and Post interactions are mutually exclusive.", res_json["detail"]
-        )
+        self.assertEqual("Poll and Post interactions are mutually exclusive.", res_json["detail"])
 
 
 class TestUniqueCounterView(TestCase):
