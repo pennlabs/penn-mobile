@@ -1,14 +1,17 @@
-import requests
 import enum
 
-class Method(enum):
-    POST    = "post"
-    GET     = "get"
-    PATCH   = "patch"
-    PUT     = "put"
-    DELETE  = "delete"
+import requests
 
-class RRequest():
+
+class Method(enum):
+    POST = "post"
+    GET = "get"
+    PATCH = "patch"
+    PUT = "put"
+    DELETE = "delete"
+
+
+class RRequest:
     """
     Robust wrapper around Python requests library
 
@@ -18,7 +21,7 @@ class RRequest():
 
     NUM_RETRIES = 5
 
-    def __init__(self, num_retries = NUM_RETRIES):
+    def __init__(self, num_retries=NUM_RETRIES):
         self.num_retries = num_retries
 
     def get(self):
@@ -44,10 +47,8 @@ class RRequest():
             if response.status_code == 200:
                 return response
 
-
         # TODO: Return poor status code
         pass
 
     def __single_request(self, method):
         pass
-
