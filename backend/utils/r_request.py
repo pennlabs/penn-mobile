@@ -1,4 +1,5 @@
 import enum
+from json.decoder import JSONDecodeError
 
 import requests
 
@@ -19,36 +20,82 @@ class RRequest:
     return one-off malformed data or failures
     """
 
-    NUM_RETRIES = 5
+    NUM_RETRIES = 2
 
     def __init__(self, num_retries=NUM_RETRIES):
+        if num_retries == 0:
+            raise ValueError("RRequest: Zero retries are not allowed")
         self.num_retries = num_retries
 
-    def get(self):
-        return self.request(Method.GET)
+    def get(self, *args, **kwargs):
+        return self.request(method=Method.GET, *args, **kwargs)
 
-    def post(self):
-        return self.request(Method.POST)
+    def post(self, *args, **kwargs):
+        return self.request(method=Method.POST, *args, **kwargs)
 
-    def patch(self):
-        return self.request(Method.PATCH)
+    def patch(self, *args, **kwargs):
+        return self.request(method=Method.PATCH, *args, **kwargs)
 
-    def put(self):
-        return self.request(Method.PUT)
+    def put(self, *args, **kwargs):
+        return self.request(method=Method.PUT, *args, **kwargs)
 
-    def delete(self):
-        return self.request(Method.DELETE)
+    def delete(self, *args, **kwargs):
+        return self.request(method=Method.DELETE, *args, **kwargs)
 
-    def request(self, method):
+    def request(
+        self,
+        method,
+        url,
+        params=None,
+        data=None,
+        headers=None,
+        cookies=None,
+        files=None,
+        auth=None,
+        timeout=None,
+        allow_redirects=True,
+        proxies=None,
+        hooks=None,
+        stream=None,
+        verify=None,
+        cert=None,
+        json=None,
+    ):
+        response = self.__default_response()
+
         for _ in range(self.num_retries):
-            response = self.__single_request(method)
+            response = requests.request(
+                method,
+                url,
+                params=params,
+                data=data,
+                headers=headers,
+                cookies=cookies,
+                files=files,
+                auth=auth,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+                proxies=proxies,
+                hooks=hooks,
+                stream=stream,
+                verify=verify,
+                cert=cert,
+                json=json,
+            )
 
-            # TODO: Test that JSON structure is good
-            if response.status_code == 200:
-                return response
+            if response.status_code != 200:
+                continue
 
-        # TODO: Return poor status code
-        pass
+            try:
+                response.json()
+            except JSONDecodeError:
+                continue
+            return response
 
-    def __single_request(self, method):
-        pass
+        return response
+
+    def __default_response(self):
+        response = requests.models.Response
+        response.status_code = 400
+        response.content = "RRequest: Default Error"
+        return response
