@@ -36,10 +36,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./backend/
-          env_vars: OS,PYTHON
           fail_ci_if_error: true
           files: .coverage
-          flags: unittests
           name: codecov-umbrella
           verbose: true
     container:
