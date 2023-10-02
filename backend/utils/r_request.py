@@ -1,10 +1,10 @@
-import enum
+from enum import Enum
 from json.decoder import JSONDecodeError
 
 import requests
 
 
-class Method(enum):
+class Method(Enum):
     POST = "post"
     GET = "get"
     PATCH = "patch"
@@ -23,24 +23,22 @@ class RRequest:
     NUM_RETRIES = 2
 
     def __init__(self, num_retries=NUM_RETRIES):
-        if num_retries == 0:
-            raise ValueError("RRequest: Zero retries are not allowed")
         self.num_retries = num_retries
 
     def get(self, *args, **kwargs):
-        return self.request(method=Method.GET, *args, **kwargs)
+        return self.request(Method.GET, *args, **kwargs)
 
     def post(self, *args, **kwargs):
-        return self.request(method=Method.POST, *args, **kwargs)
+        return self.request(Method.POST, *args, **kwargs)
 
     def patch(self, *args, **kwargs):
-        return self.request(method=Method.PATCH, *args, **kwargs)
+        return self.request(Method.PATCH, *args, **kwargs)
 
     def put(self, *args, **kwargs):
-        return self.request(method=Method.PUT, *args, **kwargs)
+        return self.request(Method.PUT, *args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        return self.request(method=Method.DELETE, *args, **kwargs)
+        return self.request(Method.DELETE, *args, **kwargs)
 
     def request(
         self,
