@@ -86,7 +86,7 @@ class RRequest:
 
             try:
                 response.json()
-            except JSONDecodeError:
+            except (TypeError, JSONDecodeError):
                 continue
             return response
 
