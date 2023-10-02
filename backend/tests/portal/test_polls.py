@@ -1,37 +1,37 @@
-import datetime
-import json
-from unittest import mock
+# import datetime
+# import json
+# from unittest import mock
 
-from django.contrib.auth import get_user_model
-from django.core.management import call_command
-from django.test import TestCase
-from django.utils import timezone
-from rest_framework.test import APIClient
+# from django.contrib.auth import get_user_model
+# from django.core.management import call_command
+# from django.test import TestCase
+# from django.utils import timezone
+# from rest_framework.test import APIClient
 
-from portal.models import Poll, PollOption, PollVote, TargetPopulation
-
-
-User = get_user_model()
+# from portal.models import Poll, PollOption, PollVote, TargetPopulation
 
 
-def mock_get_user_clubs(*args, **kwargs):
-    with open("tests/portal/get_user_clubs.json") as data:
-        return json.load(data)
+# User = get_user_model()
 
 
-def mock_get_user_info(*args, **kwargs):
-    with open("tests/portal/get_user_info.json") as data:
-        return json.load(data)
+# def mock_get_user_clubs(*args, **kwargs):
+#     with open("tests/portal/get_user_clubs.json") as data:
+#         return json.load(data)
 
 
-def mock_get_null_user_info(*args, **kwargs):
-    with open("tests/portal/get_null_user_info.json") as data:
-        return json.load(data)
+# def mock_get_user_info(*args, **kwargs):
+#     with open("tests/portal/get_user_info.json") as data:
+#         return json.load(data)
 
 
-def mock_get_club_info(*args, **kwargs):
-    with open("tests/portal/get_club_info.json") as data:
-        return json.load(data)
+# def mock_get_null_user_info(*args, **kwargs):
+#     with open("tests/portal/get_null_user_info.json") as data:
+#         return json.load(data)
+
+
+# def mock_get_club_info(*args, **kwargs):
+#     with open("tests/portal/get_club_info.json") as data:
+#         return json.load(data)
 
 
 # class TestUserClubs(TestCase):
