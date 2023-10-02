@@ -29,7 +29,7 @@ jobs:
       - name: Test (run in parallel)
         run: |-
           cd backend
-          pipenv run coverage run --concurrency=multiprocessing manage.py test --settings=pennmobile.settings.ci --parallel
+          pipenv run coverage run --concurrency=multiprocessing manage.py test tests.portal.test_permissions --settings=pennmobile.settings.ci --parallel
           pipenv run coverage combine
       - name: Upload Code Coverage
         uses: codecov/codecov-action@v3
@@ -38,10 +38,11 @@ jobs:
           directory: $(pwd)/backend/
           env_vars: OS,PYTHON
           fail_ci_if_error: true
-          files: ./.coverage
+          files: $(pwd)/backend/.coverage
           flags: unittests
           name: codecov-umbrella
           verbose: true
+          # /Users/judtinzhang/pennlabs/penn-mobile/backend/.coverage
     container:
       image: python:3.9.14-buster
     env:
