@@ -14,6 +14,7 @@ flake8-absolute-import = "*"
 rope = "*"
 pytest = "*"
 tblib = "*"
+coverage = "*"
 
 [packages]
 beautifulsoup4 = "*"
@@ -42,6 +43,7 @@ celery = "*"
 django-redis = "*"
 redis = "*"
 python-dateutil = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.9.14"
