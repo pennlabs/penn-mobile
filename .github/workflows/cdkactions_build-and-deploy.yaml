@@ -44,6 +44,7 @@ jobs:
       image: python:3.9.14-buster
     env:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+      GITHUB_HEAD_REF: master
     services:
       postgres:
         image: postgres:12
