@@ -96,6 +96,15 @@ jobs:
         run: |-
           cd frontend
           yarn lint
+      - name: Test
+        run: |-
+          cd frontend
+          yarn test
+      - name: Upload Code Coverage
+        run: |-
+          ROOT=$(pwd)
+          cd frontend
+          yarn run codecov -p $ROOT -F frontend
     container:
       image: node:14
   publish-frontend:
