@@ -104,6 +104,48 @@ export class MyChart extends PennLabsChart {
       cmd: ["python", "manage.py", "load_target_populations"],
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
+
+    // TODO: remove this once we have a better way to do this
+    new CronJob(this, 'reset-wharton-caching-1', {
+      schedule: cronTime.everyYearIn(10, 2),
+      image: backendImage,
+      secret,
+      cmd: ["python", "manage.py", "reset_wharton_caching", "1"],
+      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    });
+
+    new CronJob(this, 'reset-wharton-caching-2', {
+      schedule: cronTime.everyYearIn(10, 3),
+      image: backendImage,
+      secret,
+      cmd: ["python", "manage.py", "reset_wharton_caching", "2"],
+      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    });
+
+    new CronJob(this, 'reset-wharton-caching-3', {
+      schedule: cronTime.everyYearIn(10, 4),
+      image: backendImage,
+      secret,
+      cmd: ["python", "manage.py", "reset_wharton_caching", "3"],
+      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    });
+
+    new CronJob(this, 'reset-wharton-caching-4', {
+      schedule: cronTime.everyYearIn(10, 5),
+      image: backendImage,
+      secret,
+      cmd: ["python", "manage.py", "reset_wharton_caching", "4"],
+      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    });
+
+    new CronJob(this, 'reset-wharton-caching-5', {
+      schedule: cronTime.everyYearIn(10, 6),
+      image: backendImage,
+      secret,
+      cmd: ["python", "manage.py", "reset_wharton_caching", "5"],
+      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    });
+
   }
 }
 
