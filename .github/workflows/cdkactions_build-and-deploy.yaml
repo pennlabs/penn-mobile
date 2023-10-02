@@ -38,7 +38,7 @@ jobs:
           directory: $(pwd)/backend/
           env_vars: OS,PYTHON
           fail_ci_if_error: true
-          files: $(pwd)/backend/.coverage
+          files: .coverage
           flags: unittests
           name: codecov-umbrella
           verbose: true
