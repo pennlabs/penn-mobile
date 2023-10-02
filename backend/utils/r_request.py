@@ -4,7 +4,7 @@ from json.decoder import JSONDecodeError
 import requests
 
 
-class Method(Enum):
+class Method(str, Enum):
     POST = "post"
     GET = "get"
     PATCH = "patch"
@@ -90,10 +90,12 @@ class RRequest:
                 continue
             return response
 
+        if not response.content:
+            response.content = "RRequest: Default Error"
+
         return response
 
     def __default_response(self):
         response = requests.models.Response
         response.status_code = 400
-        response.content = "RRequest: Default Error"
         return response
