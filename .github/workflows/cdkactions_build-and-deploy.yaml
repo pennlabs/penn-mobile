@@ -29,7 +29,7 @@ jobs:
       - name: Test (run in parallel)
         run: |-
           cd backend
-          pipenv run coverage run --concurrency=multiprocessing manage.py test tests.dining.test_views --settings=pennmobile.settings.ci --parallel
+          pipenv run coverage run --concurrency=multiprocessing manage.py test --settings=pennmobile.settings.ci --parallel
           pipenv run coverage combine
           pipenv run coverage xml
       - name: Upload Code Coverage
