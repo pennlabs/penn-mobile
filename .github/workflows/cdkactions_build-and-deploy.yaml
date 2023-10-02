@@ -26,16 +26,20 @@ jobs:
         run: |-
           cd backend
           pipenv run black --check .
-      # - name: Test (run in parallel)
-      #   run: |-
-      #     cd backend
-      #     pipenv run coverage run --concurrency=multiprocessing manage.py test --settings=pennmobile.settings.ci --parallel
-      #     pipenv run coverage combine
-      # - name: Upload Code Coverage
-      #   run: |-
-      #     ROOT=$(pwd)
-      #     cd backend
-      #     pipenv run codecov --root $ROOT --flags backend
+      - name: Test (run in parallel)
+        run: |-
+          cd backend
+          pipenv run coverage run --concurrency=multiprocessing manage.py test --settings=pennmobile.settings.ci --parallel
+          pipenv run coverage combine
+          pipenv run coverage xml
+      - name: Upload Code Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          directory: ./backend/
+          fail_ci_if_error: true
+          files: coverage.xml
+          name: codecov-umbrella
+          verbose: true
     container:
       image: python:3.9.14-buster
     env:
