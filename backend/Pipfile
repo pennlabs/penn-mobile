@@ -43,7 +43,6 @@ celery = "*"
 django-redis = "*"
 redis = "*"
 python-dateutil = "*"
-coverage = "*"
 
 [requires]
 python_version = "3.9.14"
