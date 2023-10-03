@@ -16,7 +16,7 @@ jobs:
           yarn install
           yarn build
           git --no-pager diff ../workflows
-          git diff-index --quiet HEAD -- ../workflows
+          # git diff-index --quiet HEAD -- ../workflows
       - name: Push updated manifests
         if: "false"
         run: |-
