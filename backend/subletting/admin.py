@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from subletting.models import Offer, Amenity, Sublet, Image
+
+admin.site.register(Offer)
+admin.site.register(Amenity)
+admin.site.register(Sublet)
+admin.site.register((Image))

@@ -18,7 +18,7 @@ class Offer(models.Model):
         return f"Offer for {self.sublet} made by {self.user}"
 
 class Amenity(models.Model):
-    name = models.CharField(max_length=100, primary_key=True
+    name = models.CharField(max_length=100, primary_key=True)
 
     def __str__(self):
         return self.name
