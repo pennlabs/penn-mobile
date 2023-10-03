@@ -17,12 +17,12 @@ jobs:
           yarn build
           git --no-pager diff ../workflows
           git diff-index --quiet HEAD -- ../workflows
-      # - name: Push updated manifests
-      #   if: failure()
-      #   run: |-
-      #     cd .github/workflows
-      #     git config user.name github-actions
-      #     git config user.email github-actions[bot]@users.noreply.github.com
-      #     git add .
-      #     git commit -m "Update cdkactions manifests" || exit 0
-      #     git push
+      - name: Push updated manifests
+        if: "false"
+        run: |-
+          cd .github/workflows
+          git config user.name github-actions
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git add .
+          git commit -m "Update cdkactions manifests" || exit 0
+          git push
