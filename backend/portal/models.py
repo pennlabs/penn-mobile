@@ -65,7 +65,7 @@ class PollVote(models.Model):
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
     poll_options = models.ManyToManyField(PollOption)
     created_date = models.DateTimeField(default=timezone.now)
-    target_populations = models.ManyToManyField(TargetPopulation, blank=True)
+    target_Fpopulations = models.ManyToManyField(TargetPopulation, blank=True)
 
 
 class Post(models.Model):
