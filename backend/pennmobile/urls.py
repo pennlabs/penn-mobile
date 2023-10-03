@@ -28,6 +28,7 @@ urlpatterns = [
     ),
     path("dining/", include("dining.urls")),
     path("penndata/", include("penndata.urls")),
+    path("subletting/", include("subletting.urls"))
 ]
 
 urlpatterns = [
