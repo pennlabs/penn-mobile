@@ -5,4 +5,4 @@ from subletting.models import Offer, Amenity, Sublet, Image
 admin.site.register(Offer)
 admin.site.register(Amenity)
 admin.site.register(Sublet)
-admin.site.register((Image))
+admin.site.register(Image)

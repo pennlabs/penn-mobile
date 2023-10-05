@@ -6,4 +6,8 @@ from rest_framework import routers
 
 app_name = "subletting"
 
-routers = routers.DefaultRouter()
+router = routers.DefaultRouter()
+
+additional_urls = []
+
+urlpatterns = router.urls + additional_urls
