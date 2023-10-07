@@ -3,7 +3,7 @@ from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, viewsets
+from rest_framework import generics, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -38,43 +38,51 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ["username", "first_name", "last_name"]
 
     def get_object(self):
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        param = self.kwargs[lookup_url_kwarg]
-        if param == "me":
-            return self.request.user
-        else:
-            return super().get_object()
+        try:
+            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+            param = self.kwargs[lookup_url_kwarg]
+            if param == "me":
+                return self.request.user
+            else:
+                return super().get_object()
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
     def get_queryset(self):
-        if not self.request.user.is_authenticated:
-            return User.objects.none()
+        try:
+            if not self.request.user.is_authenticated:
+                return User.objects.none()
 
-        queryset = User.objects.all()
-        queryset = queryset.prefetch_related(
-            Prefetch(
-                "memberships",
-                GroupMembership.objects.filter(
-                    group__in=self.request.user.booking_groups.all(), accepted=True
-                ),
+            queryset = User.objects.all()
+            queryset = queryset.prefetch_related(
+                Prefetch(
+                    "memberships",
+                    GroupMembership.objects.filter(
+                        group__in=self.request.user.booking_groups.all(), accepted=True
+                    ),
+                )
             )
-        )
-        return queryset
+            return queryset
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
     @action(detail=True, methods=["get"])
     def invites(self, request, username=None):
         """
         Retrieve all invites for a given user.
         """
-
-        user = get_object_or_404(User, username=username)
-        return Response(
-            GroupMembershipSerializer(
-                GroupMembership.objects.filter(
-                    user=user, accepted=False, group__in=self.request.user.booking_groups.all(),
-                ),
-                many=True,
-            ).data
-        )
+        try:
+            user = get_object_or_404(User, username=username)
+            return Response(
+                GroupMembershipSerializer(
+                    GroupMembership.objects.filter(
+                        user=user, accepted=False, group__in=self.request.user.booking_groups.all(),
+                    ),
+                    many=True,
+                ).data
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class GroupMembershipViewSet(viewsets.ModelViewSet):
@@ -85,65 +93,78 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
     serializer_class = GroupMembershipSerializer
 
     def get_queryset(self):
-        if not self.request.user.is_authenticated or not hasattr(self.request.user, "memberships"):
-            return GroupMembership.objects.none()
-        return GroupMembership.objects.filter(
-            Q(id__in=self.request.user.memberships.all())
-            | Q(
-                group__in=Group.objects.filter(
-                    memberships__in=GroupMembership.objects.filter(user=self.request.user, type="A")
+        try:
+            if not self.request.user.is_authenticated or not hasattr(self.request.user, "memberships"):
+                return GroupMembership.objects.none()
+
+            return GroupMembership.objects.filter(
+                Q(id__in=self.request.user.memberships.all())
+                | Q(
+                    group__in=Group.objects.filter(
+                        memberships__in=GroupMembership.objects.filter(user=self.request.user, type="A")
+                    )
                 )
             )
-        )
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
     @action(detail=False, methods=["post"])
     def invite(self, request):
-        """
-        Invite a user to a group.
-        """
-        group_id = request.data.get("group")
-        group = get_object_or_404(Group, pk=group_id)
+        try:
+            group_id = request.data.get("group")
+            group = get_object_or_404(Group, pk=group_id)
 
-        # don't invite when user already in group
-        if group.has_member(request.user):
-            return HttpResponseForbidden()
+            # Don't invite when the user is already in the group.
+            if group.has_member(request.user):
+                return HttpResponseForbidden()
 
-        return Response({"message": "invite(s) sent."})
+            return Response({"message": "invite(s) sent."})
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
     @action(detail=True, methods=["post"])
     def accept(self, request, pk=None):
-        membership = get_object_or_404(GroupMembership, pk=pk, accepted=False)
-        if membership.user is None or membership.user != request.user:
-            return HttpResponseForbidden()
+        try:
+            membership = get_object_or_404(GroupMembership, pk=pk, accepted=False)
 
-        if not membership.is_invite:
-            return Response({"message": "invite has already been accepted"}, 400)
+            if membership.user is None or membership.user != request.user:
+                return HttpResponseForbidden()
 
-        membership.accepted = True
-        membership.save()
-        return Response(
-            {
-                "message": "group joined",
-                "user": membership.user.username,
-                "group": membership.group_id,
-            }
-        )
+            if not membership.is_invite:
+                return Response({"message": "invite has already been accepted"}, status=400)
+
+            membership.accepted = True
+            membership.save()
+            return Response(
+                {
+                    "message": "group joined",
+                    "user": membership.user.username,
+                    "group": membership.group_id,
+                }
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
     @action(detail=True, methods=["post"])
     def decline(self, request, pk=None):
-        membership = get_object_or_404(GroupMembership, pk=pk, accepted=False)
-        if membership.user is None or membership.user != request.user:
-            return HttpResponseForbidden()
-        if not membership.is_invite:
-            return Response({"message": "cannot decline an invite that has been accepted."}, 400)
+        try:
+            membership = get_object_or_404(GroupMembership, pk=pk, accepted=False)
 
-        resp = {
-            "message": "invite declined",
-            "user": membership.user.username,
-            "group": membership.group_id,
-        }
-        membership.delete()
-        return Response(resp)
+            if membership.user is None or membership.user != request.user:
+                return HttpResponseForbidden()
+
+            if not membership.is_invite:
+                return Response({"message": "cannot decline an invite that has been accepted."}, status=400)
+
+            resp = {
+                "message": "invite declined",
+                "user": membership.user.username,
+                "group": membership.group_id,
+            }
+            membership.delete()
+            return Response(resp)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -152,19 +173,21 @@ class GroupViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if not self.request.user.is_authenticated:
-            return Group.objects.none()
-        return (
-            super()
-            .get_queryset()
-            .filter(members=self.request.user)
-            .prefetch_related(
-                Prefetch("memberships", GroupMembership.objects.filter(accepted=True))
+        try:
+            if not self.request.user.is_authenticated:
+                return Group.objects.none()
+            return (
+                super()
+                .get_queryset()
+                .filter(members=self.request.user)
+                .prefetch_related(
+                    Prefetch("memberships", GroupMembership.objects.filter(accepted=True))
+                )
             )
-        )
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
-
-# umbrella class used for accessing GSR API's (needed for token authentication)
+# umbrella class used for accessing GSR APIs (needed for token authentication)
 BW = BookingWrapper()
 GB = GroupBook()
 
@@ -175,6 +198,12 @@ class Locations(generics.ListAPIView):
     serializer_class = GSRSerializer
     queryset = GSR.objects.all()
 
+    def list(self, request, *args, **kwargs):
+        try:
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
 
 class RecentGSRs(generics.ListAPIView):
     """Lists 2 most recent GSR rooms for Home page"""
@@ -183,17 +212,23 @@ class RecentGSRs(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return GSR.objects.filter(
-            id__in=GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
-            .distinct()
-            .order_by("-end")[:2]
-            .values_list("gsr", flat=True)
-        )
+        try:
+            return GSR.objects.filter(
+                id__in=GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
+                .distinct()
+                .order_by("-end")[:2]
+                .values_list("gsr", flat=True)
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class CheckWharton(APIView):
     def get(self, request):
-        return Response({"is_wharton": BW.is_wharton(request.user)})
+        try:
+            return Response({"is_wharton": BW.is_wharton(request.user)})
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class Availability(APIView):
@@ -268,8 +303,15 @@ class ReservationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response(BW.get_reservations(request.user))
+        try:
+            return Response(BW.get_reservations(request.user))
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
+
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from your_app.some_module import BW  # Import BW from your actual module
 
 class CreditsView(APIView):
     """
@@ -279,4 +321,8 @@ class CreditsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response(BW.check_credits(request.user))
+        try:
+            return Response(BW.check_credits(request.user))
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+

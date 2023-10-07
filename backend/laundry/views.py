@@ -5,10 +5,11 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
 from requests.exceptions import HTTPError
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from dining.api_wrapper import APIError, DiningAPIWrapper
 from laundry.api_wrapper import check_is_working, hall_status
 from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundryRoomSerializer
@@ -20,7 +21,10 @@ class Ids(APIView):
     """
 
     def get(self, request):
-        return Response(LaundryRoomSerializer(LaundryRoom.objects.all(), many=True).data)
+        try:
+            return Response(LaundryRoomSerializer(LaundryRoom.objects.all(), many=True).data)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class HallInfo(APIView):
@@ -41,16 +45,19 @@ class MultipleHallInfo(APIView):
     """
 
     def get(self, request, hall_ids):
-        halls = [int(x) for x in hall_ids.split(",")]
-        output = {"rooms": []}
+        try:
+            halls = [int(x) for x in hall_ids.split(",")]
+            output = {"rooms": []}
 
-        for hall_id in halls:
-            hall_data = hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id))
-            hall_data["id"] = hall_id
-            hall_data["usage_data"] = HallUsage.compute_usage(hall_id)
-            output["rooms"].append(hall_data)
+            for hall_id in halls:
+                hall_data = hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id))
+                hall_data["id"] = hall_id
+                hall_data["usage_data"] = HallUsage.compute_usage(hall_id)
+                output["rooms"].append(hall_data)
 
-        return Response(output)
+            return Response(output)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class HallUsage(APIView):
@@ -154,29 +161,31 @@ class Preferences(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
-        preferences = request.user.profile.laundry_preferences.all()
-
-        # returns all hall_ids in a person's preferences
-        return Response({"rooms": preferences.values_list("hall_id", flat=True)})
+        try:
+            preferences = request.user.profile.laundry_preferences.all()
+            return Response({"rooms": preferences.values_list("hall_id", flat=True)})
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
     def post(self, request):
+        try:
+            profile = request.user.profile
 
-        profile = request.user.profile
+            # Clears all previous preferences in many-to-many
+            profile.laundry_preferences.clear()
 
-        # clears all previous preferences in many-to-many
-        profile.laundry_preferences.clear()
+            hall_ids = request.data.get("rooms", [])
 
-        hall_ids = request.data["rooms"]
+            for hall_id in hall_ids:
+                hall = get_object_or_404(LaundryRoom, hall_id=int(hall_id))
+                # Adds all of the preferences given by the request
+                profile.laundry_preferences.add(hall)
 
-        for hall_id in hall_ids:
-            hall = get_object_or_404(LaundryRoom, hall_id=int(hall_id))
-            # adds all of the preferences given by the request
-            profile.laundry_preferences.add(hall)
+            profile.save()
 
-        profile.save()
-
-        return Response({"success": True, "error": None})
+            return Response({"success": True, "error": None})
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class Status(APIView):
@@ -185,11 +194,14 @@ class Status(APIView):
     """
 
     def get(self, request):
-        if check_is_working():
-            return Response({"is_working": True, "error_msg": None})
-        else:
-            error_msg = (
-                "Penn's laundry server is currently not updating. "
-                + "We hope this will be fixed shortly."
-            )
-            return Response({"is_working": False, "error_msg": error_msg})
+        try:
+            if check_is_working():
+                return Response({"is_working": True, "error_msg": None})
+            else:
+                error_msg = (
+                    "Penn's laundry server is currently not updating. "
+                    + "We hope this will be fixed shortly."
+                )
+                return Response({"is_working": False, "error_msg": error_msg})
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)

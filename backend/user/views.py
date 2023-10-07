@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from identity.permissions import B2BPermission
-from rest_framework import generics, viewsets
+from rest_framework import generics, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -22,46 +22,52 @@ User = get_user_model()
 class UserView(generics.RetrieveUpdateAPIView):
     """
     get:
-    Return information about the logged in user.
+    Return information about the logged-in user.
 
     update:
-    Update information about the logged in user.
+    Update information about the logged-in user.
     You must specify all of the fields or use a patch request.
 
     patch:
-    Update information about the logged in user.
+    Update information about the logged-in user.
     Only updates fields that are passed to the server.
     """
 
     serializer_class = UserSerializer
 
     def get_object(self):
-        return self.request.user
+        try:
+            return self.request.user
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class NotificationTokenView(viewsets.ModelViewSet):
     """
     get:
-    Return notification tokens of user.
+    Return notification tokens of the user.
     """
 
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationTokenSerializer
 
     def get_queryset(self):
-        return NotificationToken.objects.filter(user=self.request.user)
+        try:
+            return NotificationToken.objects.filter(user=self.request.user)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class NotificationSettingView(viewsets.ModelViewSet):
     """
     get:
-    Return notification settings of user.
+    Return notification settings of the user.
 
     post:
-    Creates/updates new notification setting of user for a specific service.
+    Creates/updates new notification setting of the user for a specific service.
 
     check:
-    Checks if user wants notification for specified serice.
+    Checks if the user wants notification for the specified service.
     """
 
     permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
@@ -71,61 +77,70 @@ class NotificationSettingView(viewsets.ModelViewSet):
         return request.user and request.user.is_authenticated
 
     def get_queryset(self):
-        if self.is_authorized(self.request):
-            return NotificationSetting.objects.filter(token__user=self.request.user)
-        return NotificationSetting.objects.none()
+        try:
+            if self.is_authorized(self.request):
+                return NotificationSetting.objects.filter(token__user=self.request.user)
+            return NotificationSetting.objects.none()
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True, methods=["get"])
     def check(self, request, pk=None):
         """
-        Returns whether the user wants notification for specified service.
+        Returns whether the user wants notification for the specified service.
         :param pk: service name
         """
 
-        if pk not in dict(NotificationSetting.SERVICE_OPTIONS):
-            return Response({"detail": "Invalid Parameters."}, status=400)
+        try:
+            if pk not in dict(NotificationSetting.SERVICE_OPTIONS):
+                return Response({"detail": "Invalid Parameters."}, status=400)
 
-        pennkey = request.GET.get("pennkey")
-        user = (
-            request.user
-            if self.is_authorized(request)
-            else get_object_or_404(User, username=pennkey)
-        )
+            pennkey = request.GET.get("pennkey")
+            user = (
+                request.user
+                if self.is_authorized(request)
+                else get_object_or_404(User, username=pennkey)
+            )
 
-        token = NotificationToken.objects.filter(user=user).first()
-        if not token:
-            return Response({"service": pk, "enabled": False})
-        setting, _ = NotificationSetting.objects.get_or_create(token=token, service=pk)
-        return Response(NotificationSettingSerializer(setting).data)
+            token = NotificationToken.objects.filter(user=user).first()
+            if not token:
+                return Response({"service": pk, "enabled": False})
+            setting, _ = NotificationSetting.objects.get_or_create(token=token, service=pk)
+            return Response(NotificationSettingSerializer(setting).data)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class NotificationAlertView(APIView):
     """
     post:
-    sends push notification alert if one exists
+    sends a push notification alert if one exists
     """
 
     permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
 
     def post(self, request):
-        users = (
-            [self.request.user.username]
-            if request.user and request.user.is_authenticated
-            else request.data.get("users", list())
-        )
-        service = request.data.get("service")
-        title = request.data.get("title")
-        body = request.data.get("body")
-        delay = max(request.data.get("delay", 0), 0)
-        is_dev = request.data.get("is_dev", False)
+        try:
+            users = (
+                [self.request.user.username]
+                if request.user and request.user.is_authenticated
+                else request.data.get("users", list())
+            )
+            service = request.data.get("service")
+            title = request.data.get("title")
+            body = request.data.get("body")
+            delay = max(request.data.get("delay", 0), 0)
+            is_dev = request.data.get("is_dev", False)
 
-        if None in [service, title, body]:
-            return Response({"detail": "Missing required parameters."}, status=400)
-        if service not in dict(NotificationSetting.SERVICE_OPTIONS):
-            return Response({"detail": "Invalid service."}, status=400)
+            if None in [service, title, body]:
+                return Response({"detail": "Missing required parameters."}, status=400)
+            if service not in dict(NotificationSetting.SERVICE_OPTIONS):
+                return Response({"detail": "Invalid service."}, status=400)
 
-        success_users, failed_users = send_push_notifications(
-            users, service, title, body, delay, is_dev
-        )
+            success_users, failed_users = send_push_notifications(
+                users, service, title, body, delay, is_dev
+            )
 
-        return Response({"success_users": success_users, "failed_users": failed_users})
+            return Response({"success_users": success_users, "failed_users": failed_users})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)

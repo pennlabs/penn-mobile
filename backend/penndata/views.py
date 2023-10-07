@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from requests.exceptions import ConnectionError
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -28,38 +28,43 @@ class News(APIView):
         article = {"source": "The Daily Pennsylvanian"}
         try:
             resp = requests.get("https://www.thedp.com/")
+            resp.raise_for_status()  # Raise an exception for non-2xx status codes
+            html = resp.content.decode("utf8")
+
+            soup = BeautifulSoup(html, "html5lib")
+
+            frontpage = soup.find("div", {"class": "col-lg-6 col-md-5 col-sm-12 frontpage-carousel"})
+
+            # adds all variables for the news object
+            if frontpage:
+                title_html = frontpage.find("a", {"class": "frontpage-link large-link"})
+            if title_html:
+                article["link"] = title_html["href"]
+                article["title"] = title_html.get_text()
+
+            subtitle_html = frontpage.find("p")
+            if subtitle_html:
+                article["subtitle"] = subtitle_html.get_text()
+
+            timestamp_html = frontpage.find("div", {"class": "timestamp"})
+            if timestamp_html:
+                article["timestamp"] = timestamp_html.get_text().strip()
+
+            image_html = frontpage.find("img")
+            if image_html:
+                article["imageurl"] = image_html["src"]
+
+            # checks if all variables are there
+            if all(v in article for v in ["title", "subtitle", "timestamp", "imageurl", "link"]):
+                return article
+            else:
+                return None
+
         except ConnectionError:
             return None
-
-        html = resp.content.decode("utf8")
-
-        soup = BeautifulSoup(html, "html5lib")
-
-        frontpage = soup.find("div", {"class": "col-lg-6 col-md-5 col-sm-12 frontpage-carousel"})
-
-        # adds all variables for news object
-        if frontpage:
-            title_html = frontpage.find("a", {"class": "frontpage-link large-link"})
-        if title_html:
-            article["link"] = title_html["href"]
-            article["title"] = title_html.get_text()
-
-        subtitle_html = frontpage.find("p")
-        if subtitle_html:
-            article["subtitle"] = subtitle_html.get_text()
-
-        timestamp_html = frontpage.find("div", {"class": "timestamp"})
-        if timestamp_html:
-            article["timestamp"] = timestamp_html.get_text().strip()
-
-        image_html = frontpage.find("img")
-        if image_html:
-            article["imageurl"] = image_html["src"]
-
-        # checks if all variables are there
-        if all(v in article for v in ["title", "subtitle", "timestamp", "imageurl", "link"]):
-            return article
-        else:
+        except requests.exceptions.RequestException as e:
+            return None
+        except Exception as e:
             return None
 
     def get(self, request):
@@ -156,7 +161,11 @@ class Events(generics.ListAPIView):
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        return Event.objects.filter(event_type=self.kwargs.get("type", ""))
+        try:
+            event_type = self.kwargs.get("type", "")
+            return Event.objects.filter(event_type=event_type)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class Analytics(generics.CreateAPIView):
@@ -175,7 +184,10 @@ class HomePageOrdering(generics.ListAPIView):
     serializer_class = HomePageOrderSerializer
 
     def get_queryset(self):
-        return HomePageOrder.objects.all()
+        try:
+            return HomePageOrder.objects.all()
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class HomePage(APIView):
@@ -266,25 +278,36 @@ class FitnessRoomView(generics.ListAPIView):
         6: (9, 22),
     }
 
+    def get_last_snapshot(self, room_id):
+        try:
+            return FitnessSnapshot.objects.filter(room__id=room_id).order_by("-date").first()
+        except Exception as e:
+            # Handle database query error (if any)
+            return None
+
     def get(self, request):
-        response = super().get(self, request)
-        # also add last_updated and open/close times to each room in response
-        for room in response.data:
-            ss = FitnessSnapshot.objects.filter(room__id=room["id"]).order_by("-date").first()
-            room["last_updated"] = timezone.localtime(ss.date) if ss else None
-            room["count"] = getattr(ss, "count", None)
-            room["capacity"] = getattr(ss, "capacity", None)
+        try:
+            response = super().get(self, request)
 
-            room["open"] = [
-                datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
-                for hours, _ in self.open_times.values()
-            ]
-            room["close"] = [
-                datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
-                for _, hours in self.open_times.values()
-            ]
-        return response
+            for room in response.data:
+                last_snapshot = self.get_last_snapshot(room["id"])
+                room["last_updated"] = timezone.localtime(last_snapshot.date) if last_snapshot else None
+                room["count"] = getattr(last_snapshot, "count", None)
+                room["capacity"] = getattr(last_snapshot, "capacity", None)
 
+                room["open"] = [
+                    datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
+                    for hours, _ in self.open_times.values()
+                ]
+                room["close"] = [
+                    datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
+                    for _, hours in self.open_times.values()
+                ]
+
+            return response
+        except Exception as e:
+            # Handle any unexpected error
+            return Response({"error": "An error occurred."}, status=500)
 
 class FitnessUsage(APIView):
     def safe_add(self, a, b):

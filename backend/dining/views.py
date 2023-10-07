@@ -1,10 +1,9 @@
 import datetime
-
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,9 +12,7 @@ from dining.api_wrapper import APIError, DiningAPIWrapper
 from dining.models import DiningMenu, Venue
 from dining.serializers import DiningMenuSerializer
 
-
 d = DiningAPIWrapper()
-
 
 class Venues(APIView):
     """
@@ -28,7 +25,6 @@ class Venues(APIView):
         except APIError as e:
             return Response({"error": str(e)}, status=400)
 
-
 class Menus(generics.ListAPIView):
     """
     GET: returns list of menus, defaulted to all objects within the week,
@@ -38,20 +34,20 @@ class Menus(generics.ListAPIView):
     serializer_class = DiningMenuSerializer
 
     def get_queryset(self):
-        # TODO: We only have data for the next week, so we should 404
-        # if date_param is out of bounds
-        if date_param := self.kwargs.get("date"):
-            date = make_aware(datetime.datetime.strptime(date_param, "%Y-%m-%d"))
-            return DiningMenu.objects.filter(date=date)
-        else:
-            start_date = timezone.now().date()
-            end_date = start_date + datetime.timedelta(days=6)
-            return DiningMenu.objects.filter(date__gte=start_date, date__lte=end_date)
-
+        try:
+            if date_param := self.kwargs.get("date"):
+                date = make_aware(datetime.datetime.strptime(date_param, "%Y-%m-%d"))
+                return DiningMenu.objects.filter(date=date)
+            else:
+                start_date = timezone.now().date()
+                end_date = start_date + datetime.timedelta(days=6)
+                return DiningMenu.objects.filter(date__gte=start_date, date__lte=end_date)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 class Preferences(APIView):
     """
-    GET: returns list of a User's diningpreferences
+    GET: returns list of a User's dining preferences
     POST: updates User dining preferences by clearing past preferences
     and resetting them with request data
     """
@@ -59,28 +55,25 @@ class Preferences(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
-        preferences = request.user.profile.dining_preferences
-
-        # aggregates venues and puts it in form {"venue_id": x, "count": x}
-        return Response(
-            {"preferences": preferences.values("venue_id").annotate(count=Count("venue_id"))}
-        )
+        try:
+            preferences = request.user.profile.dining_preferences
+            return Response(
+                {"preferences": preferences.values("venue_id").annotate(count=Count("venue_id"))}
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
     def post(self, request):
+        try:
+            profile = request.user.profile
+            preferences = profile.dining_preferences
+            preferences.clear()
+            venue_ids = request.data["venues"]
 
-        profile = request.user.profile
+            for venue_id in venue_ids:
+                venue = get_object_or_404(Venue, venue_id=int(venue_id))
+                preferences.add(venue)
 
-        preferences = profile.dining_preferences
-
-        # clears all previous preferences associated with the profile
-        preferences.clear()
-
-        venue_ids = request.data["venues"]
-
-        for venue_id in venue_ids:
-            venue = get_object_or_404(Venue, venue_id=int(venue_id))
-            # adds all of the preferences given by the request
-            preferences.add(venue)
-
-        return Response({"success": True, "error": None})
+            return Response({"success": True, "error": None})
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
