@@ -2,9 +2,9 @@ from django.urls import path
 from rest_framework import routers
 
 
-#from subletting.views import{}
+#from sublet.views import{}
 
-app_name = "subletting"
+app_name = "sublet"
 
 router = routers.DefaultRouter()
 
