@@ -14,6 +14,6 @@ urlpatterns = [
         name="multiple-hall-info",
     ),
     path("halls/ids/", cache_page(MONTH_IN_SECONDS_APPROX)(Ids), name="hall-ids",),
-    path("status/", cache_page(30)(Status), name="status",),
+    path("status/", Status.as_view(), name="status"),
     path("preferences/", Preferences.as_view(), name="preferences"),
 ]
