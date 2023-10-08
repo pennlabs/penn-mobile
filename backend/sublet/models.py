@@ -23,8 +23,8 @@ class Offer(models.Model):
 class Favorite(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=['user', 'sublet'], name='unique_favorite')]
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="favorites_made")
-    sublet = models.ForeignKey("Sublet", on_delete=models.CASCADE, related_name="favorites")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    sublet = models.ForeignKey("Sublet", on_delete=models.CASCADE)
 
 
 class Amenity(models.Model):
@@ -36,9 +36,9 @@ class Amenity(models.Model):
 
 class Sublet(models.Model):
     subletter = models.ForeignKey(User, on_delete=models.CASCADE)
-    sublettees = models.ManyToManyField(User, through=Offer, related_name="sublets_offered", blank=True)
-    favorites = models.ManyToManyField(User, through=Favorite, related_name="sublets_favorited", blank=True)
-    amenities = models.ManyToManyField(Amenity, blank=True)  # TODO: not sure if anything else should go into this as params
+    sublettees = models.ManyToManyField(User, through=Offer, related_name="sublets_offered", null=True, blank=True)
+    favorites = models.ManyToManyField(User, through=Favorite, related_name="sublets_favorited", null=True, blank=True)
+    amenities = models.ManyToManyField(Amenity, null=True, blank=True)  # TODO: not sure if anything else should go into this as params
 
     title = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
