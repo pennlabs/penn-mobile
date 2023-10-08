@@ -18,6 +18,14 @@ class Offer(models.Model):
 
     def __str__(self):
         return f"Offer for {self.sublet} made by {self.user}"
+    
+
+class Favorite(models.Model):
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['user', 'sublet'], name='unique_favorite')]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="favorites_made")
+    sublet = models.ForeignKey("Sublet", on_delete=models.CASCADE, related_name="favorites")
+
 
 class Amenity(models.Model):
     name = models.CharField(max_length=255, primary_key=True)
@@ -25,9 +33,11 @@ class Amenity(models.Model):
     def __str__(self):
         return self.name
 
+
 class Sublet(models.Model):
     subletter = models.ForeignKey(User, on_delete=models.CASCADE)
     sublettees = models.ManyToManyField(User, through=Offer, related_name="sublets_offered", blank=True)
+    favorites = models.ManyToManyField(User, through=Favorite, related_name="sublets_favorited", blank=True)
     amenities = models.ManyToManyField(Amenity, blank=True)  # TODO: not sure if anything else should go into this as params
 
     title = models.CharField(max_length=255)
@@ -46,6 +56,7 @@ class Sublet(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.subletter}"
+
 
 #Not sure how exactly things are handled S3-side, please review
 class SubletImage(models.Model):
