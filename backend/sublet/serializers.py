@@ -8,6 +8,13 @@ class SubletSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ("id", "created_date")
 
-    def create(self, validated_data):
+    # def create(self, validated_data):
+    #
+    # def update(self, instance, validated_data):
 
-    def update(self, instance, validated_data):
+class FavoritesListSerialzer(serializers.ModelSerializer):
+    sublet = SubletSerializer()
+    class Meta:
+        model = Favorite
+        fields = ['sublet']
+        read_only_fields = ["id"]

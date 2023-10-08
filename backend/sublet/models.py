@@ -23,8 +23,8 @@ class Offer(models.Model):
 class Favorite(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=['user', 'sublet'], name='unique_favorite')]
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="favorites_made")
-    sublet = models.ForeignKey("Sublet", on_delete=models.CASCADE, related_name="favorites")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    sublet = models.ForeignKey("Sublet", on_delete=models.CASCADE)
 
 
 class Amenity(models.Model):
