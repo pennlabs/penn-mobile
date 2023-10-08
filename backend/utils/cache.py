@@ -1,5 +1,6 @@
 from enum import IntEnum
 
+
 class Cache(IntEnum):
     MINUTE = 60
     HOUR = MINUTE * 60

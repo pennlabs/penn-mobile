@@ -153,7 +153,7 @@ class Preferences(APIView):
     """
 
     permission_classes = [IsAuthenticated]
-    key = f"laundry_preferences:{{user_id}}"
+    key = "laundry_preferences:{{user_id}}"
 
     def get(self, request):
         key = self.key.format(user_id=request.user.id)
