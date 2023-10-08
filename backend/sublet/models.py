@@ -62,4 +62,4 @@ class Sublet(models.Model):
 class SubletImage(models.Model):
     #Not sure if Cascade deletes the image from servers or just the reference
     sublet = models.ForeignKey(Sublet, on_delete=models.CASCADE, related_name="images")
-    image = models.ImageField(upload_to="subletting/images")
+    image = models.ImageField(upload_to="sublet/images")

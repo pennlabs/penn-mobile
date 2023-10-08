@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class SublettingConfig(AppConfig):
-    name = 'subletting'
+    name = 'sublet'
     verbose_name = 'Subletting'
