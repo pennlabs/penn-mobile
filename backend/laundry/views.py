@@ -153,20 +153,20 @@ class Preferences(APIView):
     """
 
     permission_classes = [IsAuthenticated]
-    key_prefix = "laundry_preferences"
+    key = f"laundry_preferences:{{user_id}}"
 
     def get(self, request):
-        key = f"{self.key_prefix}:{request.user.id}"
+        key = self.key.format(user_id=request.user.id)
         cached_preferences = cache.get(key)
         if cached_preferences is None:
             preferences = request.user.profile.laundry_preferences.all()
             cached_preferences = preferences.values_list("hall_id", flat=True)
-            cache.set(key, cached_preferences, MONTH_IN_SECONDS_APPROX)
+            cache.set(key, cached_preferences, Cache.MONTH)
 
         return Response({"rooms": cached_preferences})
 
     def post(self, request):
-        key = f"{self.key_prefix}:{request.user.id}"
+        key = self.key.format(user_id=request.user.id)
         profile = request.user.profile
         preferences = profile.laundry_preferences
 
