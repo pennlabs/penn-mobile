@@ -59,6 +59,14 @@ class Properties(viewsets.ModelViewSet):
         # Get query parameters from request (e.g., amenities, user_owned)
         amenities = request.query_params.getlist("amenities")
         subletter = request.query_params.get("subletter", False)  # Defaults to False if not specified
+        starts_before = request.query_params.get("starts_before", None)
+        starts_after = request.query_params.get("starts_after", None)
+        ends_before = request.query_params.get("ends_before", None)
+        ends_after = request.query_params.get("ends_after", None)
+        min_price = request.query_params.get("min_price", None)
+        max_price = request.query_params.get("max_price", None)
+        beds = request.query_params.get("beds", None)
+        baths = request.query_params.get("baths", None)
         
         queryset = Sublet.objects.all()
     
@@ -67,6 +75,22 @@ class Properties(viewsets.ModelViewSet):
             queryset = queryset.filter(amenities__name__in=amenities)
         if subletter.lower() == "true":
             queryset = queryset.filter(subletter=request.user)
+        if starts_before:
+            queryset = queryset.filter(start_date__lt=starts_before)
+        if starts_after:
+            queryset = queryset.filter(start_date__gt=starts_after)
+        if ends_before:
+            queryset = queryset.filter(end_date__lt=ends_before)
+        if ends_after:
+            queryset = queryset.filter(end_date__gt=ends_after)
+        if min_price:
+            queryset = queryset.filter(min_price__gte=min_price)
+        if max_price:
+            queryset = queryset.filter(max_price__lte=max_price)
+        if beds:
+            queryset = queryset.filter(beds=beds)
+        if baths:
+            queryset = queryset.filter(baths=baths)
         
         # Serialize and return the queryset
         serializer = SubletSerializer(queryset, many=True)
