@@ -85,14 +85,64 @@ const AnalyticsCard = ({ content }: { content: PostType | PollType }) => {
 const AnalyticsBodyWrapper = s.div`
   margin: 2rem 0 0 0;
 `
+const PollResult = ({
+  title,
+  number,
+  total,
+  margin = true,
+}: {
+  title: string
+  number: number
+  total: number
+  margin: boolean
+}) => {
+  return (
+    <div style={{ display: 'flex' }}>
+      <div
+        style={{
+          backgroundColor: colors.LIGHTER_GRAY, // Replace with your desired color
+          height: '3rem',
+          borderRadius: '0.375rem',
+          display: 'flex',
+          alignItems: 'center',
+          paddingLeft: '1rem',
+          whiteSpace: 'nowrap',
+          width: `${Math.round((number * 100) / total)}%`,
+          marginBottom: margin ? '5px' : '0px',
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ width: '100%' }}>
+        <div
+          style={{
+            textAlign: 'right',
+            color: colors.DARK_GRAY,
+            fontWeight: 'bold',
+          }}
+        >
+          {`${Math.round((number * 100) / total)}%`}
+        </div>
+        <div
+          style={{ textAlign: 'right', fontSize: '0.875rem', color: '#A0AEC0' }}
+        >
+          {total ? `${number} people` : '10 people'}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const AnalyticsCardContent = ({
   content,
 }: {
   content: PostType | PollType
 }) => {
-  const { data, isLoading, error } = useAnalytics(content.id)
-
+  const { data, optionData, isLoading, error } = useAnalytics(content.id)
+  let total = 0
+  optionData?.options?.forEach((x) => {
+    total += x.vote_count
+  })
   // TODO: add loading state?
   return (
     <AnalyticsBodyWrapper>
@@ -100,12 +150,97 @@ const AnalyticsCardContent = ({
       {data.poll_statistics.length > 0 && !isLoading && (
         <>
           <Text>Poll Options</Text>
-          {data.poll_statistics.map((opt: any) => (
-            <p key={opt.option}>{opt.option}</p>
+          {data.poll_statistics.map((opt: any, idx: number) => (
+            <PollResult
+              key={opt.option}
+              title={opt.option}
+              number={optionData.options[idx].vote_count}
+              total={total}
+              margin={true}
+            />
           ))}
         </>
       )}
     </AnalyticsBodyWrapper>
+    // <div
+    //   style={{
+    //     display: 'flex',
+    //     alignItems: 'center',
+    //     justifyContent: 'center',
+    //     height: '100vh',
+    //     width: 'auto',
+    //     backgroundColor: '#CBD5E0', // Replace with your desired color
+    //   }}
+    // >
+    //   <div
+    //     style={{
+    //       padding: '1.5rem',
+    //       width: '90%',
+    //       backgroundColor: '#F0F4F8', // Replace with your desired color
+    //       borderRadius: '0.375rem',
+    //       marginBottom: '1.25rem',
+    //     }}
+    //   >
+    //     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+    //       <div style={{ display: 'flex', flexDirection: 'column' }}>
+    //         <p>Jan 19, 2022</p>
+    //         <p style={{ fontSize: '0.875rem', color: '#A0AEC0' }}>12:00AM</p>
+    //       </div>
+    //       <div
+    //         style={{
+    //           display: 'flex',
+    //           backgroundColor: '#E2E8F0', // Replace with your desired color
+    //           borderRadius: '0.25rem',
+    //           padding: '0.5rem',
+    //           gap: '0.5rem',
+    //         }}
+    //       >
+    //         <img
+    //           src="https://picsum.photos/90/45"
+    //           alt=""
+    //           style={{ width: '3.125rem', height: '1.5625rem' }}
+    //         />
+    //         <div style={{ display: 'flex', flexDirection: 'column' }}>
+    //           <p style={{ fontWeight: 'bold', fontSize: '1.125rem', letterSpacing: '0.025em' }}>
+    //             Applications for Spring 2020 are open!
+    //           </p>
+    //           <p style={{ fontSize: '0.875rem', color: '#A0AEC0' }}>Expires Jan 25, 2022 at 12:00AM</p>
+    //         </div>
+    //       </div>
+    //     </div>
+    //     <div style={{ display: 'flex', gap: '2.5rem' }}>
+    //       {/* Second Row */}
+    //       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    //         {/* You may replace "ViewsComp" with actual content */}
+    //         <div style={{ /* ViewsComp Styles */ }}></div>
+    //         <div style={{ /* ViewsComp Styles */ }}></div>
+    //       </div>
+    //       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', width: '100%' }}>
+    //         <div
+    //           style={{
+    //             border: '2px solid #CBD5E0', // Replace with your desired color
+    //             height: '100%',
+    //             borderRadius: '0.375rem',
+    //             padding: '0.75rem',
+    //             gap: '0.9375rem',
+    //           }}
+    //         >
+    //           <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+    //             Poll Results
+    //           </div>
+    //           {/* Replace "PollResult" with actual content */}
+    //           <PollResult title="Penn Mobile" percentage={20} />
+    //           <PollResult
+    //             title="Penn Mobile"
+    //             percentage={30}
+    //           />
+    //           <PollResult title="Penn Mobile" percentage={50} />
+    //           <PollResult title="Penn Mobile" percentage={10} />
+    //         </div>
+    //       </div>
+    //     </div>
+    //   </div>
+    // </div>
   )
 }
 

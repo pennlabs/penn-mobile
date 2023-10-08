@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import JSONParser, MultiPartParser
 
 from portal.logic import (
     check_targets,
@@ -262,6 +263,7 @@ class Posts(viewsets.ModelViewSet):
 
     permission_classes = [PostOwnerPermission | IsSuperUser]
     serializer_class = PostSerializer
+    parser_classes = (MultiPartParser, JSONParser)
 
     def get_queryset(self):
         return (

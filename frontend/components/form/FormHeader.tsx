@@ -40,18 +40,39 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
     const form_data = new FormData()
     if (isPost(state)) {
       Object.entries(state).forEach(([key, value]) => {
-        form_data.append(key, value)
+        if (key !== 'image_url') {
+          if (key === 'start_date' || key === 'expire_date') {
+            const val = value.toISOString()
+            form_data.append(key, val)
+          } else if (key !== 'target_populations') {
+            form_data.append(key, value)
+          }
+        } else {
+          form_data.append(key, value)
+        }
       })
     }
+
+    // const data = {
+    //   title: 'adf',
+    //   subtitle: 'asdf',
+    //   club_code: 'pennlabs',
+    //   post_url: 'https://google.com/',
+    //   start_date: new Date('September 17, 2023 03:24:00'),
+    //   expire_date: new Date('October 17, 2023 03:24:00'),
+    //   club_comment: 'af',
+    //   status: 'DRAFT',
+    //   target_populations: '',
+    // }
 
     const res = await doApiRequest(`/api/portal/${route}/`, {
       method: 'POST',
       body: isPost(state) ? form_data : state,
-      headers: {
-        'Content-Type': isPost(state)
-          ? 'multipart/form-data'
-          : 'application/json',
-      },
+      // headers: {
+      //   'Content-Type': isPost(state)
+      //     ? 'multipart/form-data'
+      //     : 'application/json',
+      // },
     })
 
     if (res.ok) {
