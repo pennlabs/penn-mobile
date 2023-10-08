@@ -37,7 +37,7 @@ class SubletSerializer(serializers.ModelSerializer):
     #
     # def update(self, instance, validated_data):
 
-class FavoritesListSerialzer(serializers.ModelSerializer):
+class FavoritesListSerializer(serializers.ModelSerializer):
     sublet = SubletSerializer()
     class Meta:
         model = Favorite
