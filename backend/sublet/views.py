@@ -13,7 +13,7 @@ from .serializers import SubletSerializer
 from sublet.models import Sublet, SubletImage, Offer, Favorite, Amenity
 
 from sublet.permissions import SubletOwnerPermission, IsSuperUser
-from sublet.serializers import SubletSerializer, FavoritesListSerialzer
+from sublet.serializers import SubletSerializer, FavoritesListSerializer
 
 User = get_user_model()
 
@@ -21,7 +21,7 @@ class Amenities(generics.ListAPIView):
     queryset = Amenity.objects.all()
 
 class Favorites(generics.ListAPIView):
-    serializer_class = FavoritesListSerialzer
+    serializer_class = FavoritesListSerializer
     def get_queryset(self):
         user = self.request.user
         return user.favorite_set

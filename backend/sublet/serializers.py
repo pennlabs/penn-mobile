@@ -25,17 +25,47 @@ class OfferSerializer(serializers.ModelSerializer):
 
 class SubletSerializer(serializers.ModelSerializer):
     amenities = AmenitySerializer(many=True, required=False)
-    favorites = FavoriteSerializer(many=True, required=False)
-    sublettees = OfferSerializer(many=True, required=False)
+    favorites = FavoriteSerializer(many=True, required=False, read_only=True)
+    sublettees = OfferSerializer(many=True, required=False, read_only=True)
 
     class Meta:
         model = Sublet
         fields = '__all__'
-        read_only_fields = ["id", "created_date", "favorites", "sublettees"]
+        read_only_fields = ["id", "created_date", "subletter", "favorites", "sublettees"]
+    
+    def create(self, validated_data):
+        # Set the subletter to the current user by default
+        validated_data['subletter'] = self.context['request'].user
+        amenities_data = validated_data.pop('amenities', [])  # Extract amenities data
 
-    # def create(self, validated_data):
-    #
-    # def update(self, instance, validated_data):
+        # Create the sublet instance
+        sublet = super().create(validated_data)
+
+        for amenity_data in amenities_data:
+            amenity_name = amenity_data.get('name')
+            amenity, created = Amenity.objects.get_or_create(name=amenity_name)
+
+            if amenity not in sublet.amenities.all():
+                sublet.amenities.add(amenity)
+
+        return sublet
+    
+    def update(self, instance, validated_data):
+        # Check if the user is the subletter before allowing the update
+        if self.context['request'].user == instance.subletter or self.context["request"].user.is_superuser:
+            instance = super().update(instance, validated_data)
+        else:
+            raise serializers.ValidationError("You do not have permission to update this sublet.")
+        
+        return instance
+    
+    def destroy(self, instance):
+        # Check if the user is the subletter before allowing the delete
+        if self.context['request'].user == instance.subletter or self.context["request"].user.is_superuser:
+            instance.delete()
+        else:
+            raise serializers.ValidationError("You do not have permission to delete this sublet.")
+    
 
 class FavoritesListSerializer(serializers.ModelSerializer):
     sublet = SubletSerializer()

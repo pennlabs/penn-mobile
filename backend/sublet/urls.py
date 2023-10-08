@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 from rest_framework import routers
 from sublet.views import(
     Properties,
-    Favorites
+    Favorites,
+    FavoritesListSerializer,
 )
 
 app_name = "sublet"
