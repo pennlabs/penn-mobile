@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from laundry.api_wrapper import check_is_working, hall_status
 from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundryRoomSerializer
-from utils.cache import MONTH_IN_SECONDS_APPROX
+from utils.cache import Cache
 
 
 class Ids(APIView):
