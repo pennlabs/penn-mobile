@@ -7,7 +7,6 @@ class AmenitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Amenity
         fields = '__all__'
-        read_only_fields = ("name",)
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -41,12 +40,9 @@ class SubletSerializer(serializers.ModelSerializer):
         # Create the sublet instance
         sublet = super().create(validated_data)
 
-        for amenity_data in amenities_data:
-            amenity_name = amenity_data.get('name')
-            amenity, created = Amenity.objects.get_or_create(name=amenity_name)
-
-            if amenity not in sublet.amenities.all():
-                sublet.amenities.add(amenity)
+        for amenity_name in amenities_data:
+            amenity = Amenity.objects.get_or_404(name=amenity_name)
+            sublet.amenities.add(amenity)
 
         return sublet
     
