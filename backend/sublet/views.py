@@ -53,6 +53,23 @@ class Properties(viewsets.ModelViewSet):
         # All Sublets where expires_at hasn't passed yet for regular users
         return Sublet.objects.filter(expires_at__gte=timezone.now())
 
+    def create(self, request, *args, **kwargs):
+        amenities = request.data.pop('amenities', [])
+        
+        # check if valid amenities
+        try:
+            amenities = [Amenity.objects.get(name=amenity) for amenity in amenities]
+        except Amenity.DoesNotExist:
+            return Response({"amenities": "Invalid amenity"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sublet = serializer.save()
+        sublet.amenities.set(amenities)
+        sublet.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
     @action(detail=False, methods=["get"])
     def browse(self, request):
         """Returns a list of Sublets that match query parameters and user ownership."""

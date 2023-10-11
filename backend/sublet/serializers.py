@@ -33,18 +33,8 @@ class SubletSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_date", "subletter", "favorites", "sublettees"]
     
     def create(self, validated_data):
-        # Set the subletter to the current user by default
         validated_data['subletter'] = self.context['request'].user
-        amenities_data = validated_data.pop('amenities', [])  # Extract amenities data
-
-        # Create the sublet instance
-        sublet = super().create(validated_data)
-
-        for amenity_name in amenities_data:
-            amenity = Amenity.objects.get_or_404(name=amenity_name)
-            sublet.amenities.add(amenity)
-
-        return sublet
+        return super().create(validated_data)
     
     def update(self, instance, validated_data):
         # Check if the user is the subletter before allowing the update
