@@ -77,7 +77,6 @@ class TestEvent(TestCase):
         )
 
     def test_response(self):
-
         response = self.client.get(reverse("events", args=["type"]))
         res_json = json.loads(response.content)
         self.assertEquals(2, len(res_json))
@@ -161,6 +160,7 @@ class TestGetRecentFitness(TestCase):
             {
                 "id": room.id,
                 "name": room.name,
+                "image_url": room.image_url,
                 "last_updated": None,
                 "count": None,
                 "capacity": None,
@@ -174,6 +174,7 @@ class TestGetRecentFitness(TestCase):
                 "name": self.fitness_room.name,
                 # this format: 2023-03-12T16:56:51-04:00
                 "last_updated": self.new_time.strftime("%Y-%m-%dT%H:%M:%S%z")[:-2] + ":00",
+                "image_url": self.fitness_room.image_url,
                 "count": self.new_count,
                 "capacity": None,
             }
@@ -192,7 +193,6 @@ class TestGetFitnessSnapshot(TestCase):
         call_command("load_fitness_rooms")
 
     def test_get_fitness_snapshot(self):
-
         self.assertEqual(FitnessSnapshot.objects.all().count(), 0)
 
         call_command("get_fitness_snapshot")
@@ -215,7 +215,7 @@ class TestFitnessUsage(TestCase):
     def load_snapshots_1(self, date):
         # 6:00, 0
         FitnessSnapshot.objects.create(
-            room=self.room, date=date + datetime.timedelta(hours=6), count=0, capacity=0.0
+            room=self.room, date=date + datetime.timedelta(hours=6), count=0, capacity=0.0,
         )
         # 7:30, 10
         FitnessSnapshot.objects.create(
@@ -226,7 +226,7 @@ class TestFitnessUsage(TestCase):
         )
         # 8:00, 65
         FitnessSnapshot.objects.create(
-            room=self.room, date=date + datetime.timedelta(hours=8), count=65, capacity=65.0
+            room=self.room, date=date + datetime.timedelta(hours=8), count=65, capacity=65.0,
         )
         # 8:30, 0
         FitnessSnapshot.objects.create(
@@ -237,7 +237,7 @@ class TestFitnessUsage(TestCase):
         )
         # 10:00, 60
         FitnessSnapshot.objects.create(
-            room=self.room, date=date + datetime.timedelta(hours=10), count=60, capacity=60.0
+            room=self.room, date=date + datetime.timedelta(hours=10), count=60, capacity=60.0,
         )
         # 20:00, 0
         FitnessSnapshot.objects.create(

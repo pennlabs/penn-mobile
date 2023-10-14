@@ -1,6 +1,7 @@
 import calendar
 import datetime
 
+from django.core.cache import cache
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
@@ -12,6 +13,7 @@ from rest_framework.views import APIView
 from laundry.api_wrapper import check_is_working, hall_status
 from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundryRoomSerializer
+from utils.cache import Cache
 
 
 class Ids(APIView):
@@ -139,7 +141,6 @@ class HallUsage(APIView):
         return content
 
     def get(self, request, hall_id):
-
         return Response(HallUsage.compute_usage(hall_id))
 
 
@@ -152,29 +153,37 @@ class Preferences(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    key = "laundry_preferences:{user_id}"
 
     def get(self, request):
+        key = self.key.format(user_id=request.user.id)
+        cached_preferences = cache.get(key)
+        if cached_preferences is None:
+            preferences = request.user.profile.laundry_preferences.all()
+            cached_preferences = preferences.values_list("hall_id", flat=True)
+            cache.set(key, cached_preferences, Cache.MONTH)
 
-        preferences = request.user.profile.laundry_preferences.all()
-
-        # returns all hall_ids in a person's preferences
-        return Response({"rooms": preferences.values_list("hall_id", flat=True)})
+        return Response({"rooms": cached_preferences})
 
     def post(self, request):
-
+        key = self.key.format(user_id=request.user.id)
         profile = request.user.profile
+        preferences = profile.laundry_preferences
+
+        if "rooms" not in request.data:
+            return Response({"success": False, "error": "No rooms provided"}, status=400)
+
+        halls = [
+            get_object_or_404(LaundryRoom, hall_id=int(hall_id))
+            for hall_id in request.data["rooms"]
+        ]
 
         # clears all previous preferences in many-to-many
-        profile.laundry_preferences.clear()
+        preferences.clear()
+        preferences.add(*halls)
 
-        hall_ids = request.data["rooms"]
-
-        for hall_id in hall_ids:
-            hall = get_object_or_404(LaundryRoom, hall_id=int(hall_id))
-            # adds all of the preferences given by the request
-            profile.laundry_preferences.add(hall)
-
-        profile.save()
+        # clear cache
+        cache.delete(key)
 
         return Response({"success": True, "error": None})
 
