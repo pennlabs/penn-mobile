@@ -274,6 +274,13 @@ class Posts(viewsets.ModelViewSet):
             )
         )
 
+    def create(self, request, *args, **kwargs):
+        print(self.request.FILES)
+        content_disposition = request.META.get('HTTP_CONTENT_DISPOSITION', None)
+        print(content_disposition)
+
+        return super().create(request, args, kwargs)
+
     @action(detail=False, methods=["get"])
     def browse(self, request):
         """
