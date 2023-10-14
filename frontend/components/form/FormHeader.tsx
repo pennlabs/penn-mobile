@@ -54,11 +54,6 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
     const res = await doApiRequest(`/api/portal/${route}/`, {
       method: 'POST',
       body: isPost(state) ? form_data : state,
-      // headers: {
-        // 'Content-Type': isPost(state)
-        //   ? 'multipart/form-data'
-        //   : 'application/json',
-      // },
     })
 
     if (res.ok) {

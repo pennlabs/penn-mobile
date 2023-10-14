@@ -4,10 +4,10 @@ from django.db.models.functions import Trunc
 from django.utils import timezone
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.parsers import JSONParser, MultiPartParser
 
 from portal.logic import (
     check_targets,
@@ -273,13 +273,6 @@ class Posts(viewsets.ModelViewSet):
                 club_code__in=[x["club"]["code"] for x in get_user_clubs(self.request.user)]
             )
         )
-
-    def create(self, request, *args, **kwargs):
-        print(self.request.FILES)
-        content_disposition = request.META.get('HTTP_CONTENT_DISPOSITION', None)
-        print(content_disposition)
-
-        return super().create(request, args, kwargs)
 
     @action(detail=False, methods=["get"])
     def browse(self, request):

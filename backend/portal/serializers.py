@@ -243,30 +243,43 @@ class PostSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_date", "target_populations")
 
-    def to_internal_value(self, data):
-        print("to_internal_value")
-        print(data)
-        instance = super(PostSerializer, self).to_internal_value(data)
-        # target_populations_ids = data["target_populations_ids"]
-        # instance["target_populations"] = TargetPopulation.objects.filter(id__in=target_populations_ids)
-        return instance
+    def parse_target_populations(self, raw_target_populations):
+        if isinstance(raw_target_populations, list):
+            ids = raw_target_populations
+        else:
+            ids = [int(id) for id in raw_target_populations.split(",")]
+        return TargetPopulation.objects.filter(id__in=ids)
 
-    def validate(self, data):
-        print("in validate")
-        print(data)
-        return super().validate(data)
+    def update_target_populations(self, target_populations):
+        year = False
+        major = False
+        school = False
+        degree = False
 
-    def create(self, validated_data): 
-        # request = self.context.get("request", None)
-        # if request is None:
-        #     pass
-        
-        # print(request.data)
-        
-        
+        for population in target_populations:
+            if population.kind == TargetPopulation.KIND_YEAR:
+                year = True
+            elif population.kind == TargetPopulation.KIND_MAJOR:
+                major = True
+            elif population.kind == TargetPopulation.KIND_SCHOOL:
+                school = True
+            elif population.kind == TargetPopulation.KIND_DEGREE:
+                degree = True
+
+        if not year:
+            target_populations |= TargetPopulation.objects.filter(kind=TargetPopulation.KIND_YEAR)
+        if not major:
+            target_populations |= TargetPopulation.objects.filter(kind=TargetPopulation.KIND_MAJOR)
+        if not school:
+            target_populations |= TargetPopulation.objects.filter(kind=TargetPopulation.KIND_SCHOOL)
+        if not degree:
+            target_populations |= TargetPopulation.objects.filter(kind=TargetPopulation.KIND_DEGREE)
+
+        return target_populations
+
+    def create(self, validated_data):
         club_code = validated_data["club_code"]
-        # ensures user is part of club
-
+        # Ensures user is part of club
         if club_code not in [
             x["club"]["code"] for x in get_user_clubs(self.context["request"].user)
         ]:
@@ -274,49 +287,37 @@ class PostSerializer(serializers.ModelSerializer):
                 detail={"detail": "You do not access to create a Poll under this club."}
             )
 
-        # ensuring user cannot create an admin comment upon creation
+        # Ensuring user cannot create an admin comment upon creation
         validated_data["admin_comment"] = None
         validated_data["status"] = Post.STATUS_DRAFT
- 
+
         instance = super().create(validated_data)
 
-        # year = False
-        # major = False
-        # school = False
-        # degree = False
+        # Update target populations
+        # If none of a category was selected, then we will auto-select all populations in that categary
+        data = self.context["request"].data
+        raw_target_populations = self.parse_target_populations(data["target_populations"])
+        target_populations = self.update_target_populations(raw_target_populations)
 
-        # for population in validated_data["target_populations"]:
-        #     if population.kind == TargetPopulation.KIND_YEAR:
-        #         year = True
-        #     elif population.kind == TargetPopulation.KIND_MAJOR:
-        #         major = True
-        #     elif population.kind == TargetPopulation.KIND_SCHOOL:
-        #         school = True
-        #     elif population.kind == TargetPopulation.KIND_DEGREE:
-        #         degree = True
+        instance.target_populations.set(target_populations)
+        instance.save()
 
-        # if not year:
-        #     validated_data["target_populations"] += list(
-        #         TargetPopulation.objects.filter(kind=TargetPopulation.KIND_YEAR)
-        #     )
-        # if not major:
-        #     validated_data["target_populations"] += list(
-        #         TargetPopulation.objects.filter(kind=TargetPopulation.KIND_MAJOR)
-        #     )
-        # if not school:
-        #     validated_data["target_populations"] += list(
-        #         TargetPopulation.objects.filter(kind=TargetPopulation.KIND_SCHOOL)
-        #     )
-        # if not degree:
-        #     validated_data["target_populations"] += list(
-        #         TargetPopulation.objects.filter(kind=TargetPopulation.KIND_DEGREE)
-        #     )
-
-        # instance.save()
         return instance
 
     def update(self, instance, validated_data):
         # if post is updated, then approved should be false
         if not self.context["request"].user.is_superuser:
             validated_data["status"] = Post.STATUS_DRAFT
+
+        data = self.context["request"].data
+
+        # Additional logic for target populations
+        if "target_populations" in data:
+            target_populations = self.parse_target_populations(data["target_populations"])
+            data = self.context["request"].data
+            raw_target_populations = self.parse_target_populations(data["target_populations"])
+            target_populations = self.update_target_populations(raw_target_populations)
+
+            validated_data["target_populations"] = target_populations
+
         return super().update(instance, validated_data)
