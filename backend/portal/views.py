@@ -4,7 +4,6 @@ from django.db.models.functions import Trunc
 from django.utils import timezone
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
-from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -263,7 +262,6 @@ class Posts(viewsets.ModelViewSet):
 
     permission_classes = [PostOwnerPermission | IsSuperUser]
     serializer_class = PostSerializer
-    parser_classes = (MultiPartParser, JSONParser)
 
     def get_queryset(self):
         return (

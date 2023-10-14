@@ -247,7 +247,11 @@ class PostSerializer(serializers.ModelSerializer):
         if isinstance(raw_target_populations, list):
             ids = raw_target_populations
         else:
-            ids = [int(id) for id in raw_target_populations.split(",")]
+            ids = (
+                list()
+                if len(raw_target_populations) == 0
+                else [int(id) for id in raw_target_populations.split(",")]
+            )
         return TargetPopulation.objects.filter(id__in=ids)
 
     def update_target_populations(self, target_populations):
