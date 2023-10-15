@@ -8,23 +8,35 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('sublet', '0001_initial'),
+        ("sublet", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='sublet',
-            name='amenities',
-            field=models.ManyToManyField(blank=True, null=True, to='sublet.Amenity'),
+            model_name="sublet",
+            name="amenities",
+            field=models.ManyToManyField(blank=True, null=True, to="sublet.Amenity"),
         ),
         migrations.AlterField(
-            model_name='sublet',
-            name='favorites',
-            field=models.ManyToManyField(blank=True, null=True, related_name='sublets_favorited', through='sublet.Favorite', to=settings.AUTH_USER_MODEL),
+            model_name="sublet",
+            name="favorites",
+            field=models.ManyToManyField(
+                blank=True,
+                null=True,
+                related_name="sublets_favorited",
+                through="sublet.Favorite",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='sublet',
-            name='sublettees',
-            field=models.ManyToManyField(blank=True, null=True, related_name='sublets_offered', through='sublet.Offer', to=settings.AUTH_USER_MODEL),
+            model_name="sublet",
+            name="sublettees",
+            field=models.ManyToManyField(
+                blank=True,
+                null=True,
+                related_name="sublets_offered",
+                through="sublet.Offer",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

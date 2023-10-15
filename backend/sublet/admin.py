@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from sublet.models import Offer, Amenity, Sublet, SubletImage, Favorite
+from sublet.models import Amenity, Favorite, Offer, Sublet, SubletImage
+
 
 admin.site.register(Offer)
 admin.site.register(Amenity)

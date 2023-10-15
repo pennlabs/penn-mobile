@@ -1,30 +1,41 @@
-from django.shortcuts import render
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
+from django.shortcuts import render
 from django.utils import timezone
-from rest_framework import generics, viewsets, status
+from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from sublet.models import Amenity, Favorite, Offer, Sublet, SubletImage
+from sublet.permissions import IsSuperUser, SubletOwnerPermission
+from sublet.serializers import (
+    FavoriteSerializer,
+    FavoritesListSerializer,
+    OfferSerializer,
+    SubletSerializer,
+)
+
 from .serializers import SubletSerializer
 
-from sublet.models import Sublet, SubletImage, Offer, Favorite, Amenity
-
-from sublet.permissions import SubletOwnerPermission, IsSuperUser
-from sublet.serializers import SubletSerializer, FavoritesListSerializer
 
 User = get_user_model()
+
 
 class Amenities(generics.ListAPIView):
     queryset = Amenity.objects.all()
 
-class Favorites(generics.ListAPIView):
+
+class UserFavorites(generics.ListAPIView):
     serializer_class = FavoritesListSerializer
+
     def get_queryset(self):
         user = self.request.user
         return user.favorite_set
+
 
 class Properties(viewsets.ModelViewSet):
     """
@@ -41,7 +52,7 @@ class Properties(viewsets.ModelViewSet):
     Delete a Sublet.
     """
 
-    #how to use the sublet owner permission
+    # how to use the sublet owner permission
     permission_classes = [SubletOwnerPermission | IsSuperUser]
     serializer_class = SubletSerializer
 
@@ -49,13 +60,13 @@ class Properties(viewsets.ModelViewSet):
         # All Sublets for superusers
         if self.request.user.is_superuser:
             return Sublet.objects.all()
-        
+
         # All Sublets where expires_at hasn't passed yet for regular users
         return Sublet.objects.filter(expires_at__gte=timezone.now())
 
     def create(self, request, *args, **kwargs):
-        amenities = request.data.pop('amenities', [])
-        
+        amenities = request.data.pop("amenities", [])
+
         # check if valid amenities
         try:
             amenities = [Amenity.objects.get(name=amenity) for amenity in amenities]
@@ -69,13 +80,14 @@ class Properties(viewsets.ModelViewSet):
         sublet.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
     @action(detail=False, methods=["get"])
     def browse(self, request):
         """Returns a list of Sublets that match query parameters and user ownership."""
         # Get query parameters from request (e.g., amenities, user_owned)
         amenities = request.query_params.getlist("amenities")
-        subletter = request.query_params.get("subletter", False)  # Defaults to False if not specified
+        subletter = request.query_params.get(
+            "subletter", False
+        )  # Defaults to False if not specified
         starts_before = request.query_params.get("starts_before", None)
         starts_after = request.query_params.get("starts_after", None)
         ends_before = request.query_params.get("ends_before", None)
@@ -84,9 +96,9 @@ class Properties(viewsets.ModelViewSet):
         max_price = request.query_params.get("max_price", None)
         beds = request.query_params.get("beds", None)
         baths = request.query_params.get("baths", None)
-        
+
         queryset = Sublet.objects.all()
-    
+
         # Apply filters based on query parameters
         if amenities:
             queryset = queryset.filter(amenities__name__in=amenities)
@@ -108,7 +120,7 @@ class Properties(viewsets.ModelViewSet):
             queryset = queryset.filter(beds=beds)
         if baths:
             queryset = queryset.filter(baths=baths)
-        
+
         # Serialize and return the queryset
         serializer = SubletSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -119,3 +131,52 @@ class Properties(viewsets.ModelViewSet):
         sublet = self.get_object()
         serializer = SubletSerializer(sublet)
         return Response(serializer.data)
+
+
+class Favorites(viewsets.ModelViewSet):
+    serializer_class = FavoriteSerializer
+    queryset = Favorite.objects.all()
+    http_method_names = ["post", "delete"]
+
+    def create(self, request, *args, **kwargs):
+        data = self.request.data
+        data["sublet"] = int(self.kwargs["sublet_id"])
+        data["user"] = self.request.user.id
+        print(data)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        filter = {"user": self.request.user.id, "sublet": int(self.kwargs["sublet_id"])}
+        obj = get_object_or_404(queryset, **filter)
+        self.check_object_permissions(self.request, obj)
+        self.perform_destroy(obj)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class Offers(viewsets.ModelViewSet):
+    """
+    browse:
+    Returns a list of all offers for the sublet matching the provided ID.
+
+    create:
+    Create an offer on the sublet matching the provided ID.
+
+    destroy:
+    Delete the offer between the user and the sublet matching the ID.
+    """
+
+    # TODO: implement permissions
+    serializer_class = OfferSerializer
+
+    def get_queryset(self):
+        return Offer.objects.filter(sublet_id=self.kwargs["sublet_id"]).order_by("created_date")
+
+    # def create(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception = True)
+    #     offer = serializer.save()
+    #     return Response(serializer.data, status=status.HTTP_201_CREATED)
