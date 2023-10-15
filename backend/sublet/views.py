@@ -17,6 +17,7 @@ from sublet.serializers import (
     FavoritesListSerializer,
     OfferSerializer,
     SubletSerializer,
+    AmenitySerializer,
 )
 
 from .serializers import SubletSerializer
@@ -26,6 +27,7 @@ User = get_user_model()
 
 
 class Amenities(generics.ListAPIView):
+    serializer_class = AmenitySerializer
     queryset = Amenity.objects.all()
 
 
@@ -33,8 +35,10 @@ class UserFavorites(generics.ListAPIView):
     serializer_class = FavoritesListSerializer
 
     def get_queryset(self):
-        user = self.request.user
-        return user.favorite_set
+        user = self.request.user.id
+        # print(type(user.favorite_set))
+        # return user.favorite_set
+        return Favorite.objects.filter(user=user)
 
 
 class Properties(viewsets.ModelViewSet):
@@ -159,7 +163,7 @@ class Favorites(viewsets.ModelViewSet):
 
 class Offers(viewsets.ModelViewSet):
     """
-    browse:
+    list:
     Returns a list of all offers for the sublet matching the provided ID.
 
     create:
@@ -175,8 +179,19 @@ class Offers(viewsets.ModelViewSet):
     def get_queryset(self):
         return Offer.objects.filter(sublet_id=self.kwargs["sublet_id"]).order_by("created_date")
 
-    # def create(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     serializer.is_valid(raise_exception = True)
-    #     offer = serializer.save()
-    #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        data["sublet"] = int(self.kwargs["sublet_id"])
+        data["user"] = self.request.user.id
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        filter = {"user": self.request.user.id, "sublet": int(self.kwargs["sublet_id"])}
+        obj = get_object_or_404(queryset, **filter)
+        self.check_object_permissions(self.request, obj)
+        self.perform_destroy(obj)
+        return Response(status=status.HTTP_204_NO_CONTENT)
