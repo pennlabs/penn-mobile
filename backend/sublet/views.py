@@ -35,7 +35,7 @@ class UserFavorites(generics.ListAPIView):
     serializer_class = FavoritesListSerializer
 
     def get_queryset(self):
-        user = self.request.user.id
+        user = self.request.user
         # print(type(user.favorite_set))
         # return user.favorite_set
         return Favorite.objects.filter(user=user)

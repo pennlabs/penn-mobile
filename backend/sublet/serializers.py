@@ -28,13 +28,13 @@ class OfferSerializer(serializers.ModelSerializer):
 
 class SubletSerializer(serializers.ModelSerializer):
     amenities = AmenitySerializer(many=True, required=False)
-    favorites = FavoriteSerializer(many=True, required=False, read_only=True)
+    #favorites = FavoriteSerializer(many=True, required=False, read_only=True)
     sublettees = OfferSerializer(many=True, required=False, read_only=True)
 
     class Meta:
         model = Sublet
-        fields = "__all__"
-        read_only_fields = ["id", "created_date", "subletter", "favorites", "sublettees"]
+        exclude = ["favorites"]
+        read_only_fields = ["id", "created_date", "subletter", "sublettees"]
 
     def create(self, validated_data):
         validated_data["subletter"] = self.context["request"].user
