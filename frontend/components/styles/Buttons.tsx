@@ -26,6 +26,16 @@ export const Button = s.button<iButtonProps>`
   font-family: inherit;
 `
 
+export const ButtonIcon = s.button<iButtonProps>`
+  text-align: center;
+  background-color: white;
+  border: none;
+  outline: none;
+  padding: 2px;
+  cursor: pointer;
+  font-family: inherit;
+`
+
 export const Toggle = s.div`
   display: inline-block;
   border-radius: 100px;

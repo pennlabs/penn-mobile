@@ -2,11 +2,21 @@ import React, { useState } from 'react'
 import s from 'styled-components'
 import moment from 'moment'
 
+import {
+  faArrowCircleLeft,
+  faArrowCircleRight,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { colors } from '@/components/styles/colors'
 import { isPost, PollType, PostType, Status } from '@/utils/types'
 import { Row, Group } from '@/components/styles/Layout'
-import { Text, InlineText } from '../styles/Text'
+import { Text, InlineText, Heading4, FlexCentered } from '../styles/Text'
 import useAnalytics from '@/hooks/useAnalytics'
+// import ViewsComponent from './ViewsComponent'
+import SimplePieChart from './PieChartComponent'
+import VotesBreakdownComponent from './VotesBreakdownComponent'
+import { ButtonIcon, Toggle, ToggleOption } from '@/components/styles/Buttons'
+import { PieChartToggle } from './PieChartToggle'
 
 interface iAnalyticsCardWrapperProps {
   live: boolean
@@ -21,6 +31,13 @@ const AnalyticsCardWrapper = s.div<iAnalyticsCardWrapperProps>`
   border-left: ${(props) =>
     props.live ? 'solid #3FAA6D 12px' : 'solid #999999 12px'};
   width: 99%;
+`
+
+const PrettyBorderWrapper = s.div`
+  border: 2px solid #cbd5e0;
+  border-radius: 0.375rem;
+  padding: 1.5rem;
+  width: 100%;
 `
 
 // returns Month Day, Year string from Date Object (ex: Jan 01, 2020)
@@ -107,7 +124,7 @@ const PollResult = ({
           alignItems: 'center',
           paddingLeft: '1rem',
           whiteSpace: 'nowrap',
-          width: `${Math.round((number * 100) / total)}%`,
+          width: `${total === 0 ? 0 : Math.round((number * 100) / total)}%`,
           marginBottom: margin ? '5px' : '0px',
         }}
       >
@@ -121,12 +138,12 @@ const PollResult = ({
             fontWeight: 'bold',
           }}
         >
-          {`${Math.round((number * 100) / total)}%`}
+          {`${total === 0 ? 0 : Math.round((number * 100) / total)}%`}
         </div>
         <div
           style={{ textAlign: 'right', fontSize: '0.875rem', color: '#A0AEC0' }}
         >
-          {total ? `${number} people` : '10 people'}
+          {total ? `${number} people` : '0 people'}
         </div>
       </div>
     </div>
@@ -138,109 +155,129 @@ const AnalyticsCardContent = ({
 }: {
   content: PostType | PollType
 }) => {
+  const [slide, setSlide] = useState(true)
+  const [pieChartOption, setPieChartOption] = useState('school')
   const { data, optionData, isLoading, error } = useAnalytics(content.id)
   let total = 0
   optionData?.options?.forEach((x) => {
     total += x.vote_count
   })
+  const targetPopulationsData = data?.poll_statistics
+  const schoolVotes = {}
+  const yearVotes = {}
+
+  targetPopulationsData.forEach((item) => {
+    if (item.breakdown && item.breakdown.SCHOOL) {
+      const schools = item.breakdown.SCHOOL
+      Object.keys(schools).forEach((school) => {
+        if (schoolVotes[school]) {
+          schoolVotes[school] += schools[school]
+        } else {
+          schoolVotes[school] = schools[school]
+        }
+      })
+    }
+    if (item.breakdown && item.breakdown.YEAR) {
+      const years = item.breakdown.YEAR
+      Object.keys(year).forEach((school) => {
+        if (yearVotes[year]) {
+          yearVotes[year] += years[year]
+        } else {
+          yearVotes[year] = years[year]
+        }
+      })
+    }
+  })
+
+  let totalVoteCount = 0
+  data.poll_statistics.map((opt: any, idx: number) => {
+    totalVoteCount += optionData.options[idx]?.vote_count || 0
+  })
+
   // TODO: add loading state?
   return (
     <AnalyticsBodyWrapper>
       {error}
       {data.poll_statistics.length > 0 && !isLoading && (
-        <>
-          <Text>Poll Options</Text>
-          {data.poll_statistics.map((opt: any, idx: number) => (
-            <PollResult
-              key={opt.option}
-              title={opt.option}
-              number={optionData.options[idx].vote_count}
-              total={total}
-              margin={true}
-            />
-          ))}
-        </>
+        <div style={{ display: 'flex' }}>
+          {/* <div style={{ marginRight: 20 }}>
+            <ViewsComponent />
+            <div style={{ height: 10 }} />
+            <ViewsComponent />
+          </div> */}
+          <PrettyBorderWrapper>
+            <FlexCentered>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%',
+                  paddingRight: 10,
+                }}
+              >
+                <ButtonIcon onClick={() => setSlide(!slide)}>
+                  <FontAwesomeIcon icon={faArrowCircleLeft} size="lg" />
+                </ButtonIcon>
+              </div>
+              <div style={{ width: '90%' }}>
+                {slide ? (
+                  <div>
+                    <Heading4 marginBottom="1rem">Poll Results</Heading4>
+                    {data.poll_statistics.map((opt: any, idx: number) => {
+                      return (
+                        <PollResult
+                          key={opt.option}
+                          title={opt.option}
+                          number={optionData.options[idx].vote_count || 0}
+                          total={total}
+                          margin={true}
+                        />
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{ display: 'flex', justifyContent: 'space-between' }}
+                  >
+                    <div>
+                      <Heading4 marginBottom="1rem">Votes Breakdown</Heading4>
+                      <PieChartToggle
+                        activeOption={pieChartOption}
+                        setActiveOption={setPieChartOption}
+                      />
+                      <div style={{ height: 20 }} />
+                      <VotesBreakdownComponent
+                        schoolData={schoolVotes}
+                        yearData={yearVotes}
+                        mode={pieChartOption}
+                      />
+                    </div>
+                    <SimplePieChart
+                      schoolData={schoolVotes}
+                      yearData={yearVotes}
+                      mode={pieChartOption}
+                      uniqueVotes={totalVoteCount}
+                    />
+                  </div>
+                )}
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%',
+                  paddingLeft: 10,
+                }}
+              >
+                <ButtonIcon onClick={() => setSlide(!slide)}>
+                  <FontAwesomeIcon icon={faArrowCircleRight} size="lg" />
+                </ButtonIcon>
+              </div>
+            </FlexCentered>
+          </PrettyBorderWrapper>
+        </div>
       )}
     </AnalyticsBodyWrapper>
-    // <div
-    //   style={{
-    //     display: 'flex',
-    //     alignItems: 'center',
-    //     justifyContent: 'center',
-    //     height: '100vh',
-    //     width: 'auto',
-    //     backgroundColor: '#CBD5E0', // Replace with your desired color
-    //   }}
-    // >
-    //   <div
-    //     style={{
-    //       padding: '1.5rem',
-    //       width: '90%',
-    //       backgroundColor: '#F0F4F8', // Replace with your desired color
-    //       borderRadius: '0.375rem',
-    //       marginBottom: '1.25rem',
-    //     }}
-    //   >
-    //     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-    //       <div style={{ display: 'flex', flexDirection: 'column' }}>
-    //         <p>Jan 19, 2022</p>
-    //         <p style={{ fontSize: '0.875rem', color: '#A0AEC0' }}>12:00AM</p>
-    //       </div>
-    //       <div
-    //         style={{
-    //           display: 'flex',
-    //           backgroundColor: '#E2E8F0', // Replace with your desired color
-    //           borderRadius: '0.25rem',
-    //           padding: '0.5rem',
-    //           gap: '0.5rem',
-    //         }}
-    //       >
-    //         <img
-    //           src="https://picsum.photos/90/45"
-    //           alt=""
-    //           style={{ width: '3.125rem', height: '1.5625rem' }}
-    //         />
-    //         <div style={{ display: 'flex', flexDirection: 'column' }}>
-    //           <p style={{ fontWeight: 'bold', fontSize: '1.125rem', letterSpacing: '0.025em' }}>
-    //             Applications for Spring 2020 are open!
-    //           </p>
-    //           <p style={{ fontSize: '0.875rem', color: '#A0AEC0' }}>Expires Jan 25, 2022 at 12:00AM</p>
-    //         </div>
-    //       </div>
-    //     </div>
-    //     <div style={{ display: 'flex', gap: '2.5rem' }}>
-    //       {/* Second Row */}
-    //       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-    //         {/* You may replace "ViewsComp" with actual content */}
-    //         <div style={{ /* ViewsComp Styles */ }}></div>
-    //         <div style={{ /* ViewsComp Styles */ }}></div>
-    //       </div>
-    //       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', width: '100%' }}>
-    //         <div
-    //           style={{
-    //             border: '2px solid #CBD5E0', // Replace with your desired color
-    //             height: '100%',
-    //             borderRadius: '0.375rem',
-    //             padding: '0.75rem',
-    //             gap: '0.9375rem',
-    //           }}
-    //         >
-    //           <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-    //             Poll Results
-    //           </div>
-    //           {/* Replace "PollResult" with actual content */}
-    //           <PollResult title="Penn Mobile" percentage={20} />
-    //           <PollResult
-    //             title="Penn Mobile"
-    //             percentage={30}
-    //           />
-    //           <PollResult title="Penn Mobile" percentage={50} />
-    //           <PollResult title="Penn Mobile" percentage={10} />
-    //         </div>
-    //       </div>
-    //     </div>
-    //   </div>
-    // </div>
   )
 }
 
