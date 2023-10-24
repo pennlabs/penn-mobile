@@ -71,6 +71,7 @@ class SimpleSubletSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sublet
         fields = [
+            "id",
             "subletter",
             "amenities",
             "title",
@@ -82,7 +83,7 @@ class SimpleSubletSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
         ]
-        read_only_fields = []
+        read_only_fields = ["id", "subletter"]
 
 
 class FavoritesListSerializer(serializers.ModelSerializer):

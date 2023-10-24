@@ -18,6 +18,7 @@ from sublet.serializers import (
     FavoritesListSerializer,
     OfferSerializer,
     SubletSerializer,
+    SimpleSubletSerializer,
 )
 
 from .serializers import SubletSerializer
@@ -84,13 +85,12 @@ class Properties(viewsets.ModelViewSet):
         sublet.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=["get"])
-    def browse(self, request):
+    def list(self, request, *args, **kwargs):
         """Returns a list of Sublets that match query parameters and user ownership."""
         # Get query parameters from request (e.g., amenities, user_owned)
         amenities = request.query_params.getlist("amenities")
         subletter = request.query_params.get(
-            "subletter", False
+            "subletter", "false"
         )  # Defaults to False if not specified
         starts_before = request.query_params.get("starts_before", None)
         starts_after = request.query_params.get("starts_after", None)
@@ -126,12 +126,12 @@ class Properties(viewsets.ModelViewSet):
             queryset = queryset.filter(baths=baths)
 
         # Serialize and return the queryset
-        serializer = SubletSerializer(queryset, many=True)
+        serializer = SimpleSubletSerializer(queryset, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["get"])
-    def view_property(self, request, pk=None):
+    def retrieve(self, request, *args, **kwargs):
         """Returns details of a specific Sublet."""
+        print("new testing?")
         sublet = self.get_object()
         serializer = SubletSerializer(sublet)
         return Response(serializer.data)
