@@ -26,10 +26,11 @@ class OfferSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+# complex sublet serializer for use in creation/updating/deletion + getting info about a singular sublet
 class SubletSerializer(serializers.ModelSerializer):
     amenities = AmenitySerializer(many=True, required=False)
-    #favorites = FavoriteSerializer(many=True, required=False, read_only=True)
-    sublettees = OfferSerializer(many=True, required=False, read_only=True)
+    # favorites = FavoriteSerializer(many=True, required=False, read_only=True)
+    # sublettees = OfferSerializer(many=True, required=False, read_only=True)
 
     class Meta:
         model = Sublet
@@ -61,6 +62,27 @@ class SubletSerializer(serializers.ModelSerializer):
             instance.delete()
         else:
             raise serializers.ValidationError("You do not have permission to delete this sublet.")
+
+
+# simple sublet serializer for use when pulling all serializers/etc
+class SimpleSubletSerializer(serializers.ModelSerializer):
+    amenities = AmenitySerializer(many=True, required=False)
+
+    class Meta:
+        model = Sublet
+        fields = [
+            "subletter",
+            "amenities",
+            "title",
+            "address",
+            "beds",
+            "baths",
+            "min_price",
+            "max_price",
+            "start_date",
+            "end_date",
+        ]
+        read_only_fields = []
 
 
 class FavoritesListSerializer(serializers.ModelSerializer):

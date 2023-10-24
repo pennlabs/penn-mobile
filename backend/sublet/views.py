@@ -13,11 +13,11 @@ from rest_framework.views import APIView
 from sublet.models import Amenity, Favorite, Offer, Sublet, SubletImage
 from sublet.permissions import IsSuperUser, SubletOwnerPermission
 from sublet.serializers import (
+    AmenitySerializer,
     FavoriteSerializer,
     FavoritesListSerializer,
     OfferSerializer,
     SubletSerializer,
-    AmenitySerializer,
 )
 
 from .serializers import SubletSerializer

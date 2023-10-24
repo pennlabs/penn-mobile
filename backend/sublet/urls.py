@@ -2,7 +2,7 @@ from django.urls import include, path
 from rest_framework import routers
 from rest_framework.routers import DefaultRouter
 
-from sublet.views import Favorites, Offers, Properties, UserFavorites, Amenities
+from sublet.views import Amenities, Favorites, Offers, Properties, UserFavorites
 
 
 app_name = "sublet"
