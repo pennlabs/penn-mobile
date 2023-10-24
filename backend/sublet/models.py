@@ -50,10 +50,10 @@ class Sublet(models.Model):
     )  # TODO: not sure if anything else should go into this as params
 
     title = models.CharField(max_length=255)
-    address = models.CharField(max_length=255)
-    beds = models.IntegerField()
-    baths = models.IntegerField()
-    description = models.TextField()
+    address = models.CharField(max_length=255, null=True, blank=True)
+    beds = models.IntegerField(null=True, blank=True)
+    baths = models.IntegerField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
     external_link = models.URLField(max_length=255)
     min_price = models.IntegerField()
     max_price = models.IntegerField()

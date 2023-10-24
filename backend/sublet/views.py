@@ -21,8 +21,6 @@ from sublet.serializers import (
     SimpleSubletSerializer,
 )
 
-from .serializers import SubletSerializer
-
 
 User = get_user_model()
 
@@ -75,11 +73,12 @@ class Properties(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # All Sublets for superusers
-        if self.request.user.is_superuser:
-            return Sublet.objects.all()
+        # if self.request.user.is_superuser:
+        #     return Sublet.objects.all()
 
-        # All Sublets where expires_at hasn't passed yet for regular users
-        return Sublet.objects.filter(expires_at__gte=timezone.now())
+        # # All Sublets where expires_at hasn't passed yet for regular users
+        # return Sublet.objects.filter(expires_at__gte=timezone.now())
+        return Sublet.objects.all()
 
     def create(self, request, *args, **kwargs):
         amenities = request.data.pop("amenities", [])
@@ -113,7 +112,7 @@ class Properties(viewsets.ModelViewSet):
         beds = request.query_params.get("beds", None)
         baths = request.query_params.get("baths", None)
 
-        queryset = Sublet.objects.all()
+        queryset = Sublet.objects.all(expires_at__gte=timezone.now())
 
         # Apply filters based on query parameters
         if amenities:
