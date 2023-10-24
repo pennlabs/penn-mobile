@@ -3,7 +3,7 @@ from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.shortcuts import render
 from django.utils import timezone
-from rest_framework import generics, status, viewsets
+from rest_framework import generics, status, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
@@ -34,7 +34,7 @@ class Amenities(generics.ListAPIView):
 
 class UserFavorites(generics.ListAPIView):
     serializer_class = FavoritesListSerializer
-    permission_classes = IsAuthenticated
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -45,7 +45,7 @@ class UserFavorites(generics.ListAPIView):
 
 class UserOffers(generics.ListAPIView):
     serializer_class = OfferSerializer
-    permission_classes = IsAuthenticated
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -142,27 +142,27 @@ class Properties(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class Favorites(viewsets.ModelViewSet):
-    serializer_class = FavoriteSerializer
-    queryset = Favorite.objects.all()
+class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+    serializer_class = SubletSerializer
     http_method_names = ["post", "delete"]
     permission_classes = [IsAuthenticated | IsSuperUser]
 
+    def get_queryset(self):
+        user = self.request.user
+        return user.sublets_favorited
+
     def create(self, request, *args, **kwargs):
-        data = self.request.data
-        data["sublet"] = int(self.kwargs["sublet_id"])
-        data["user"] = self.request.user.id
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        sublet_id = int(self.kwargs["sublet_id"])
+        user = self.request.user.id
+        sublet = get_object_or_404(Sublet, id=sublet_id)
+        # add validation
+        self.get_queryset().add(sublet)
+        return Response(status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        filter = {"user": self.request.user.id, "sublet": int(self.kwargs["sublet_id"])}
-        obj = get_object_or_404(queryset, **filter)
-        self.check_object_permissions(self.request, obj)
-        self.perform_destroy(obj)
+        sublet = get_object_or_404(queryset, pk=int(self.kwargs["sublet_id"]))
+        self.get_queryset().remove(sublet)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
