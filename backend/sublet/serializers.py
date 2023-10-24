@@ -87,7 +87,7 @@ class SimpleSubletSerializer(serializers.ModelSerializer):
 
 
 class FavoritesListSerializer(serializers.ModelSerializer):
-    sublet = SubletSerializer()
+    sublet = SimpleSubletSerializer()
 
     class Meta:
         model = Favorite

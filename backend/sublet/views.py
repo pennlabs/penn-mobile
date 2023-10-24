@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from sublet.models import Amenity, Favorite, Offer, Sublet, SubletImage
-from sublet.permissions import IsSuperUser, SubletOwnerPermission
+from sublet.permissions import IsSuperUser, SubletOwnerPermission, OfferOwnerPermission
 from sublet.serializers import (
     AmenitySerializer,
     FavoriteSerializer,
@@ -34,12 +34,24 @@ class Amenities(generics.ListAPIView):
 
 class UserFavorites(generics.ListAPIView):
     serializer_class = FavoritesListSerializer
+    permission_classes = IsAuthenticated
 
     def get_queryset(self):
         user = self.request.user
         # print(type(user.favorite_set))
         # return user.favorite_set
         return Favorite.objects.filter(user=user)
+
+
+class UserOffers(generics.ListAPIView):
+    serializer_class = OfferSerializer
+    permission_classes = IsAuthenticated
+
+    def get_queryset(self):
+        user = self.request.user
+        # print(type(user.favorite_set))
+        # return user.favorite_set
+        return Offer.objects.filter(user=user)
 
 
 class Properties(viewsets.ModelViewSet):
@@ -134,12 +146,12 @@ class Favorites(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
     queryset = Favorite.objects.all()
     http_method_names = ["post", "delete"]
+    permission_classes = [IsAuthenticated | IsSuperUser]
 
     def create(self, request, *args, **kwargs):
         data = self.request.data
         data["sublet"] = int(self.kwargs["sublet_id"])
         data["user"] = self.request.user.id
-        print(data)
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -166,7 +178,7 @@ class Offers(viewsets.ModelViewSet):
     Delete the offer between the user and the sublet matching the ID.
     """
 
-    # TODO: implement permissions
+    permission_classes = [OfferOwnerPermission | IsSuperUser]
     serializer_class = OfferSerializer
 
     def get_queryset(self):
@@ -188,13 +200,3 @@ class Offers(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class UserOffers(generics.ListAPIView):
-    serializer_class = OfferSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        # print(type(user.favorite_set))
-        # return user.favorite_set
-        return Offer.objects.filter(user=user)
