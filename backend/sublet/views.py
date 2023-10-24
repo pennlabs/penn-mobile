@@ -44,7 +44,7 @@ class UserFavorites(generics.ListAPIView):
 
 class Properties(viewsets.ModelViewSet):
     """
-    browse:
+    list:
     Returns a list of Sublets that match query parameters (e.g., amenities) and belong to the user.
     
     create:
@@ -129,13 +129,6 @@ class Properties(viewsets.ModelViewSet):
         serializer = SimpleSubletSerializer(queryset, many=True)
         return Response(serializer.data)
 
-    def retrieve(self, request, *args, **kwargs):
-        """Returns details of a specific Sublet."""
-        print("new testing?")
-        sublet = self.get_object()
-        serializer = SubletSerializer(sublet)
-        return Response(serializer.data)
-
 
 class Favorites(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
@@ -195,3 +188,13 @@ class Offers(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UserOffers(generics.ListAPIView):
+    serializer_class = OfferSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        # print(type(user.favorite_set))
+        # return user.favorite_set
+        return Offer.objects.filter(user=user)
