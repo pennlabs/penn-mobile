@@ -1,17 +1,11 @@
 from rest_framework import serializers
 
-from sublet.models import Amenity, Favorite, Offer, Sublet, SubletImage
+from sublet.models import Amenity, Offer, Sublet, SubletImage
 
 
 class AmenitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Amenity
-        fields = "__all__"
-
-
-class FavoriteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Favorite
         fields = "__all__"
 
 
@@ -29,7 +23,6 @@ class OfferSerializer(serializers.ModelSerializer):
 # complex sublet serializer for use in creation/updating/deletion + getting info about a singular sublet
 class SubletSerializer(serializers.ModelSerializer):
     amenities = AmenitySerializer(many=True, required=False)
-    # favorites = FavoriteSerializer(many=True, required=False, read_only=True)
     # sublettees = OfferSerializer(many=True, required=False, read_only=True)
 
     class Meta:
@@ -84,12 +77,3 @@ class SimpleSubletSerializer(serializers.ModelSerializer):
             "end_date",
         ]
         read_only_fields = ["id", "subletter"]
-
-
-class FavoritesListSerializer(serializers.ModelSerializer):
-    sublet = SimpleSubletSerializer()
-
-    class Meta:
-        model = Favorite
-        fields = ["sublet"]
-        read_only_fields = ["id"]

@@ -10,12 +10,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from sublet.models import Amenity, Favorite, Offer, Sublet, SubletImage
+from sublet.models import Amenity, Offer, Sublet, SubletImage
 from sublet.permissions import IsSuperUser, SubletOwnerPermission, OfferOwnerPermission
 from sublet.serializers import (
     AmenitySerializer,
-    FavoriteSerializer,
-    FavoritesListSerializer,
     OfferSerializer,
     SubletSerializer,
     SimpleSubletSerializer,
@@ -31,14 +29,14 @@ class Amenities(generics.ListAPIView):
 
 
 class UserFavorites(generics.ListAPIView):
-    serializer_class = FavoritesListSerializer
+    serializer_class = SimpleSubletSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
         # print(type(user.favorite_set))
         # return user.favorite_set
-        return Favorite.objects.filter(user=user)
+        return user.sublets_favorited
 
 
 class UserOffers(generics.ListAPIView):

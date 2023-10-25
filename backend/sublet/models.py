@@ -22,14 +22,6 @@ class Offer(models.Model):
         return f"Offer for {self.sublet} made by {self.user}"
 
 
-class Favorite(models.Model):
-    class Meta:
-        constraints = [models.UniqueConstraint(fields=["user", "sublet"], name="unique_favorite")]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    sublet = models.ForeignKey("Sublet", on_delete=models.CASCADE)
-
-
 class Amenity(models.Model):
     name = models.CharField(max_length=255, primary_key=True)
 
@@ -43,7 +35,7 @@ class Sublet(models.Model):
         User, through=Offer, related_name="sublets_offered", null=True, blank=True
     )
     favorites = models.ManyToManyField(
-        User, through=Favorite, related_name="sublets_favorited", null=True, blank=True
+        User, related_name="sublets_favorited", null=True, blank=True
     )
     amenities = models.ManyToManyField(
         Amenity, null=True, blank=True
