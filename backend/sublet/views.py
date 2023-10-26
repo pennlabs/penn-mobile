@@ -188,6 +188,7 @@ class Offers(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data
+        request.data._mutable = True
         data["sublet"] = int(self.kwargs["sublet_id"])
         data["user"] = self.request.user.id
         serializer = self.get_serializer(data=request.data)
