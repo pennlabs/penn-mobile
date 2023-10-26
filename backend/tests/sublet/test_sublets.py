@@ -5,6 +5,7 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
+from rest_framework import status
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -16,8 +17,88 @@ User = get_user_model()
 class TestSublets(TestCase):
     """Tests Create/Update/Retrieve/List for sublets"""
 
-    # @Ashley test cases for sublet creation/browsing/searching go here please :)
-    pass
+    def setUp(self):
+        self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        test_user = User.objects.create_user("user1", "user1@seas.upenn.edu", "user1")
+        for i in range(1, 6):
+            Amenity.objects.create(name=f"Amenity{str(i)}")
+        with open("tests/sublet/mock_sublets.json") as data:
+            data = json.load(data)
+            sublet1 = Sublet.objects.create(subletter=self.user, **data[0])
+            sublet2 = Sublet.objects.create(subletter=test_user, **data[1])
+
+    def test_create_sublet(self):
+        # Create a new sublet using the serializer
+        payload = {
+            "title": "Test Sublet1",
+            "address": "1234 Test Street",
+            "beds": 2,
+            "baths": 1,
+            "description": "This is a test sublet.",
+            "external_link": "https://example.com",
+            "min_price": 100,
+            "max_price": 500,
+            "expires_at": "2024-02-01T10:48:02-05:00",
+            "start_date": "2024-04-09",
+            "end_date": "2024-08-07",
+            "amenities": ["Amenity1", "Amenity2"],
+        }
+
+        response = self.client.post("/properties/", payload, format="json")
+        res_json = json.loads(response.content)
+        self.assertEqual(2, res_json["beds"])
+        self.assertEqual("Test Sublet1", res_json["title"])
+        # sublet = Sublet.objects.get(title="Test Sublet1")
+        # self.assertEqual(sublet.beds, 2)
+
+    def test_update_sublet(self):
+        # Create a sublet to be updated
+        sublet = Sublet.objects.create(
+            title="Old Title",
+            address="1234 Old Street",
+            beds=2,
+            baths=1,
+            description="This is an old sublet.",
+            external_link="https://example.com",
+            min_price=100,
+            max_price=500,
+            expires_at="2024-02-01T10:48:02-05:00",
+            start_date="2024-04-09",
+            end_date="2024-08-07",
+            subletter=self.user,
+        )
+
+        # Update the sublet using the serializer
+        data = {"title": "New Title", "beds": 3}
+
+        response = self.client.patch(f"/properties/{sublet.id}/", data, format="json")
+        res_json = json.loads(response.content)
+        self.assertEqual(3, res_json["beds"])
+        self.assertEqual(self.id, res_json["id"])
+        self.assertEqual("New Title", Sublet.objects.get(id=self.id).title)
+        self.assertEqual("New Title", res_json["title"])
+
+    def test_browse_sublets(self):
+        payload = {
+            "club_code": "pennlabs",
+            "title": "Test Title 2",
+            "subtitle": "Test Subtitle 2",
+            "target_populations": [self.target_id],
+            "expire_date": timezone.localtime() + datetime.timedelta(days=1),
+            "created_at": timezone.localtime(),
+            "admin_comment": "not approved",
+        }
+        self.client.post("/properties/", payload)
+        response = self.client.get("/properties/")
+        res_json = json.loads(response.content)
+        self.assertEqual(1, len(res_json))
+        self.assertEqual(2, Sublet.objects.all().count())
+
+    def test_browse_sublet(self):
+        # browse single sublet by id
+        pass
 
 
 class TestOffers(TestCase):
