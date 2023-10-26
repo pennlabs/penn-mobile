@@ -28,8 +28,8 @@ class Amenities(generics.ListAPIView):
     queryset = Amenity.objects.all()
 
     def get(self, request, *args, **kwargs):
-        list = super().get(self, request, *args, **kwargs).data
-        response_data = [a["name"] for a in list]
+        temp = super().get(self, request, *args, **kwargs).data
+        response_data = [a["name"] for a in temp]
         return Response(response_data)
 
 
@@ -115,7 +115,7 @@ class Properties(viewsets.ModelViewSet):
         beds = request.query_params.get("beds", None)
         baths = request.query_params.get("baths", None)
 
-        queryset = Sublet.objects.all(expires_at__gte=timezone.now())
+        queryset = Sublet.objects.all().filter(expires_at__gte=timezone.now())
 
         # Apply filters based on query parameters
         if amenities:
