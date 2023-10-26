@@ -27,6 +27,11 @@ class Amenities(generics.ListAPIView):
     serializer_class = AmenitySerializer
     queryset = Amenity.objects.all()
 
+    def get(self, request, *args, **kwargs):
+        list = super().get(self, request, *args, **kwargs).data
+        response_data = [a["name"] for a in list]
+        return Response(response_data)
+
 
 class UserFavorites(generics.ListAPIView):
     serializer_class = SimpleSubletSerializer
