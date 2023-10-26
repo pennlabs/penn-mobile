@@ -60,7 +60,101 @@ class TestOffers(TestCase):
         self.assertEqual(offer.id, 1)
         self.assertIsNotNone(offer.created_date)
 
-    # def test_delete_offer
+    def test_delete_offer(self):
+        payload = {
+            "email": "offer@seas.upenn.edu",
+            "phone_number": "1234567890",
+            "message": "Message",
+        }
+        self.client.post("/sublet/properties/2/offers/", payload)
+        # TODO: Uncomment this once proper handling is done for offer deletion not found
+        # offers_count = Offer.objects.all().count()
+        # self.client.delete("/sublet/properties/1/offers/")
+        # offers = Offer.objects.all()
+        # self.assertEqual(offers_count, offers.count())
+        self.client.delete("/sublet/properties/2/offers/")
+        self.assertFalse(
+            Offer.objects.filter(user=self.user, sublet=Sublet.objects.get(pk=2)).exists()
+        )
+
+    def test_get_offers_property(self):
+        response = self.client.get("/sublet/offers/")
+        res_json = json.loads(response.content)
+        self.assertEqual(0, len(res_json))
+        payload = {
+            "email": "offer@seas.upenn.edu",
+            "phone_number": "1234567890",
+            "message": "Message",
+        }
+        self.client.post("/sublet/properties/1/offers/", payload)
+        response = self.client.get("/sublet/properties/1/offers/")
+        self.assertEqual(1, len(json.loads(response.content)))
+        Offer.objects.create(
+            user=User.objects.get(pk=2),
+            sublet=Sublet.objects.get(pk=1),
+            email="offer2@seas.upenn.edu",
+            phone_number="0987654321",
+            message="Message2",
+        )
+        response = self.client.get("/sublet/properties/1/offers/")
+        res_json = json.loads(response.content)
+        self.assertEqual(2, len(res_json))
+        # TODO: his is really ugly, will clean up later haha
+        offer = res_json[0]
+        self.assertEqual(offer["email"], "offer@seas.upenn.edu")
+        self.assertEqual(offer["phone_number"], "1234567890")
+        self.assertEqual(offer["message"], "Message")
+        self.assertEqual(offer["user"], self.user.id)
+        self.assertEqual(offer["sublet"], 1)
+        self.assertEqual(offer["id"], 1)
+        self.assertIsNotNone(offer["created_date"])
+        offer = res_json[1]
+        self.assertEqual(offer["email"], "offer2@seas.upenn.edu")
+        self.assertEqual(offer["phone_number"], "0987654321")
+        self.assertEqual(offer["message"], "Message2")
+        self.assertEqual(offer["user"], 2)
+        self.assertEqual(offer["sublet"], 1)
+        self.assertEqual(offer["id"], 2)
+        self.assertIsNotNone(offer["created_date"])
+
+    def test_get_offer_user(self):
+        response = self.client.get("/sublet/offers/")
+        res_json = json.loads(response.content)
+        self.assertEqual(0, len(res_json))
+        payload = {
+            "email": "offer@seas.upenn.edu",
+            "phone_number": "1234567890",
+            "message": "Message",
+        }
+        self.client.post("/sublet/properties/1/offers/", payload)
+        response = self.client.get("/sublet/offers/")
+        self.assertEqual(1, len(json.loads(response.content)))
+        payload = {
+            "email": "offer2@seas.upenn.edu",
+            "phone_number": "0987654321",
+            "message": "Message2",
+        }
+        self.client.post("/sublet/properties/2/offers/", payload)
+        response = self.client.get("/sublet/offers/")
+        res_json = json.loads(response.content)
+        self.assertEqual(2, len(res_json))
+        # TODO: clean up
+        offer = res_json[0]
+        self.assertEqual(offer["email"], "offer@seas.upenn.edu")
+        self.assertEqual(offer["phone_number"], "1234567890")
+        self.assertEqual(offer["message"], "Message")
+        self.assertEqual(offer["user"], self.user.id)
+        self.assertEqual(offer["sublet"], 1)
+        self.assertEqual(offer["id"], 1)
+        self.assertIsNotNone(offer["created_date"])
+        offer = res_json[1]
+        self.assertEqual(offer["email"], "offer2@seas.upenn.edu")
+        self.assertEqual(offer["phone_number"], "0987654321")
+        self.assertEqual(offer["message"], "Message2")
+        self.assertEqual(offer["user"], 1)
+        self.assertEqual(offer["sublet"], 2)
+        self.assertEqual(offer["id"], 2)
+        self.assertIsNotNone(offer["created_date"])
 
 
 class TestFavorites(TestCase):
