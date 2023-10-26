@@ -187,6 +187,8 @@ class Offers(viewsets.ModelViewSet):
         return Offer.objects.filter(sublet_id=self.kwargs["sublet_id"]).order_by("created_date")
 
     def create(self, request, *args, **kwargs):
+        # TODO: Consider preventing user from offering on own post
+        # TODO: Impelement user/sublet uniqueness validation
         data = request.data
         request.data._mutable = True
         data["sublet"] = int(self.kwargs["sublet_id"])

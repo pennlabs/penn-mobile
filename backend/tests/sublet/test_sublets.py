@@ -47,9 +47,20 @@ class TestOffers(TestCase):
         self.assertEqual(res_json["email"], payload["email"])
         self.assertEqual(res_json["phone_number"], payload["phone_number"])
         self.assertEqual(res_json["message"], payload["message"])
-        self.assertEqual(res_json["user"], 1)
+        self.assertEqual(res_json["user"], self.user.id)
         self.assertEqual(res_json["sublet"], 2)
+        self.assertEqual(res_json["id"], 1)
+        self.assertIn("created_date", res_json)
+        offer = Offer.objects.get(pk=1)
+        self.assertEqual(offer.email, payload["email"])
+        self.assertEqual(offer.phone_number, payload["phone_number"])
+        self.assertEqual(offer.message, payload["message"])
+        self.assertEqual(offer.user, self.user)
+        self.assertEqual(offer.sublet, Sublet.objects.get(pk=2))
+        self.assertEqual(offer.id, 1)
+        self.assertIsNotNone(offer.created_date)
 
+    # def test_delete_offer
 
 
 class TestFavorites(TestCase):
