@@ -35,9 +35,7 @@ class SubletSerializer(serializers.ModelSerializer):
             ids = raw_amenities
         else:
             ids = (
-                list()
-                if len(raw_amenities) == 0
-                else [str(id) for id in raw_amenities.split(",")]
+                list() if len(raw_amenities) == 0 else [str(id) for id in raw_amenities.split(",")]
             )
         return Amenity.objects.filter(name__in=ids)
 

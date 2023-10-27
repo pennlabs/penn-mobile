@@ -109,7 +109,6 @@ class TestSublets(TestCase):
     #     self.assertEqual(sublet["baths"], 1)
     #     self.assertIsNotNone(sublet["created_date"])
 
-
     # def test_browse_sublet(self):
     #     # browse single sublet by id
     #     pass
