@@ -28,44 +28,27 @@ class SubletSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sublet
         exclude = ["favorites"]
-        read_only_fields = ["id", "created_date", "subletter", "sublettees"]
+        read_only_fields = ["id", "created_at", "subletter", "sublettees"]
 
-    #  def parse_target_populations(self, raw_target_populations):
-    #     if isinstance(raw_target_populations, list):
-    #         ids = raw_target_populations
-    #     else:
-    #         ids = (
-    #             list()
-    #             if len(raw_target_populations) == 0
-    #             else [int(id) for id in raw_target_populations.split(",")]
-    #         )
-    #     return TargetPopulation.objects.filter(id__in=ids)
+    def parse_amenities(self, raw_amenities):
+        if isinstance(raw_amenities, list):
+            ids = raw_amenities
+        else:
+            ids = (
+                list()
+                if len(raw_amenities) == 0
+                else [str(id) for id in raw_amenities.split(",")]
+            )
+        return Amenity.objects.filter(name__in=ids)
 
     def create(self, validated_data):
         validated_data["subletter"] = self.context["request"].user
-        # x = validated_data.pop("amenities")
-        # print(x)
-
-        # instance = super().create(validated_data)
-
-        # # Update target populations
-        # # If none of a category was selected,
-        # then we will auto-select all populations in that categary
-        data = self.context["request"].data
-        print("HELLO")
-        print(data)
-        print(data["amenities"])
-        print(Amenity.objects.all())
-        amenities = Amenity.objects.filter(name__in=data["amenities"])
-        print(amenities)
-        # raw_amenities =
-        # raw_target_populations = self.parse_target_populations(data["target_populations"])
-        # target_populations = self.update_target_populations(raw_target_populations)
-
-        # instance.target_populations.set(target_populations)
-        # instance.save()
-
-        return super().create(validated_data)
+        instance = super().create(validated_data)
+        data = self.context["request"].POST
+        amenities = self.parse_amenities(data.getlist("amenities"))
+        instance.amenities.set(amenities)
+        instance.save()
+        return instance
 
     def update(self, instance, validated_data):
         # Check if the user is the subletter before allowing the update
