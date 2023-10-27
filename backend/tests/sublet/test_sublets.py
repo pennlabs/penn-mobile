@@ -23,6 +23,9 @@ class TestSublets(TestCase):
 class TestOffers(TestCase):
     """Tests Create/Delete/List for offers"""
 
+    # TODO: test create offer fails when offer is duplicate
+    # TODO: delete offer fails when offer doesn't exist
+
     def setUp(self):
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
@@ -99,7 +102,7 @@ class TestOffers(TestCase):
         response = self.client.get("/sublet/properties/1/offers/")
         res_json = json.loads(response.content)
         self.assertEqual(2, len(res_json))
-        # TODO: his is really ugly, will clean up later haha
+        # TODO: this is really ugly, will clean up later haha
         offer = res_json[0]
         self.assertEqual(offer["email"], "offer@seas.upenn.edu")
         self.assertEqual(offer["phone_number"], "1234567890")
@@ -160,4 +163,56 @@ class TestOffers(TestCase):
 class TestFavorites(TestCase):
     """Tests Create/Delete/List for favorites"""
 
-    pass
+    def setUp(self):
+        self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        test_user = User.objects.create_user("user1", "user")
+        for i in range(1, 6):
+            Amenity.objects.create(name=f"Amenity{str(i)}")
+        # TODO: Not sure how to add these amenities to the sublets, but not important for now
+        with open("tests/sublet/mock_sublets.json") as data:
+            data = json.load(data)
+            sublet1 = Sublet.objects.create(subletter=self.user, **data[0])
+            sublet2 = Sublet.objects.create(subletter=test_user, **data[1])
+
+    def test_create_favorite(self):
+        response = self.client.post("/sublet/properties/2/favorites/")
+        self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
+        self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
+        # TODO: Write case for erroring out on already favorited once that's been implemented
+        response = self.client.post("/sublet/properties/1/favorites/")
+        self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
+        self.assertTrue(self.user.sublets_favorited.filter(pk=1).exists())
+
+    def test_delete_favorite(self):
+        self.client.post("/sublet/properties/2/favorites/")
+        self.client.post("/sublet/properties/1/favorites/")
+        response = self.client.delete("/sublet/properties/1/favorites/")
+        self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
+        self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
+        response = self.client.post("/sublet/properties/1/favorites/")
+        self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
+        self.assertTrue(self.user.sublets_favorited.filter(pk=1).exists())
+        response = self.client.delete("/sublet/properties/1/favorites/")
+        self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
+        self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
+        response = self.client.delete("/sublet/properties/2/favorites/")
+        self.assertFalse(self.user.sublets_favorited.filter(pk=2).exists())
+        self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
+
+    def test_get_favorite_user(self):
+        self.client.post("/sublet/properties/2/favorites/")
+        response = self.client.get("/sublet/favorites/")
+        res_json = json.loads(response.content)
+        self.assertEqual(len(res_json), 1)
+        self.assertEqual(res_json[0]["id"], 2)
+        self.client.post("/sublet/properties/1/favorites/")
+        response = self.client.get("/sublet/favorites/")
+        res_json = json.loads(response.content)
+        self.assertEqual(len(res_json), 2)
+        self.client.delete("/sublet/properties/2/favorites/")
+        response = self.client.get("/sublet/favorites/")
+        res_json = json.loads(response.content)
+        self.assertEqual(len(res_json), 1)
+        self.assertEqual(res_json[0]["id"], 1)
