@@ -6,7 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from sublet.models import Amenity, Offer, Sublet
-# , SubletImage
 from sublet.permissions import IsSuperUser, OfferOwnerPermission, SubletOwnerPermission
 from sublet.serializers import (
     AmenitySerializer,
