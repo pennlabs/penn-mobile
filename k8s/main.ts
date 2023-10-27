@@ -97,6 +97,13 @@ export class MyChart extends PennLabsChart {
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
 
+    new CronJob(this, 'load-target-populations', {
+      schedule: cronTime.everyYearIn(8),
+      image: backendImage,
+      secret,
+      cmd: ["python", "manage.py", "load_target_populations"],
+      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    });
   }
 }
 
