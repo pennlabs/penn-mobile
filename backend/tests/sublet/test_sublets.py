@@ -148,6 +148,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer.sublet, Sublet.objects.get(pk=2))
         self.assertEqual(offer.id, 1)
         self.assertIsNotNone(offer.created_date)
+        # TODO: Error handling when creating nonunique offer
 
     def test_delete_offer(self):
         payload = {
@@ -188,7 +189,7 @@ class TestOffers(TestCase):
         response = self.client.get("/sublet/properties/1/offers/")
         res_json = json.loads(response.content)
         self.assertEqual(2, len(res_json))
-        # TODO: this is really ugly, will clean up later haha
+        # TODO: this is really ugly, maybe clean up later haha
         offer = res_json[0]
         self.assertEqual(offer["email"], "offer@seas.upenn.edu")
         self.assertEqual(offer["phone_number"], "1234567890")
@@ -227,7 +228,6 @@ class TestOffers(TestCase):
         response = self.client.get("/sublet/offers/")
         res_json = json.loads(response.content)
         self.assertEqual(2, len(res_json))
-        # TODO: clean up
         offer = res_json[0]
         self.assertEqual(offer["email"], "offer@seas.upenn.edu")
         self.assertEqual(offer["phone_number"], "1234567890")
@@ -286,8 +286,12 @@ class TestFavorites(TestCase):
         response = self.client.delete("/sublet/properties/2/favorites/")
         self.assertFalse(self.user.sublets_favorited.filter(pk=2).exists())
         self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
+        # TODO: Cases for proper error handling on unfound delete
 
     def test_get_favorite_user(self):
+        response = self.client.get("/sublet/favorites/")
+        res_json = json.loads(response.content)
+        self.assertEqual(len(res_json), 0)
         self.client.post("/sublet/properties/2/favorites/")
         response = self.client.get("/sublet/favorites/")
         res_json = json.loads(response.content)

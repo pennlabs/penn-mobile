@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.utils.html import escape, mark_safe
+from django.utils.html import mark_safe
 
 from sublet.models import Amenity, Offer, Sublet, SubletImage
 

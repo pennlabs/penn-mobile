@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from sublet.models import Amenity, Offer, Sublet, SubletImage
+from sublet.models import Amenity, Offer, Sublet
 
 
 class AmenitySerializer(serializers.ModelSerializer):
@@ -20,7 +20,7 @@ class OfferSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-# complex sublet serializer for use in creation/updating/deletion + getting info about a singular sublet
+# complex sublet serializer for use in C/U/D + getting info about a singular sublet
 class SubletSerializer(serializers.ModelSerializer):
     amenities = AmenitySerializer(many=True, required=False)
     # sublettees = OfferSerializer(many=True, required=False, read_only=True)
