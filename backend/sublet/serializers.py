@@ -46,10 +46,11 @@ class SubletSerializer(serializers.ModelSerializer):
         # x = validated_data.pop("amenities")
         # print(x)
 
-        instance = super().create(validated_data)
+        # instance = super().create(validated_data)
 
         # # Update target populations
-        # # If none of a category was selected, then we will auto-select all populations in that categary
+        # # If none of a category was selected,
+        # then we will auto-select all populations in that categary
         data = self.context["request"].data
         print("HELLO")
         print(data)
@@ -57,7 +58,7 @@ class SubletSerializer(serializers.ModelSerializer):
         print(Amenity.objects.all())
         amenities = Amenity.objects.filter(name__in=data["amenities"])
         print(amenities)
-        # raw_amenities = 
+        # raw_amenities =
         # raw_target_populations = self.parse_target_populations(data["target_populations"])
         # target_populations = self.update_target_populations(raw_target_populations)
 

@@ -1,6 +1,5 @@
-from django.urls import include, path
+from django.urls import path
 from rest_framework import routers
-from rest_framework.routers import DefaultRouter
 
 from sublet.views import Amenities, Favorites, Offers, Properties, UserFavorites, UserOffers
 

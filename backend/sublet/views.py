@@ -1,22 +1,18 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Q
-from django.db.models.functions import Trunc
-from django.shortcuts import render
 from django.utils import timezone
-from rest_framework import generics, status, viewsets, mixins
-from rest_framework.decorators import action
+from rest_framework import generics, mixins, status, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
-from sublet.models import Amenity, Offer, Sublet, SubletImage
-from sublet.permissions import IsSuperUser, SubletOwnerPermission, OfferOwnerPermission
+from sublet.models import Amenity, Offer, Sublet
+# , SubletImage
+from sublet.permissions import IsSuperUser, OfferOwnerPermission, SubletOwnerPermission
 from sublet.serializers import (
     AmenitySerializer,
     OfferSerializer,
-    SubletSerializer,
     SimpleSubletSerializer,
+    SubletSerializer,
 )
 
 
@@ -59,13 +55,13 @@ class Properties(viewsets.ModelViewSet):
     """
     list:
     Returns a list of Sublets that match query parameters (e.g., amenities) and belong to the user.
-    
+
     create:
     Create a Sublet.
-    
+
     partial_update:
     Update certain fields in the Sublet. Only the owner can edit it.
-    
+
     destroy:
     Delete a Sublet.
     """
@@ -88,7 +84,6 @@ class Properties(viewsets.ModelViewSet):
     #     new_data = request.data
     #     amenities = new_data.pop("amenities", [])
 
-
     #     # check if valid amenities
     #     try:
     #         amenities = [Amenity.objects.get(name=amenity) for amenity in amenities]
@@ -100,7 +95,7 @@ class Properties(viewsets.ModelViewSet):
     #     sublet = serializer.save()
     #     sublet.amenities.set(amenities)
     #     sublet.save()
-        # return Response(serializer.data, status=status.HTTP_201_CREATED)
+    # return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def list(self, request, *args, **kwargs):
         """Returns a list of Sublets that match query parameters and user ownership."""
@@ -158,7 +153,6 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
 
     def create(self, request, *args, **kwargs):
         sublet_id = int(self.kwargs["sublet_id"])
-        user = self.request.user.id
         sublet = get_object_or_404(Sublet, id=sublet_id)
         # add validation
         self.get_queryset().add(sublet)

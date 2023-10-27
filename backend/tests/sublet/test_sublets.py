@@ -1,15 +1,14 @@
-import datetime
 import json
-from unittest import mock
 
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from django.test import TestCase
-from rest_framework import status
-from django.utils import timezone
 from rest_framework.test import APIClient
 
-from sublet.models import Amenity, Offer, Sublet, SubletImage
+from sublet.models import Amenity, Offer, Sublet
+
+
+# , SubletImage)
+
 
 User = get_user_model()
 
@@ -26,8 +25,8 @@ class TestSublets(TestCase):
             Amenity.objects.create(name=f"Amenity{str(i)}")
         with open("tests/sublet/mock_sublets.json") as data:
             data = json.load(data)
-            sublet1 = Sublet.objects.create(subletter=self.user, **data[0])
-            sublet2 = Sublet.objects.create(subletter=test_user, **data[1])
+            Sublet.objects.create(subletter=self.user, **data[0])
+            Sublet.objects.create(subletter=test_user, **data[1])
 
     def test_create_sublet(self):
         # Create a new sublet using the serializer
@@ -101,14 +100,13 @@ class TestSublets(TestCase):
         }
         self.client.post("/sublet/properties/", payload)
         response = self.client.get("/sublet/properties/")
-        self.assertEqual(1+first_length, len(json.loads(response.content)))
+        self.assertEqual(1 + first_length, len(json.loads(response.content)))
         sublet = res_json[-1]
         self.assertEqual(sublet["title"], "Test Sublet1")
         self.assertEqual(sublet["address"], "1234 Test Street")
         self.assertEqual(sublet["beds"], 2)
         self.assertEqual(sublet["baths"], 1)
         self.assertIsNotNone(sublet["created_date"])
-
 
     def test_browse_sublet(self):
         # browse single sublet by id
@@ -131,8 +129,8 @@ class TestOffers(TestCase):
         # TODO: Not sure how to add these amenities to the sublets, but not important for now
         with open("tests/sublet/mock_sublets.json") as data:
             data = json.load(data)
-            sublet1 = Sublet.objects.create(subletter=self.user, **data[0])
-            sublet2 = Sublet.objects.create(subletter=test_user, **data[1])
+            Sublet.objects.create(subletter=self.user, **data[0])
+            Sublet.objects.create(subletter=test_user, **data[1])
 
     def test_create_offer(self):
         payload = {
@@ -268,31 +266,31 @@ class TestFavorites(TestCase):
         # TODO: Not sure how to add these amenities to the sublets, but not important for now
         with open("tests/sublet/mock_sublets.json") as data:
             data = json.load(data)
-            sublet1 = Sublet.objects.create(subletter=self.user, **data[0])
-            sublet2 = Sublet.objects.create(subletter=test_user, **data[1])
+            Sublet.objects.create(subletter=self.user, **data[0])
+            Sublet.objects.create(subletter=test_user, **data[1])
 
     def test_create_favorite(self):
-        response = self.client.post("/sublet/properties/2/favorites/")
+        self.client.post("/sublet/properties/2/favorites/")
         self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
         self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
         # TODO: Write case for erroring out on already favorited once that's been implemented
-        response = self.client.post("/sublet/properties/1/favorites/")
+        self.client.post("/sublet/properties/1/favorites/")
         self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
         self.assertTrue(self.user.sublets_favorited.filter(pk=1).exists())
 
     def test_delete_favorite(self):
         self.client.post("/sublet/properties/2/favorites/")
         self.client.post("/sublet/properties/1/favorites/")
-        response = self.client.delete("/sublet/properties/1/favorites/")
+        self.client.delete("/sublet/properties/1/favorites/")
         self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
         self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
-        response = self.client.post("/sublet/properties/1/favorites/")
+        self.client.post("/sublet/properties/1/favorites/")
         self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
         self.assertTrue(self.user.sublets_favorited.filter(pk=1).exists())
-        response = self.client.delete("/sublet/properties/1/favorites/")
+        self.client.delete("/sublet/properties/1/favorites/")
         self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
         self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
-        response = self.client.delete("/sublet/properties/2/favorites/")
+        self.client.delete("/sublet/properties/2/favorites/")
         self.assertFalse(self.user.sublets_favorited.filter(pk=2).exists())
         self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
         # TODO: Cases for proper error handling on unfound delete
