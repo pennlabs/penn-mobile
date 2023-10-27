@@ -46,7 +46,7 @@ class TestSublets(TestCase):
             "amenities": ["Amenity1", "Amenity2"],
         }
 
-        response = self.client.post("/properties/", payload, format="json")
+        response = self.client.post("/properties/", payload)
         res_json = json.loads(response.content)
         self.assertEqual(2, res_json["beds"])
         self.assertEqual("Test Sublet1", res_json["title"])
@@ -73,7 +73,7 @@ class TestSublets(TestCase):
         # Update the sublet using the serializer
         data = {"title": "New Title", "beds": 3}
 
-        response = self.client.patch(f"/properties/{sublet.id}/", data, format="json")
+        response = self.client.patch(f"/properties/{sublet.id}/", data)
         res_json = json.loads(response.content)
         self.assertEqual(3, res_json["beds"])
         self.assertEqual(self.id, res_json["id"])
@@ -82,13 +82,18 @@ class TestSublets(TestCase):
 
     def test_browse_sublets(self):
         payload = {
-            "club_code": "pennlabs",
-            "title": "Test Title 2",
-            "subtitle": "Test Subtitle 2",
-            "target_populations": [self.target_id],
-            "expire_date": timezone.localtime() + datetime.timedelta(days=1),
-            "created_at": timezone.localtime(),
-            "admin_comment": "not approved",
+            "title": "Test Sublet1",
+            "address": "1234 Test Street",
+            "beds": 2,
+            "baths": 1,
+            "description": "This is a test sublet.",
+            "external_link": "https://example.com",
+            "min_price": 100,
+            "max_price": 500,
+            "expires_at": "2024-02-01T10:48:02-05:00",
+            "start_date": "2024-04-09",
+            "end_date": "2024-08-07",
+            "amenities": ["Amenity1", "Amenity2"],
         }
         self.client.post("/properties/", payload)
         response = self.client.get("/properties/")
