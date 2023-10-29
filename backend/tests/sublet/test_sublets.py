@@ -99,7 +99,7 @@ class TestSublets(TestCase):
         self.client.post("/sublet/properties/", payload)
         response = self.client.get("/sublet/properties/")
         res_json = json.loads(response.content)
-        self.assertEqual(1+first_length, len(res_json))
+        self.assertEqual(1 + first_length, len(res_json))
         sublet = res_json[-1]
         self.assertEqual(sublet["title"], "Test Sublet1")
         self.assertEqual(sublet["address"], "1234 Test Street")
@@ -133,7 +133,7 @@ class TestSublets(TestCase):
     def test_delete_sublet(self):
         sublets_count = Sublet.objects.all().count()
         self.client.delete("/sublet/properties/1/")
-        self.assertEqual(sublets_count-1, Sublet.objects.all().count())
+        self.assertEqual(sublets_count - 1, Sublet.objects.all().count())
         self.assertFalse(Sublet.objects.filter(id=1).exists())
 
     def test_amenities(self):
