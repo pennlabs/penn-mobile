@@ -54,7 +54,13 @@ class SubletSerializer(serializers.ModelSerializer):
             self.context["request"].user == instance.subletter
             or self.context["request"].user.is_superuser
         ):
+            amenities_data = self.context["request"].data
+            if amenities_data.get("amenities") is not None:
+                amenities = self.parse_amenities(amenities_data.getlist("amenities"))
+                instance.amenities.set(amenities)
+            validated_data.pop("amenities", None)
             instance = super().update(instance, validated_data)
+            instance.save()
         else:
             raise serializers.ValidationError("You do not have permission to update this sublet.")
 
