@@ -123,9 +123,6 @@ class TestSublets(TestCase):
 class TestOffers(TestCase):
     """Tests Create/Delete/List for offers"""
 
-    # TODO: test create offer fails when offer is duplicate
-    # TODO: delete offer fails when offer doesn't exist
-
     def setUp(self):
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
@@ -140,35 +137,42 @@ class TestOffers(TestCase):
             self.second_sublet = Sublet.objects.create(subletter=self.test_user, **data[1])
 
     def test_create_offer(self):
+        prop_url = f"/sublet/properties/{str(self.second_sublet.id)}/offers/"
         payload = {
             "email": "offer@seas.upenn.edu",
             "phone_number": "1234567890",
             "message": "Message",
         }
-        self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/offers/", payload)
+        self.client.post(prop_url, payload)
+        self.assertEqual(self.client.post(prop_url, payload).status_code, 406)
         offer = Offer.objects.get(pk=1)
-        self.assertEqual(offer.email, payload["email"])
-        self.assertEqual(offer.phone_number, payload["phone_number"])
-        self.assertEqual(offer.message, payload["message"])
-        self.assertEqual(offer.user, self.user)
-        self.assertEqual(offer.sublet, self.second_sublet)
+        offer_list = [offer.email, offer.phone_number, offer.message, offer.user, offer.sublet]
+        payload_list = [
+            payload["email"],
+            payload["phone_number"],
+            payload["message"],
+            self.user,
+            self.second_sublet,
+        ]
+        for o, p in zip(offer_list, payload_list):
+            self.assertEqual(o, p)
         self.assertIsNotNone(offer.id)
         self.assertIsNotNone(offer.created_date)
-        # TODO: Error handling when creating nonunique offer
 
     def test_delete_offer(self):
+        prop_url1 = f"/sublet/properties/{str(self.first_sublet.id)}/offers/"
+        prop_url2 = f"/sublet/properties/{str(self.second_sublet.id)}/offers/"
         payload = {
             "email": "offer@seas.upenn.edu",
             "phone_number": "1234567890",
             "message": "Message",
         }
-        self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/offers/", payload)
-        # TODO: Uncomment this once proper handling is done for offer deletion not found
-        # offers_count = Offer.objects.all().count()
-        # self.client.delete("/sublet/properties/1/offers/")
-        # offers = Offer.objects.all()
-        # self.assertEqual(offers_count, offers.count())
-        self.client.delete(f"/sublet/properties/{str(self.second_sublet.id)}/offers/")
+        self.client.post(prop_url2, payload)
+        offers_count = Offer.objects.all().count()
+        self.assertEqual(self.client.delete(prop_url1).status_code, 404)
+        offers_count_new = Offer.objects.all().count()
+        self.assertEqual(offers_count, offers_count_new)
+        self.client.delete(prop_url2)
         self.assertFalse(Offer.objects.filter(user=self.user, sublet=self.second_sublet).exists())
 
     def test_get_offers_property(self):
@@ -267,13 +271,15 @@ class TestFavorites(TestCase):
             self.second_sublet = Sublet.objects.create(subletter=test_user, **data[1])
 
     def test_create_favorite(self):
-        self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/favorites/")
+        prop_url1 = f"/sublet/properties/{str(self.first_sublet.id)}/favorites/"
+        prop_url2 = f"/sublet/properties/{str(self.second_sublet.id)}/favorites/"
+        self.client.post(prop_url2)
         self.assertTrue(self.user.sublets_favorited.filter(pk=self.second_sublet.id).exists())
         self.assertFalse(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
-        # TODO: Write case for erroring out on already favorited once that's been implemented
-        self.client.post(f"/sublet/properties/{str(self.first_sublet.id)}/favorites/")
+        self.client.post(prop_url1)
         self.assertTrue(self.user.sublets_favorited.filter(pk=self.second_sublet.id).exists())
         self.assertTrue(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
+        self.assertEqual(self.client.post(prop_url1).status_code, 406)
 
     def test_delete_favorite(self):
         self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/favorites/")
@@ -290,7 +296,6 @@ class TestFavorites(TestCase):
         self.client.delete(f"/sublet/properties/{str(self.second_sublet.id)}/favorites/")
         self.assertFalse(self.user.sublets_favorited.filter(pk=self.second_sublet.id).exists())
         self.assertFalse(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
-        # TODO: Cases for proper error handling on unfound delete
 
     def test_get_favorite_user(self):
         response = self.client.get("/sublet/favorites/")
