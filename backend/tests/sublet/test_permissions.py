@@ -11,6 +11,7 @@ User = get_user_model()
 
 
 class SubletPermissions(TestCase):
+    # TODO: Include amenities in auth test when this is done
     pass
 
 

@@ -136,7 +136,7 @@ class TestSublets(TestCase):
     def test_delete_sublet(self):
         sublets_count = Sublet.objects.all().count()
         self.client.delete("/sublet/properties/1/")
-        self.assertEqual(sublets_count-1, Sublet.objects.all().count())
+        self.assertEqual(sublets_count - 1, Sublet.objects.all().count())
         self.assertFalse(Sublet.objects.filter(id=1).exists())
 
     def test_amenities(self):
