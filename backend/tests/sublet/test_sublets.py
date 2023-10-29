@@ -163,9 +163,7 @@ class TestOffers(TestCase):
         # offers = Offer.objects.all()
         # self.assertEqual(offers_count, offers.count())
         self.client.delete(f"/sublet/properties/{str(self.second_sublet.id)}/offers/")
-        self.assertFalse(
-            Offer.objects.filter(user=self.user, sublet=Sublet.objects.get(pk=2)).exists()
-        )
+        self.assertFalse(Offer.objects.filter(user=self.user, sublet=self.second_sublet.exists()))
 
     def test_get_offers_property(self):
         response = self.client.get("/sublet/offers/")
@@ -202,7 +200,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer["email"], "offer2@seas.upenn.edu")
         self.assertEqual(offer["phone_number"], "0987654321")
         self.assertEqual(offer["message"], "Message2")
-        self.assertEqual(offer["user"], 2)
+        self.assertEqual(offer["user"], self.test_user.id)
         self.assertEqual(offer["sublet"], self.first_sublet.id)
         self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
@@ -240,7 +238,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer["email"], "offer2@seas.upenn.edu")
         self.assertEqual(offer["phone_number"], "0987654321")
         self.assertEqual(offer["message"], "Message2")
-        self.assertEqual(offer["user"], 1)
+        self.assertEqual(offer["user"], self.user.id)
         self.assertEqual(offer["sublet"], self.second_sublet.id)
         self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
