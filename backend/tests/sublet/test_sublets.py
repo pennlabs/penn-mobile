@@ -113,6 +113,12 @@ class TestSublets(TestCase):
     #     # browse single sublet by id
     #     pass
 
+    def test_amenities(self):
+        response = self.client.get("/sublet/amenities/")
+        res_json = json.loads(response.content)
+        for i in range(1, 6):
+            self.assertIn(f"Amenity{i}", res_json)
+
 
 class TestOffers(TestCase):
     """Tests Create/Delete/List for offers"""

@@ -206,3 +206,7 @@ class Offers(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def list(self, request, *args, **kwargs):
+        self.check_object_permissions(request, Sublet.objects.get(pk=int(self.kwargs["sublet_id"])))
+        return super().list(request, *args, **kwargs)

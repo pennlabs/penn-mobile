@@ -40,5 +40,5 @@ class OfferOwnerPermission(permissions.BasePermission):
         # Check if the user is the owner of the Sublet.
         if request.method in permissions.SAFE_METHODS:
             # Check if the user owns the sublet
-            return obj.sublet.subletter == request.user
+            return obj.subletter == request.user
         return obj.user == request.user
