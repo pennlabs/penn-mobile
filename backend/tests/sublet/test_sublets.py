@@ -166,7 +166,8 @@ class TestOffers(TestCase):
         prop_url = f"/sublet/properties/{str(self.second_sublet.id)}/offers/"
         payload = {
             "email": "offer@seas.upenn.edu",
-            "phone_number": "1234567890",
+            # This is the MERT number, please DO NOT call ;-;
+            "phone_number": "+12155733333",
             "message": "Message",
         }
         self.client.post(prop_url, payload)
@@ -190,7 +191,8 @@ class TestOffers(TestCase):
         prop_url2 = f"/sublet/properties/{str(self.second_sublet.id)}/offers/"
         payload = {
             "email": "offer@seas.upenn.edu",
-            "phone_number": "1234567890",
+            # This is the MERT number, please DO NOT call ;-;
+            "phone_number": "+12155733333",
             "message": "Message",
         }
         self.client.post(prop_url2, payload)
@@ -207,7 +209,8 @@ class TestOffers(TestCase):
         self.assertEqual(0, len(res_json))
         payload = {
             "email": "offer@seas.upenn.edu",
-            "phone_number": "1234567890",
+            # This is the MERT number, please DO NOT call ;-;
+            "phone_number": "+12155733333",
             "message": "Message",
         }
         self.client.post(f"/sublet/properties/{str(self.first_sublet.id)}/offers/", payload)
@@ -217,7 +220,7 @@ class TestOffers(TestCase):
             user=self.test_user,
             sublet=self.first_sublet,
             email="offer2@seas.upenn.edu",
-            phone_number="0987654321",
+            phone_number="+12155733334",
             message="Message2",
         )
         response = self.client.get(f"/sublet/properties/{str(self.first_sublet.id)}/offers/")
@@ -226,7 +229,8 @@ class TestOffers(TestCase):
         # TODO: this is really ugly, maybe clean up later haha
         offer = res_json[0]
         self.assertEqual(offer["email"], "offer@seas.upenn.edu")
-        self.assertEqual(offer["phone_number"], "1234567890")
+        # This is the MERT number, please DO NOT call ;-;
+        self.assertEqual(offer["phone_number"], "+12155733333")
         self.assertEqual(offer["message"], "Message")
         self.assertEqual(offer["user"], self.user.id)
         self.assertEqual(offer["sublet"], self.first_sublet.id)
@@ -234,7 +238,7 @@ class TestOffers(TestCase):
         self.assertIsNotNone(offer["created_date"])
         offer = res_json[1]
         self.assertEqual(offer["email"], "offer2@seas.upenn.edu")
-        self.assertEqual(offer["phone_number"], "0987654321")
+        self.assertEqual(offer["phone_number"], "+12155733334")
         self.assertEqual(offer["message"], "Message2")
         self.assertEqual(offer["user"], self.test_user.id)
         self.assertEqual(offer["sublet"], self.first_sublet.id)
@@ -247,7 +251,8 @@ class TestOffers(TestCase):
         self.assertEqual(0, len(res_json))
         payload = {
             "email": "offer@seas.upenn.edu",
-            "phone_number": "1234567890",
+            # This is the MERT number, please DO NOT call ;-;
+            "phone_number": "+12155733333",
             "message": "Message",
         }
         self.client.post(f"/sublet/properties/{str(self.first_sublet.id)}/offers/", payload)
@@ -255,7 +260,7 @@ class TestOffers(TestCase):
         self.assertEqual(1, len(json.loads(response.content)))
         payload = {
             "email": "offer2@seas.upenn.edu",
-            "phone_number": "0987654321",
+            "phone_number": "+12155733334",
             "message": "Message2",
         }
         self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/offers/", payload)
@@ -264,7 +269,8 @@ class TestOffers(TestCase):
         self.assertEqual(2, len(res_json))
         offer = res_json[0]
         self.assertEqual(offer["email"], "offer@seas.upenn.edu")
-        self.assertEqual(offer["phone_number"], "1234567890")
+        # This is the MERT number, please DO NOT call ;-;
+        self.assertEqual(offer["phone_number"], "+12155733333")
         self.assertEqual(offer["message"], "Message")
         self.assertEqual(offer["user"], self.user.id)
         self.assertEqual(offer["sublet"], self.first_sublet.id)
@@ -272,7 +278,7 @@ class TestOffers(TestCase):
         self.assertIsNotNone(offer["created_date"])
         offer = res_json[1]
         self.assertEqual(offer["email"], "offer2@seas.upenn.edu")
-        self.assertEqual(offer["phone_number"], "0987654321")
+        self.assertEqual(offer["phone_number"], "+12155733334")
         self.assertEqual(offer["message"], "Message2")
         self.assertEqual(offer["user"], self.user.id)
         self.assertEqual(offer["sublet"], self.second_sublet.id)

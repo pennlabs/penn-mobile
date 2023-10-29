@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "portal",
     "options.apps.OptionsConfig",
     "sublet",
+    "phonenumber_field",
 ]
 
 MIDDLEWARE = [

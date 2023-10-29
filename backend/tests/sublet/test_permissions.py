@@ -41,7 +41,8 @@ class OfferPermissions(TestCase):
         prop_url = f"/sublet/properties/{str(self.sublet1.id)}/offers/"
         payload = {
             "email": "offer@seas.upenn.edu",
-            "phone_number": "1234567890",
+            # This is the MERT number, please DO NOT call ;-;
+            "phone_number": "+12155733333",
             "message": "Message",
         }
         users = [self.admin, self.user1]
@@ -53,7 +54,8 @@ class OfferPermissions(TestCase):
         prop_url = f"/sublet/properties/{str(self.sublet1.id)}/offers/"
         payload = {
             "email": "offer@seas.upenn.edu",
-            "phone_number": "1234567890",
+            # This is the MERT number, please DO NOT call ;-;
+            "phone_number": "+12155733333",
             "message": "Message",
         }
         users = [self.admin, self.user1]
@@ -66,7 +68,8 @@ class OfferPermissions(TestCase):
         prop_url = f"/sublet/properties/{str(self.sublet2.id)}/offers/"
         payload = {
             "email": "offer@seas.upenn.edu",
-            "phone_number": "1234567890",
+            # This is the MERT number, please DO NOT call ;-;
+            "phone_number": "+12155733333",
             "message": "Message",
         }
         users = [self.admin, self.user1, self.user2]

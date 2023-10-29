@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 User = get_user_model()
@@ -13,7 +14,7 @@ class Offer(models.Model):
     sublet = models.ForeignKey("Sublet", on_delete=models.CASCADE, related_name="offers")
     # TODO: Make sure phone_number is being validated by serializers/frontend
     email = models.EmailField(max_length=255, null=True, blank=True)
-    phone_number = models.CharField(max_length=20, null=True, blank=True)
+    phone_number = PhoneNumberField(null=True, blank=True)
     message = models.CharField(max_length=255, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
 
