@@ -4,7 +4,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from sublet.models import Amenity, Offer, Sublet
+from sublet.models import Amenity, Sublet
+
 
 User = get_user_model()
 
