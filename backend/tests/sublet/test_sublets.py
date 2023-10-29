@@ -25,8 +25,8 @@ class TestSublets(TestCase):
             Amenity.objects.create(name=f"Amenity{str(i)}")
         with open("tests/sublet/mock_sublets.json") as data:
             data = json.load(data)
-            Sublet.objects.create(subletter=self.user, **data[0])
-            Sublet.objects.create(subletter=test_user, **data[1])
+            self.test_sublet1 = Sublet.objects.create(subletter=self.user, **data[0])
+            self.test_sublet2 = Sublet.objects.create(subletter=test_user, **data[1])
 
     def test_create_sublet(self):
         # Create a new sublet using the serializer
@@ -54,7 +54,7 @@ class TestSublets(TestCase):
     def test_update_sublet(self):
         # Create a sublet to be updated
         payload = {
-            "title": "Old Title",
+            "title": "Test Sublet2",
             "address": "1234 Old Street",
             "beds": 2,
             "baths": 1,
@@ -68,14 +68,14 @@ class TestSublets(TestCase):
             "amenities": ["Amenity1", "Amenity2"],
         }
         self.client.post("/sublet/properties/", payload)
+        test_sublet = Sublet.objects.get(subletter=self.user, title="Test Sublet2")
         # Update the sublet using the serializer
         data = {"title": "New Title", "beds": 3}
 
-        response = self.client.patch("/sublet/properties/3/", data)
+        response = self.client.patch(f"/sublet/properties/{str(test_sublet.id)}/", data)
         res_json = json.loads(response.content)
         self.assertEqual(3, res_json["beds"])
-        self.assertEqual(3, Sublet.objects.all().last().id)
-        self.assertEqual("New Title", Sublet.objects.get(id=3).title)
+        self.assertIsNotNone(Sublet.objects.get(subletter=self.user, title="New Title"))
         self.assertEqual("New Title", res_json["title"])
 
     def test_browse_sublets(self):
@@ -123,7 +123,9 @@ class TestSublets(TestCase):
             "amenities": ["Amenity1", "Amenity2"],
         }
         self.client.post("/sublet/properties/", payload)
-        response = self.client.get("/sublet/properties/3/")
+        response = self.client.get(
+            f"/sublet/properties/{str(Sublet.objects.get(subletter=self.user,title='Test Sublet2').id)}/"
+        )
         res_json = json.loads(response.content)
         self.assertEqual(res_json["title"], "Test Sublet2")
         self.assertEqual(res_json["address"], "1234 Test Street")
@@ -132,7 +134,7 @@ class TestSublets(TestCase):
 
     def test_delete_sublet(self):
         sublets_count = Sublet.objects.all().count()
-        self.client.delete("/sublet/properties/1/")
+        self.client.delete(f"/sublet/properties/{str(self.test_sublet1.id)}/")
         self.assertEqual(sublets_count - 1, Sublet.objects.all().count())
         self.assertFalse(Sublet.objects.filter(id=1).exists())
 
