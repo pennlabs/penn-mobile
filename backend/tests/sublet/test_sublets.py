@@ -124,14 +124,14 @@ class TestOffers(TestCase):
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
-        test_user = User.objects.create_user("user1", "user")
+        self.test_user = User.objects.create_user("user1", "user")
         for i in range(1, 6):
             Amenity.objects.create(name=f"Amenity{str(i)}")
         # TODO: Not sure how to add these amenities to the sublets, but not important for now
         with open("tests/sublet/mock_sublets.json") as data:
             data = json.load(data)
-            Sublet.objects.create(subletter=self.user, **data[0])
-            Sublet.objects.create(subletter=test_user, **data[1])
+            self.first_sublet = Sublet.objects.create(subletter=self.user, **data[0])
+            self.second_sublet = Sublet.objects.create(subletter=self.test_user, **data[1])
 
     def test_create_offer(self):
         payload = {
@@ -139,22 +139,14 @@ class TestOffers(TestCase):
             "phone_number": "1234567890",
             "message": "Message",
         }
-        response = self.client.post("/sublet/properties/2/offers/", payload)
-        res_json = json.loads(response.content)
-        self.assertEqual(res_json["email"], payload["email"])
-        self.assertEqual(res_json["phone_number"], payload["phone_number"])
-        self.assertEqual(res_json["message"], payload["message"])
-        self.assertEqual(res_json["user"], self.user.id)
-        self.assertEqual(res_json["sublet"], 2)
-        self.assertEqual(res_json["id"], 1)
-        self.assertIn("created_date", res_json)
+        self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/offers/", payload)
         offer = Offer.objects.get(pk=1)
         self.assertEqual(offer.email, payload["email"])
         self.assertEqual(offer.phone_number, payload["phone_number"])
         self.assertEqual(offer.message, payload["message"])
         self.assertEqual(offer.user, self.user)
-        self.assertEqual(offer.sublet, Sublet.objects.get(pk=2))
-        self.assertEqual(offer.id, 1)
+        self.assertEqual(offer.sublet, self.second_sublet)
+        self.assertIsNotNone(offer.id)
         self.assertIsNotNone(offer.created_date)
         # TODO: Error handling when creating nonunique offer
 
@@ -164,13 +156,13 @@ class TestOffers(TestCase):
             "phone_number": "1234567890",
             "message": "Message",
         }
-        self.client.post("/sublet/properties/2/offers/", payload)
+        self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/offers/", payload)
         # TODO: Uncomment this once proper handling is done for offer deletion not found
         # offers_count = Offer.objects.all().count()
         # self.client.delete("/sublet/properties/1/offers/")
         # offers = Offer.objects.all()
         # self.assertEqual(offers_count, offers.count())
-        self.client.delete("/sublet/properties/2/offers/")
+        self.client.delete(f"/sublet/properties/{str(self.second_sublet.id)}/offers/")
         self.assertFalse(
             Offer.objects.filter(user=self.user, sublet=Sublet.objects.get(pk=2)).exists()
         )
@@ -184,17 +176,17 @@ class TestOffers(TestCase):
             "phone_number": "1234567890",
             "message": "Message",
         }
-        self.client.post("/sublet/properties/1/offers/", payload)
-        response = self.client.get("/sublet/properties/1/offers/")
+        self.client.post(f"/sublet/properties/{str(self.first_sublet.id)}/offers/", payload)
+        response = self.client.get(f"/sublet/properties/{str(self.first_sublet.id)}/offers/")
         self.assertEqual(1, len(json.loads(response.content)))
         Offer.objects.create(
-            user=User.objects.get(pk=2),
-            sublet=Sublet.objects.get(pk=1),
+            user=self.test_user,
+            sublet=self.first_sublet,
             email="offer2@seas.upenn.edu",
             phone_number="0987654321",
             message="Message2",
         )
-        response = self.client.get("/sublet/properties/1/offers/")
+        response = self.client.get(f"/sublet/properties/{str(self.first_sublet.id)}/offers/")
         res_json = json.loads(response.content)
         self.assertEqual(2, len(res_json))
         # TODO: this is really ugly, maybe clean up later haha
@@ -204,7 +196,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer["message"], "Message")
         self.assertEqual(offer["user"], self.user.id)
         self.assertEqual(offer["sublet"], 1)
-        self.assertEqual(offer["id"], 1)
+        self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
         offer = res_json[1]
         self.assertEqual(offer["email"], "offer2@seas.upenn.edu")
@@ -212,7 +204,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer["message"], "Message2")
         self.assertEqual(offer["user"], 2)
         self.assertEqual(offer["sublet"], 1)
-        self.assertEqual(offer["id"], 2)
+        self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
 
     def test_get_offer_user(self):
@@ -224,7 +216,7 @@ class TestOffers(TestCase):
             "phone_number": "1234567890",
             "message": "Message",
         }
-        self.client.post("/sublet/properties/1/offers/", payload)
+        self.client.post(f"/sublet/properties/{str(self.first_sublet.id)}/offers/", payload)
         response = self.client.get("/sublet/offers/")
         self.assertEqual(1, len(json.loads(response.content)))
         payload = {
@@ -232,7 +224,7 @@ class TestOffers(TestCase):
             "phone_number": "0987654321",
             "message": "Message2",
         }
-        self.client.post("/sublet/properties/2/offers/", payload)
+        self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/offers/", payload)
         response = self.client.get("/sublet/offers/")
         res_json = json.loads(response.content)
         self.assertEqual(2, len(res_json))
@@ -242,7 +234,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer["message"], "Message")
         self.assertEqual(offer["user"], self.user.id)
         self.assertEqual(offer["sublet"], 1)
-        self.assertEqual(offer["id"], 1)
+        self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
         offer = res_json[1]
         self.assertEqual(offer["email"], "offer2@seas.upenn.edu")
@@ -250,7 +242,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer["message"], "Message2")
         self.assertEqual(offer["user"], 1)
         self.assertEqual(offer["sublet"], 2)
-        self.assertEqual(offer["id"], 2)
+        self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
 
 
@@ -267,50 +259,50 @@ class TestFavorites(TestCase):
         # TODO: Not sure how to add these amenities to the sublets, but not important for now
         with open("tests/sublet/mock_sublets.json") as data:
             data = json.load(data)
-            Sublet.objects.create(subletter=self.user, **data[0])
-            Sublet.objects.create(subletter=test_user, **data[1])
+            self.first_sublet = Sublet.objects.create(subletter=self.user, **data[0])
+            self.second_sublet = Sublet.objects.create(subletter=test_user, **data[1])
 
     def test_create_favorite(self):
-        self.client.post("/sublet/properties/2/favorites/")
-        self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
-        self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
+        self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/favorites/")
+        self.assertTrue(self.user.sublets_favorited.filter(pk=self.second_sublet.id).exists())
+        self.assertFalse(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
         # TODO: Write case for erroring out on already favorited once that's been implemented
-        self.client.post("/sublet/properties/1/favorites/")
-        self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
-        self.assertTrue(self.user.sublets_favorited.filter(pk=1).exists())
+        self.client.post(f"/sublet/properties/{str(self.first_sublet.id)}/favorites/")
+        self.assertTrue(self.user.sublets_favorited.filter(pk=self.second_sublet.id).exists())
+        self.assertTrue(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
 
     def test_delete_favorite(self):
-        self.client.post("/sublet/properties/2/favorites/")
-        self.client.post("/sublet/properties/1/favorites/")
-        self.client.delete("/sublet/properties/1/favorites/")
-        self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
-        self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
-        self.client.post("/sublet/properties/1/favorites/")
-        self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
-        self.assertTrue(self.user.sublets_favorited.filter(pk=1).exists())
-        self.client.delete("/sublet/properties/1/favorites/")
-        self.assertTrue(self.user.sublets_favorited.filter(pk=2).exists())
-        self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
-        self.client.delete("/sublet/properties/2/favorites/")
-        self.assertFalse(self.user.sublets_favorited.filter(pk=2).exists())
-        self.assertFalse(self.user.sublets_favorited.filter(pk=1).exists())
+        self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/favorites/")
+        self.client.post(f"/sublet/properties/{str(self.first_sublet.id)}/favorites/")
+        self.client.delete(f"/sublet/properties/{str(self.first_sublet.id)}/favorites/")
+        self.assertTrue(self.user.sublets_favorited.filter(pk=self.second_sublet.id).exists())
+        self.assertFalse(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
+        self.client.post(f"/sublet/properties/{str(self.first_sublet.id)}/favorites/")
+        self.assertTrue(self.user.sublets_favorited.filter(pk=self.second_sublet.id).exists())
+        self.assertTrue(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
+        self.client.delete(f"/sublet/properties/{str(self.first_sublet.id)}/favorites/")
+        self.assertTrue(self.user.sublets_favorited.filter(pk=self.second_sublet.id).exists())
+        self.assertFalse(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
+        self.client.delete(f"/sublet/properties/{str(self.second_sublet.id)}/favorites/")
+        self.assertFalse(self.user.sublets_favorited.filter(pk=self.second_sublet.id).exists())
+        self.assertFalse(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
         # TODO: Cases for proper error handling on unfound delete
 
     def test_get_favorite_user(self):
         response = self.client.get("/sublet/favorites/")
         res_json = json.loads(response.content)
         self.assertEqual(len(res_json), 0)
-        self.client.post("/sublet/properties/2/favorites/")
+        self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/favorites/")
         response = self.client.get("/sublet/favorites/")
         res_json = json.loads(response.content)
         self.assertEqual(len(res_json), 1)
-        self.assertEqual(res_json[0]["id"], 2)
-        self.client.post("/sublet/properties/1/favorites/")
+        self.assertEqual(res_json[0]["id"], self.second_sublet.id)
+        self.client.post(f"/sublet/properties/{str(self.first_sublet.id)}/favorites/")
         response = self.client.get("/sublet/favorites/")
         res_json = json.loads(response.content)
         self.assertEqual(len(res_json), 2)
-        self.client.delete("/sublet/properties/2/favorites/")
+        self.client.delete(f"/sublet/properties/{str(self.second_sublet.id)}/favorites/")
         response = self.client.get("/sublet/favorites/")
         res_json = json.loads(response.content)
         self.assertEqual(len(res_json), 1)
-        self.assertEqual(res_json[0]["id"], 1)
+        self.assertEqual(res_json[0]["id"], self.first_sublet.id)

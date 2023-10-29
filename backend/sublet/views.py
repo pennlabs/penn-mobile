@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from rest_framework import generics, mixins, status, viewsets
+from rest_framework import exceptions, generics, mixins, status, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -152,8 +152,10 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
 
     def create(self, request, *args, **kwargs):
         sublet_id = int(self.kwargs["sublet_id"])
+        queryset = self.get_queryset()
+        if queryset.filter(id=sublet_id).exists():
+            raise exceptions.NotAcceptable("Favorite already exists")
         sublet = get_object_or_404(Sublet, id=sublet_id)
-        # add validation
         self.get_queryset().add(sublet)
         return Response(status=status.HTTP_201_CREATED)
 
@@ -180,13 +182,16 @@ class Offers(viewsets.ModelViewSet):
     serializer_class = OfferSerializer
 
     def get_queryset(self):
-        return Offer.objects.filter(sublet_id=self.kwargs["sublet_id"]).order_by("created_date")
+        return Offer.objects.filter(sublet_id=int(self.kwargs["sublet_id"])).order_by(
+            "created_date"
+        )
 
     def create(self, request, *args, **kwargs):
-        # TODO: Consider preventing user from offering on own post
-        # TODO: Impelement user/sublet uniqueness validation
+        # TODO: Consider preventing user from offering on own post/favorite????
         data = request.data
-        request.data._mutable = True
+        request.POST._mutable = True
+        if self.get_queryset().filter(user=self.request.user).exists():
+            raise exceptions.NotAcceptable("Offer already exists")
         data["sublet"] = int(self.kwargs["sublet_id"])
         data["user"] = self.request.user.id
         serializer = self.get_serializer(data=request.data)
