@@ -195,7 +195,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer["phone_number"], "1234567890")
         self.assertEqual(offer["message"], "Message")
         self.assertEqual(offer["user"], self.user.id)
-        self.assertEqual(offer["sublet"], 1)
+        self.assertEqual(offer["sublet"], self.first_sublet.id)
         self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
         offer = res_json[1]
@@ -203,7 +203,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer["phone_number"], "0987654321")
         self.assertEqual(offer["message"], "Message2")
         self.assertEqual(offer["user"], 2)
-        self.assertEqual(offer["sublet"], 1)
+        self.assertEqual(offer["sublet"], self.first_sublet.id)
         self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
 
@@ -233,7 +233,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer["phone_number"], "1234567890")
         self.assertEqual(offer["message"], "Message")
         self.assertEqual(offer["user"], self.user.id)
-        self.assertEqual(offer["sublet"], 1)
+        self.assertEqual(offer["sublet"], self.first_sublet.id)
         self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
         offer = res_json[1]
@@ -241,7 +241,7 @@ class TestOffers(TestCase):
         self.assertEqual(offer["phone_number"], "0987654321")
         self.assertEqual(offer["message"], "Message2")
         self.assertEqual(offer["user"], 1)
-        self.assertEqual(offer["sublet"], 2)
+        self.assertEqual(offer["sublet"], self.second_sublet.id)
         self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
 
