@@ -31,13 +31,11 @@ class Amenity(models.Model):
 class Sublet(models.Model):
     subletter = models.ForeignKey(User, on_delete=models.CASCADE)
     sublettees = models.ManyToManyField(
-        User, through=Offer, related_name="sublets_offered", null=True, blank=True
+        User, through=Offer, related_name="sublets_offered", blank=True
     )
-    favorites = models.ManyToManyField(
-        User, related_name="sublets_favorited", null=True, blank=True
-    )
+    favorites = models.ManyToManyField(User, related_name="sublets_favorited", blank=True)
     amenities = models.ManyToManyField(
-        Amenity, null=True, blank=True
+        Amenity, blank=True
     )  # TODO: not sure if anything else should go into this as params
 
     title = models.CharField(max_length=255)
