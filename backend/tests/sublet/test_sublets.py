@@ -163,7 +163,7 @@ class TestOffers(TestCase):
         # offers = Offer.objects.all()
         # self.assertEqual(offers_count, offers.count())
         self.client.delete(f"/sublet/properties/{str(self.second_sublet.id)}/offers/")
-        self.assertFalse(Offer.objects.filter(user=self.user, sublet=self.second_sublet.exists()))
+        self.assertFalse(Offer.objects.filter(user=self.user, sublet=self.second_sublet).exists())
 
     def test_get_offers_property(self):
         response = self.client.get("/sublet/offers/")
