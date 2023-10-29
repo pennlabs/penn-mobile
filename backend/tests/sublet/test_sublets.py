@@ -67,16 +67,18 @@ class TestSublets(TestCase):
             "end_date": "2024-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
-        self.client.post("/sublet/properties/", payload)
+        response = self.client.post("/sublet/properties/", payload)
+        old_id = json.loads(response.content)["id"]
         # Update the sublet using the serializer
-        data = {"title": "New Title", "beds": 3}
+        data = {"title": "New Title", "beds": 3, "amenities": ["Amenity1"]}
 
-        response = self.client.patch("/sublet/properties/3/", data)
+        response = self.client.patch(f"/sublet/properties/{str(old_id)}/", data)
         res_json = json.loads(response.content)
         self.assertEqual(3, res_json["beds"])
-        self.assertEqual(3, Sublet.objects.all().last().id)
-        self.assertEqual("New Title", Sublet.objects.get(id=3).title)
+        self.assertEqual(old_id, Sublet.objects.all().last().id)
+        self.assertEqual("New Title", Sublet.objects.get(id=old_id).title)
         self.assertEqual("New Title", res_json["title"])
+        self.assertEqual(1, len(res_json["amenities"]))
 
     def test_browse_sublets(self):
         response = self.client.get("/sublet/properties/")
@@ -96,15 +98,16 @@ class TestSublets(TestCase):
             "end_date": "2024-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
-        self.client.post("/sublet/properties/", payload)
+        response = self.client.post("/sublet/properties/", payload)
+        old_id = json.loads(response.content)["id"]
         response = self.client.get("/sublet/properties/")
         res_json = json.loads(response.content)
         self.assertEqual(1+first_length, len(res_json))
-        sublet = res_json[-1]
-        self.assertEqual(sublet["title"], "Test Sublet1")
-        self.assertEqual(sublet["address"], "1234 Test Street")
-        self.assertEqual(sublet["beds"], 2)
-        self.assertEqual(sublet["baths"], 1)
+        sublet = Sublet.objects.get(id=old_id)
+        self.assertEqual(sublet.title, "Test Sublet1")
+        self.assertEqual(sublet.address, "1234 Test Street")
+        self.assertEqual(sublet.beds, 2)
+        self.assertEqual(sublet.baths, 1)
 
     def test_browse_sublet(self):
         # browse single sublet by id
