@@ -203,6 +203,7 @@ class Offers(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         filter = {"user": self.request.user.id, "sublet": int(self.kwargs["sublet_id"])}
         obj = get_object_or_404(queryset, **filter)
+        # checking permissions here is kind of redundant
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)

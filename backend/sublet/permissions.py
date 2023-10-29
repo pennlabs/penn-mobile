@@ -37,8 +37,8 @@ class OfferOwnerPermission(permissions.BasePermission):
         return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        # Check if the user is the owner of the Sublet.
         if request.method in permissions.SAFE_METHODS:
-            # Check if the user owns the sublet
+            # Check if the user owns the sublet when getting list
             return obj.subletter == request.user
+        # This is redundant, here for safety
         return obj.user == request.user

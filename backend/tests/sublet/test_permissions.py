@@ -82,4 +82,41 @@ class OfferPermissions(TestCase):
 
 
 class FavoritePermissions(TestCase):
-    pass
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create_superuser("admin", "admin@example.com", "admin")
+        self.user1 = User.objects.create_user("user1", "user1@seas.upenn.edu", "user1")
+        self.user2 = User.objects.create_user("user2", "user2@seas.upenn.edu", "user2")
+        for i in range(1, 6):
+            Amenity.objects.create(name=f"Amenity{str(i)}")
+        # TODO: Add amenities
+        with open("tests/sublet/mock_sublets.json") as data:
+            data = json.load(data)
+            self.sublet1 = Sublet.objects.create(subletter=self.admin, **data[0])
+            self.sublet2 = Sublet.objects.create(subletter=self.user1, **data[0])
+            self.sublet3 = Sublet.objects.create(subletter=self.user2, **data[1])
+
+    def test_authentication(self):
+        prop_url = f"/sublet/properties/{str(self.sublet1.id)}/favorites/"
+        self.assertEqual(self.client.post(prop_url).status_code, 403)
+        self.assertEqual(self.client.delete(prop_url).status_code, 403)
+        self.assertEqual(self.client.get("/sublet/favorites/").status_code, 403)
+
+    def test_create_favorite(self):
+        prop_url = f"/sublet/properties/{str(self.sublet1.id)}/favorites/"
+        users = [self.admin, self.user1]
+        for u in users:
+            self.client.force_authenticate(user=u)
+            self.assertEqual(self.client.post(prop_url).status_code, 201)
+
+    def test_delete_favorite(self):
+        prop_url = f"/sublet/properties/{str(self.sublet1.id)}/favorites/"
+        users = [self.admin, self.user1]
+        for u in users:
+            self.client.force_authenticate(user=u)
+            self.client.post(prop_url)
+            self.assertEqual(self.client.delete(prop_url).status_code, 204)
+
+    def test_get_favorites_user(self):
+        self.client.force_authenticate(user=self.user1)
+        self.assertEqual(self.client.get("/sublet/favorites/").status_code, 200)
