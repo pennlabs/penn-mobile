@@ -101,7 +101,7 @@ class TestSublets(TestCase):
         old_id = json.loads(response.content)["id"]
         response = self.client.get("/sublet/properties/")
         res_json = json.loads(response.content)
-        self.assertEqual(1+first_length, len(res_json))
+        self.assertEqual(1 + first_length, len(res_json))
         sublet = Sublet.objects.get(id=old_id)
         self.assertEqual(sublet.title, "Test Sublet1")
         self.assertEqual(sublet.address, "1234 Test Street")
@@ -125,9 +125,8 @@ class TestSublets(TestCase):
             "amenities": ["Amenity1", "Amenity2"],
         }
         self.client.post("/sublet/properties/", payload)
-        response = self.client.get(
-            f"/sublet/properties/{str(Sublet.objects.get(subletter=self.user,title='Test Sublet2').id)}/"
-        )
+        test_sublet = Sublet.objects.get(subletter=self.user, title="Test Sublet2")
+        response = self.client.get(f"/sublet/properties/{str(test_sublet.id)}/")
         res_json = json.loads(response.content)
         self.assertEqual(res_json["title"], "Test Sublet2")
         self.assertEqual(res_json["address"], "1234 Test Street")
