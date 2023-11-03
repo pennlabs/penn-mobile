@@ -162,7 +162,7 @@ const AnalyticsCardContent = ({
   optionData?.options?.forEach((x) => {
     total += x.vote_count
   })
-  const targetPopulationsData = data?.poll_statistics
+  const targetPopulationsData = data?.poll_statistics || []
   const schoolVotes = {}
   const yearVotes = {}
 
@@ -179,7 +179,7 @@ const AnalyticsCardContent = ({
     }
     if (item.breakdown && item.breakdown.YEAR) {
       const years = item.breakdown.YEAR
-      Object.keys(year).forEach((school) => {
+      Object.keys(year).forEach((year) => {
         if (yearVotes[year]) {
           yearVotes[year] += years[year]
         } else {
@@ -190,7 +190,7 @@ const AnalyticsCardContent = ({
   })
 
   let totalVoteCount = 0
-  data.poll_statistics.map((opt: any, idx: number) => {
+  data?.poll_statistics?.map((opt: any, idx: number) => {
     totalVoteCount += optionData.options[idx]?.vote_count || 0
   })
 
@@ -198,13 +198,20 @@ const AnalyticsCardContent = ({
   return (
     <AnalyticsBodyWrapper>
       {error}
-      {data.poll_statistics.length > 0 && !isLoading && (
+      {'title' in content && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            fontSize: '1rem',
+            fontWeight: '500',
+          }}
+        >
+          Coming Soon!
+        </div>
+      )}
+      {'question' in content && data.poll_statistics.length > 0 && !isLoading && (
         <div style={{ display: 'flex' }}>
-          {/* <div style={{ marginRight: 20 }}>
-            <ViewsComponent />
-            <div style={{ height: 10 }} />
-            <ViewsComponent />
-          </div> */}
           <PrettyBorderWrapper>
             <FlexCentered>
               <div

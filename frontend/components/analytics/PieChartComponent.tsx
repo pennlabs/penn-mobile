@@ -17,7 +17,7 @@ const SimplePieChart = ({ schoolData, yearData, mode, uniqueVotes }) => {
     name: school,
     value: schoolData[school],
   }))
-  return (
+  return Object.keys(dataToUse).length !== 0 ? (
     <div
       style={{
         position: 'relative',
@@ -55,6 +55,16 @@ const SimplePieChart = ({ schoolData, yearData, mode, uniqueVotes }) => {
         </Pie>
         <Tooltip />
       </PieChart>
+    </div>
+  ) : (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      No data available yet.
     </div>
   )
 }
