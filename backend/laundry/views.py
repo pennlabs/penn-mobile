@@ -77,7 +77,7 @@ class HallUsage(APIView):
             new_end = new_start + datetime.timedelta(hours=27)
             filter |= Q(date__gt=new_start, date__lt=new_end)
 
-        snapshots = LaundrySnapshot.objects.filter(filter)
+        snapshots = LaundrySnapshot.objects.filter(filter).order_by("-date")
         return (room, snapshots)
 
     def compute_usage(hall_id):
