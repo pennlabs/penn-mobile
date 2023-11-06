@@ -112,6 +112,7 @@ class PollOptionSerializer(serializers.ModelSerializer):
 
 
 class RetrievePollSerializer(serializers.ModelSerializer):
+
     target_populations = TargetPopulationSerializer(many=True)
     options = PollOptionSerializer(source="polloption_set", many=True)
 
@@ -142,6 +143,7 @@ class PollVoteSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
+
         options = validated_data["poll_options"]
         id_hash = validated_data["id_hash"]
 
@@ -188,6 +190,7 @@ class PollVoteSerializer(serializers.ModelSerializer):
 
 
 class RetrievePollVoteSerializer(serializers.ModelSerializer):
+
     poll = RetrievePollSerializer()
     poll_options = PollOptionSerializer(many=True)
     created_date = serializers.DateTimeField()
@@ -202,6 +205,7 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
+
     image = serializers.ImageField(write_only=True, required=False, allow_null=True)
     image_url = serializers.SerializerMethodField("get_image_url")
 

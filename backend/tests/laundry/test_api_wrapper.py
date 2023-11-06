@@ -28,6 +28,7 @@ class TestAllStatus(TestCase):
         )
 
     def test_all_status(self):
+
         data = all_status()
 
         self.assertEqual(len(data), 4)
@@ -70,7 +71,9 @@ class TestHallStatus(TestCase):
         )
 
     def test_all_status(self):
+
         for room in LaundryRoom.objects.all():
+
             # asserts fields are present
             status = hall_status(room)
             machines = status["machines"]
@@ -100,6 +103,7 @@ class TestSaveData(TestCase):
         )
 
     def test_save_data(self):
+
         self.assertEqual(LaundrySnapshot.objects.all().count(), 0)
 
         save_data()

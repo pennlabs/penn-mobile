@@ -4,6 +4,7 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
+
     dependencies = [("gsr_booking", "0006_gsrbookingcredentials")]
 
     operations = [

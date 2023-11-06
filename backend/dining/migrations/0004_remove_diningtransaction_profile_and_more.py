@@ -4,29 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
         ("dining", "0003_venue_name"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="diningtransaction",
-            name="profile",
+        migrations.RemoveField(model_name="diningtransaction", name="profile",),
+        migrations.AlterField(
+            model_name="diningitem", name="description", field=models.CharField(max_length=1000),
         ),
         migrations.AlterField(
-            model_name="diningitem",
-            name="description",
-            field=models.CharField(max_length=1000),
+            model_name="diningitem", name="ingredients", field=models.CharField(max_length=1000),
         ),
-        migrations.AlterField(
-            model_name="diningitem",
-            name="ingredients",
-            field=models.CharField(max_length=1000),
-        ),
-        migrations.DeleteModel(
-            name="DiningBalance",
-        ),
-        migrations.DeleteModel(
-            name="DiningTransaction",
-        ),
+        migrations.DeleteModel(name="DiningBalance",),
+        migrations.DeleteModel(name="DiningTransaction",),
     ]

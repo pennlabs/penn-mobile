@@ -4,14 +4,13 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
         ("dining", "0002_diningitem_diningstation_diningmenu"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="venue",
-            name="name",
-            field=models.CharField(max_length=255, null=True),
+            model_name="venue", name="name", field=models.CharField(max_length=255, null=True),
         ),
     ]

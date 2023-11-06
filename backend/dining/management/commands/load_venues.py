@@ -11,6 +11,7 @@ class Command(BaseCommand):
     """
 
     def handle(self, *args, **kwargs):
+
         with open("dining/data/dining_venues.csv") as data:
             reader = csv.reader(data)
             for i, row in enumerate(reader):

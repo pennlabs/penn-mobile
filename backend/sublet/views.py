@@ -103,7 +103,9 @@ class Properties(viewsets.ModelViewSet):
         amenities = params.getlist("amenities")
         title = params.get("title")
         address = params.get("address")
-        subletter = params.get("subletter", "false")  # Defaults to False if not specified
+        subletter = params.get(
+            "subletter", "false"
+        )  # Defaults to False if not specified
         starts_before = params.get("starts_before", None)
         starts_after = params.get("starts_after", None)
         ends_before = params.get("ends_before", None)

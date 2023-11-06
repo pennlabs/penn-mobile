@@ -4,14 +4,13 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
         ("penndata", "0005_fitnessroom_fitnesssnapshot"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="fitnesssnapshot",
-            name="capacity",
-            field=models.FloatField(null=True),
+            model_name="fitnesssnapshot", name="capacity", field=models.FloatField(null=True),
         ),
     ]

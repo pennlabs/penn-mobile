@@ -103,6 +103,7 @@ class GSRSerializer(serializers.ModelSerializer):
 
 
 class GSRBookingSerializer(serializers.ModelSerializer):
+
     gsr = GSRSerializer(read_only=False, required=False)
 
     class Meta:

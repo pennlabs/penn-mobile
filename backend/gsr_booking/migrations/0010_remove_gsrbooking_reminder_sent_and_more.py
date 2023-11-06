@@ -4,15 +4,13 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
         ("gsr_booking", "0009_remove_groupmembership_username_and_more"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="gsrbooking",
-            name="reminder_sent",
-        ),
+        migrations.RemoveField(model_name="gsrbooking", name="reminder_sent",),
         migrations.AddField(
             model_name="reservation",
             name="reminder_sent",

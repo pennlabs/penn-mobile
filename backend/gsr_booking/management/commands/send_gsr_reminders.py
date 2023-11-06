@@ -12,6 +12,7 @@ class Command(BaseCommand):
     help = "Sends reminders for the GSR Bookings."
 
     def handle(self, *args, **kwargs):
+
         # iterate through all reservations scheduled for the next 30 minutes
         for reservation in Reservation.objects.filter(
             is_cancelled=False,

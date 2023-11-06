@@ -145,6 +145,7 @@ def save_data():
         data = all_status()
 
         for name, room in data.items():
+
             laundry_room = LaundryRoom.objects.get(name=name)
 
             LaundrySnapshot.objects.create(

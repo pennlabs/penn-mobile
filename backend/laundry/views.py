@@ -139,6 +139,7 @@ class HallUsage(APIView):
         return content
 
     def get(self, request, hall_id):
+
         return Response(HallUsage.compute_usage(hall_id))
 
 
@@ -153,12 +154,14 @@ class Preferences(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+
         preferences = request.user.profile.laundry_preferences.all()
 
         # returns all hall_ids in a person's preferences
         return Response({"rooms": preferences.values_list("hall_id", flat=True)})
 
     def post(self, request):
+
         profile = request.user.profile
 
         # clears all previous preferences in many-to-many

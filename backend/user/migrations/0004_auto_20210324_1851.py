@@ -4,6 +4,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
         ("dining", "0001_initial"),
         ("user", "0003_profile_dining_preferences"),

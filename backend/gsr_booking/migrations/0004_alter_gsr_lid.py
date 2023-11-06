@@ -4,14 +4,13 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
         ("gsr_booking", "0003_gsr_gsrbooking"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name="gsr",
-            name="lid",
-            field=models.CharField(max_length=255),
+            model_name="gsr", name="lid", field=models.CharField(max_length=255),
         ),
     ]

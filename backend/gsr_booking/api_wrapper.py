@@ -503,6 +503,7 @@ class LibCalWrapper:
         return res_json
 
     def get_reservations(self, user):
+
         reservations = Reservation.objects.filter(
             creator=user, end__gte=timezone.localtime(), is_cancelled=False
         )

@@ -4,6 +4,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
         ("laundry", "0001_initial"),
         ("user", "0001_initial"),

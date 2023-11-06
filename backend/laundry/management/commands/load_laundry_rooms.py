@@ -7,6 +7,7 @@ from laundry.models import LaundryRoom
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
+
         with open("laundry/data/laundry_data.csv") as data:
             reader = csv.reader(data)
 

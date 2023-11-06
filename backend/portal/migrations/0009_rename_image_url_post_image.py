@@ -4,14 +4,11 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
         ("portal", "0008_alter_post_image_url"),
     ]
 
     operations = [
-        migrations.RenameField(
-            model_name="post",
-            old_name="image_url",
-            new_name="image",
-        ),
+        migrations.RenameField(model_name="post", old_name="image_url", new_name="image",),
     ]
