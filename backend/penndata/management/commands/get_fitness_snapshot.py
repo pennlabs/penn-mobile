@@ -12,7 +12,6 @@ def cap_string(s):
 
 
 def get_usages():
-
     # count/capacities default to 0 since spreadsheet number appears blank if no one there
     locations = [
         "4th Floor Fitness",

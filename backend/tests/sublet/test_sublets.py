@@ -129,7 +129,7 @@ class TestSublets(TestCase):
             "title": "Sublet2",
             "max_price": 450,
         }
-        response = self.client.get(f"/sublet/properties/", payload)
+        response = self.client.get("/sublet/properties/", payload)
         res_json = json.loads(response.content)
         sublet = res_json[0]
         self.assertEqual(1, len(res_json))

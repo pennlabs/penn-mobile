@@ -70,7 +70,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(
-                    user=user, accepted=False, group__in=self.request.user.booking_groups.all(),
+                    user=user,
+                    accepted=False,
+                    group__in=self.request.user.booking_groups.all(),
                 ),
                 many=True,
             ).data
@@ -206,7 +208,6 @@ class Availability(APIView):
     """
 
     def get(self, request, lid, gid):
-
         start = request.GET.get("start")
         end = request.GET.get("end")
 

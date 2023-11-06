@@ -13,7 +13,11 @@ class GroupMembership(models.Model):
     # INVARIANT: either user or username should always be set. if user is not None, then the
     # username should the be username of the associated user.
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="memberships", blank=True, null=True,
+        User,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+        blank=True,
+        null=True,
     )
 
     group = models.ForeignKey("Group", on_delete=models.CASCADE, related_name="memberships")
@@ -101,7 +105,6 @@ class Group(models.Model):
 
 
 class GSR(models.Model):
-
     KIND_WHARTON = "WHARTON"
     KIND_LIBCAL = "LIBCAL"
     KIND_OPTIONS = ((KIND_WHARTON, "Wharton"), (KIND_LIBCAL, "Libcal"))

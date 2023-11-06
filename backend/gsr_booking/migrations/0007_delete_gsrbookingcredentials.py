@@ -4,11 +4,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("gsr_booking", "0006_auto_20211024_1231"),
     ]
 
     operations = [
-        migrations.DeleteModel(name="GSRBookingCredentials",),
+        migrations.DeleteModel(
+            name="GSRBookingCredentials",
+        ),
     ]

@@ -4,11 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("portal", "0009_rename_image_url_post_image"),
     ]
 
     operations = [
-        migrations.RemoveField(model_name="post", name="image",),
+        migrations.RemoveField(
+            model_name="post",
+            name="image",
+        ),
     ]

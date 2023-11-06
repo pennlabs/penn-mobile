@@ -44,7 +44,6 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     profile = ProfileSerializer(read_only=False, required=False)
 
     class Meta:

@@ -143,10 +143,14 @@ class TestGetRecentFitness(TestCase):
 
         # create old snapshot and new snapshot
         FitnessSnapshot.objects.create(
-            room=self.fitness_room, date=old_time, count=old_count,
+            room=self.fitness_room,
+            date=old_time,
+            count=old_count,
         )
         FitnessSnapshot.objects.create(
-            room=self.fitness_room, date=self.new_time, count=self.new_count,
+            room=self.fitness_room,
+            date=self.new_time,
+            count=self.new_count,
         )
 
     def test_get_recent(self):
@@ -215,7 +219,10 @@ class TestFitnessUsage(TestCase):
     def load_snapshots_1(self, date):
         # 6:00, 0
         FitnessSnapshot.objects.create(
-            room=self.room, date=date + datetime.timedelta(hours=6), count=0, capacity=0.0,
+            room=self.room,
+            date=date + datetime.timedelta(hours=6),
+            count=0,
+            capacity=0.0,
         )
         # 7:30, 10
         FitnessSnapshot.objects.create(
@@ -226,7 +233,10 @@ class TestFitnessUsage(TestCase):
         )
         # 8:00, 65
         FitnessSnapshot.objects.create(
-            room=self.room, date=date + datetime.timedelta(hours=8), count=65, capacity=65.0,
+            room=self.room,
+            date=date + datetime.timedelta(hours=8),
+            count=65,
+            capacity=65.0,
         )
         # 8:30, 0
         FitnessSnapshot.objects.create(
@@ -237,7 +247,10 @@ class TestFitnessUsage(TestCase):
         )
         # 10:00, 60
         FitnessSnapshot.objects.create(
-            room=self.room, date=date + datetime.timedelta(hours=10), count=60, capacity=60.0,
+            room=self.room,
+            date=date + datetime.timedelta(hours=10),
+            count=60,
+            capacity=60.0,
         )
         # 20:00, 0
         FitnessSnapshot.objects.create(

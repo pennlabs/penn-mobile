@@ -14,7 +14,6 @@ User = get_user_model()
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-
         # Define graduation years
         df_2022 = datetime.date(2022, 5, 15)
         df_2023 = datetime.date(2023, 5, 16)

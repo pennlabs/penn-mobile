@@ -160,7 +160,6 @@ class Events(generics.ListAPIView):
 
 
 class Analytics(generics.CreateAPIView):
-
     permission_classes = [IsAuthenticated]
     serializer_class = AnalyticsEventSerializer
 
@@ -195,7 +194,6 @@ class HomePage(APIView):
             return {"type": self.type, "info": self.info}
 
     def get(self, request):
-
         # NOTE: accept arguments: ?version=
 
         profile = request.user.profile
@@ -431,14 +429,12 @@ class FitnessPreferences(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         preferences = request.user.profile.fitness_preferences.all()
 
         # returns all ids in a person's preferences
         return Response({"rooms": preferences.values_list("id", flat=True)})
 
     def post(self, request):
-
         if "rooms" not in request.data:
             return Response({"success": False, "error": "No rooms provided"})
 

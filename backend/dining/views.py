@@ -59,7 +59,6 @@ class Preferences(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         preferences = request.user.profile.dining_preferences
 
         # aggregates venues and puts it in form {"venue_id": x, "count": x}
@@ -68,7 +67,6 @@ class Preferences(APIView):
         )
 
     def post(self, request):
-
         profile = request.user.profile
 
         preferences = profile.dining_preferences

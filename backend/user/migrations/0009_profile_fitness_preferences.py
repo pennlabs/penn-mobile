@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("penndata", "0006_fitnesssnapshot_capacity"),
         ("user", "0008_remove_notificationtoken_dev"),

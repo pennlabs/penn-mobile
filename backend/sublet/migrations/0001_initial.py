@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,7 +15,9 @@ class Migration(migrations.Migration):
     operations = [
         migrations.CreateModel(
             name="Amenity",
-            fields=[("name", models.CharField(max_length=255, primary_key=True, serialize=False)),],
+            fields=[
+                ("name", models.CharField(max_length=255, primary_key=True, serialize=False)),
+            ],
         ),
         migrations.CreateModel(
             name="Offer",
