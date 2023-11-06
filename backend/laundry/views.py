@@ -2,9 +2,9 @@ import calendar
 import datetime
 
 from django.core.cache import cache
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.utils.timezone import make_aware
 from requests.exceptions import HTTPError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -64,29 +64,18 @@ class HallUsage(APIView):
         return round(a / float(b), 3) if b > 0 else 0
 
     def get_snapshot_info(hall_id):
-        now = timezone.localtime()
-
-        # start is beginning of day, end is 27 hours after start
-        start = make_aware(datetime.datetime(year=now.year, month=now.month, day=now.day))
-        end = start + datetime.timedelta(hours=27)
-
         # filters for LaundrySnapshots within timeframe
         room = get_object_or_404(LaundryRoom, hall_id=hall_id)
 
-        snapshots = LaundrySnapshot.objects.filter(room=room, date__gt=start, date__lte=end)
-
         # adds all the LaundrySnapshots from the same weekday within the previous 28 days
-        for week in range(1, 4):
-            # new_start is beginning of day, new_end is 27 hours after start
-            new_start = start - datetime.timedelta(weeks=week)
-            new_end = new_start + datetime.timedelta(hours=27)
+        filter = Q(room=room)
+        for week in range(4):
+            start = timezone.now() - datetime.timedelta(weeks=week)
+            end = start + datetime.timedelta(hours=27)
+            filter |= Q(date__gt=start, date__lte=end)
 
-            new_snapshots = LaundrySnapshot.objects.filter(
-                room=room, date__gt=new_start, date__lte=new_end
-            )
-            snapshots = snapshots.union(new_snapshots)
-
-        return (room, snapshots.order_by("-date"))
+        snapshots = LaundrySnapshot.objects.filter(filter).order_by("-date")
+        return (room, snapshots)
 
     def compute_usage(hall_id):
         try:
@@ -95,7 +84,7 @@ class HallUsage(APIView):
             return Response({"error": "Invalid hall id passed to server."}, status=404)
 
         # [0]: available washers, [1]: available dryers, [2]: total number of LaundrySnapshots
-        data = [(0, 0, 0)] * 27
+        data = [(0, 0, 0)] * 28
 
         # used calculate the start and end dates
         min_date = timezone.localtime()
