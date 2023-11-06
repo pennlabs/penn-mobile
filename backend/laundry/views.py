@@ -67,12 +67,15 @@ class HallUsage(APIView):
         # filters for LaundrySnapshots within timeframe
         room = get_object_or_404(LaundryRoom, hall_id=hall_id)
 
+        # get start time, which is now without the times
+        start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+
         # adds all the LaundrySnapshots from the same weekday within the previous 28 days
         filter = Q(room=room)
         for week in range(4):
-            start = timezone.now() - datetime.timedelta(weeks=week)
-            end = start + datetime.timedelta(hours=27)
-            filter |= Q(date__gt=start, date__lte=end)
+            new_start = start - datetime.timedelta(weeks=week)
+            new_end = new_start + datetime.timedelta(hours=27)
+            filter |= Q(date__gt=new_start, date__lt=new_end)
 
         snapshots = LaundrySnapshot.objects.filter(filter)
         return (room, snapshots)
@@ -84,7 +87,7 @@ class HallUsage(APIView):
             return Response({"error": "Invalid hall id passed to server."}, status=404)
 
         # [0]: available washers, [1]: available dryers, [2]: total number of LaundrySnapshots
-        data = [(0, 0, 0)] * 28
+        data = [(0, 0, 0)] * 27
 
         # used calculate the start and end dates
         min_date = timezone.localtime()
@@ -116,8 +119,12 @@ class HallUsage(APIView):
             "day_of_week": calendar.day_name[timezone.localtime().weekday()],
             "start_date": min_date.date(),
             "end_date": max_date.date(),
-            "washer_data": {x: HallUsage.safe_division(data[x][0], data[x][2]) for x in range(27)},
-            "dryer_data": {x: HallUsage.safe_division(data[x][1], data[x][2]) for x in range(27)},
+            "washer_data": {
+                x: HallUsage.safe_division(data[x][0], data[x][2]) for x in range(len(data))
+            },
+            "dryer_data": {
+                x: HallUsage.safe_division(data[x][1], data[x][2]) for x in range(len(data))
+            },
             "total_number_of_washers": room.total_washers,
             "total_number_of_dryers": room.total_dryers,
         }
