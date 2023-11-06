@@ -45,6 +45,7 @@ class GroupMembership(models.Model):
         super().save(*args, **kwargs)
 
     def check_wharton(self):
+        return WhartonGSRBooker.is_wharton(self.user)
         # not using api_wrapper.py to prevent circular dependency
         url = f"https://apps.wharton.upenn.edu/gsr/api/v1/{self.user.username}/privileges"
         try:
@@ -120,7 +121,7 @@ class Reservation(models.Model):
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(default=timezone.now)
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True)
     is_cancelled = models.BooleanField(default=False)
     reminder_sent = models.BooleanField(default=False)
 
@@ -136,3 +137,5 @@ class GSRBooking(models.Model):
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(default=timezone.now)
     is_cancelled = models.BooleanField(default=False)
+
+from gsr_booking.api_wrapper import WhartonGSRBooker # import at end to prevent circular dependency

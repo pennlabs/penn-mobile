@@ -9,8 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from gsr_booking.api_wrapper import APIError, BookingWrapper
-from gsr_booking.group_logic import GroupBook
+from gsr_booking.api_wrapper import APIError, GSRBooker # umbrella class used for accessing GSR API's (needed for token authentication)
+from gsr_booking.api_wrapper import WhartonGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 from gsr_booking.serializers import (
     GroupMembershipSerializer,
@@ -164,9 +164,7 @@ class GroupViewSet(viewsets.ModelViewSet):
         )
 
 
-# umbrella class used for accessing GSR API's (needed for token authentication)
-BW = BookingWrapper()
-GB = GroupBook()
+
 
 
 class Locations(generics.ListAPIView):
@@ -193,7 +191,7 @@ class RecentGSRs(generics.ListAPIView):
 
 class CheckWharton(APIView):
     def get(self, request):
-        return Response({"is_wharton": BW.is_wharton(request.user)})
+        return Response({"is_wharton": WhartonGSRBooker.is_wharton(request.user)})
 
 
 class Availability(APIView):
@@ -211,11 +209,12 @@ class Availability(APIView):
         end = request.GET.get("end")
 
         try:
-            group = Group.objects.get(name="Penn Labs")
-            if request.user in group.members.all():
-                return Response(GB.get_availability(lid, gid, start, end, request.user, group))
-            else:
-                return Response(BW.get_availability(lid, gid, start, end, request.user))
+            # group = Group.objects.get(name="Penn Labs")
+            # if request.user in group.members.all():
+            #     return Response(GB.get_availability(lid, gid, start, end, request.user, group))
+            # else:
+            #     return Response(BW.get_availability(lid, gid, start, end, request.user))
+            return Response(GSRBooker.get_availability(lid, gid, start, end, request.user, request.user.booking_groups.filter(name="Penn Labs").first()))
         except APIError as e:
             return Response({"error": str(e)}, status=400)
 
@@ -233,11 +232,7 @@ class BookRoom(APIView):
         room_name = request.data["room_name"]
 
         try:
-            group = Group.objects.get(name="Penn Labs")
-            if request.user in group.members.all():
-                GB.book_room(gid, room_id, room_name, start, end, request.user, group)
-            else:
-                BW.book_room(gid, room_id, room_name, start, end, request.user)
+            GSRBooker.book_room(gid, room_id, room_name, start, end, request.user, request.user.booking_groups.filter(name="Penn Labs").first())
             return Response({"detail": "success"})
         except APIError as e:
             return Response({"error": str(e)}, status=400)
@@ -254,7 +249,7 @@ class CancelRoom(APIView):
         booking_id = request.data["booking_id"]
 
         try:
-            BW.cancel_room(booking_id, request.user)
+            GSRBooker.cancel_room(booking_id, request.user)
             return Response({"detail": "success"})
         except APIError as e:
             return Response({"error": str(e)}, status=400)
@@ -268,15 +263,5 @@ class ReservationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response(BW.get_reservations(request.user))
+        return Response(GSRBooker.get_reservations(request.user, request.user.booking_groups.filter(name="Penn Labs").first()))
 
-
-class CreditsView(APIView):
-    """
-    Gets credits for a User
-    """
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        return Response(BW.check_credits(request.user))
