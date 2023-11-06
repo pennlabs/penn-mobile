@@ -74,7 +74,7 @@ class HallUsage(APIView):
             end = start + datetime.timedelta(hours=27)
             filter |= Q(date__gt=start, date__lte=end)
 
-        snapshots = LaundrySnapshot.objects.filter(filter).order_by("-date")
+        snapshots = LaundrySnapshot.objects.filter(filter)
         return (room, snapshots)
 
     def compute_usage(hall_id):
@@ -92,13 +92,8 @@ class HallUsage(APIView):
 
         for snapshot in snapshots:
             date = snapshot.date.astimezone()
-
-            if date < min_date:
-                min_date = date
-
-            if date > max_date:
-                max_date = date
-
+            min_date = min(min_date, date)
+            max_date = max(max_date, date)
             hour = date.hour
 
             # accounts for the 3 hours on the next day
