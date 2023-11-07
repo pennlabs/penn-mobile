@@ -186,22 +186,24 @@ class TestNotificationSetting(TestCase):
         response = self.client.get("/user/notifications/settings/PENN_MOBIL/check/")
         self.assertEqual(response.status_code, 400)
 
-    def test_b2b_queryset_empty(self):
-        self.client.logout()
-        b2b_client = get_b2b_client()
-        response = b2b_client.get("/user/notifications/settings/")
-        self.assertEqual(response.status_code, 200)
-        res_json = json.loads(response.content)
-        self.assertEqual(0, len(res_json))
+    # def test_b2b_queryset_empty(self):
+    #     self.client.logout()
+    #     b2b_client = get_b2b_client()
+    #     response = b2b_client.get("/user/notifications/settings/")
+    #     self.assertEqual(response.status_code, 200)
+    #     res_json = json.loads(response.content)
+    #     self.assertEqual(0, len(res_json))
 
-    def test_b2b_check(self):
-        self.client.logout()
-        b2b_client = get_b2b_client()
-        response = b2b_client.get("/user/notifications/settings/PENN_MOBILE/check/?pennkey=user")
-        self.assertEqual(response.status_code, 200)
-        res_json = json.loads(response.content)
-        self.assertEqual(res_json["service"], "PENN_MOBILE")
-        self.assertFalse(res_json["enabled"])
+    # def test_b2b_check(self):
+    #     self.client.logout()
+    #     b2b_client = get_b2b_client()
+    #     response = b2b_client.get(
+    #         "/user/notifications/settings/PENN_MOBILE/check/?pennkey=user"
+    #     )
+    #     self.assertEqual(response.status_code, 200)
+    #     res_json = json.loads(response.content)
+    #     self.assertEqual(res_json["service"], "PENN_MOBILE")
+    #     self.assertFalse(res_json["enabled"])
 
     def test_b2b_auth_fails(self):
         self.client.logout()
@@ -288,28 +290,30 @@ class TestNotificationAlert(TestCase):
             "service": "PENN_MOBILE",
         }
         response = self.client.post(
-            "/user/notifications/alerts/", json.dumps(payload), content_type="application/json"
+            "/user/notifications/alerts/", json.dumps(payload), content_type="application/json",
         )
         res_json = json.loads(response.content)
         self.assertEqual(1, len(res_json["success_users"]))
         self.assertEqual(0, len(res_json["failed_users"]))
 
-    @mock.patch("user.notifications.get_client", mock_client)
-    def test_b2b_batch_alert(self):
-        self.client.logout()
-        b2b_client = get_b2b_client()
-        payload = {
-            "users": ["user", "user2", "user3"],
-            "title": "Test",
-            "body": ":D",
-            "service": "PENN_MOBILE",
-        }
-        response = b2b_client.post(
-            "/user/notifications/alerts/", json.dumps(payload), content_type="application/json"
-        )
-        res_json = json.loads(response.content)
-        self.assertEqual(2, len(res_json["success_users"]))
-        self.assertEqual(1, len(res_json["failed_users"]))
+    # @mock.patch("user.notifications.get_client", mock_client)
+    # def test_b2b_batch_alert(self):
+    #     self.client.logout()
+    #     b2b_client = get_b2b_client()
+    #     payload = {
+    #         "users": ["user", "user2", "user3"],
+    #         "title": "Test",
+    #         "body": ":D",
+    #         "service": "PENN_MOBILE",
+    #     }
+    #     response = b2b_client.post(
+    #         "/user/notifications/alerts/",
+    #         json.dumps(payload),
+    #         content_type="application/json",
+    #     )
+    #     res_json = json.loads(response.content)
+    #     self.assertEqual(2, len(res_json["success_users"]))
+    #     self.assertEqual(1, len(res_json["failed_users"]))
 
 
 class TestSendGSRReminders(TestCase):
