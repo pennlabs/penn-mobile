@@ -169,7 +169,6 @@ class Preferences(APIView):
         key = self.key.format(user_id=request.user.id)
         profile = request.user.profile
         preferences = profile.laundry_preferences
-
         if "rooms" not in request.data:
             return Response({"success": False, "error": "No rooms provided"}, status=400)
 
