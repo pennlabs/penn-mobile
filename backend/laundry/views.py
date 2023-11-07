@@ -71,11 +71,11 @@ class HallUsage(APIView):
         start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
 
         # adds all the LaundrySnapshots from the same weekday within the previous 28 days
-        filter = Q(room=room)
+        filter = Q()
         for week in range(4):
             new_start = start - datetime.timedelta(weeks=week)
             new_end = new_start + datetime.timedelta(hours=27)
-            filter |= Q(date__gt=new_start, date__lt=new_end)
+            filter |= Q(room=room, date__gt=new_start, date__lt=new_end)
 
         snapshots = LaundrySnapshot.objects.filter(filter).order_by("-date")
         return (room, snapshots)
