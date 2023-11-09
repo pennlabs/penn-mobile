@@ -87,7 +87,7 @@ class HallUsage(APIView):
             return Response({"error": "Invalid hall id passed to server."}, status=404)
 
         # [0]: available washers, [1]: available dryers, [2]: total number of LaundrySnapshots
-        data = [(0, 0, 0)] * 27
+        data = [(0, 0, 0)] * 28
 
         # used calculate the start and end dates
         min_date = timezone.localtime()
