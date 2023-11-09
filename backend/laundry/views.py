@@ -82,7 +82,7 @@ class HallUsage(APIView):
 
     def compute_usage(hall_id):
         try:
-            (room, snapshots) = HallUsage.get_snapshot_info(hall_id)
+            (room, snapshots) = HallUsage.get_snapshot_info(hall_id
         except ValueError:
             return Response({"error": "Invalid hall id passed to server."}, status=404)
 
