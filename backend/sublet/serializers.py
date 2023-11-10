@@ -1,7 +1,7 @@
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 
-from sublet.models import Amenity, Offer, Sublet
+from sublet.models import Amenity, Offer, Sublet, SubletImage
 
 
 class AmenitySerializer(serializers.ModelSerializer):
@@ -23,9 +23,41 @@ class OfferSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+# Create/Update Image Serializer
+class SubletImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(write_only=True, required=False, allow_null=True)
+
+    class Meta:
+        model = SubletImage
+        fields = ["sublet", "image"]
+        read_only_fields = ["sublet", "image"]
+
+
+# Browse images
+class SubletImageURLSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField("get_image_url")
+
+    def get_image_url(self, obj):
+        image = obj.image
+
+        if not image:
+            return None
+        if image.url.startswith("http"):
+            return image.url
+        elif "request" in self.context:
+            return self.context["request"].build_absolute_uri(image.url)
+        else:
+            return image.url
+
+    class Meta:
+        model = SubletImage
+        fields = ["image_url"]
+
+
 # complex sublet serializer for use in C/U/D + getting info about a singular sublet
 class SubletSerializer(serializers.ModelSerializer):
     amenities = AmenitySerializer(many=True, required=False)
+
     # sublettees = OfferSerializer(many=True, required=False, read_only=True)
 
     class Meta:
@@ -83,6 +115,7 @@ class SubletSerializer(serializers.ModelSerializer):
 # simple sublet serializer for use when pulling all serializers/etc
 class SimpleSubletSerializer(serializers.ModelSerializer):
     amenities = AmenitySerializer(many=True, required=False)
+    images = SubletImageURLSerializer(many=True, required=False)
 
     class Meta:
         model = Sublet
@@ -98,5 +131,6 @@ class SimpleSubletSerializer(serializers.ModelSerializer):
             "max_price",
             "start_date",
             "end_date",
+            "images",
         ]
         read_only_fields = ["id", "subletter"]
