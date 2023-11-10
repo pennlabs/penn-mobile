@@ -23,7 +23,6 @@ export function getApiUrl(path: string): string {
  */
 export function doApiRequest(path: string, data?: any): Promise<Response> {
   let formattedData = data
-  console.log(formattedData)
   if (!formattedData) {
     formattedData = {}
   }
