@@ -20,8 +20,18 @@ class Command(BaseCommand):
 
         if kwargs["pennkey"] is not None:
             users = User.objects.filter(username=kwargs["pennkey"])
-            if 
         else:
             users = User.objects.filter(email=kwargs["email"])
-        
 
+        if len(users) == 0:
+            self.stdout.write("User not found.")
+            return
+        if len(users) > 1:
+            self.stdout.write("Multiple users found? Huh?")
+            return
+
+        user = users[0]
+        self.stdout.write(f"User: {user.username}")
+        self.stdout.write(f"Email: {user.email}")
+        self.stdout.write(f"First name: {user.first_name}")
+        self.stdout.write(f"Last name: {user.last_name}")
