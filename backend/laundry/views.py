@@ -107,11 +107,12 @@ class HallUsage(APIView):
                 hour = date.hour + 24
 
             # adds total number of available washers and dryers
-            data[hour] = (
-                data[hour][0] + snapshot.available_washers,
-                data[hour][1] + snapshot.available_dryers,
-                data[hour][2] + 1,
-            )
+            if hour < len(data):
+                data[hour] = (
+                    data[hour][0] + snapshot.available_washers,
+                    data[hour][1] + snapshot.available_dryers,
+                    data[hour][2] + 1,
+                )
 
         content = {
             "hall_name": room.name,
