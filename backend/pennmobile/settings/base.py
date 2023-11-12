@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     "gsr_booking",
     "portal",
     "options.apps.OptionsConfig",
+    "sublet",
+    "phonenumber_field",
 ]
 
 MIDDLEWARE = [

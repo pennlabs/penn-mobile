@@ -1,0 +1,28 @@
+[
+    {
+        "title": "Sublet1",
+        "address": "3465 Sansom Street",
+        "beds": 10,
+        "baths": 2,
+        "description": "Test sublet 1",
+        "external_link": "https://pennlabs.org/",
+        "min_price": 10,
+        "max_price": 500,
+        "expires_at": "3000-02-01T10:48:02-05:00",
+        "start_date": "3000-04-09",
+        "end_date": "3000-08-07"
+    },
+    {
+        "title": "Sublet2",
+        "address": "1234 Broad Street",
+        "beds": 2,
+        "baths": 1,
+        "description": "This is test sublet2!!!",
+        "external_link": "https://www.google.com/maps",
+        "min_price": 0,
+        "max_price": 1000000,
+        "expires_at": "2999-11-28T10:49:10-05:00",
+        "start_date": "3000-12-19",
+        "end_date": "3001-03-07"
+    }
+]

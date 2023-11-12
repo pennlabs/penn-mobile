@@ -34,6 +34,7 @@ django-labs-accounts = "*"
 django-debug-toolbar = "*"
 django-runtime-options = "*"
 django-storages = "*"
+django-phonenumber-field = {extras = ["phonenumberslite"],version = "*"}
 pillow = "*"
 boto3 = "*"
 apns2 = "*"
