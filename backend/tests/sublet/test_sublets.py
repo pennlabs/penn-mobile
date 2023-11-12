@@ -108,6 +108,55 @@ class TestSublets(TestCase):
         self.assertEqual(sublet.beds, 2)
         self.assertEqual(sublet.baths, 1)
 
+    def test_browse_filtered(self):
+        payload = {
+            "title": "Test Sublet2",
+            "address": "1234 Test Street",
+            "beds": 2,
+            "baths": 1,
+            "description": "This is a test sublet.",
+            "external_link": "https://example.com",
+            "min_price": 100,
+            "max_price": 400,
+            "expires_at": "2024-02-01T10:48:02-05:00",
+            "start_date": "2024-04-09",
+            "end_date": "2024-08-07",
+            "amenities": ["Amenity1", "Amenity2"],
+        }
+        response = self.client.post("/sublet/properties/", payload)
+        old_id = json.loads(response.content)["id"]
+        payload = {
+            "title": "Sublet2",
+            "max_price": 450,
+        }
+        response = self.client.get(f"/sublet/properties/", payload)
+        res_json = json.loads(response.content)
+        sublet = res_json[0]
+        self.assertEqual(1, len(res_json))
+        self.assertEqual(old_id, sublet["id"])
+        self.assertEqual("1234 Test Street", sublet["address"])
+        self.assertEqual("Test Sublet2", sublet["title"])
+        response = self.client.get("/sublet/properties/", {"ends_before": "2025-05-01"})
+        old_length = len(json.loads(response.content))
+        payload = {
+            "title": "Test Sublet1",
+            "address": "1234 Test Street",
+            "beds": 2,
+            "baths": 1,
+            "description": "This is a test sublet.",
+            "external_link": "https://example.com",
+            "min_price": 100,
+            "max_price": 500,
+            "expires_at": "2024-02-01T10:48:02-05:00",
+            "start_date": "2024-04-09",
+            "end_date": "5000-08-07",
+            "amenities": ["Amenity1", "Amenity2"],
+        }
+        self.client.post("/sublet/properties/", payload)
+        response = self.client.get("/sublet/properties/", {"ends_before": "2025-05-01"})
+        res_json = json.loads(response.content)
+        self.assertEqual(old_length, len(res_json))
+
     def test_browse_sublet(self):
         # browse single sublet by id
         payload = {

@@ -99,22 +99,29 @@ class Properties(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         """Returns a list of Sublets that match query parameters and user ownership."""
         # Get query parameters from request (e.g., amenities, user_owned)
-        amenities = request.query_params.getlist("amenities")
-        subletter = request.query_params.get(
+        params = request.query_params
+        amenities = params.getlist("amenities")
+        title = params.get("title")
+        address = params.get("address")
+        subletter = params.get(
             "subletter", "false"
         )  # Defaults to False if not specified
-        starts_before = request.query_params.get("starts_before", None)
-        starts_after = request.query_params.get("starts_after", None)
-        ends_before = request.query_params.get("ends_before", None)
-        ends_after = request.query_params.get("ends_after", None)
-        min_price = request.query_params.get("min_price", None)
-        max_price = request.query_params.get("max_price", None)
-        beds = request.query_params.get("beds", None)
-        baths = request.query_params.get("baths", None)
+        starts_before = params.get("starts_before", None)
+        starts_after = params.get("starts_after", None)
+        ends_before = params.get("ends_before", None)
+        ends_after = params.get("ends_after", None)
+        min_price = params.get("min_price", None)
+        max_price = params.get("max_price", None)
+        beds = params.get("beds", None)
+        baths = params.get("baths", None)
 
         queryset = Sublet.objects.all().filter(expires_at__gte=timezone.now())
 
         # Apply filters based on query parameters
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+        if address:
+            queryset = queryset.filter(address__icontains=address)
         if amenities:
             queryset = queryset.filter(amenities__name__in=amenities)
         if subletter.lower() == "true":
