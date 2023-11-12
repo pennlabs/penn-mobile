@@ -65,12 +65,6 @@ class Properties(viewsets.ModelViewSet):
     serializer_class = SubletSerializer
 
     def get_queryset(self):
-        # All Sublets for superusers
-        # if self.request.user.is_superuser:
-        #     return Sublet.objects.all()
-
-        # # All Sublets where expires_at hasn't passed yet for regular users
-        # return Sublet.objects.filter(expires_at__gte=timezone.now())
         return Sublet.objects.all()
 
     # This is currently redundant but will leave for use when implementing image creation
