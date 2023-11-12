@@ -34,8 +34,6 @@ class UserFavorites(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        # print(type(user.favorite_set))
-        # return user.favorite_set
         return user.sublets_favorited
 
 
@@ -45,8 +43,6 @@ class UserOffers(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        # print(type(user.favorite_set))
-        # return user.favorite_set
         return Offer.objects.filter(user=user)
 
 
@@ -65,7 +61,6 @@ class Properties(viewsets.ModelViewSet):
     Delete a Sublet.
     """
 
-    # how to use the sublet owner permission
     permission_classes = [SubletOwnerPermission | IsSuperUser]
     serializer_class = SubletSerializer
 
@@ -78,6 +73,7 @@ class Properties(viewsets.ModelViewSet):
         # return Sublet.objects.filter(expires_at__gte=timezone.now())
         return Sublet.objects.all()
 
+    # This is currently redundant but will leave for use when implementing image creation
     # def create(self, request, *args, **kwargs):
     #     # amenities = request.data.pop("amenities", [])
     #     new_data = request.data
@@ -192,7 +188,6 @@ class Offers(viewsets.ModelViewSet):
         )
 
     def create(self, request, *args, **kwargs):
-        # TODO: Consider preventing user from offering on own post/favorite????
         data = request.data
         request.POST._mutable = True
         if self.get_queryset().filter(user=self.request.user).exists():

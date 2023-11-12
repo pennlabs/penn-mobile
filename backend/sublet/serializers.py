@@ -58,8 +58,6 @@ class SubletImageURLSerializer(serializers.ModelSerializer):
 class SubletSerializer(serializers.ModelSerializer):
     amenities = AmenitySerializer(many=True, required=False)
 
-    # sublettees = OfferSerializer(many=True, required=False, read_only=True)
-
     class Meta:
         model = Sublet
         exclude = ["favorites"]

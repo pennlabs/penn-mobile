@@ -12,7 +12,6 @@ class Offer(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="offers_made")
     sublet = models.ForeignKey("Sublet", on_delete=models.CASCADE, related_name="offers")
-    # TODO: Make sure phone_number is being validated by serializers/frontend
     email = models.EmailField(max_length=255, null=True, blank=True)
     phone_number = PhoneNumberField(null=True, blank=True)
     message = models.CharField(max_length=255, blank=True)
@@ -35,9 +34,7 @@ class Sublet(models.Model):
         User, through=Offer, related_name="sublets_offered", blank=True
     )
     favorites = models.ManyToManyField(User, related_name="sublets_favorited", blank=True)
-    amenities = models.ManyToManyField(
-        Amenity, blank=True
-    )  # TODO: not sure if anything else should go into this as params
+    amenities = models.ManyToManyField(Amenity, blank=True)
 
     title = models.CharField(max_length=255)
     address = models.CharField(max_length=255, null=True, blank=True)
@@ -48,7 +45,6 @@ class Sublet(models.Model):
     min_price = models.IntegerField()
     max_price = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
-    # TODO: would a last updated datetime be helpful?
     expires_at = models.DateTimeField()
     start_date = models.DateField()
     end_date = models.DateField()
@@ -57,8 +53,6 @@ class Sublet(models.Model):
         return f"{self.title} by {self.subletter}"
 
 
-# Not sure how exactly things are handled S3-side, please review
 class SubletImage(models.Model):
-    # Not sure if Cascade deletes the image from servers or just the reference
     sublet = models.ForeignKey(Sublet, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(upload_to="sublet/images")
