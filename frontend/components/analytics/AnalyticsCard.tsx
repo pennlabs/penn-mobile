@@ -15,7 +15,7 @@ import useAnalytics from '@/hooks/useAnalytics'
 // import ViewsComponent from './ViewsComponent'
 import SimplePieChart from './PieChartComponent'
 import VotesBreakdownComponent from './VotesBreakdownComponent'
-import { ButtonIcon, Toggle, ToggleOption } from '@/components/styles/Buttons'
+import { ButtonIcon } from '@/components/styles/Buttons'
 import { PieChartToggle } from './PieChartToggle'
 
 interface iAnalyticsCardWrapperProps {
