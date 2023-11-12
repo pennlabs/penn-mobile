@@ -81,7 +81,7 @@ class RRequest:
                 json=json,
             )
 
-            if response.status_code != 200:
+            if not response.ok:
                 continue
 
             try:
