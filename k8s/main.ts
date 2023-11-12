@@ -9,8 +9,14 @@ export class MyChart extends PennLabsChart {
     super(scope);
 
     const secret = "penn-mobile";
-    const backendImage = "pennlabs/penn-mobile-backend"
-    const frontendImage = "pennlabs/penn-mobile-frontend"
+    const backendImage = "pennlabs/penn-mobile-backend";
+    const frontendImage = "pennlabs/penn-mobile-frontend";
+    const ingressProps = {
+      annotations: {
+        ["ingress.kubernetes.io/protocol"]: "https",
+        ["traefik.ingress.kubernetes.io/router.middlewares"]: "default-redirect-http@kubernetescrd"
+      }
+    };
 
     new RedisApplication(this, 'redis', {});
 
@@ -30,6 +36,7 @@ export class MyChart extends PennLabsChart {
           { name: 'REDIS_URL', value: 'redis://penn-mobile-redis:6379' },
         ],
       },
+      ingressProps,
       djangoSettingsModule: 'pennmobile.settings.production',
     });
 
@@ -51,6 +58,7 @@ export class MyChart extends PennLabsChart {
         { host: 'portal.pennmobile.org', isSubdomain: true, paths: ['/api', '/assets'] },
         { host: 'pennmobile.org', paths: ['/api', '/assets'] },
       ],
+      ingressProps,
       djangoSettingsModule: 'pennmobile.settings.production',
     });
 
@@ -63,6 +71,7 @@ export class MyChart extends PennLabsChart {
         isSubdomain: true,
         paths: ['/']
       },
+      ingressProps,
     });
 
     new CronJob(this, 'get-laundry-snapshots', {
