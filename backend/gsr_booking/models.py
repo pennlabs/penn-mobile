@@ -138,4 +138,6 @@ class GSRBooking(models.Model):
     end = models.DateTimeField(default=timezone.now)
     is_cancelled = models.BooleanField(default=False)
 
-from gsr_booking.api_wrapper import WhartonGSRBooker # import at end to prevent circular dependency
+
+# import at end to prevent circular dependency
+from gsr_booking.api_wrapper import WhartonGSRBooker  # noqa: E402

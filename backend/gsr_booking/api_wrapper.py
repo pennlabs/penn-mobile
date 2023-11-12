@@ -1,20 +1,21 @@
 import datetime
-from enum import Enum
 from abc import ABC, abstractmethod
+from enum import Enum
+from random import randint
 
 import requests
 from bs4 import BeautifulSoup
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.db.models import F, Prefetch, Q, Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.utils.timezone import make_aware
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
-from django.db.models import Q, F, Sum, Prefetch
-from django.db.models.functions import Coalesce
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
+
+from gsr_booking.models import GSR, GroupMembership, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
-from random import randint
-from django.contrib.auth import get_user_model
+
 
 User = get_user_model()
 
@@ -27,6 +28,9 @@ WHARTON_URL = "https://apps.wharton.upenn.edu/gsr/api/v1/"
 LOCATION_BLACKLIST = {3620, 2636, 2611, 3217, 2637, 2634}
 ROOM_BLACKLIST = {7176, 16970, 16998, 17625}
 
+WHARTON_CREDIT_LIMIT = 6
+LIBCAL_CREDIT_LIMIT = 6
+
 
 class CreditType(Enum):
     LIBCAL = "Libcal"
@@ -37,43 +41,41 @@ class CreditType(Enum):
 class APIError(ValueError):
     pass
 
+
 class AbstractBookingWrapper(ABC):
     @abstractmethod
     def book_room(self, rid, start, end, user):
-        pass
-    
+        raise NotImplementedError
+
     @abstractmethod
     def cancel_room(self, booking_id, user):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_availability(self, lid, start, end, user):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_reservations(self, user):
-        pass
+        raise NotImplementedError
 
-    # @abstractmethod
-    # def check_credits(self, user):
-    #     pass
 
 class WhartonBookingWrapper(AbstractBookingWrapper):
-    def request(self, *arg, **kwargs):
+    def request(self, *args, **kwargs):
         """Make a signed request to the libcal API."""
         # add authorization headers
         kwargs["headers"] = {"Authorization": f"Token {settings.WHARTON_TOKEN}"}
-    
+
         try:
-            response = requests.request(*arg, **kwargs)
+            response = requests.request(*args, **kwargs)
         except (ConnectTimeout, ReadTimeout, ConnectionError):
             raise APIError("Wharton: Connection timeout")
 
-        # only wharton students can access these routes
-        if response.status_code == 403 or response.status_code == 401:
-            raise APIError("Wharton: GSR view restricted to Wharton Pennkeys")
+        if not response.ok:
+            raise APIError(f"Wharton: Error {response.status_code} when reserving data")
+
         return response
-    
+
     def book_room(self, rid, start, end, user):
         """Books room if pennkey is valid"""
         payload = {
@@ -87,7 +89,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
         if "error" in response:
             raise APIError("Wharton: " + response["error"])
         return response
-    
+
     def cancel_room(self, booking_id, user):
         """Cancels reservation given booking id"""
         url = f"{WHARTON_URL}{user.username}/reservations/{booking_id}/cancel"
@@ -95,7 +97,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
         if "detail" in response:
             raise APIError("Wharton: " + response["detail"])
         return response
-    
+
     def get_availability(self, lid, start, end, user):
         """Returns a list of rooms and their availabilities"""
         current_time = timezone.localtime()
@@ -108,7 +110,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
         # hits availability route for a given lid and date
         url = f"{WHARTON_URL}{user.username}/availability/{lid}/{str(search_date)}"
         rooms = self.request("GET", url).json()
-        
+
         if "closed" in rooms and rooms["closed"]:
             return []
 
@@ -132,35 +134,36 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
                     valid_slots.append(slot)
                 room["availability"] = valid_slots
         return rooms
-    
+
     def get_reservations(self, user):
         url = f"{WHARTON_URL}{user.username}/reservations"
         bookings = self.request("GET", url).json()["bookings"]
 
-        bookings = [booking for booking in bookings if datetime.datetime.strptime(booking["end"], "%Y-%m-%dT%H:%M:%S%z") >= timezone.localtime()]
-
+        now = timezone.localtime()
         return [
             {
                 "booking_id": str(booking["booking_id"]),
-                "gid": booking["lid"], # their lid is our gid
-                "room_id": booking["rid"], 
+                "gid": booking["lid"],  # their lid is our gid
+                "room_id": booking["rid"],
                 "room_name": booking["room"],
                 "start": booking["start"],
                 "end": booking["end"],
             }
             for booking in bookings
+            if datetime.datetime.strptime(booking["end"], "%Y-%m-%dT%H:%M:%S%z") >= now
         ]
-    
+
     def is_wharton(self, user):
         url = f"{WHARTON_URL}{user.username}/privileges"
         try:
             response = self.request("GET", url)
-            if response.status_code != 200: 
+            if response.status_code != 200:
                 return None
             res_json = response.json()
             return res_json.get("type") == "whartonMBA" or res_json.get("type") == "whartonUGR"
         except APIError:
             return None
+
 
 class LibCalBookingWrapper(AbstractBookingWrapper):
     def __init__(self):
@@ -176,15 +179,15 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
             "client_secret": settings.LIBCAL_SECRET,
             "grant_type": "client_credentials",
         }
-        
+
         response = requests.post(f"{API_URL}/1.1/oauth/token", body).json()
 
         if "error" in response:
             raise APIError(f"LibCal: {response['error']}, {response.get('error_description')}")
         self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
         self.token = response["access_token"]
-    
-    def request(self, *arg, **kwargs):
+
+    def request(self, *args, **kwargs):
         """Make a signed request to the libcal API."""
         self.update_token()
 
@@ -195,12 +198,12 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
             kwargs["headers"].update(headers)
         else:
             kwargs["headers"] = headers
-        
+
         try:
-            return requests.request(*arg, **kwargs)
+            return requests.request(*args, **kwargs)
         except (ConnectTimeout, ReadTimeout, ConnectionError):
             raise APIError("LibCal: Connection timeout")
-        
+
     def book_room(self, rid, start, end, user):
         """Books room if pennkey is valid"""
         # turns parameters into valid json format, then books room
@@ -234,9 +237,7 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
             errors = res_json["errors"]
             if isinstance(errors, list):
                 errors = " ".join(errors)
-            res_json["error"] = BeautifulSoup(
-                errors.replace("\n", " "), "html.parser"
-            ).text.strip()
+            res_json["error"] = BeautifulSoup(errors.replace("\n", " "), "html.parser").text.strip()
             del res_json["errors"]
         if "error" in res_json:
             raise APIError("LibCal: " + res_json["error"])
@@ -247,17 +248,11 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
 
     def cancel_room(self, booking_id, user):
         """Cancels room"""
-        # gsr_booking = get_object_or_404(GSRBooking, booking_id=booking_id)
-        # if gsr_booking:
-        #     if user != gsr_booking.user and user != gsr_booking.reservation.creator:
-        #         raise APIError("Error: Unauthorized: This reservation was booked by someone else.")
-        #     gsr_booking.is_cancelled = True
-        #     gsr_booking.save()
         response = self.request("POST", f"{API_URL}/1.1/space/cancel/{booking_id}").json()
         if "error" in response[0]:
             raise APIError("LibCal: " + response[0]["error"])
         return response
-    
+
     def get_availability(self, gid, start, end, user):
         """Returns a list of rooms and their availabilities"""
 
@@ -274,16 +269,20 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
             start_datetime = None
 
         # filters categories and then gets extra information on each room
-        
+
         response = self.request("GET", f"{API_URL}/1.1/space/category/{gid}").json()
         items = response[0]["items"]
-        items = ",".join([str(x) for x in items])
+        items = ",".join([str(item) for item in items])
         response = self.request("GET", f"{API_URL}/1.1/space/item/{items}?{range_str}")
 
         if response.status_code != 200:
             raise APIError(f"GSR Reserve: Error {response.status_code} when reserving data")
-        
-        rooms = [{"room_name": room['name'], 'id': room['id'], 'availability': room['availability']} for room in response.json() if room["id"] not in ROOM_BLACKLIST]
+
+        rooms = [
+            {"room_name": room["name"], "id": room["id"], "availability": room["availability"]}
+            for room in response.json()
+            if room["id"] not in ROOM_BLACKLIST
+        ]
         for room in rooms:
             # remove extra fields
             if "formid" in room:
@@ -291,15 +290,14 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
             # enforce date filter
             # API returns dates outside of the range, fix this manually
             room["availability"] = [
-                {
-                    'start_time': time['from'],
-                    'end_time': time['to']
-                }
+                {"start_time": time["from"], "end_time": time["to"]}
                 for time in room["availability"]
-                if not start_datetime or datetime.datetime.strptime(time["from"][:-6], "%Y-%m-%dT%H:%M:%S") >= start_datetime
+                if not start_datetime
+                or datetime.datetime.strptime(time["from"][:-6], "%Y-%m-%dT%H:%M:%S")
+                >= start_datetime
             ]
         return rooms
-    
+
     def get_affiliation(self, email):
         """Gets school from email"""
         if "wharton" in email:
@@ -311,17 +309,21 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
         else:
             return "Other"
 
-            
+
 class BookingHandler:
     def __init__(self, WBW=None, LBW=None):
         self.WBW = WBW or WhartonBookingWrapper()
         self.LBW = LBW or LibCalBookingWrapper()
 
-
     def format_members(self, members):
+        PREFIX = "user__"
         return [
-            (User(**{ k[6:]: v for k, v in member.items() if k.startswith('user__') }), # temp user object
-            member['left'])
+            (
+                User(
+                    **{k[len(PREFIX):]: v for k, v in member.items() if k.startswith("user__")}
+                ),  # temp user object
+                member["credits"],
+            )
             for member in members
         ]
 
@@ -329,14 +331,28 @@ class BookingHandler:
         now = timezone.localtime()
         ninty_min = datetime.timedelta(minutes=90)
         zero_min = datetime.timedelta(minutes=0)
-        ret = GroupMembership.objects.filter(group=group, is_wharton=True).values('user').annotate(left=ninty_min-Coalesce(Sum(
-            F('user__gsrbooking__end')-F('user__gsrbooking__start'),
-            filter=Q(user__gsrbooking__gsr__gid=gsr_id) & Q(user__gsrbooking__is_cancelled=False) & Q(user__gsrbooking__end__gte=now)
-        ), zero_min)).filter(Q(left__gt=zero_min)).values('user__id', 'user__username', 'left').order_by('?')[:3]
-        return self.format_members(ret)
 
-        # locally i get this:
-        # SELECT "auth_user"."username", (5400000000 - COALESCE(SUM(django_timestamp_diff("gsr_booking_gsrbooking"."end", "gsr_booking_gsrbooking"."start")) FILTER (WHERE ("gsr_booking_gsr"."gid" = 1 AND NOT "gsr_booking_gsrbooking"."is_cancelled" AND "gsr_booking_gsrbooking"."end" >= 2023-10-22 20:04:00.804135)), 0)) AS "left" FROM "gsr_booking_groupmembership" LEFT OUTER JOIN "auth_user" ON ("gsr_booking_groupmembership"."user_id" = "auth_user"."id") LEFT OUTER JOIN "gsr_booking_gsrbooking" ON ("auth_user"."id" = "gsr_booking_gsrbooking"."user_id") LEFT OUTER JOIN "gsr_booking_gsr" ON ("gsr_booking_gsrbooking"."gsr_id" = "gsr_booking_gsr"."id") WHERE ("gsr_booking_groupmembership"."group_id" = 3 AND "gsr_booking_groupmembership"."is_wharton") GROUP BY "gsr_booking_groupmembership"."user_id", "auth_user"."username" HAVING (5400000000 - COALESCE(SUM(django_timestamp_diff("gsr_booking_gsrbooking"."end", "gsr_booking_gsrbooking"."start")) FILTER (WHERE ("gsr_booking_gsr"."gid" = 1 AND NOT "gsr_booking_gsrbooking"."is_cancelled" AND "gsr_booking_gsrbooking"."end" >= 2023-10-22 20:04:00.804135)), 0)) > 0 ORDER BY RAND() ASC LIMIT 3
+        # Wharton allows 90 minutes at a time
+        ret = (
+            GroupMembership.objects.filter(group=group, is_wharton=True)
+            .values("user")
+            .annotate(
+                credits=ninty_min
+                - Coalesce(
+                    Sum(
+                        F("user__gsrbooking__end") - F("user__gsrbooking__start"),
+                        filter=Q(user__gsrbooking__gsr__gid=gsr_id)
+                        & Q(user__gsrbooking__is_cancelled=False)
+                        & Q(user__gsrbooking__end__gte=now),
+                    ),
+                    zero_min,
+                )
+            )
+            .filter(Q(credits__gt=zero_min))
+            .values("user__id", "user__username", "credits")
+            .order_by("?")[:WHARTON_CREDIT_LIMIT]
+        )
+        return self.format_members(ret)
 
     def get_libcal_members(self, group):
         day_start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -344,40 +360,77 @@ class BookingHandler:
         two_hours = datetime.timedelta(hours=2)
         zero_min = datetime.timedelta(minutes=0)
 
-        ret = GroupMembership.objects.filter(group=group).values('user').annotate(left=two_hours-Coalesce(Sum(
-            F('user__gsrbooking__end')-F('user__gsrbooking__start'),
-            filter=Q(user__gsrbooking__gsr__kind=GSR.KIND_LIBCAL) & Q(user__gsrbooking__is_cancelled=False) & Q(user__gsrbooking__start__gte=day_start) & Q(user__gsrbooking__end__lte=day_end)
-        ), zero_min)).filter(Q(left__gt=zero_min)).values('user__id', 'user__username', 'user__first_name', 'user__last_name', 'user__email', 'left').order_by('?')[:4]
+        # LibCal allows 2 hours a day, needs extra user fields for booking purposes
+        ret = (
+            GroupMembership.objects.filter(group=group)
+            .values("user")
+            .annotate(
+                credits=two_hours
+                - Coalesce(
+                    Sum(
+                        F("user__gsrbooking__end") - F("user__gsrbooking__start"),
+                        filter=Q(user__gsrbooking__gsr__kind=GSR.KIND_LIBCAL)
+                        & Q(user__gsrbooking__is_cancelled=False)
+                        & Q(user__gsrbooking__start__gte=day_start)
+                        & Q(user__gsrbooking__end__lte=day_end),
+                    ),
+                    zero_min,
+                )
+            )
+            .filter(Q(credits__gt=zero_min))
+            .values(
+                "user__id",
+                "user__username",
+                "user__first_name",
+                "user__last_name",
+                "user__email",
+                "credits",
+            )
+            .order_by("?")[:LIBCAL_CREDIT_LIMIT]
+        )
         return self.format_members(ret)
-    
-        # SELECT "auth_user"."username", (7200000000 - COALESCE(SUM(django_timestamp_diff("gsr_booking_gsrbooking"."end", "gsr_booking_gsrbooking"."start")) FILTER (WHERE ("gsr_booking_gsr"."kind" = LIBCAL AND NOT "gsr_booking_gsrbooking"."is_cancelled" AND "gsr_booking_gsrbooking"."start" >= 2023-10-30 04:00:00 AND "gsr_booking_gsrbooking"."end" <= 2023-10-31 04:00:00)), 0)) AS "left" FROM "gsr_booking_groupmembership" LEFT OUTER JOIN "auth_user" ON ("gsr_booking_groupmembership"."user_id" = "auth_user"."id") LEFT OUTER JOIN "gsr_booking_gsrbooking" ON ("auth_user"."id" = "gsr_booking_gsrbooking"."user_id") LEFT OUTER JOIN "gsr_booking_gsr" ON ("gsr_booking_gsrbooking"."gsr_id" = "gsr_booking_gsr"."id") WHERE "gsr_booking_groupmembership"."group_id" = 3 GROUP BY "gsr_booking_groupmembership"."user_id", "auth_user"."username" HAVING (7200000000 - COALESCE(SUM(django_timestamp_diff("gsr_booking_gsrbooking"."end", "gsr_booking_gsrbooking"."start")) FILTER (WHERE ("gsr_booking_gsr"."kind" = LIBCAL AND NOT "gsr_booking_gsrbooking"."is_cancelled" AND "gsr_booking_gsrbooking"."start" >= 2023-10-30 04:00:00 AND "gsr_booking_gsrbooking"."end" <= 2023-10-31 04:00:00)), 0)) > 0 ORDER BY RAND() ASC LIMIT 4
 
     def book_room(self, gid, rid, room_name, start, end, user, group=None):
-        # NOTE when booking with a group, we are only querying our db for existing bookings, so users in a group who book through wharton may screw up the query
+        # NOTE when booking with a group, we are only querying our db for existing bookings,
+        # so users in a group who book through wharton may screw up the query
         gsr = get_object_or_404(GSR, gid=gid)
-        start=datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
-        end=datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
+        start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
+        end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
 
         book_func = self.WBW.book_room if gsr.kind == GSR.KIND_WHARTON else self.LBW.book_room
-        members = [(user, datetime.timedelta(days=99))] if group is None else self.get_wharton_members(group, gsr.id) if gsr.kind == GSR.KIND_WHARTON else self.get_libcal_members(group) 
-        
-        total_time_available = sum([time_available for _, time_available in members], datetime.timedelta(minutes=0))
+        members = (
+            [(user, datetime.timedelta(days=99))]
+            if group is None
+            else self.get_wharton_members(group, gsr.id)
+            if gsr.kind == GSR.KIND_WHARTON
+            else self.get_libcal_members(group)
+        )
+
+        total_time_available = sum(
+            [time_available for _, time_available in members], datetime.timedelta(minutes=0)
+        )
 
         if (end - start) >= total_time_available:
             raise APIError("Error: Not enough credits")
-        
+
         reservation = Reservation.objects.create(
-            start=start, end=end, creator=user, group=Group.objects.get_or_create(name="Me", owner=user)[0] if group is None else group
-              # we should allow None groups and get rid of Me Groups
+            start=start,
+            end=end,
+            creator=user,
+            group=group
         )
 
         curr_start = start
-        try: 
+        try:
             for curr_user, time_available in members:
-                curr_end = curr_start + min(time_available, end-curr_start)
-                
+                curr_end = curr_start + min(time_available, end - curr_start)
 
-                booking_id = book_func(rid, curr_start.strftime("%Y-%m-%dT%H:%M:%S%z"), curr_end.strftime("%Y-%m-%dT%H:%M:%S%z"), curr_user)["booking_id"]
+                booking_id = book_func(
+                    rid,
+                    curr_start.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                    curr_end.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                    curr_user,
+                )["booking_id"]
                 booking = GSRBooking.objects.create(
                     user_id=curr_user.id,
                     booking_id=str(booking_id),
@@ -385,44 +438,53 @@ class BookingHandler:
                     room_id=rid,
                     room_name=room_name,
                     start=curr_start,
-                    end=curr_end
-                )            
+                    end=curr_end,
+                )
                 booking.reservation = reservation
                 booking.save()
 
                 if (curr_start := curr_end) >= end:
                     break
         except APIError as e:
-            raise APIError(f"{str(e)}. Was only able to book {start.strftime('%H:%M')} - {curr_start.strftime('%H:%M')}")
+            raise APIError(
+                f"{str(e)}. Was only able to book {start.strftime('%H:%M')}"
+                f" - {curr_start.strftime('%H:%M')}"
+            )
 
         return reservation
-    
+
     def cancel_room(self, booking_id, user):
-        # I think this should prefetch reservation, reservation__gsrbooking_set, and gsr ?
-        if gsr_booking := GSRBooking.objects.filter(booking_id=booking_id).prefetch_related(Prefetch('reservation__gsrbooking_set'), Prefetch('gsr')).first():
+        if (
+            gsr_booking := GSRBooking.objects.filter(booking_id=booking_id)
+            .prefetch_related(Prefetch("reservation__gsrbooking_set"), Prefetch("gsr"))
+            .first()
+        ):
             if gsr_booking.user != user and gsr_booking.reservation.creator != user:
                 raise APIError("Error: Unauthorized: This reservation was booked by someone else.")
-            
-            (self.WBW.cancel_room if gsr_booking.gsr.kind == GSR.KIND_WHARTON else self.LBW.cancel_room)(booking_id, gsr_booking.user)
-            
+
+            (
+                self.WBW.cancel_room
+                if gsr_booking.gsr.kind == GSR.KIND_WHARTON
+                else self.LBW.cancel_room
+            )(booking_id, gsr_booking.user)
+
             gsr_booking.is_cancelled = True
             gsr_booking.save()
 
             reservation = gsr_booking.reservation
             if all(booking.is_cancelled for booking in reservation.gsrbooking_set.all()):
                 reservation.is_cancelled = True
-                reservation.save()                
+                reservation.save()
         else:
-            try: 
-                self.WBW.cancel_room(booking_id, user)
-            except APIError:
-                try: 
-                    self.LBW.cancel_room(booking_id, user)
+            for service in [self.WBW, self.LBW]:
+                try:
+                    service.cancel_room(booking_id, user)
+                    return
                 except APIError:
-                    raise APIError("Error: Unknown booking id")
-                
-        
-    def get_availability(self, lid, gid, start, end, user, group=None):            
+                    pass
+            raise APIError("Error: Unknown booking id")
+
+    def get_availability(self, lid, gid, start, end, user, group=None):
         gsr = get_object_or_404(GSR, gid=gid)
 
         # select a random user from the group if booking wharton gsr
@@ -430,53 +492,60 @@ class BookingHandler:
             wharton_members = group.memberships.filter(is_wharton=True)
             if (n := wharton_members.count()) == 0:
                 raise APIError("Error: Non Wharton cannot book Wharton GSR")
-            user = wharton_members[randint(0, n-1)].user
-        
-        rooms = self.WBW.get_availability(lid, start, end, user) if gsr.kind == GSR.KIND_WHARTON else self.LBW.get_availability(gid, start, end, user)
+            user = wharton_members[randint(0, n - 1)].user
+
+        rooms = (
+            self.WBW.get_availability(lid, start, end, user)
+            if gsr.kind == GSR.KIND_WHARTON
+            else self.LBW.get_availability(gid, start, end, user)
+        )
         return {"name": gsr.name, "gid": gsr.gid, "rooms": rooms}
 
-    
     def get_reservations(self, user, group=None):
         q = Q(user=user) | Q(reservation__creator=user) if group else Q(user=user)
-        bookings = GSRBooking.objects.filter(q, is_cancelled=False, end__gte=timezone.localtime()).prefetch_related(Prefetch('reservation'))
+        bookings = GSRBooking.objects.filter(
+            q, is_cancelled=False, end__gte=timezone.localtime()
+        ).prefetch_related(Prefetch("reservation"))
 
         if group:
             ret = []
             for booking in bookings:
                 data = GSRBookingSerializer(booking).data
                 if booking.reservation.creator == user:
-                    data['room_name'] = f"[Me] {data['room_name']}"
+                    data["room_name"] = f"[Me] {data['room_name']}"
                 else:
-                    data['room_name'] = f"[{group.name}] {data['room_name']}"
+                    data["room_name"] = f"[{group.name}] {data['room_name']}"
                 ret.append(data)
         else:
             ret = GSRBookingSerializer(bookings, many=True).data
-        
+
         # deal with bookings made directly through wharton (not us)
         try:
-            wharton_bookings = self.WBW.get_reservations(user) # is this bad? 
+            wharton_bookings = self.WBW.get_reservations(user)
         except APIError:
             return ret
-        
-        if len(wharton_bookings) == 0:  
-            return ret
-    
-        booking_ids = set([booking['booking_id'] for booking in ret])
-        wharton_bookings = [booking for booking in wharton_bookings if booking['booking_id'] not in booking_ids]
-        if len(wharton_bookings) == 0:
-            return ret    
 
-        wharton_gsr_datas = {gsr.gid: GSRSerializer(gsr).data for gsr in GSR.objects.filter(kind=GSR.KIND_WHARTON)}        
+        if len(wharton_bookings) == 0:
+            return ret
+
+        booking_ids = set([booking["booking_id"] for booking in ret])
+        wharton_bookings = [
+            booking for booking in wharton_bookings if booking["booking_id"] not in booking_ids
+        ]
+        if len(wharton_bookings) == 0:
+            return ret
+
+        wharton_gsr_datas = {
+            gsr.gid: GSRSerializer(gsr).data for gsr in GSR.objects.filter(kind=GSR.KIND_WHARTON)
+        }
         for booking in wharton_bookings:
-            if booking['booking_id'] in booking_ids:
-                continue
-            booking['gsr'] = wharton_gsr_datas[booking['gid']]
-            del booking['gid']
+            booking["gsr"] = wharton_gsr_datas[booking["gid"]]
+            del booking["gid"]
             ret.append(booking)
         return ret
-    
+
     def check_credits(self, user):
-        pass # seems like its unused on the frontend
+        pass  # seems like its unused on the frontend
 
 
 # initialize singletons
