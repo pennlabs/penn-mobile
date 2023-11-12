@@ -298,7 +298,8 @@ class PostSerializer(serializers.ModelSerializer):
         instance = super().create(validated_data)
 
         # Update target populations
-        # If none of a category was selected, then we will auto-select all populations in that categary
+        # If none of a categories were selected, then we will auto-select
+        # all populations in that categary
         data = self.context["request"].data
         raw_target_populations = self.parse_target_populations(data["target_populations"])
         target_populations = self.update_target_populations(raw_target_populations)
