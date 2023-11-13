@@ -453,7 +453,7 @@ class BookingHandler:
             gsr_booking := GSRBooking.objects.filter(booking_id=booking_id)
             .prefetch_related(Prefetch("reservation__gsrbooking_set"), Prefetch("gsr"))
             .first()
-        ):
+        ) :
             if gsr_booking.user != user and gsr_booking.reservation.creator != user:
                 raise APIError("Error: Unauthorized: This reservation was booked by someone else.")
 
