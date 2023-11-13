@@ -320,7 +320,7 @@ class BookingHandler:
         return [
             (
                 User(
-                    **{k[len(PREFIX):]: v for k, v in member.items() if k.startswith("user__")}
+                    **{k[len(PREFIX) :]: v for k, v in member.items() if k.startswith(PREFIX)}
                 ),  # temp user object
                 member["credits"],
             )
@@ -413,12 +413,7 @@ class BookingHandler:
         if (end - start) >= total_time_available:
             raise APIError("Error: Not enough credits")
 
-        reservation = Reservation.objects.create(
-            start=start,
-            end=end,
-            creator=user,
-            group=group
-        )
+        reservation = Reservation.objects.create(start=start, end=end, creator=user, group=group)
 
         curr_start = start
         try:
@@ -462,11 +457,9 @@ class BookingHandler:
             if gsr_booking.user != user and gsr_booking.reservation.creator != user:
                 raise APIError("Error: Unauthorized: This reservation was booked by someone else.")
 
-            (
-                self.WBW.cancel_room
-                if gsr_booking.gsr.kind == GSR.KIND_WHARTON
-                else self.LBW.cancel_room
-            )(booking_id, gsr_booking.user)
+            (self.WBW if gsr_booking.gsr.kind == GSR.KIND_WHARTON else self.LBW).cancel_room(
+                booking_id, gsr_booking.user
+            )
 
             gsr_booking.is_cancelled = True
             gsr_booking.save()
