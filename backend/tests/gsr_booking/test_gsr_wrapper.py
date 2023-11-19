@@ -97,7 +97,9 @@ class TestBookingWrapper(TestCase):
 
     @mock.patch("gsr_booking.api_wrapper.LibCalBookingWrapper.request", mock_requests_get)
     def test_libcal_availability(self):
-        availability = GSRBooker.get_availability("1086", 1889, "2021-01-07", "2022-01-08", self.user)
+        availability = GSRBooker.get_availability(
+            "1086", 1889, "2021-01-07", "2022-01-08", self.user
+        )
         self.assertIn("name", availability)
         self.assertIn("gid", availability)
         self.assertIn("rooms", availability)
@@ -115,7 +117,7 @@ class TestBookingWrapper(TestCase):
             "2021-12-05T16:30:00-05:00",
             self.user,
         )
-        print('here', book_libcal)
+        print("here", book_libcal)
         self.assertEquals("VP WIC Booth 01", book_libcal.gsrbooking_set.first().room_name)
 
     @mock.patch(
@@ -141,7 +143,6 @@ class TestBookingWrapper(TestCase):
         )
         cancel = GSRBooker.cancel_room("123", self.user)
         self.assertIsNone(cancel)
-
 
     @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
     def test_group_book_wharton(self):
