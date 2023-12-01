@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from dining.api_wrapper import APIError, DiningAPIWrapper
 from dining.models import DiningMenu, Venue
 from dining.serializers import DiningMenuSerializer
+from utils.cache import Cache
 
 
 d = DiningAPIWrapper()
@@ -67,6 +68,7 @@ class Preferences(APIView):
             preferences = request.user.profile.dining_preferences
             # aggregates venues and puts it in form {"venue_id": x, "count": x}
             cached_preferences = preferences.values("venue_id").annotate(count=Count("venue_id"))
+            cache.set(key, cached_preferences, Cache.MONTH)
         return Response({"preferences": cached_preferences})
 
     def post(self, request):
