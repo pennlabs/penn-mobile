@@ -1,9 +1,6 @@
-import requests
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
-from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 
 User = get_user_model()
@@ -46,20 +43,6 @@ class GroupMembership(models.Model):
 
     def check_wharton(self):
         return WhartonGSRBooker.is_wharton(self.user)
-        # not using api_wrapper.py to prevent circular dependency
-        url = f"https://apps.wharton.upenn.edu/gsr/api/v1/{self.user.username}/privileges"
-        try:
-            response = requests.get(
-                url, headers={"Authorization": f"Token {settings.WHARTON_TOKEN}"}
-            )
-
-            if response.status_code != 200:
-                return None
-
-            res_json = response.json()
-            return res_json.get("type") == "whartonMBA" or res_json.get("type") == "whartonUGR"
-        except (ConnectTimeout, ReadTimeout, KeyError, ConnectionError):
-            return None
 
     class Meta:
         verbose_name = "Group Membership"

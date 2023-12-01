@@ -5,6 +5,7 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from gsr_booking.api_wrapper import GSRBooker, WhartonGSRBooker
@@ -117,7 +118,6 @@ class TestBookingWrapper(TestCase):
             "2021-12-05T16:30:00-05:00",
             self.user,
         )
-        print("here", book_libcal)
         self.assertEquals("VP WIC Booth 01", book_libcal.gsrbooking_set.first().room_name)
 
     @mock.patch(
@@ -184,12 +184,15 @@ class TestBookingWrapper(TestCase):
         # add user to the group
         GroupMembership.objects.create(user=self.user, group=self.group, accepted=True)
 
+        start = timezone.localtime()
+        end = start + timedelta(hours=2)
+
         reservation = GSRBooker.book_room(
             1889,
             7192,
             "VP WIC Booth 01",
-            "2021-12-05T16:00:00-05:00",
-            "2021-12-05T18:00:00-05:00",
+            start.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            end.strftime("%Y-%m-%dT%H:%M:%S%z"),
             self.user,
             self.group,
         )
@@ -203,3 +206,22 @@ class TestBookingWrapper(TestCase):
         self.assertEqual(total_time, timedelta(hours=2))
         # check reservation exists
         self.assertIsNotNone(Reservation.objects.get(pk=reservation.id))
+
+        res = GSRBooker.get_reservations(self.user, self.group)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["room_name"], "[Me] VP WIC Booth 01")
+
+    @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
+    def test_group_wharton_availability(self):
+        GroupMembership.objects.create(
+            user=self.user, group=self.group, accepted=True, is_wharton=True
+        )
+        availability = GSRBooker.get_availability(
+            "JMHH", 1, "2021-01-07", "2022-01-08", self.group_user, self.group
+        )
+        self.assertIn("name", availability)
+        self.assertIn("gid", availability)
+        self.assertIn("rooms", availability)
+        self.assertIn("room_name", availability["rooms"][0])
+        self.assertIn("id", availability["rooms"][0])
+        self.assertIn("availability", availability["rooms"][0])
