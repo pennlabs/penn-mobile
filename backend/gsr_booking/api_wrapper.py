@@ -45,19 +45,19 @@ class APIError(ValueError):
 class AbstractBookingWrapper(ABC):
     @abstractmethod
     def book_room(self, rid, start, end, user):
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def cancel_room(self, booking_id, user):
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def get_availability(self, lid, start, end, user):
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def get_reservations(self, user):
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
 
 class WhartonBookingWrapper(AbstractBookingWrapper):
