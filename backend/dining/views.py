@@ -1,5 +1,6 @@
 import datetime
 
+from django.core.cache import cache
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -12,6 +13,7 @@ from rest_framework.views import APIView
 from dining.api_wrapper import APIError, DiningAPIWrapper
 from dining.models import DiningMenu, Venue
 from dining.serializers import DiningMenuSerializer
+from utils.cache import Cache
 
 
 d = DiningAPIWrapper()
@@ -57,30 +59,31 @@ class Preferences(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    key = "dining_preferences:{user_id}"
 
     def get(self, request):
-
-        preferences = request.user.profile.dining_preferences
-
-        # aggregates venues and puts it in form {"venue_id": x, "count": x}
-        return Response(
-            {"preferences": preferences.values("venue_id").annotate(count=Count("venue_id"))}
-        )
+        key = self.key.format(user_id=request.user.id)
+        cached_preferences = cache.get(key)
+        if cached_preferences is None:
+            preferences = request.user.profile.dining_preferences
+            # aggregates venues and puts it in form {"venue_id": x, "count": x}
+            cached_preferences = preferences.values("venue_id").annotate(count=Count("venue_id"))
+            cache.set(key, cached_preferences, Cache.MONTH)
+        return Response({"preferences": cached_preferences})
 
     def post(self, request):
-
+        key = self.key.format(user_id=request.user.id)
         profile = request.user.profile
-
         preferences = profile.dining_preferences
+
+        venue_ids = set(request.data["venues"])
+        venues = [get_object_or_404(Venue, venue_id=int(venue_id)) for venue_id in venue_ids]
 
         # clears all previous preferences associated with the profile
         preferences.clear()
+        preferences.add(*venues)
 
-        venue_ids = request.data["venues"]
-
-        for venue_id in venue_ids:
-            venue = get_object_or_404(Venue, venue_id=int(venue_id))
-            # adds all of the preferences given by the request
-            preferences.add(venue)
+        # clear cache
+        cache.delete(key)
 
         return Response({"success": True, "error": None})

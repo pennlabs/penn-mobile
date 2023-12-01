@@ -221,7 +221,7 @@ class TestOffers(TestCase):
         }
         self.client.post(prop_url, payload)
         self.assertEqual(self.client.post(prop_url, payload).status_code, 406)
-        offer = Offer.objects.get(pk=1)
+        offer = Offer.objects.all().last()
         offer_list = [offer.email, offer.phone_number, offer.message, offer.user, offer.sublet]
         payload_list = [
             payload["email"],
