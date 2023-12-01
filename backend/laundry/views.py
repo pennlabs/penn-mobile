@@ -19,7 +19,7 @@ from utils.cache import Cache
 class Ids(APIView):
     """
     GET: returns list of all hall_ids
-    """
+    ""
 
     def get(self, request):
         return Response(LaundryRoomSerializer(LaundryRoom.objects.all(), many=True).data)
