@@ -74,7 +74,7 @@ class Preferences(APIView):
         profile = request.user.profile
         preferences = profile.dining_preferences
 
-        venue_ids = request.data["venues"]
+        venue_ids = set(request.data["venues"])
         venues = [get_object_or_404(Venue, venue_id=int(venue_id)) for venue_id in venue_ids]
 
         # clears all previous preferences associated with the profile
