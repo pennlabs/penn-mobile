@@ -537,8 +537,9 @@ class BookingHandler:
             ret.append(booking)
         return ret
 
-    def check_credits(self, user):
-        pass  # seems like its unused on the frontend
+    # seems like its unused on the frontend
+    # def check_credits(self, user):
+    #     pass
 
 
 # initialize singletons
