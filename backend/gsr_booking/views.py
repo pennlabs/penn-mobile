@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
@@ -18,6 +19,7 @@ from gsr_booking.serializers import (
     GSRSerializer,
     UserSerializer,
 )
+from utils.cache import Cache
 
 
 User = get_user_model()
