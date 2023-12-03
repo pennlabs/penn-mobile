@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from gsr_booking.api_wrapper import GSRBooker, WhartonGSRBooker
+from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 
 
@@ -211,8 +211,20 @@ class TestBookingWrapper(TestCase):
         self.assertEqual(len(res), 1)
         self.assertEqual(res[0]["room_name"], "[Me] VP WIC Booth 01")
 
+        credit_owner = reservation.gsrbooking_set.first().user
+        res = GSRBooker.get_reservations(credit_owner, self.group)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(
+            res[0]["room_name"],
+            f"{'[Penn Labs]' if credit_owner != self.user else '[Me]'} VP WIC Booth 01",
+        )
+
     @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
     def test_group_wharton_availability(self):
+        with self.assertRaises(APIError):
+            GSRBooker.get_availability(
+                "JMHH", 1, "2021-01-07", "2022-01-08", self.group_user, self.group
+            )
         GroupMembership.objects.create(
             user=self.user, group=self.group, accepted=True, is_wharton=True
         )
