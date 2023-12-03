@@ -211,9 +211,13 @@ class TestBookingWrapper(TestCase):
         self.assertEqual(len(res), 1)
         self.assertEqual(res[0]["room_name"], "[Me] VP WIC Booth 01")
 
-        res = GSRBooker.get_reservations(self.group_user, self.group)
+        credit_owner = reservation.gsrbooking_set.first().user
+        res = GSRBooker.get_reservations(credit_owner, self.group)
         self.assertEqual(len(res), 1)
-        self.assertEqual(res[0]["room_name"], "[Penn Labs] VP WIC Booth 01")
+        self.assertEqual(
+            res[0]["room_name"],
+            f"{'[Penn Labs]' if credit_owner != self.user else '[Me]'} VP WIC Booth 01",
+        )
 
     @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
     def test_group_wharton_availability(self):
