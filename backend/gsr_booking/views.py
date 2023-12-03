@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
-from django.core.cache import cache
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, viewsets
@@ -9,7 +9,6 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from utils.cache import Cache
 
 from gsr_booking.api_wrapper import APIError, BookingWrapper
 from gsr_booking.group_logic import GroupBook
@@ -20,6 +19,7 @@ from gsr_booking.serializers import (
     GSRSerializer,
     UserSerializer,
 )
+from utils.cache import Cache
 
 
 User = get_user_model()
@@ -175,19 +175,17 @@ class Locations(generics.ListAPIView):
     """Lists all available locations to book from"""
 
     serializer_class = GSRSerializer
-    
+    key = "gsrlocations"
+
     def list(self, *args, **kwargs):
         """
         Cache GSR locations
         """
-        key = "gsrlocations"
+        cached_locations = cache.get(self.key)
 
-        cached_locations = cache.get(key)
-        
         if cached_locations is None:
-            locations = GSR.objects.all()
-            # cached_locations = locations.values_list("lid", flat=True)
-            cache.set(key, cached_locations, Cache.MONTH)
+            cached_locations = GSR.objects.all()
+            cache.set(self.key, cached_locations, Cache.MONTH)
 
         return Response(cached_locations)
 
