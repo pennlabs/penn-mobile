@@ -1,5 +1,7 @@
 from django.urls import include, path
+from django.views.decorators.cache import cache_page
 from rest_framework import routers
+from utils.cache import Cache
 
 from gsr_booking.views import (
     Availability,
@@ -23,7 +25,8 @@ router.register(r"groups", GroupViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("locations/", Locations.as_view(), name="locations"),
+    path("locations/", Locations.as_view(),
+         cache_page(Locations.as_view()), name="locations"),
     path("recent/", RecentGSRs.as_view(), name="recent-gsrs"),
     path("wharton/", CheckWharton.as_view(), name="is-wharton"),
     path("availability/<lid>/<gid>", Availability.as_view(), name="availability"),
