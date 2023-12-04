@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework import routers
 
-from sublet.views import Amenities, Favorites, Offers, Properties, UserFavorites, UserOffers, Images
+from sublet.views import Amenities, Favorites, Images, Offers, Properties, UserFavorites, UserOffers
 
 
 app_name = "sublet"
