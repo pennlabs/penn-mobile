@@ -74,9 +74,7 @@ class Properties(viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get_serializer_class(self):
-        if self.action == "retrieve":
-            return SubletSerializerRead
-        return SubletSerializer
+        return SubletSerializerRead if self.action == "retrieve" else SubletSerializer
 
     def get_queryset(self):
         return Sublet.objects.all()
@@ -184,18 +182,20 @@ class Images(generics.CreateAPIView):
     )
 
     def get_queryset(self, *args, **kwargs):
-        get_object_or_404(Sublet, id=int(self.kwargs["sublet_id"]))
-        return SubletImage.objects.filter(sublet_id=int(self.kwargs["sublet_id"]))
+        sublet = get_object_or_404(Sublet, id=int(self.kwargs["sublet_id"]))
+        return SubletImage.objects.filter(sublet=sublet)
 
     # takes an image multipart form data and creates a new image object
     def post(self, request, *args, **kwargs):
         images = request.data.getlist("images")
         sublet_id = int(self.kwargs["sublet_id"])
         self.get_queryset()  # check if sublet exists
+        img_serializers = []
         for img in images:
             img_serializer = self.get_serializer(data={"sublet": sublet_id, "image": img})
             img_serializer.is_valid(raise_exception=True)
-            img_serializer.save()
+            img_serializers.append(img_serializer)
+        [img_serializer.save() for img_serializer in img_serializers]
         return Response(status=status.HTTP_201_CREATED)
 
 

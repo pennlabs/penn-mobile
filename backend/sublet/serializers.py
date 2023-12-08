@@ -85,7 +85,7 @@ class SubletSerializer(serializers.ModelSerializer):
             "end_date",
             "expires_at",
             "images",
-            "delete_images",
+            "delete_images_ids",
         ]
 
     def parse_amenities(self, raw_amenities):
@@ -106,38 +106,35 @@ class SubletSerializer(serializers.ModelSerializer):
         instance.amenities.set(amenities)
         instance.save()
         # TODO: make this atomic
+        img_serializers = []
         for img in images:
             img_serializer = SubletImageSerializer(data={"sublet": instance.id, "image": img})
             img_serializer.is_valid(raise_exception=True)
-            img_serializer.save()
+            img_serializers.append(img_serializer)
+        [img_serializer.save() for img_serializer in img_serializers]
         return instance
 
     # delete_images is a list of image ids to delete
     def update(self, instance, validated_data):
         # Check if the user is the subletter before allowing the update
-        # This is probably redundant given permissions classes?
-        # if (
-        #     self.context["request"].user == instance.subletter
-        #     or self.context["request"].user.is_superuser
-        # ):
-        amenities_data = self.context["request"].data
-        if amenities_data.get("amenities") is not None:
-            amenities = self.parse_amenities(amenities_data["amenities"])
-            instance.amenities.set(amenities)
-        validated_data.pop("amenities", None)
-        delete_images = validated_data.pop("delete_images")
-        instance = super().update(instance, validated_data)
-        instance.save()
-        existing_images = Sublet.objects.get(id=instance.id).images.all()
-        print(existing_images)
-        for img in delete_images:
-            get_object_or_404(existing_images, id=img)
-        # this should probably be atomic
-        for img in delete_images:
-            existing_images.get(id=img).delete()
-        # else:
-        #     raise serializers.ValidationError("You do not have permission to update this sublet.")
-        return instance
+        if (
+            self.context["request"].user == instance.subletter
+            or self.context["request"].user.is_superuser
+        ):
+            amenities_data = self.context["request"].data
+            if amenities_data.get("amenities") is not None:
+                amenities = self.parse_amenities(amenities_data["amenities"])
+                instance.amenities.set(amenities)
+            validated_data.pop("amenities", None)
+            delete_images_ids = validated_data.pop("delete_images_ids")
+            instance = super().update(instance, validated_data)
+            instance.save()
+            existing_images = Sublet.objects.get(id=instance.id).images.all()
+            [get_object_or_404(existing_images, id=img) for img in delete_images_ids]
+            existing_images.filter(id__in=delete_images_ids).delete()
+            return instance
+        else:
+            raise serializers.ValidationError("You do not have permission to update this sublet.")
 
     def destroy(self, instance):
         # Check if the user is the subletter before allowing the delete
