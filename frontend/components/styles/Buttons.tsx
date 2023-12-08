@@ -5,7 +5,7 @@ import { PageType } from '@/utils/types'
 import { InlineText } from '@/components/styles/Text'
 
 interface iButtonProps {
-  color: string
+  color?: string
   hide?: boolean
   round?: boolean
 }

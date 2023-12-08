@@ -1,6 +1,6 @@
 import React from 'react'
 
-const containerStyle = { display: 'flex', flexDirection: 'column'}
+const containerStyle = { display: 'flex', flexDirection: 'column' }
 
 const cardStyle = {
   display: 'flex',
@@ -42,16 +42,16 @@ const totalViewsStyle = {
 
 export default function ViewsComponent() {
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <div style={centerLineStyle} />
-        <div style={columnStyle}>
-          <div style={numberStyle}>32</div>
-          <div style={totalViewsStyle}>total views</div>
+    <div style={containerStyle as React.CSSProperties}>
+      <div style={cardStyle as React.CSSProperties}>
+        <div style={centerLineStyle as React.CSSProperties} />
+        <div style={columnStyle as React.CSSProperties}>
+          <div style={numberStyle as React.CSSProperties}>32</div>
+          <div style={totalViewsStyle as React.CSSProperties}>total views</div>
         </div>
-        <div style={columnStyle}>
-          <div style={numberStyle}>10</div>
-          <div style={totalViewsStyle}>unique views</div>
+        <div style={columnStyle as React.CSSProperties}>
+          <div style={numberStyle as React.CSSProperties}>10</div>
+          <div style={totalViewsStyle as React.CSSProperties}>unique views</div>
         </div>
       </div>
     </div>
