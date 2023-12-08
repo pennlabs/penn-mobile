@@ -97,7 +97,6 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
 
   const onSave = async () => {
     const form_data = new FormData()
-    console.log(state)
     if (isPost(state)) {
       Object.entries(state).forEach(([key, value]) => {
         form_data.append(key, value)
