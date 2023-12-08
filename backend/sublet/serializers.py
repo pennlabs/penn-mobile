@@ -99,7 +99,7 @@ class SubletSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["subletter"] = self.context["request"].user
-        images = validated_data.pop("images")
+        images = validated_data.pop("images") if "images" in validated_data else []
         instance = super().create(validated_data)
         data = self.context["request"].POST
         amenities = self.parse_amenities(data.getlist("amenities"))
@@ -126,7 +126,11 @@ class SubletSerializer(serializers.ModelSerializer):
                 amenities = self.parse_amenities(amenities_data["amenities"])
                 instance.amenities.set(amenities)
             validated_data.pop("amenities", None)
-            delete_images_ids = validated_data.pop("delete_images_ids")
+            delete_images_ids = (
+                validated_data.pop("delete_images_ids")
+                if "delete_images_ids" in validated_data
+                else []
+            )
             instance = super().update(instance, validated_data)
             instance.save()
             existing_images = Sublet.objects.get(id=instance.id).images.all()

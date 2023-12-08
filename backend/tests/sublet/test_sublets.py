@@ -44,12 +44,26 @@ class TestSublets(TestCase):
             "end_date": "2024-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
-
         response = self.client.post("/sublet/properties/", payload)
         res_json = json.loads(response.content)
-        self.assertEqual(payload["beds"], res_json["beds"])
-        self.assertEqual(payload["title"], res_json["title"])
-        self.assertIn("created_at", res_json)
+        match_keys = [
+            "title",
+            "address",
+            "beds",
+            "baths",
+            "description",
+            "external_link",
+            "min_price",
+            "max_price",
+            "expires_at",
+            "start_date",
+            "end_date",
+        ]
+        [self.assertEqual(payload[key], res_json[key]) for key in match_keys]
+        self.assertIn("id", res_json)
+        self.assertEqual(self.user.id, res_json["subletter"])
+        self.assertEqual(2, len(res_json["amenities"]))
+        self.assertIn("images", res_json)
 
     def test_update_sublet(self):
         # Create a sublet to be updated
