@@ -62,7 +62,7 @@ class SubletSerializer(serializers.ModelSerializer):
         required=False,
         write_only=True,
     )
-    delete_images = serializers.ListField(
+    delete_images_ids = serializers.ListField(
         child=serializers.IntegerField(), required=False, write_only=True
     )
 
