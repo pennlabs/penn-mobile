@@ -92,21 +92,21 @@ class TestGSRFunctions(TestCase):
         self.assertIn("image_url", res_json[0])
         self.assertNotEqual(res_json[0]["id"], res_json[1]["id"])
 
-    @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.is_wharton", is_wharton_false)
+    @mock.patch("gsr_booking.views.BW.is_wharton", is_wharton_false)
     def test_get_wharton_false(self):
         response = self.client.get(reverse("is-wharton"))
         res_json = json.loads(response.content)
         self.assertEqual(1, len(res_json))
         self.assertFalse(res_json["is_wharton"])
 
-    @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.is_wharton", is_wharton_true)
+    @mock.patch("gsr_booking.views.BW.is_wharton", is_wharton_true)
     def test_get_wharton_true(self):
         response = self.client.get(reverse("is-wharton"))
         res_json = json.loads(response.content)
         self.assertEqual(1, len(res_json))
         self.assertTrue(res_json["is_wharton"])
 
-    @mock.patch("gsr_booking.api_wrapper.BookingHandler.get_availability", libcal_availability)
+    @mock.patch("gsr_booking.views.BW.get_availability", libcal_availability)
     def test_availability_libcal(self):
         response = self.client.get(reverse("availability", args=["1086", "1889"]))
         res_json = json.loads(response.content)
@@ -120,7 +120,7 @@ class TestGSRFunctions(TestCase):
             self.assertIn("id", room)
             self.assertIn("availability", room)
 
-    @mock.patch("gsr_booking.api_wrapper.BookingHandler.get_availability", wharton_availability)
+    @mock.patch("gsr_booking.views.BW.get_availability", wharton_availability)
     def test_availability_wharton(self):
         response = self.client.get(reverse("availability", args=["JMHH", "1"]))
         res_json = json.loads(response.content)
@@ -134,7 +134,7 @@ class TestGSRFunctions(TestCase):
             self.assertIn("id", room)
             self.assertIn("availability", room)
 
-    @mock.patch("gsr_booking.api_wrapper.BookingHandler.book_room", book_cancel_room)
+    @mock.patch("gsr_booking.views.BW.book_room", book_cancel_room)
     def test_book_libcal(self):
         payload = {
             "start_time": "2021-11-21T18:30:00-05:00",
@@ -150,7 +150,7 @@ class TestGSRFunctions(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertEqual("success", res_json["detail"])
 
-    @mock.patch("gsr_booking.api_wrapper.BookingHandler.book_room", book_cancel_room)
+    @mock.patch("gsr_booking.views.BW.book_room", book_cancel_room)
     def test_book_wharton(self):
         payload = {
             "start_time": "2021-11-21T18:30:00-05:00",
@@ -166,7 +166,7 @@ class TestGSRFunctions(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertEqual("success", res_json["detail"])
 
-    @mock.patch("gsr_booking.api_wrapper.BookingHandler.cancel_room", book_cancel_room)
+    @mock.patch("gsr_booking.views.BW.cancel_room", book_cancel_room)
     def test_cancel_room(self):
         payload = {"booking_id": "booking id"}
         response = self.client.post(
@@ -176,7 +176,7 @@ class TestGSRFunctions(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertEqual("success", res_json["detail"])
 
-    @mock.patch("gsr_booking.api_wrapper.BookingHandler.get_reservations", reservations)
+    @mock.patch("gsr_booking.views.BW.get_reservations", reservations)
     def test_reservations(self):
         response = self.client.get(reverse("reservations"))
         res_json = json.loads(response.content)
