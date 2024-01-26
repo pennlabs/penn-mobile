@@ -190,7 +190,7 @@ class CheckWharton(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response({"is_wharton": True or WhartonGSRBooker.is_wharton(request.user)})
+        return Response({"is_wharton": request.user.booking_groups.filter(name="Penn Labs").exists() or WhartonGSRBooker.is_wharton(request.user)})
 
 
 class Availability(APIView):
