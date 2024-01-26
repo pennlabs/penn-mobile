@@ -5,10 +5,10 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 
-from gsr_booking.api_wrapper import BookingWrapper
-from gsr_booking.group_logic import GroupBook
+from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 
 
@@ -51,11 +51,6 @@ def mock_requests_get(obj, *args, **kwargs):
         return Mock(json.load(data), 200)
 
 
-def mock_check_credits(self, user):
-    wharton_lids = GSR.objects.filter(kind=GSR.KIND_WHARTON).values_list("lid", flat=True)
-    return {lid: 90 for lid in wharton_lids}
-
-
 class TestBookingWrapper(TestCase):
     def setUp(self):
         call_command("load_gsrs")
@@ -65,17 +60,15 @@ class TestBookingWrapper(TestCase):
         )
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
-        self.bw = BookingWrapper()
-        self.gb = GroupBook()
         self.group = Group.objects.create(owner=self.group_user, name="Penn Labs", color="blue")
 
-    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
+    @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
     def test_is_wharton(self):
-        self.assertFalse(self.bw.is_wharton(self.user))
+        self.assertFalse(WhartonGSRBooker.is_wharton(self.user))
 
-    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
+    @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
     def test_wharton_availability(self):
-        availability = self.bw.get_availability("JMHH", 1, "2021-01-07", "2022-01-08", self.user)
+        availability = GSRBooker.get_availability("JMHH", 1, "2021-01-07", "2022-01-08", self.user)
         self.assertIn("name", availability)
         self.assertIn("gid", availability)
         self.assertIn("rooms", availability)
@@ -83,29 +76,31 @@ class TestBookingWrapper(TestCase):
         self.assertIn("id", availability["rooms"][0])
         self.assertIn("availability", availability["rooms"][0])
 
-    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.check_credits", mock_check_credits)
-    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
+    # @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.check_credits", mock_check_credits)
+    @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
     def test_book_wharton(self):
-        book_wharton = self.bw.book_room(
+        book_wharton = GSRBooker.book_room(
             1, 94, "241", "2021-12-05T16:00:00-05:00", "2021-12-05T16:30:00-05:00", self.user
         )
-        self.assertEquals("241", book_wharton.room_name)
+        self.assertEquals("241", book_wharton.gsrbooking_set.first().room_name)
 
-    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
+    @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
     def test_wharton_reservations(self):
-        reservations = self.bw.WLW.get_reservations(self.user)
+        reservations = WhartonGSRBooker.get_reservations(self.user)
         self.assertTrue(isinstance(reservations, list))
         self.assertIn("booking_id", reservations[0])
-        self.assertIn("gsr", reservations[0])
+        self.assertIn("gid", reservations[0])
 
-    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
+    @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
     def test_cancel_wharton(self):
-        cancel = self.bw.cancel_room("987654", self.user)
+        cancel = GSRBooker.cancel_room("987654", self.user)
         self.assertIsNone(cancel)
 
-    @mock.patch("gsr_booking.api_wrapper.LibCalWrapper.request", mock_requests_get)
+    @mock.patch("gsr_booking.api_wrapper.LibCalBookingWrapper.request", mock_requests_get)
     def test_libcal_availability(self):
-        availability = self.bw.get_availability("1086", 1889, "2021-01-07", "2022-01-08", self.user)
+        availability = GSRBooker.get_availability(
+            "1086", 1889, "2021-01-07", "2022-01-08", self.user
+        )
         self.assertIn("name", availability)
         self.assertIn("gid", availability)
         self.assertIn("rooms", availability)
@@ -113,9 +108,9 @@ class TestBookingWrapper(TestCase):
         self.assertIn("id", availability["rooms"][0])
         self.assertIn("availability", availability["rooms"][0])
 
-    @mock.patch("gsr_booking.api_wrapper.LibCalWrapper.request", mock_requests_get)
+    @mock.patch("gsr_booking.api_wrapper.LibCalBookingWrapper.request", mock_requests_get)
     def test_book_libcal(self):
-        book_libcal = self.bw.book_room(
+        book_libcal = GSRBooker.book_room(
             1889,
             7192,
             "VP WIC Booth 01",
@@ -123,18 +118,18 @@ class TestBookingWrapper(TestCase):
             "2021-12-05T16:30:00-05:00",
             self.user,
         )
-        self.assertEquals("VP WIC Booth 01", book_libcal.room_name)
+        self.assertEquals("VP WIC Booth 01", book_libcal.gsrbooking_set.first().room_name)
 
     @mock.patch(
-        "gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get
+        "gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get
     )  # purposefully wharton request here
     def test_libcal_reservations(self):
-        reservations = self.bw.get_reservations(self.user)
+        reservations = GSRBooker.get_reservations(self.user)
         self.assertTrue(isinstance(reservations, list))
         self.assertIn("booking_id", reservations[0])
         self.assertIn("gsr", reservations[0])
 
-    @mock.patch("gsr_booking.api_wrapper.LibCalWrapper.request", mock_requests_get)
+    @mock.patch("gsr_booking.api_wrapper.LibCalBookingWrapper.request", mock_requests_get)
     def test_cancel_libcal(self):
         group = Group.objects.create(owner=self.user)
         reservation = Reservation.objects.create(creator=self.user, group=group)
@@ -142,17 +137,14 @@ class TestBookingWrapper(TestCase):
             reservation=reservation,
             user=self.user,
             booking_id="123",
-            gsr=GSR.objects.all().first(),
+            gsr=GSR.objects.filter(kind="LIBCAL").first(),
             room_id=1,
             room_name="room",
         )
-        cancel = self.bw.cancel_room("123", self.user)
+        cancel = GSRBooker.cancel_room("123", self.user)
         self.assertIsNone(cancel)
 
-    @mock.patch(
-        "gsr_booking.api_wrapper.WhartonLibWrapper.check_credits", mock_check_credits
-    )  # purposefully use mock_check_credits to mock being wharton user with credits
-    @mock.patch("gsr_booking.api_wrapper.WhartonLibWrapper.request", mock_requests_get)
+    @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
     def test_group_book_wharton(self):
         # make sure group_user is treated as a wharton user so they
         # are returned in list of wharton users in gb.book_room
@@ -166,7 +158,7 @@ class TestBookingWrapper(TestCase):
         )
 
         # reservation under user with group
-        reservation = self.gb.book_room(
+        reservation = GSRBooker.book_room(
             1,
             94,
             "241",
@@ -177,27 +169,30 @@ class TestBookingWrapper(TestCase):
         )
 
         bookings = list(reservation.gsrbooking_set.all())
-        self.assertEqual(len(bookings), 4)
         bookings.sort(key=lambda x: x.start)
         # check bookings cover entire range and enough time
         for i in range(len(bookings) - 1):
             self.assertEqual(bookings[i].end, bookings[i + 1].start)
-        for booking in bookings:
-            self.assertEqual(booking.end - booking.start, timedelta(minutes=30))
+        total_time = sum([booking.end - booking.start for booking in bookings], timedelta())
+        self.assertEqual(total_time, timedelta(hours=2))
+
         # check reservation exists
         self.assertIsNotNone(Reservation.objects.get(pk=reservation.id))
 
-    @mock.patch("gsr_booking.api_wrapper.LibCalWrapper.request", mock_requests_get)
+    @mock.patch("gsr_booking.api_wrapper.LibCalBookingWrapper.request", mock_requests_get)
     def test_group_book_libcal(self):
         # add user to the group
         GroupMembership.objects.create(user=self.user, group=self.group, accepted=True)
 
-        reservation = self.gb.book_room(
+        start = timezone.localtime()
+        end = start + timedelta(hours=2)
+
+        reservation = GSRBooker.book_room(
             1889,
             7192,
             "VP WIC Booth 01",
-            "2021-12-05T16:00:00-05:00",
-            "2021-12-05T18:00:00-05:00",
+            start.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            end.strftime("%Y-%m-%dT%H:%M:%S%z"),
             self.user,
             self.group,
         )
@@ -207,7 +202,38 @@ class TestBookingWrapper(TestCase):
         # check bookings cover entire range and enough time
         for i in range(len(bookings) - 1):
             self.assertEqual(bookings[i].end, bookings[i + 1].start)
-        for booking in bookings:
-            self.assertEqual(booking.end - booking.start, timedelta(minutes=30))
+        total_time = sum([booking.end - booking.start for booking in bookings], timedelta())
+        self.assertEqual(total_time, timedelta(hours=2))
         # check reservation exists
         self.assertIsNotNone(Reservation.objects.get(pk=reservation.id))
+
+        res = GSRBooker.get_reservations(self.user, self.group)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["room_name"], "[Me] VP WIC Booth 01")
+
+        credit_owner = reservation.gsrbooking_set.first().user
+        res = GSRBooker.get_reservations(credit_owner, self.group)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(
+            res[0]["room_name"],
+            f"{'[Penn Labs]' if credit_owner != self.user else '[Me]'} VP WIC Booth 01",
+        )
+
+    @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.request", mock_requests_get)
+    def test_group_wharton_availability(self):
+        with self.assertRaises(APIError):
+            GSRBooker.get_availability(
+                "JMHH", 1, "2021-01-07", "2022-01-08", self.group_user, self.group
+            )
+        GroupMembership.objects.create(
+            user=self.user, group=self.group, accepted=True, is_wharton=True
+        )
+        availability = GSRBooker.get_availability(
+            "JMHH", 1, "2021-01-07", "2022-01-08", self.group_user, self.group
+        )
+        self.assertIn("name", availability)
+        self.assertIn("gid", availability)
+        self.assertIn("rooms", availability)
+        self.assertIn("room_name", availability["rooms"][0])
+        self.assertIn("id", availability["rooms"][0])
+        self.assertIn("availability", availability["rooms"][0])

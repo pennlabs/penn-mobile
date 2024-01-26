@@ -7,7 +7,6 @@ from gsr_booking.views import (
     BookRoom,
     CancelRoom,
     CheckWharton,
-    CreditsView,
     GroupMembershipViewSet,
     GroupViewSet,
     Locations,
@@ -33,5 +32,4 @@ urlpatterns = [
     path("book/", BookRoom.as_view(), name="book"),
     path("cancel/", CancelRoom.as_view(), name="cancel"),
     path("reservations/", ReservationsView.as_view(), name="reservations"),
-    path("credits/", CreditsView.as_view(), name="credits"),
 ]
