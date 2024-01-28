@@ -1,6 +1,9 @@
 import React from 'react'
 
-const containerStyle = { display: 'flex', flexDirection: 'column'}
+const containerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+}
 
 const cardStyle = {
   display: 'flex',

@@ -190,7 +190,7 @@ const AnalyticsCardContent = ({
   })
 
   let totalVoteCount = 0
-  data?.poll_statistics?.map((opt: any, idx: number) => {
+  data?.poll_statistics?.forEach((opt: any, idx: number) => {
     totalVoteCount += optionData.options[idx]?.vote_count || 0
   })
 
