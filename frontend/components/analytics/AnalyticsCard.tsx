@@ -163,8 +163,8 @@ const AnalyticsCardContent = ({
     total += x.vote_count
   })
   const targetPopulationsData = data?.poll_statistics || []
-  const schoolVotes = {}
-  const yearVotes = {}
+  const schoolVotes: { [key: string]: number } = {}
+  const yearVotes: { [key: string]: number } = {}
 
   targetPopulationsData.forEach((item) => {
     if (item.breakdown && item.breakdown.SCHOOL) {
@@ -179,7 +179,7 @@ const AnalyticsCardContent = ({
     }
     if (item.breakdown && item.breakdown.YEAR) {
       const years = item.breakdown.YEAR
-      Object.keys(year).forEach((year) => {
+      Object.keys(years).forEach((year) => {
         if (yearVotes[year]) {
           yearVotes[year] += years[year]
         } else {
@@ -204,7 +204,7 @@ const AnalyticsCardContent = ({
             display: 'flex',
             justifyContent: 'center',
             fontSize: '1rem',
-            fontWeight: '500',
+            fontWeight: 500,
           }}
         >
           Coming Soon!

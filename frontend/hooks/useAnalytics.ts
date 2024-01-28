@@ -3,13 +3,18 @@ import { useEffect, useState } from 'react'
 import { doApiRequest } from '@/utils/fetch'
 
 interface OptionStatsType {
-  breakdown: { [key: string]: number }
+  breakdown: { [key: string]: { [key: string]: number } }
   option: string
+}
+
+interface TimeSeriesDataType {
+  date: string
+  votes: number
 }
 
 interface AnalyticsDataType {
   poll_statistics: OptionStatsType[]
-  time_series: number[]
+  time_series: TimeSeriesDataType[]
 }
 
 interface OptionDataType {
