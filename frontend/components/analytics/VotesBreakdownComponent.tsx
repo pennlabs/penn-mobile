@@ -5,6 +5,10 @@ export default function VotesBreakdownComponent({
   schoolData,
   yearData,
   mode,
+}: {
+  schoolData: { [key: string]: number }
+  yearData: { [key: string]: number }
+  mode: string
 }) {
   const schoolNames = Object.keys(schoolData)
   const yearNames = Object.keys(yearData)
@@ -28,10 +32,18 @@ export default function VotesBreakdownComponent({
     <div>
       {mode === 'school'
         ? schoolNames.map((name: string) => (
-            <Row color={SCHOOL_COLORS[name]} text={name} key={name} />
+            <Row
+              color={SCHOOL_COLORS[name as keyof typeof SCHOOL_COLORS]}
+              text={name}
+              key={name}
+            />
           ))
         : yearNames.map((name: string) => (
-            <Row color={YEAR_COLORS[name]} text={name} key={name} />
+            <Row
+              color={YEAR_COLORS[name as keyof typeof YEAR_COLORS]}
+              text={name}
+              key={name}
+            />
           ))}
     </div>
   )

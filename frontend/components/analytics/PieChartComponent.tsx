@@ -10,7 +10,17 @@ const PieChartNumberWrapper = s.div`
   margin-bottom: 5px;
 `
 
-const SimplePieChart = ({ schoolData, yearData, mode, uniqueVotes }) => {
+const SimplePieChart = ({
+  schoolData,
+  yearData,
+  mode,
+  uniqueVotes,
+}: {
+  schoolData: { [key: string]: number }
+  yearData: { [key: string]: number }
+  mode: string
+  uniqueVotes: number
+}) => {
   const dataToUse = mode === 'school' ? schoolData : yearData
   const COLORS = mode === 'school' ? SCHOOL_COLORS : YEAR_COLORS
   const formattedData = Object.keys(dataToUse).map((school) => ({
@@ -46,10 +56,12 @@ const SimplePieChart = ({ schoolData, yearData, mode, uniqueVotes }) => {
           outerRadius={125}
           innerRadius={60}
         >
-          {formattedData.map((entry: string, index: number) => {
+          {formattedData.map(({ name, value }) => {
             return (
-              // eslint-disable-next-line react/no-array-index-key
-              <Cell key={`cell-${index}`} fill={COLORS[entry.name]} />
+              <Cell
+                key={`cell-${value}`}
+                fill={COLORS[name as keyof typeof COLORS]}
+              />
             )
           })}
         </Pie>
