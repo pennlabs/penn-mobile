@@ -25,3 +25,14 @@ export const setStatuses = (contentList: PostType[] | PollType[]) => {
 
   return sortedByDate.sort((a, _) => (a.status === Status.LIVE ? -1 : 1))
 }
+
+// returns a rgb string from a string input. used for generating colors for polls
+// based on string hash for consistent colors
+export const stringToRGB = (str: string) => {
+  const hash = Array.from(str).reduce((acc, char) => {
+    acc = (acc << 5) - acc + char.charCodeAt(0)
+    return acc & acc
+  }, 0)
+  const rgb = Array.from({ length: 3 }, (_, i) => (hash >> (i * 8)) & 255)
+  return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
+}

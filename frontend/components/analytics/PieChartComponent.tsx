@@ -1,7 +1,7 @@
 import React from 'react'
 import { PieChart, Pie, Cell, Tooltip } from 'recharts'
 import s from 'styled-components'
-import { SCHOOL_COLORS, YEAR_COLORS } from './poll_constants'
+import { stringToRGB } from '@/utils/utils'
 
 const PieChartNumberWrapper = s.div`
   font-weight: semi-bold;
@@ -10,14 +10,18 @@ const PieChartNumberWrapper = s.div`
   margin-bottom: 5px;
 `
 
-const SimplePieChart = ({ schoolData, yearData, mode, uniqueVotes }) => {
-  const dataToUse = mode === 'school' ? schoolData : yearData
-  const COLORS = mode === 'school' ? SCHOOL_COLORS : YEAR_COLORS
-  const formattedData = Object.keys(dataToUse).map((school) => ({
-    name: school,
-    value: schoolData[school],
+const SimplePieChart = ({
+  data,
+  uniqueVotes,
+}: {
+  data: { [key: string]: number }
+  uniqueVotes: number
+}) => {
+  const formattedData = Object.entries(data).map(([key, value]) => ({
+    name: key,
+    value,
   }))
-  return Object.keys(dataToUse).length !== 0 ? (
+  return Object.keys(data).length !== 0 ? (
     <div
       style={{
         position: 'relative',
@@ -46,11 +50,8 @@ const SimplePieChart = ({ schoolData, yearData, mode, uniqueVotes }) => {
           outerRadius={125}
           innerRadius={60}
         >
-          {formattedData.map((entry: string, index: number) => {
-            return (
-              // eslint-disable-next-line react/no-array-index-key
-              <Cell key={`cell-${index}`} fill={COLORS[entry.name]} />
-            )
+          {formattedData.map((entry) => {
+            return <Cell key={entry.name} fill={stringToRGB(entry.name)} />
           })}
         </Pie>
         <Tooltip />

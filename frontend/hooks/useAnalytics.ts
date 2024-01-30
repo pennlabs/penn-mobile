@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { doApiRequest } from '@/utils/fetch'
 
 interface OptionStatsType {
-  breakdown: { [key: string]: number }
+  breakdown: { [key: string]: { [key: string]: number } }
   option: string
 }
 

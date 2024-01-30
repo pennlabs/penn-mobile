@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import s from 'styled-components'
 import moment from 'moment'
 
@@ -156,43 +156,29 @@ const AnalyticsCardContent = ({
   content: PostType | PollType
 }) => {
   const [slide, setSlide] = useState(true)
-  const [pieChartOption, setPieChartOption] = useState('school')
+  const [pieChartOption, setPieChartOption] = useState<'school' | 'year'>(
+    'school'
+  )
   const { data, optionData, isLoading, error } = useAnalytics(content.id)
-  let total = 0
-  optionData?.options?.forEach((x) => {
-    total += x.vote_count
-  })
-  const targetPopulationsData = data?.poll_statistics || []
-  const schoolVotes = {}
-  const yearVotes = {}
 
-  targetPopulationsData.forEach((item) => {
-    if (item.breakdown && item.breakdown.SCHOOL) {
-      const schools = item.breakdown.SCHOOL
-      Object.keys(schools).forEach((school) => {
-        if (schoolVotes[school]) {
-          schoolVotes[school] += schools[school]
-        } else {
-          schoolVotes[school] = schools[school]
-        }
-      })
-    }
-    if (item.breakdown && item.breakdown.YEAR) {
-      const years = item.breakdown.YEAR
-      Object.keys(year).forEach((year) => {
-        if (yearVotes[year]) {
-          yearVotes[year] += years[year]
-        } else {
-          yearVotes[year] = years[year]
-        }
-      })
-    }
-  })
+  const totalVotes = useMemo(
+    () =>
+      optionData?.options?.reduce((acc, curr) => {
+        return acc + curr.vote_count
+      }, 0),
+    [optionData]
+  )
 
-  let totalVoteCount = 0
-  data?.poll_statistics?.forEach((opt: any, idx: number) => {
-    totalVoteCount += optionData.options[idx]?.vote_count || 0
-  })
+  const currBreakdown = useMemo(() => {
+    const option = pieChartOption === 'school' ? 'SCHOOL' : 'YEAR'
+    const ret: { [key: string]: number } = {}
+    data.poll_statistics.forEach((item) => {
+      Object.entries(item.breakdown[option] ?? {}).forEach(([key, value]) => {
+        ret[key] = value + (ret[key] ?? 0)
+      })
+    })
+    return ret
+  }, [pieChartOption, data])
 
   // TODO: add loading state?
   return (
@@ -204,7 +190,7 @@ const AnalyticsCardContent = ({
             display: 'flex',
             justifyContent: 'center',
             fontSize: '1rem',
-            fontWeight: '500',
+            fontWeight: 'bolder',
           }}
         >
           Coming Soon!
@@ -230,13 +216,13 @@ const AnalyticsCardContent = ({
                 {slide ? (
                   <div>
                     <Heading4 marginBottom="1rem">Poll Results</Heading4>
-                    {data.poll_statistics.map((opt: any, idx: number) => {
+                    {optionData.options.map((opt) => {
                       return (
                         <PollResult
-                          key={opt.option}
-                          title={opt.option}
-                          number={optionData.options[idx].vote_count || 0}
-                          total={total}
+                          key={opt.choice}
+                          title={opt.choice}
+                          number={opt.vote_count}
+                          total={totalVotes}
                           margin={true}
                         />
                       )
@@ -254,16 +240,12 @@ const AnalyticsCardContent = ({
                       />
                       <div style={{ height: 20 }} />
                       <VotesBreakdownComponent
-                        schoolData={schoolVotes}
-                        yearData={yearVotes}
-                        mode={pieChartOption}
+                        names={Object.keys(currBreakdown)}
                       />
                     </div>
                     <SimplePieChart
-                      schoolData={schoolVotes}
-                      yearData={yearVotes}
-                      mode={pieChartOption}
-                      uniqueVotes={totalVoteCount}
+                      data={currBreakdown}
+                      uniqueVotes={totalVotes}
                     />
                   </div>
                 )}

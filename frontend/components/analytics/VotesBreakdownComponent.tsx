@@ -1,13 +1,11 @@
 import React from 'react'
-import { SCHOOL_COLORS, YEAR_COLORS } from './poll_constants'
+import { stringToRGB } from '@/utils/utils'
 
 export default function VotesBreakdownComponent({
-  schoolData,
-  yearData,
-  mode,
+  names,
+}: {
+  names: string[]
 }) {
-  const schoolNames = Object.keys(schoolData)
-  const yearNames = Object.keys(yearData)
   const Row = ({ color, text }: { color: string; text: string }) => {
     return (
       <div style={{ display: 'flex', marginBottom: 15 }}>
@@ -26,13 +24,9 @@ export default function VotesBreakdownComponent({
   }
   return (
     <div>
-      {mode === 'school'
-        ? schoolNames.map((name: string) => (
-            <Row color={SCHOOL_COLORS[name]} text={name} key={name} />
-          ))
-        : yearNames.map((name: string) => (
-            <Row color={YEAR_COLORS[name]} text={name} key={name} />
-          ))}
+      {names.map((name: string) => (
+        <Row color={stringToRGB(name)} text={name} key={name} />
+      ))}
     </div>
   )
 }

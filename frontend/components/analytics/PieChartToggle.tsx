@@ -5,8 +5,8 @@ export const PieChartToggle = ({
   activeOption,
   setActiveOption,
 }: {
-  activeOption: string
-  setActiveOption: React.Dispatch<React.SetStateAction<string>>
+  activeOption: 'school' | 'year'
+  setActiveOption: React.Dispatch<React.SetStateAction<'school' | 'year'>>
 }) => (
   <Toggle style={{ verticalAlign: 'middle' }}>
     <ToggleOption
