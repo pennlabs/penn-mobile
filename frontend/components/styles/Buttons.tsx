@@ -5,7 +5,7 @@ import { PageType } from '@/utils/types'
 import { InlineText } from '@/components/styles/Text'
 
 interface iButtonProps {
-  color: string
+  color?: string
   hide?: boolean
   round?: boolean
 }
@@ -22,6 +22,16 @@ export const Button = s.button<iButtonProps>`
   outline: none;
   padding: 0px 15px 0px 15px;
   display: ${(props) => (props.hide ? 'none' : 'flex')};
+  cursor: pointer;
+  font-family: inherit;
+`
+
+export const ButtonIcon = s.button<iButtonProps>`
+  text-align: center;
+  background-color: white;
+  border: none;
+  outline: none;
+  padding: 2px;
   cursor: pointer;
   font-family: inherit;
 `

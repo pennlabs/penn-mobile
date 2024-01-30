@@ -40,18 +40,20 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
     const form_data = new FormData()
     if (isPost(state)) {
       Object.entries(state).forEach(([key, value]) => {
-        form_data.append(key, value)
+        if (key === 'start_date' || key === 'expire_date') {
+          const val = value.toISOString()
+          form_data.append(key, val)
+        } else if (key !== 'image') {
+          form_data.append(key, value.toString())
+        } else {
+          form_data.append(key, value)
+        }
       })
     }
 
     const res = await doApiRequest(`/api/portal/${route}/`, {
       method: 'POST',
       body: isPost(state) ? form_data : state,
-      headers: {
-        'Content-Type': isPost(state)
-          ? 'multipart/form-data'
-          : 'application/json',
-      },
     })
 
     if (res.ok) {
@@ -94,9 +96,15 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
   }
 
   const onSave = async () => {
+    const form_data = new FormData()
+    if (isPost(state)) {
+      Object.entries(state).forEach(([key, value]) => {
+        form_data.append(key, value)
+      })
+    }
     const res = await doApiRequest(`/api/portal/${route}/${state.id}/`, {
       method: 'PATCH',
-      body: state,
+      body: isPost(state) ? form_data : state,
     })
 
     if (res.ok) {
