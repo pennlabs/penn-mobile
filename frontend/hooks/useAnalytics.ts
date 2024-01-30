@@ -7,9 +7,14 @@ interface OptionStatsType {
   option: string
 }
 
+interface TimeSeriesDataType {
+  date: string
+  votes: number
+}
+
 interface AnalyticsDataType {
   poll_statistics: OptionStatsType[]
-  time_series: number[]
+  time_series: TimeSeriesDataType[]
 }
 
 interface OptionDataType {
