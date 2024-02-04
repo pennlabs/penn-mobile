@@ -1,7 +1,5 @@
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
-from rest_framework.generics import get_object_or_404
-
 from sublet.models import Amenity, Offer, Sublet, SubletImage
 
 
@@ -57,18 +55,17 @@ class SubletImageURLSerializer(serializers.ModelSerializer):
 # complex sublet serializer for use in C/U/D + getting info about a singular sublet
 class SubletSerializer(serializers.ModelSerializer):
     amenities = AmenitySerializer(many=True, required=False)
-    images = serializers.ListField(
-        child=serializers.FileField(max_length=100000, allow_empty_file=False, use_url=False),
-        required=False,
-        write_only=True,
-    )
-    delete_images_ids = serializers.ListField(
-        child=serializers.IntegerField(), required=False, write_only=True
-    )
+    # images = SubletImageURLSerializer(many=True, required=False)
 
     class Meta:
         model = Sublet
-        read_only_fields = ["id", "created_at", "subletter", "sublettees"]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "subletter",
+            "sublettees",
+            # "images"
+        ]
         fields = [
             "id",
             "subletter",
@@ -84,8 +81,7 @@ class SubletSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
             "expires_at",
-            "images",
-            "delete_images_ids",
+            # "images",
         ]
 
     def parse_amenities(self, raw_amenities):
@@ -99,19 +95,19 @@ class SubletSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["subletter"] = self.context["request"].user
-        images = validated_data.pop("images") if "images" in validated_data else []
+        # images = validated_data.pop("images") if "images" in validated_data else []
         instance = super().create(validated_data)
         data = self.context["request"].POST
         amenities = self.parse_amenities(data.getlist("amenities"))
         instance.amenities.set(amenities)
         instance.save()
         # TODO: make this atomic
-        img_serializers = []
-        for img in images:
-            img_serializer = SubletImageSerializer(data={"sublet": instance.id, "image": img})
-            img_serializer.is_valid(raise_exception=True)
-            img_serializers.append(img_serializer)
-        [img_serializer.save() for img_serializer in img_serializers]
+        # img_serializers = []
+        # for img in images:
+        #     img_serializer = SubletImageSerializer(data={"sublet": instance.id, "image": img})
+        #     img_serializer.is_valid(raise_exception=True)
+        #     img_serializers.append(img_serializer)
+        # [img_serializer.save() for img_serializer in img_serializers]
         return instance
 
     # delete_images is a list of image ids to delete
@@ -126,16 +122,16 @@ class SubletSerializer(serializers.ModelSerializer):
                 amenities = self.parse_amenities(amenities_data["amenities"])
                 instance.amenities.set(amenities)
             validated_data.pop("amenities", None)
-            delete_images_ids = (
-                validated_data.pop("delete_images_ids")
-                if "delete_images_ids" in validated_data
-                else []
-            )
+            # delete_images_ids = (
+            #     validated_data.pop("delete_images_ids")
+            #     if "delete_images_ids" in validated_data
+            #     else []
+            # )
             instance = super().update(instance, validated_data)
             instance.save()
-            existing_images = Sublet.objects.get(id=instance.id).images.all()
-            [get_object_or_404(existing_images, id=img) for img in delete_images_ids]
-            existing_images.filter(id__in=delete_images_ids).delete()
+            # existing_images = Sublet.objects.get(id=instance.id).images.all()
+            # [get_object_or_404(existing_images, id=img) for img in delete_images_ids]
+            # existing_images.filter(id__in=delete_images_ids).delete()
             return instance
         else:
             raise serializers.ValidationError("You do not have permission to update this sublet.")

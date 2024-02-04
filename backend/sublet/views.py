@@ -3,10 +3,9 @@ from django.db.models import prefetch_related_objects
 from django.utils import timezone
 from rest_framework import exceptions, generics, mixins, status, viewsets
 from rest_framework.generics import get_object_or_404
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
 from sublet.models import Amenity, Offer, Sublet, SubletImage
 from sublet.permissions import (
     IsSuperUser,
@@ -71,7 +70,6 @@ class Properties(viewsets.ModelViewSet):
     """
 
     permission_classes = [SubletOwnerPermission | IsSuperUser]
-    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get_serializer_class(self):
         return SubletSerializerRead if self.action == "retrieve" else SubletSerializer
@@ -140,14 +138,14 @@ class Properties(viewsets.ModelViewSet):
         baths = params.get("baths", None)
 
         queryset = Sublet.objects.all().filter(expires_at__gte=timezone.now())
-
         # Apply filters based on query parameters
         if title:
             queryset = queryset.filter(title__icontains=title)
         if address:
             queryset = queryset.filter(address__icontains=address)
         if amenities:
-            queryset = queryset.filter(amenities__name__in=amenities)
+            for amenity in amenities:
+                queryset = queryset.filter(amenities__name=amenity)
         if subletter.lower() == "true":
             queryset = queryset.filter(subletter=request.user)
         if starts_before:
@@ -166,13 +164,12 @@ class Properties(viewsets.ModelViewSet):
             queryset = queryset.filter(beds=beds)
         if baths:
             queryset = queryset.filter(baths=baths)
-
         # Serialize and return the queryset
         serializer = SubletSerializerSimple(queryset, many=True)
         return Response(serializer.data)
 
 
-class Images(generics.CreateAPIView):
+class CreateImages(generics.CreateAPIView):
     serializer_class = SubletImageSerializer
     http_method_names = ["post"]
     permission_classes = [SubletImageOwnerPermission | IsSuperUser]
@@ -197,6 +194,22 @@ class Images(generics.CreateAPIView):
             img_serializers.append(img_serializer)
         [img_serializer.save() for img_serializer in img_serializers]
         return Response(status=status.HTTP_201_CREATED)
+
+
+class DeleteImage(generics.DestroyAPIView):
+    serializer_class = SubletImageSerializer
+    http_method_names = ["delete"]
+    permission_classes = [SubletImageOwnerPermission | IsSuperUser]
+    queryset = SubletImage.objects.all()
+
+    def destroy(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        filter = {"id": self.kwargs["image_id"]}
+        obj = get_object_or_404(queryset, **filter)
+        # checking permissions here is kind of redundant
+        self.check_object_permissions(self.request, obj)
+        self.perform_destroy(obj)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):

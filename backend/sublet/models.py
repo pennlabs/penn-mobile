@@ -42,6 +42,7 @@ class Sublet(models.Model):
     baths = models.IntegerField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     external_link = models.URLField(max_length=255)
+    # TODO: change to just one price field and migrateeeee
     min_price = models.IntegerField()
     max_price = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
