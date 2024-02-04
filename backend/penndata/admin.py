@@ -1,7 +1,14 @@
 from django.contrib import admin
 from django.utils.html import escape, mark_safe
 
-from penndata.models import AnalyticsEvent, Event, FitnessRoom, FitnessSnapshot, HomePageOrder
+from penndata.models import (
+    AnalyticsEvent,
+    CalendarEvent,
+    Event,
+    FitnessRoom,
+    FitnessSnapshot,
+    HomePageOrder,
+)
 
 
 class FitnessRoomAdmin(admin.ModelAdmin):
@@ -13,6 +20,7 @@ class FitnessRoomAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Event)
+admin.site.register(CalendarEvent)
 admin.site.register(HomePageOrder)
 admin.site.register(FitnessRoom, FitnessRoomAdmin)
 admin.site.register(FitnessSnapshot)
