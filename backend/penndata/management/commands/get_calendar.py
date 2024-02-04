@@ -69,8 +69,9 @@ class Command(BaseCommand):
                 if date and current_time.replace(tzinfo=None) < date.replace(tzinfo=None) < (
                     current_time + datetime.timedelta(days=30)
                 ).replace(tzinfo=None):
-                    # calendar.append({"event": data[0].get_text(), "date": data[1].get_text()})
-                    CalendarEvent.objects.get_or_create(event=data[0].get_text(), date=date_info)
 
-        # CalendarEvent.objects.bulk_create(calendar)
+                    CalendarEvent.objects.get_or_create(
+                        event=data[0].get_text(), date=date_info, date_obj=date
+                    )
+
         self.stdout.write("Uploaded Calendar Events!")
