@@ -40,6 +40,9 @@ class TestNews(TestCase):
 
 
 class TestCalender(TestCase):
+    def setUp(self):
+        call_command("get_calendar")
+
     def test_response(self):
         response = self.client.get(reverse("calendar"))
         res_json = json.loads(response.content)
@@ -102,8 +105,8 @@ class TestHomePage(TestCase):
         self.assertIn(1442, dining_info)
         self.assertIn(636, dining_info)
 
-        self.assertEqual(res_json[3]["type"], "laundry")
-        self.assertEqual(res_json[3]["info"]["room_id"], 0)
+        self.assertEqual(res_json[2]["type"], "laundry")
+        self.assertEqual(res_json[2]["info"]["room_id"], 0)
 
         self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=747))
         self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=1733))
@@ -122,10 +125,9 @@ class TestHomePage(TestCase):
         self.assertIn(1733, new_dining_info)
         self.assertIn(638, new_dining_info)
 
-        self.assertEqual(new_res_json[3]["info"]["room_id"], 3)
+        self.assertEqual(new_res_json[2]["info"]["room_id"], 3)
 
         self.assertEqual(new_res_json[1]["type"], "news")
-        self.assertEqual(new_res_json[2]["type"], "calendar")
 
 
 class TestGetRecentFitness(TestCase):

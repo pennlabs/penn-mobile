@@ -185,7 +185,7 @@ class HomePage(APIView):
             cells.append(self.Cell("new-version-released", None, 10000))
 
         # adds events up to 2 weeks
-        cells.append(self.Cell("calendar", {"calendar": Calendar.get_calendar(self)}, 40))
+        # cells.append(self.Cell("calendar", {"calendar": Calendar.get_calendar(self)}, 40))
 
         # adds front page article of DP
         cells.append(self.Cell("news", {"article": News.get_article(self)}, 50))

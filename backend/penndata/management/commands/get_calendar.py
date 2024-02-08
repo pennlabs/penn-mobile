@@ -7,14 +7,16 @@ from django.utils import timezone
 
 from penndata.models import CalendarEvent
 
+
 UPENN_ALMANAC_WEBSITE = "https://almanac.upenn.edu/penn-academic-calendar"
+
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
 
         # Clears out previous CalendarEvents
         CalendarEvent.objects.all().delete()
-        
+
         # Scrapes UPenn Almanac
         try:
             resp = requests.get(UPENN_ALMANAC_WEBSITE)
@@ -51,15 +53,15 @@ class Command(BaseCommand):
             if int(row_year) != current_year:
                 continue
 
-            data = row.find_all("td")    
-            event = data[0].get_text() 
+            data = row.find_all("td")
+            event = data[0].get_text()
             date_info = data[1].get_text()
 
             """
             Match works for different date types; always matches begin date:
             - Range date in same month: August 1-3
             - Range date across months: August 1-September 1
-            - Single date: August 1 
+            - Single date: August 1
             """
             try:
                 month = date_info.split(" ")[0]
@@ -67,9 +69,9 @@ class Command(BaseCommand):
                 date = datetime.datetime.strptime(
                     month + day + str(current_year) + "-04:00", "%B%d%Y%z"
                 )
-                if date and date >= timezone.localtime(): 
-                    CalendarEvent.objects.get_or_create(event=event, date=date_info, date_obj=date) 
+                if date and date >= timezone.localtime():
+                    CalendarEvent.objects.get_or_create(event=event, date=date_info, date_obj=date)
             except ValueError:
                 continue
-                
+
         self.stdout.write("Uploaded Calendar Events!")
