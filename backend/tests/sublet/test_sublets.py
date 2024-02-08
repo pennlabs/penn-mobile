@@ -268,9 +268,10 @@ class TestOffers(TestCase):
             "phone_number": "+12155733333",
             "message": "Message",
         }
-        self.client.post(prop_url, payload)
+        response = self.client.post(prop_url, payload)
+        # test duplicate prevention
         self.assertEqual(self.client.post(prop_url, payload).status_code, 406)
-        offer = Offer.objects.get(pk=1)
+        offer = Offer.objects.get(id=response.data["id"])
         offer_list = [offer.email, offer.phone_number, offer.message, offer.user, offer.sublet]
         payload_list = [
             payload["email"],
