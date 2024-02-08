@@ -1,12 +1,12 @@
 import json
+from unittest.mock import MagicMock
 
 from django.contrib.auth import get_user_model
+from django.core.files.storage import Storage
 from django.test import TestCase
 from rest_framework.test import APIClient
-from sublet.models import Amenity, Offer, Sublet
 
-
-# , SubletImage)
+from sublet.models import Amenity, Offer, Sublet, SubletImage
 
 
 User = get_user_model()
@@ -26,6 +26,13 @@ class TestSublets(TestCase):
             data = json.load(data)
             self.test_sublet1 = Sublet.objects.create(subletter=self.user, **data[0])
             self.test_sublet2 = Sublet.objects.create(subletter=test_user, **data[1])
+
+        storage_mock = MagicMock(spec=Storage, name="StorageMock")
+        storage_mock.generate_filename = lambda filename: filename
+        storage_mock.save = MagicMock(side_effect=lambda name, *args, **kwargs: name)
+        storage_mock.url = MagicMock(name="url")
+        storage_mock.url.return_value = "http://penn-mobile.com/mock-image.png"
+        SubletImage._meta.get_field("image").storage = storage_mock
 
     def test_create_sublet(self):
         # Create a new sublet using the serializer
@@ -213,7 +220,9 @@ class TestSublets(TestCase):
                 f"/sublet/properties/{str(self.test_sublet1.id)}/images/", {"images": image}
             )
             self.assertEqual(response.status_code, 201)
-            self.assertTrue(Sublet.objects.get(id=self.test_sublet1.id).images.all().exists())
+            images = Sublet.objects.get(id=self.test_sublet1.id).images.all()
+            self.assertTrue(images.exists())
+            self.assertEqual(self.test_sublet1.id, images.first().sublet.id)
 
 
 class TestOffers(TestCase):
