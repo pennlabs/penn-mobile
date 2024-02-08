@@ -17,6 +17,7 @@ from sublet.serializers import (
     AmenitySerializer,
     OfferSerializer,
     SubletImageSerializer,
+    SubletImageURLSerializer,
     SubletSerializer,
     SubletSerializerRead,
     SubletSerializerSimple,
@@ -192,8 +193,9 @@ class CreateImages(generics.CreateAPIView):
             img_serializer = self.get_serializer(data={"sublet": sublet_id, "image": img})
             img_serializer.is_valid(raise_exception=True)
             img_serializers.append(img_serializer)
-        [img_serializer.save() for img_serializer in img_serializers]
-        return Response(status=status.HTTP_201_CREATED)
+        instances = [img_serializer.save() for img_serializer in img_serializers]
+        data = [SubletImageURLSerializer(instance=instance).data for instance in instances]
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class DeleteImage(generics.DestroyAPIView):

@@ -3,7 +3,6 @@ import json
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
-
 from sublet.models import Amenity, Offer, Sublet
 
 
@@ -39,9 +38,9 @@ class TestSublets(TestCase):
             "external_link": "https://example.com",
             "min_price": 100,
             "max_price": 500,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
-            "end_date": "2024-08-07",
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
+            "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
         response = self.client.post("/sublet/properties/", payload)
@@ -76,9 +75,9 @@ class TestSublets(TestCase):
             "external_link": "https://example.com",
             "min_price": 100,
             "max_price": 500,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
-            "end_date": "2024-08-07",
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
+            "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
         response = self.client.post("/sublet/properties/", payload)
@@ -106,9 +105,9 @@ class TestSublets(TestCase):
             "external_link": "https://example.com",
             "min_price": 100,
             "max_price": 500,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
-            "end_date": "2024-08-07",
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
+            "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
         response = self.client.post("/sublet/properties/", payload)
@@ -132,9 +131,9 @@ class TestSublets(TestCase):
             "external_link": "https://example.com",
             "min_price": 100,
             "max_price": 400,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
-            "end_date": "2024-08-07",
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
+            "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
         response = self.client.post("/sublet/properties/", payload)
@@ -161,8 +160,8 @@ class TestSublets(TestCase):
             "external_link": "https://example.com",
             "min_price": 100,
             "max_price": 500,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
             "end_date": "5000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
@@ -182,9 +181,9 @@ class TestSublets(TestCase):
             "external_link": "https://example.com",
             "min_price": 100,
             "max_price": 500,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
-            "end_date": "2024-08-07",
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
+            "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
         self.client.post("/sublet/properties/", payload)
@@ -207,6 +206,14 @@ class TestSublets(TestCase):
         res_json = json.loads(response.content)
         for i in range(1, 6):
             self.assertIn(f"Amenity{i}", res_json)
+
+    def test_create_image(self):
+        with open("tests/sublet/mock_image.jpg", "rb") as image:
+            response = self.client.post(
+                f"/sublet/properties/{str(self.test_sublet1.id)}/images/", {"images": image}
+            )
+            self.assertEqual(response.status_code, 201)
+            self.assertTrue(Sublet.objects.get(id=self.test_sublet1.id).images.all().exists())
 
 
 class TestOffers(TestCase):

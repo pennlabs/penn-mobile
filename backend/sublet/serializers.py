@@ -54,8 +54,11 @@ class SubletImageURLSerializer(serializers.ModelSerializer):
 
 # complex sublet serializer for use in C/U/D + getting info about a singular sublet
 class SubletSerializer(serializers.ModelSerializer):
-    amenities = AmenitySerializer(many=True, required=False)
+    # amenities = AmenitySerializer(many=True, required=False)
     # images = SubletImageURLSerializer(many=True, required=False)
+    amenities = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Amenity.objects.all(), required=False
+    )
 
     class Meta:
         model = Sublet
@@ -84,22 +87,22 @@ class SubletSerializer(serializers.ModelSerializer):
             # "images",
         ]
 
-    def parse_amenities(self, raw_amenities):
-        if isinstance(raw_amenities, list):
-            ids = raw_amenities
-        else:
-            ids = (
-                list() if len(raw_amenities) == 0 else [str(id) for id in raw_amenities.split(",")]
-            )
-        return Amenity.objects.filter(name__in=ids)
+    # def parse_amenities(self, raw_amenities):
+    #     if isinstance(raw_amenities, list):
+    #         ids = raw_amenities
+    #     else:
+    #         ids = (
+    #         list() if len(raw_amenities) == 0 else [str(id) for id in raw_amenities.split(",")]
+    #         )
+    #     return Amenity.objects.filter(name__in=ids)
 
     def create(self, validated_data):
         validated_data["subletter"] = self.context["request"].user
         # images = validated_data.pop("images") if "images" in validated_data else []
         instance = super().create(validated_data)
-        data = self.context["request"].POST
-        amenities = self.parse_amenities(data.getlist("amenities"))
-        instance.amenities.set(amenities)
+        # data = self.context["request"].POST
+        # amenities = self.parse_amenities(data.getlist("amenities"))
+        # instance.amenities.set(amenities)
         instance.save()
         # TODO: make this atomic
         # img_serializers = []
@@ -117,11 +120,11 @@ class SubletSerializer(serializers.ModelSerializer):
             self.context["request"].user == instance.subletter
             or self.context["request"].user.is_superuser
         ):
-            amenities_data = self.context["request"].data
-            if amenities_data.get("amenities") is not None:
-                amenities = self.parse_amenities(amenities_data["amenities"])
-                instance.amenities.set(amenities)
-            validated_data.pop("amenities", None)
+            # amenities_data = self.context["request"].data
+            # if amenities_data.get("amenities") is not None:
+            #     amenities = self.parse_amenities(amenities_data["amenities"])
+            #     instance.amenities.set(amenities)
+            # validated_data.pop("amenities", None)
             # delete_images_ids = (
             #     validated_data.pop("delete_images_ids")
             #     if "delete_images_ids" in validated_data
