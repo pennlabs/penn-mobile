@@ -224,6 +224,25 @@ class TestSublets(TestCase):
             self.assertTrue(images.exists())
             self.assertEqual(self.test_sublet1.id, images.first().sublet.id)
 
+    def test_create_delete_images(self):
+        with open("tests/sublet/mock_image.jpg", "rb") as image:
+            with open("tests/sublet/mock_image.jpg", "rb") as image2:
+                response = self.client.post(
+                    f"/sublet/properties/{str(self.test_sublet1.id)}/images/",
+                    {"images": [image, image2]},
+                    "multipart",
+                )
+                self.assertEqual(response.status_code, 201)
+                images = Sublet.objects.get(id=self.test_sublet1.id).images.all()
+                image_id1 = images.first().id
+                self.assertTrue(images.exists())
+                self.assertEqual(2, images.count())
+                self.assertEqual(self.test_sublet1.id, images.first().sublet.id)
+                response = self.client.delete(f"/sublet/properties/images/{image_id1}/")
+                self.assertEqual(response.status_code, 204)
+                self.assertFalse(SubletImage.objects.filter(id=image_id1).exists())
+                self.assertEqual(1, SubletImage.objects.all().count())
+
 
 class TestOffers(TestCase):
     """Tests Create/Delete/List for offers"""

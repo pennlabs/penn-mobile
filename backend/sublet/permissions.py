@@ -38,9 +38,7 @@ class SubletImageOwnerPermission(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         # Check if the user is the owner of the Sublet.
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return obj.sublet.subletter == request.user
+        return request.method in permissions.SAFE_METHODS or obj.sublet.subletter == request.user
 
 
 class OfferOwnerPermission(permissions.BasePermission):
