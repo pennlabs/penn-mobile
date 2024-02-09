@@ -136,6 +136,7 @@ class Properties(viewsets.ModelViewSet):
         ends_after = params.get("ends_after", None)
         min_price = params.get("min_price", None)
         max_price = params.get("max_price", None)
+        negotiable = params.get("negotiable", None)
         beds = params.get("beds", None)
         baths = params.get("baths", None)
 
@@ -158,10 +159,10 @@ class Properties(viewsets.ModelViewSet):
             queryset = queryset.filter(end_date__lt=ends_before)
         if ends_after:
             queryset = queryset.filter(end_date__gt=ends_after)
-        if min_price:
-            queryset = queryset.filter(min_price__gte=min_price)
-        if max_price:
-            queryset = queryset.filter(max_price__lte=max_price)
+        if min_price and max_price:
+            queryset = queryset.filter(price__gte=min_price).filter(price__lte=max_price)
+        if negotiable:
+            queryset = queryset.filter(negotiable=negotiable)
         if beds:
             queryset = queryset.filter(beds=beds)
         if baths:
