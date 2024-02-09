@@ -1,12 +1,22 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import s from 'styled-components'
 import moment from 'moment'
 
+import {
+  faArrowCircleLeft,
+  faArrowCircleRight,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { colors } from '@/components/styles/colors'
 import { isPost, PollType, PostType, Status } from '@/utils/types'
 import { Row, Group } from '@/components/styles/Layout'
-import { Text, InlineText } from '../styles/Text'
+import { Text, InlineText, Heading4, FlexCentered } from '../styles/Text'
 import useAnalytics from '@/hooks/useAnalytics'
+// import ViewsComponent from './ViewsComponent'
+import SimplePieChart from './PieChartComponent'
+import VotesBreakdownComponent from './VotesBreakdownComponent'
+import { ButtonIcon } from '@/components/styles/Buttons'
+import { PieChartToggle } from './PieChartToggle'
 
 interface iAnalyticsCardWrapperProps {
   live: boolean
@@ -21,6 +31,13 @@ const AnalyticsCardWrapper = s.div<iAnalyticsCardWrapperProps>`
   border-left: ${(props) =>
     props.live ? 'solid #3FAA6D 12px' : 'solid #999999 12px'};
   width: 99%;
+`
+
+const PrettyBorderWrapper = s.div`
+  border: 2px solid #cbd5e0;
+  border-radius: 0.375rem;
+  padding: 1.5rem;
+  width: 100%;
 `
 
 // returns Month Day, Year string from Date Object (ex: Jan 01, 2020)
@@ -85,25 +102,169 @@ const AnalyticsCard = ({ content }: { content: PostType | PollType }) => {
 const AnalyticsBodyWrapper = s.div`
   margin: 2rem 0 0 0;
 `
+const PollResult = ({
+  title,
+  number,
+  total,
+  margin = true,
+}: {
+  title: string
+  number: number
+  total: number
+  margin: boolean
+}) => {
+  return (
+    <div style={{ display: 'flex' }}>
+      <div
+        style={{
+          backgroundColor: colors.LIGHTER_GRAY, // Replace with your desired color
+          height: '3rem',
+          borderRadius: '0.375rem',
+          display: 'flex',
+          alignItems: 'center',
+          paddingLeft: '1rem',
+          whiteSpace: 'nowrap',
+          width: `${total === 0 ? 0 : Math.round((number * 100) / total)}%`,
+          marginBottom: margin ? '5px' : '0px',
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ width: '100%' }}>
+        <div
+          style={{
+            textAlign: 'right',
+            color: colors.DARK_GRAY,
+            fontWeight: 'bold',
+          }}
+        >
+          {`${total === 0 ? 0 : Math.round((number * 100) / total)}%`}
+        </div>
+        <div
+          style={{ textAlign: 'right', fontSize: '0.875rem', color: '#A0AEC0' }}
+        >
+          {total ? `${number} people` : '0 people'}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const AnalyticsCardContent = ({
   content,
 }: {
   content: PostType | PollType
 }) => {
-  const { data, isLoading, error } = useAnalytics(content.id)
+  const [slide, setSlide] = useState(true)
+  const [pieChartOption, setPieChartOption] = useState<'school' | 'year'>(
+    'school'
+  )
+  const { data, optionData, isLoading, error } = useAnalytics(content.id)
+
+  const totalVotes = useMemo(
+    () =>
+      optionData?.options?.reduce((acc, curr) => {
+        return acc + curr.vote_count
+      }, 0),
+    [optionData]
+  )
+
+  const currBreakdown = useMemo(() => {
+    const option = pieChartOption === 'school' ? 'SCHOOL' : 'YEAR'
+    const ret: { [key: string]: number } = {}
+    data.poll_statistics.forEach((item) => {
+      Object.entries(item.breakdown[option] ?? {}).forEach(([key, value]) => {
+        ret[key] = value + (ret[key] ?? 0)
+      })
+    })
+    return ret
+  }, [pieChartOption, data])
 
   // TODO: add loading state?
   return (
     <AnalyticsBodyWrapper>
       {error}
-      {data.poll_statistics.length > 0 && !isLoading && (
-        <>
-          <Text>Poll Options</Text>
-          {data.poll_statistics.map((opt: any) => (
-            <p key={opt.option}>{opt.option}</p>
-          ))}
-        </>
+      {'title' in content && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            fontSize: '1rem',
+            fontWeight: 'bolder',
+          }}
+        >
+          Coming Soon!
+        </div>
+      )}
+      {'question' in content && data.poll_statistics.length > 0 && !isLoading && (
+        <div style={{ display: 'flex' }}>
+          <PrettyBorderWrapper>
+            <FlexCentered>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%',
+                  paddingRight: 10,
+                }}
+              >
+                <ButtonIcon onClick={() => setSlide(!slide)}>
+                  <FontAwesomeIcon icon={faArrowCircleLeft} size="lg" />
+                </ButtonIcon>
+              </div>
+              <div style={{ width: '90%' }}>
+                {slide ? (
+                  <div>
+                    <Heading4 marginBottom="1rem">Poll Results</Heading4>
+                    {optionData.options.map((opt) => {
+                      return (
+                        <PollResult
+                          key={opt.choice}
+                          title={opt.choice}
+                          number={opt.vote_count}
+                          total={totalVotes}
+                          margin={true}
+                        />
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{ display: 'flex', justifyContent: 'space-between' }}
+                  >
+                    <div>
+                      <Heading4 marginBottom="1rem">Votes Breakdown</Heading4>
+                      <PieChartToggle
+                        activeOption={pieChartOption}
+                        setActiveOption={setPieChartOption}
+                      />
+                      <div style={{ height: 20 }} />
+                      <VotesBreakdownComponent
+                        names={Object.keys(currBreakdown)}
+                      />
+                    </div>
+                    <SimplePieChart
+                      data={currBreakdown}
+                      uniqueVotes={totalVotes}
+                    />
+                  </div>
+                )}
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%',
+                  paddingLeft: 10,
+                }}
+              >
+                <ButtonIcon onClick={() => setSlide(!slide)}>
+                  <FontAwesomeIcon icon={faArrowCircleRight} size="lg" />
+                </ButtonIcon>
+              </div>
+            </FlexCentered>
+          </PrettyBorderWrapper>
+        </div>
       )}
     </AnalyticsBodyWrapper>
   )

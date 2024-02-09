@@ -14,6 +14,7 @@ A web-based portal for organizations to reach Penn Mobile users.
 1. Navigate to `/frontend`
    ```
    yarn install
+   export NODE_OPTIONS=--openssl-legacy-provider
    yarn dev
    ```
    you should be able to see the site at `localhost:3000`!
