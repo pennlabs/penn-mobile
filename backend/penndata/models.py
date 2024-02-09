@@ -58,3 +58,14 @@ class AnalyticsEvent(models.Model):
 
     def __str__(self):
         return f"{self.cell_type}-{self.user.username}"
+
+
+class CalendarEvent(models.Model):
+    event = models.CharField(max_length=255)
+    date = models.CharField(max_length=50, null=True, blank=True)
+    # NOTE: This is bad practice, though is necessary for the time being
+    # since frontends use the string date field
+    date_obj = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.date}-{self.event}"
