@@ -159,8 +159,10 @@ class Properties(viewsets.ModelViewSet):
             queryset = queryset.filter(end_date__lt=ends_before)
         if ends_after:
             queryset = queryset.filter(end_date__gt=ends_after)
-        if min_price and max_price:
-            queryset = queryset.filter(price__gte=min_price).filter(price__lte=max_price)
+        if min_price:
+            queryset = queryset.filter(price__gte=min_price)
+        if max_price:
+            queryset = queryset.filter(price__lte=max_price)
         if negotiable:
             queryset = queryset.filter(negotiable=negotiable)
         if beds:
