@@ -1,13 +1,12 @@
 import json
+from unittest.mock import MagicMock
 
 from django.contrib.auth import get_user_model
+from django.core.files.storage import Storage
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from sublet.models import Amenity, Offer, Sublet
-
-
-# , SubletImage)
+from sublet.models import Amenity, Offer, Sublet, SubletImage
 
 
 User = get_user_model()
@@ -28,6 +27,13 @@ class TestSublets(TestCase):
             self.test_sublet1 = Sublet.objects.create(subletter=self.user, **data[0])
             self.test_sublet2 = Sublet.objects.create(subletter=test_user, **data[1])
 
+        storage_mock = MagicMock(spec=Storage, name="StorageMock")
+        storage_mock.generate_filename = lambda filename: filename
+        storage_mock.save = MagicMock(side_effect=lambda name, *args, **kwargs: name)
+        storage_mock.url = MagicMock(name="url")
+        storage_mock.url.return_value = "http://penn-mobile.com/mock-image.png"
+        SubletImage._meta.get_field("image").storage = storage_mock
+
     def test_create_sublet(self):
         # Create a new sublet using the serializer
         payload = {
@@ -37,19 +43,33 @@ class TestSublets(TestCase):
             "baths": 1,
             "description": "This is a test sublet.",
             "external_link": "https://example.com",
-            "min_price": 100,
-            "max_price": 500,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
-            "end_date": "2024-08-07",
+            "price": 1000,
+            "negotiable": True,
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
+            "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
-
         response = self.client.post("/sublet/properties/", payload)
         res_json = json.loads(response.content)
-        self.assertEqual(payload["beds"], res_json["beds"])
-        self.assertEqual(payload["title"], res_json["title"])
-        self.assertIn("created_at", res_json)
+        match_keys = [
+            "title",
+            "address",
+            "beds",
+            "baths",
+            "description",
+            "external_link",
+            "price",
+            "negotiable",
+            "expires_at",
+            "start_date",
+            "end_date",
+        ]
+        [self.assertEqual(payload[key], res_json[key]) for key in match_keys]
+        self.assertIn("id", res_json)
+        self.assertEqual(self.user.id, res_json["subletter"])
+        self.assertEqual(2, len(res_json["amenities"]))
+        self.assertIn("images", res_json)
 
     def test_update_sublet(self):
         # Create a sublet to be updated
@@ -60,11 +80,11 @@ class TestSublets(TestCase):
             "baths": 1,
             "description": "This is an old sublet.",
             "external_link": "https://example.com",
-            "min_price": 100,
-            "max_price": 500,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
-            "end_date": "2024-08-07",
+            "price": 1000,
+            "negotiable": True,
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
+            "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
         response = self.client.post("/sublet/properties/", payload)
@@ -90,11 +110,11 @@ class TestSublets(TestCase):
             "baths": 1,
             "description": "This is a test sublet.",
             "external_link": "https://example.com",
-            "min_price": 100,
-            "max_price": 500,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
-            "end_date": "2024-08-07",
+            "price": 1000,
+            "negotiable": True,
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
+            "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
         response = self.client.post("/sublet/properties/", payload)
@@ -116,18 +136,19 @@ class TestSublets(TestCase):
             "baths": 1,
             "description": "This is a test sublet.",
             "external_link": "https://example.com",
-            "min_price": 100,
-            "max_price": 400,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
-            "end_date": "2024-08-07",
+            "price": 500,
+            "negotiable": True,
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
+            "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
         response = self.client.post("/sublet/properties/", payload)
         old_id = json.loads(response.content)["id"]
         payload = {
             "title": "Sublet2",
-            "max_price": 450,
+            "max_price": 999,
+            "min_price": 499,
         }
         response = self.client.get("/sublet/properties/", payload)
         res_json = json.loads(response.content)
@@ -145,10 +166,10 @@ class TestSublets(TestCase):
             "baths": 1,
             "description": "This is a test sublet.",
             "external_link": "https://example.com",
-            "min_price": 100,
-            "max_price": 500,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
+            "price": 1000,
+            "negotiable": True,
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
             "end_date": "5000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
@@ -166,11 +187,11 @@ class TestSublets(TestCase):
             "baths": 1,
             "description": "This is a test sublet.",
             "external_link": "https://example.com",
-            "min_price": 100,
-            "max_price": 500,
-            "expires_at": "2024-02-01T10:48:02-05:00",
-            "start_date": "2024-04-09",
-            "end_date": "2024-08-07",
+            "price": 1000,
+            "negotiable": True,
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-04-09",
+            "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
         }
         self.client.post("/sublet/properties/", payload)
@@ -193,6 +214,35 @@ class TestSublets(TestCase):
         res_json = json.loads(response.content)
         for i in range(1, 6):
             self.assertIn(f"Amenity{i}", res_json)
+
+    def test_create_image(self):
+        with open("tests/sublet/mock_image.jpg", "rb") as image:
+            response = self.client.post(
+                f"/sublet/properties/{str(self.test_sublet1.id)}/images/", {"images": image}
+            )
+            self.assertEqual(response.status_code, 201)
+            images = Sublet.objects.get(id=self.test_sublet1.id).images.all()
+            self.assertTrue(images.exists())
+            self.assertEqual(self.test_sublet1.id, images.first().sublet.id)
+
+    def test_create_delete_images(self):
+        with open("tests/sublet/mock_image.jpg", "rb") as image:
+            with open("tests/sublet/mock_image.jpg", "rb") as image2:
+                response = self.client.post(
+                    f"/sublet/properties/{str(self.test_sublet1.id)}/images/",
+                    {"images": [image, image2]},
+                    "multipart",
+                )
+                self.assertEqual(response.status_code, 201)
+                images = Sublet.objects.get(id=self.test_sublet1.id).images.all()
+                image_id1 = images.first().id
+                self.assertTrue(images.exists())
+                self.assertEqual(2, images.count())
+                self.assertEqual(self.test_sublet1.id, images.first().sublet.id)
+                response = self.client.delete(f"/sublet/properties/images/{image_id1}/")
+                self.assertEqual(response.status_code, 204)
+                self.assertFalse(SubletImage.objects.filter(id=image_id1).exists())
+                self.assertEqual(1, SubletImage.objects.all().count())
 
 
 class TestOffers(TestCase):
@@ -219,9 +269,10 @@ class TestOffers(TestCase):
             "phone_number": "+12155733333",
             "message": "Message",
         }
-        self.client.post(prop_url, payload)
+        response = self.client.post(prop_url, payload)
+        # test duplicate prevention
         self.assertEqual(self.client.post(prop_url, payload).status_code, 406)
-        offer = Offer.objects.all().last()
+        offer = Offer.objects.get(id=response.data["id"])
         offer_list = [offer.email, offer.phone_number, offer.message, offer.user, offer.sublet]
         payload_list = [
             payload["email"],

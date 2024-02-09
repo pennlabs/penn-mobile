@@ -30,7 +30,6 @@ class SubletImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubletImage
         fields = ["sublet", "image"]
-        read_only_fields = ["sublet", "image"]
 
 
 # Browse images
@@ -51,53 +50,65 @@ class SubletImageURLSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SubletImage
-        fields = ["image_url"]
+        fields = ["id", "image_url"]
 
 
 # complex sublet serializer for use in C/U/D + getting info about a singular sublet
 class SubletSerializer(serializers.ModelSerializer):
-    amenities = AmenitySerializer(many=True, required=False)
+    # amenities = AmenitySerializer(many=True, required=False)
+    # images = SubletImageURLSerializer(many=True, required=False)
+    amenities = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Amenity.objects.all(), required=False
+    )
 
     class Meta:
         model = Sublet
-        exclude = ["favorites"]
-        read_only_fields = ["id", "created_at", "subletter", "sublettees"]
-
-    def parse_amenities(self, raw_amenities):
-        if isinstance(raw_amenities, list):
-            ids = raw_amenities
-        else:
-            ids = (
-                list() if len(raw_amenities) == 0 else [str(id) for id in raw_amenities.split(",")]
-            )
-        return Amenity.objects.filter(name__in=ids)
+        read_only_fields = [
+            "id",
+            "created_at",
+            "subletter",
+            "sublettees",
+            # "images"
+        ]
+        fields = [
+            "id",
+            "subletter",
+            "amenities",
+            "title",
+            "address",
+            "beds",
+            "baths",
+            "description",
+            "external_link",
+            "price",
+            "negotiable",
+            "start_date",
+            "end_date",
+            "expires_at",
+            # "images",
+            # images are now created/deleted through a separate endpoint (see urls.py)
+            # this serializer isn't used for getting,
+            # but gets on sublets will include ids/urls for images
+        ]
 
     def create(self, validated_data):
         validated_data["subletter"] = self.context["request"].user
         instance = super().create(validated_data)
-        data = self.context["request"].POST
-        amenities = self.parse_amenities(data.getlist("amenities"))
-        instance.amenities.set(amenities)
         instance.save()
         return instance
 
+    # delete_images is a list of image ids to delete
     def update(self, instance, validated_data):
         # Check if the user is the subletter before allowing the update
         if (
             self.context["request"].user == instance.subletter
             or self.context["request"].user.is_superuser
         ):
-            amenities_data = self.context["request"].data
-            if amenities_data.get("amenities") is not None:
-                amenities = self.parse_amenities(amenities_data.getlist("amenities"))
-                instance.amenities.set(amenities)
-            validated_data.pop("amenities", None)
             instance = super().update(instance, validated_data)
             instance.save()
+            return instance
         else:
             raise serializers.ValidationError("You do not have permission to update this sublet.")
-
-        return instance
 
     def destroy(self, instance):
         # Check if the user is the subletter before allowing the delete
@@ -110,8 +121,34 @@ class SubletSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You do not have permission to delete this sublet.")
 
 
+class SubletSerializerRead(serializers.ModelSerializer):
+    amenities = AmenitySerializer(many=True, required=False)
+    images = SubletImageURLSerializer(many=True, required=False)
+
+    class Meta:
+        model = Sublet
+        read_only_fields = ["id", "created_at", "subletter", "sublettees"]
+        fields = [
+            "id",
+            "subletter",
+            "amenities",
+            "title",
+            "address",
+            "beds",
+            "baths",
+            "description",
+            "external_link",
+            "price",
+            "negotiable",
+            "start_date",
+            "end_date",
+            "expires_at",
+            "images",
+        ]
+
+
 # simple sublet serializer for use when pulling all serializers/etc
-class SimpleSubletSerializer(serializers.ModelSerializer):
+class SubletSerializerSimple(serializers.ModelSerializer):
     amenities = AmenitySerializer(many=True, required=False)
     images = SubletImageURLSerializer(many=True, required=False)
 
@@ -125,8 +162,8 @@ class SimpleSubletSerializer(serializers.ModelSerializer):
             "address",
             "beds",
             "baths",
-            "min_price",
-            "max_price",
+            "price",
+            "negotiable",
             "start_date",
             "end_date",
             "images",

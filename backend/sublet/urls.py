@@ -1,7 +1,16 @@
 from django.urls import path
 from rest_framework import routers
 
-from sublet.views import Amenities, Favorites, Offers, Properties, UserFavorites, UserOffers
+from sublet.views import (
+    Amenities,
+    CreateImages,
+    DeleteImage,
+    Favorites,
+    Offers,
+    Properties,
+    UserFavorites,
+    UserOffers,
+)
 
 
 app_name = "sublet"
@@ -21,6 +30,8 @@ additional_urls = [
         "properties/<sublet_id>/offers/",
         Offers.as_view({"get": "list", "post": "create", "delete": "destroy"}),
     ),
+    path("properties/<sublet_id>/images/", CreateImages.as_view()),
+    path("properties/images/<image_id>/", DeleteImage.as_view()),
 ]
 
 urlpatterns = router.urls + additional_urls
