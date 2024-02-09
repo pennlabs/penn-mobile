@@ -28,6 +28,19 @@ class SubletOwnerPermission(permissions.BasePermission):
         return obj.subletter == request.user
 
 
+class SubletImageOwnerPermission(permissions.BasePermission):
+    """
+    Custom permission to allow the owner of a SubletImage to edit or delete it.
+    """
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        # Check if the user is the owner of the Sublet.
+        return request.method in permissions.SAFE_METHODS or obj.sublet.subletter == request.user
+
+
 class OfferOwnerPermission(permissions.BasePermission):
     """
     Custom permission to allow owner of an offer to delete it.
