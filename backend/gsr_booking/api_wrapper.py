@@ -116,13 +116,14 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
 
         # presets end date as end midnight of next day
         end_date = (
-            datetime.datetime.strptime(end + "T00:00:00-04:00", "%Y-%m-%dT%H:%M:%S%z")
+            datetime.datetime.strptime(end, "%Y-%m-%d").date()
             if end is not None
-            else datetime.datetime.strptime(
-                str(search_date + datetime.timedelta(days=1)) + "T00:00:00-04:00",
-                "%Y-%m-%dT%H:%M:%S%z",
-            )
+            else search_date + datetime.timedelta(days=1)
         )
+        end_date = timezone.make_aware(
+            datetime.datetime.combine(end_date, datetime.datetime.min.time())
+        )
+
         for room in rooms:
             valid_slots = []
             for slot in room["availability"]:

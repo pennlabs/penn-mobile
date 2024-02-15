@@ -207,6 +207,8 @@ class Availability(APIView):
         /studyspaces/availability/<building>?start=...&end=... gives all rooms between the two days
     """
 
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, lid, gid):
 
         start = request.GET.get("start")
