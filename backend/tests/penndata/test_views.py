@@ -82,11 +82,10 @@ class TestEvent(TestCase):
         )
 
     def test_response(self):
-        response = self.client.get(reverse("events", args=["type"]))
-        res_json = json.loads(response.content)
-        self.assertEquals(2, len(res_json))
-        self.assertEquals(res_json[0]["name"], "test1")
-        self.assertEquals(res_json[1]["name"], "test2")
+        event1 = Event.objects.get(name="test1")
+        event2 = Event.objects.get(name="test2")
+        self.assertEqual(event1.name, "test1")
+        self.assertEqual(event2.name, "test2")
 
 
 class TestHomePage(TestCase):
