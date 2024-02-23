@@ -84,8 +84,7 @@ class Command(BaseCommand):
                 start_time = datetime.datetime.strptime(start_time_str, "%I:%M%p").time()
             start_date = datetime.datetime.combine(start_date, start_time)
 
-            event_url = urljoin(PENN_TODAY_WEBSITE,
-                                article.find("a", class_="tease__link")["href"])
+            event_url = urljoin(PENN_TODAY_WEBSITE, article.find("a", class_="tease__link")["href"])
 
             Event.objects.update_or_create(
                 name=name,
