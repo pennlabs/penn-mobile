@@ -104,10 +104,18 @@ class Events(generics.ListAPIView):
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        return Event.objects.filter(
+        queryset = Event.objects.all()
+
+        event_type = self.kwargs.get("type")
+        if event_type:
+            queryset = queryset.filter(event_type=event_type)
+
+        queryset = queryset.filter(
             end__gte=timezone.localtime(),
-            start__lte=timezone.localtime() + timedelta(days=30),
+            start__lte=timezone.localtime() + timedelta(days=30)
         )
+        return queryset
+    
 
 class Analytics(generics.CreateAPIView):
 

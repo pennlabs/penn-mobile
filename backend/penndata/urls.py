@@ -19,6 +19,7 @@ urlpatterns = [
     path("calendar/", Calendar.as_view(), name="calendar"),
     path("homepage", HomePage.as_view(), name="homepage"),
     path("events/", Events.as_view(), name="events"),
+    path("events/<str:type>/", Events.as_view(), name="events-type"),
     path("order/", HomePageOrdering.as_view(), name="home-page-order"),
     path("fitness/rooms/", FitnessRoomView.as_view(), name="fitness"),
     path("fitness/usage/<room_id>/", FitnessUsage.as_view(), name="fitness-usage"),
