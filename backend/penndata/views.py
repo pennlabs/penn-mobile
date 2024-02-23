@@ -111,11 +111,10 @@ class Events(generics.ListAPIView):
             queryset = queryset.filter(event_type=event_type)
 
         queryset = queryset.filter(
-            end__gte=timezone.localtime(),
-            start__lte=timezone.localtime() + timedelta(days=30)
+            end__gte=timezone.localtime(), start__lte=timezone.localtime() + timedelta(days=30)
         )
         return queryset
-    
+
 
 class Analytics(generics.CreateAPIView):
 
