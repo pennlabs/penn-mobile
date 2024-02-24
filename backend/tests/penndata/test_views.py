@@ -56,36 +56,88 @@ class TestCalender(TestCase):
 class TestEvent(TestCase):
     def setUp(self):
         self.client = APIClient()
-        Event.objects.create(
-            event_type="type",
-            name="test1",
-            description="asdf",
-            image_url="https://pennlabs.org/",
-            start=timezone.localtime(),
-            end=timezone.localtime(),
-            location="Huntsman",
-            email="a",
-            website="https://pennlabs.org/",
-            facebook="https://pennlabs.org/",
+        self.event1 = Event.objects.create(
+            event_type="type1",
+            name="Event 1",
+            description="Description 1",
+            start="2024-02-14T10:00:00Z",
+            end="2099-02-14T12:00:00Z",
+            location="Location 1",
+            website="https://pennlabs.org/"
         )
-        Event.objects.create(
-            event_type="type",
-            name="test2",
-            description="asdaf",
-            image_url="https://pennlabs.org/",
-            start=timezone.localtime(),
-            end=timezone.localtime(),
-            location="Huntsman",
-            email="a",
-            website="https://pennlabs.org/",
-            facebook="https://pennlabs.org/",
+        self.event2 = Event.objects.create(
+            event_type="type2",
+            name="Event 2",
+            description="Description 2",
+            start="2024-02-15T10:00:00Z",
+            end="2099-02-15T12:00:00Z",
+            location="Location 2",
+            website="https://pennlabs.org/"
         )
+    
 
     def test_response(self):
         event1 = Event.objects.get(name="test1")
         event2 = Event.objects.get(name="test2")
         self.assertEqual(event1.name, "test1")
         self.assertEqual(event2.name, "test2")
+
+    def test_get_all_events(self):
+        """Test GET request to retrieve all events"""
+        url = reverse('events')
+        response = self.client.get(url)
+        events = Event.objects.all()
+        expected_data = [
+            {
+                'event_type': event.event_type,
+                'name': event.name,
+                'description': event.description,
+                'start': event.start.isoformat(),
+                'end': event.end.isoformat(),
+                'location': event.location,
+                'website': event.website,
+            }
+            for event in events
+        ]
+        self.assertEqual(response.data, expected_data)
+
+    def test_get_events_by_type(self):
+        """Test GET request to retrieve events by type"""
+        url = reverse('events-type', kwargs={'type': 'type1'}) 
+        response = self.client.get(url)
+        events = Event.objects.filter(event_type='type1')
+        expected_data = [
+            {
+                'event_type': event.event_type,
+                'name': event.name,
+                'description': event.description,
+                'start': event.start.isoformat(),
+                'end': event.end.isoformat(),
+                'location': event.location,
+                'website': event.website,
+            }
+            for event in events
+        ]
+        self.assertEqual(response.data, expected_data)
+
+    def test_get_events_no_type(self):
+        """Test GET request to retrieve all events when no type is specified"""
+        url = reverse('events')
+        response = self.client.get(url)
+        events = Event.objects.all()
+        expected_data = [
+            {
+                'event_type': event.event_type,
+                'name': event.name,
+                'description': event.description,
+                'start': event.start.isoformat(),
+                'end': event.end.isoformat(),
+                'location': event.location,
+                'website': event.website,
+            }
+            for event in events
+        ]
+        self.assertEqual(response.data, expected_data)
 
 
 class TestHomePage(TestCase):
