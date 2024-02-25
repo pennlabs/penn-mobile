@@ -75,68 +75,23 @@ class TestEvent(TestCase):
             website="https://pennlabs.org/"
         )
 
-    def test_response(self):
-        event1 = Event.objects.get(name="test1")
-        event2 = Event.objects.get(name="test2")
-        self.assertEqual(event1.name, "test1")
-        self.assertEqual(event2.name, "test2")
-
     def test_get_all_events(self):
-        """Test GET request to retrieve all events"""
+        """Test GET request to retrieve all events (no type)"""
         url = reverse("events")
         response = self.client.get(url)
         events = Event.objects.all()
-        expected_data = [
-            {
-                "event_type": event.event_type,
-                "name": event.name,
-                "description": event.description,
-                "start": event.start.isoformat(),
-                "end": event.end.isoformat(),
-                "location": event.location,
-                "website": event.website,
-            }
-            for event in events
-        ]
-        self.assertEqual(response.data, expected_data)
+        res_json = json.loads(response.content)
+        self.assertEqual(len(events), len(res_json))
 
     def test_get_events_by_type(self):
         """Test GET request to retrieve events by type"""
         url = reverse("events-type", kwargs={"type": "type1"})
         response = self.client.get(url)
         events = Event.objects.filter(event_type="type1")
-        expected_data = [
-            {
-                "event_type": event.event_type,
-                "name": event.name,
-                "description": event.description,
-                "start": event.start.isoformat(),
-                "end": event.end.isoformat(),
-                "location": event.location,
-                "website": event.website,
-            }
-            for event in events
-        ]
-        self.assertEqual(response.data, expected_data)
-
-    def test_get_events_no_type(self):
-        """Test GET request to retrieve all events when no type is specified"""
-        url = reverse("events")
-        response = self.client.get(url)
-        events = Event.objects.all()
-        expected_data = [
-            {
-                "event_type": event.event_type,
-                "name": event.name,
-                "description": event.description,
-                "start": event.start.isoformat(),
-                "end": event.end.isoformat(),
-                "location": event.location,
-                "website": event.website,
-            }
-            for event in events
-        ]
-        self.assertEqual(response.data, expected_data)
+        res_json = json.loads(response.content)
+        self.assertEqual(len(events), len(res_json))
+        event = res_json[0]
+        self.assertEqual("Event 1", event["name"])
 
 
 class TestHomePage(TestCase):

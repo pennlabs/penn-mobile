@@ -21,8 +21,8 @@ class Command(BaseCommand):
         current_year = now.year
 
         # Clears out previous Events
-        past_events = Event.objects.filter(end__lt=now.date())
-        past_events.delete()
+        # past_events = Event.objects.filter(end__lt=now.date())
+        # past_events.delete()
 
         # Scrapes Penn Today
         try:
