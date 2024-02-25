@@ -74,7 +74,6 @@ class TestEvent(TestCase):
             location="Location 2",
             website="https://pennlabs.org/"
         )
-    
 
     def test_response(self):
         event1 = Event.objects.get(name="test1")
@@ -89,13 +88,13 @@ class TestEvent(TestCase):
         events = Event.objects.all()
         expected_data = [
             {
-                'event_type': event.event_type,
-                'name': event.name,
-                'description': event.description,
-                'start': event.start.isoformat(),
-                'end': event.end.isoformat(),
-                'location': event.location,
-                'website': event.website,
+                "event_type": event.event_type,
+                "name": event.name,
+                "description": event.description,
+                "start": event.start.isoformat(),
+                "end": event.end.isoformat(),
+                "location": event.location,
+                "website": event.website,
             }
             for event in events
         ]
@@ -103,18 +102,18 @@ class TestEvent(TestCase):
 
     def test_get_events_by_type(self):
         """Test GET request to retrieve events by type"""
-        url = reverse('events-type', kwargs={'type': 'type1'}) 
+        url = reverse('events-type', kwargs={'type': 'type1'})
         response = self.client.get(url)
         events = Event.objects.filter(event_type='type1')
         expected_data = [
             {
-                'event_type': event.event_type,
-                'name': event.name,
-                'description': event.description,
-                'start': event.start.isoformat(),
-                'end': event.end.isoformat(),
-                'location': event.location,
-                'website': event.website,
+                "event_type": event.event_type,
+                "name": event.name,
+                "description": event.description,
+                "start": event.start.isoformat(),
+                "end": event.end.isoformat(),
+                "location": event.location,
+                "website": event.website,
             }
             for event in events
         ]
@@ -127,13 +126,13 @@ class TestEvent(TestCase):
         events = Event.objects.all()
         expected_data = [
             {
-                'event_type': event.event_type,
-                'name': event.name,
-                'description': event.description,
-                'start': event.start.isoformat(),
-                'end': event.end.isoformat(),
-                'location': event.location,
-                'website': event.website,
+                "event_type": event.event_type,
+                "name": event.name,
+                "description": event.description,
+                "start": event.start.isoformat(),
+                "end": event.end.isoformat(),
+                "location": event.location,
+                "website": event.website,
             }
             for event in events
         ]
