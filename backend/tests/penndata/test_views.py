@@ -63,7 +63,7 @@ class TestEvent(TestCase):
             start="2024-02-14T10:00:00Z",
             end="2099-02-14T12:00:00Z",
             location="Location 1",
-            website="https://pennlabs.org/"
+            website="https://pennlabs.org/",
         )
         self.event2 = Event.objects.create(
             event_type="type2",
@@ -72,7 +72,7 @@ class TestEvent(TestCase):
             start="2024-02-15T10:00:00Z",
             end="2099-02-15T12:00:00Z",
             location="Location 2",
-            website="https://pennlabs.org/"
+            website="https://pennlabs.org/",
         )
 
     def test_get_all_events(self):
