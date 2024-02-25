@@ -83,7 +83,7 @@ class TestEvent(TestCase):
 
     def test_get_all_events(self):
         """Test GET request to retrieve all events"""
-        url = reverse('events')
+        url = reverse("events")
         response = self.client.get(url)
         events = Event.objects.all()
         expected_data = [
@@ -102,9 +102,9 @@ class TestEvent(TestCase):
 
     def test_get_events_by_type(self):
         """Test GET request to retrieve events by type"""
-        url = reverse('events-type', kwargs={'type': 'type1'})
+        url = reverse("events-type", kwargs={"type": "type1"})
         response = self.client.get(url)
-        events = Event.objects.filter(event_type='type1')
+        events = Event.objects.filter(event_type="type1")
         expected_data = [
             {
                 "event_type": event.event_type,
@@ -121,7 +121,7 @@ class TestEvent(TestCase):
 
     def test_get_events_no_type(self):
         """Test GET request to retrieve all events when no type is specified"""
-        url = reverse('events')
+        url = reverse("events")
         response = self.client.get(url)
         events = Event.objects.all()
         expected_data = [
