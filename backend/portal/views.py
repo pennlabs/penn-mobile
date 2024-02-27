@@ -99,7 +99,7 @@ class Polls(viewsets.ModelViewSet):
             )
         )
 
-    @action(detail=False, methods=["post"])  # WHY IS THIS POST
+    @action(detail=False, methods=["post"])
     def browse(self, request):
         """Returns list of all possible polls user can answer but has yet to
         For admins, returns list of all polls they have not voted for and have yet to expire
