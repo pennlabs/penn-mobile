@@ -148,13 +148,11 @@ class Polls(viewsets.ModelViewSet):
         #     ).data
         # )
 
-        res = Response(
+        return Response(
             RetrievePollSerializer(
                 polls.distinct().order_by("-priority", "start_date", "expire_date"), many=True
             ).data
         )
-        print(res)
-        return res
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
     def review(self, request):
@@ -278,7 +276,6 @@ class Posts(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
-        print("HERE")
         """
         Returns a list of all posts that are targeted at the current user
         For admins, returns list of posts that they have not approved and have yet to expire
