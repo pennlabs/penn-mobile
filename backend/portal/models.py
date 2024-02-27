@@ -25,7 +25,7 @@ class TargetPopulation(models.Model):
         return self.population
 
 
-class Poll(models.Model):
+class Content(models.Model):
     STATUS_DRAFT = "DRAFT"
     STATUS_REVISION = "REVISION"
     STATUS_APPROVED = "APPROVED"
@@ -37,15 +37,22 @@ class Poll(models.Model):
     )
 
     club_code = models.CharField(max_length=255, blank=True)
-    question = models.CharField(max_length=255)
     created_date = models.DateTimeField(default=timezone.now)
     start_date = models.DateTimeField(default=timezone.now)
-    expire_date = models.DateTimeField(default=timezone.now)
+    expire_date = models.DateTimeField()
     status = models.CharField(max_length=30, choices=STATUS_OPTIONS, default=STATUS_DRAFT)
-    multiselect = models.BooleanField(default=False)
     club_comment = models.CharField(max_length=255, null=True, blank=True)
     admin_comment = models.CharField(max_length=255, null=True, blank=True)
     target_populations = models.ManyToManyField(TargetPopulation, blank=True)
+    priority = models.IntegerField(default=0)
+
+    class Meta:
+        abstract = True
+
+
+class Poll(Content):
+    question = models.CharField(max_length=255)
+    multiselect = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.id} - {self.club_code} - {self.question}"
@@ -68,29 +75,11 @@ class PollVote(models.Model):
     target_populations = models.ManyToManyField(TargetPopulation, blank=True)
 
 
-class Post(models.Model):
-    STATUS_DRAFT = "DRAFT"
-    STATUS_REVISION = "REVISION"
-    STATUS_APPROVED = "APPROVED"
-
-    STATUS_OPTIONS = (
-        (STATUS_DRAFT, "Draft"),
-        (STATUS_REVISION, "Revision"),
-        (STATUS_APPROVED, "Approved"),
-    )
-
-    club_code = models.CharField(max_length=255, blank=True)
+class Post(Content):
     title = models.CharField(max_length=255)
     subtitle = models.CharField(max_length=255)
     post_url = models.CharField(max_length=255, null=True, blank=True)
     image = models.ImageField(upload_to="portal/images", null=True, blank=True)
-    created_date = models.DateTimeField(default=timezone.now)
-    start_date = models.DateTimeField(default=timezone.now)
-    expire_date = models.DateTimeField()
-    status = models.CharField(max_length=30, choices=STATUS_OPTIONS, default=STATUS_DRAFT)
-    club_comment = models.CharField(max_length=255, null=True, blank=True)
-    admin_comment = models.CharField(max_length=255, null=True, blank=True)
-    target_populations = models.ManyToManyField(TargetPopulation, blank=True)
 
     def __str__(self):
         return f"{self.id} - {self.club_code} - {self.title}"

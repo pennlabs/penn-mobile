@@ -99,7 +99,7 @@ class Polls(viewsets.ModelViewSet):
             )
         )
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"])  # WHY IS THIS POST
     def browse(self, request):
         """Returns list of all possible polls user can answer but has yet to
         For admins, returns list of all polls they have not voted for and have yet to expire
@@ -148,9 +148,13 @@ class Polls(viewsets.ModelViewSet):
         #     ).data
         # )
 
-        return Response(
-            RetrievePollSerializer(polls.distinct().order_by("expire_date"), many=True).data
+        res = Response(
+            RetrievePollSerializer(
+                polls.distinct().order_by("-priority", "start_date", "expire_date"), many=True
+            ).data
         )
+        print(res)
+        return res
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
     def review(self, request):
@@ -274,6 +278,7 @@ class Posts(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def browse(self, request):
+        print("HERE")
         """
         Returns a list of all posts that are targeted at the current user
         For admins, returns list of posts that they have not approved and have yet to expire
@@ -304,7 +309,11 @@ class Posts(viewsets.ModelViewSet):
         # excludes the bad polls
         posts = unfiltered_posts.exclude(id__in=bad_posts)
 
-        return Response(PostSerializer(posts.distinct().order_by("expire_date"), many=True).data)
+        return Response(
+            PostSerializer(
+                posts.distinct().order_by("-priority", "start_date", "expire_date"), many=True
+            ).data
+        )
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
     def review(self, request):
