@@ -22,7 +22,15 @@ const PostPage = ({
   post,
   filters,
 }: iPostPageProps & { user: User }) => {
-  const [state, setState] = useState<PostType>(post || initialPost)
+  const [state, setState] = useState<PostType>(
+    post
+      ? {
+          ...post,
+          start_date: new Date(post.start_date!), // deserialize date strings since they have to be sent as strings
+          expire_date: new Date(post.expire_date!),
+        }
+      : initialPost
+  )
 
   const updateState = useCallback((newState) => {
     setState((currentState) => ({ ...currentState, ...newState }))
