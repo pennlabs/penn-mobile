@@ -66,7 +66,8 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
       // post each poll option if creating a poll
       if (!isPost(state)) {
         const pollRes = await res.json()
-        state.options.forEach(async (option) => {
+        for (const option of state.options) {
+          /* eslint-disable no-await-in-loop */
           await doApiRequest('/api/portal/options/', {
             method: 'POST',
             body: {
@@ -74,7 +75,7 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
               choice: option.choice,
             },
           })
-        })
+        }
       }
 
       // redirect to dashboard after submitting with success message
@@ -115,7 +116,8 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
 
     if (res.ok) {
       if (!isPost(state)) {
-        state.options.forEach(async (option) => {
+        for (const option of state.options) {
+          /* eslint-disable no-await-in-loop */
           // post new poll option
           if (!prevOptionIds?.includes(option.id)) {
             await doApiRequest('/api/portal/options/', {
@@ -135,7 +137,7 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
               },
             })
           }
-        })
+        }
 
         const currOptionIds = state.options.map((option) => option.id)
 
