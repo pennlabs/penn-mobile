@@ -9,15 +9,15 @@ User = get_user_model()
 
 
 class Event(models.Model):
-    event_type = models.CharField(max_length=255)
+    event_type = models.CharField(max_length=255, null=True, blank=True)
     name = models.CharField(max_length=255)
-    description = models.TextField()
-    image_url = models.URLField()
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-    email = models.CharField(max_length=255)
-    website = models.URLField(max_length=255, null=True)
-    facebook = models.URLField(max_length=255, null=True)
+    description = models.TextField(null=True, blank=True)
+    image_url = models.URLField(null=True, blank=True)
+    start = models.DateTimeField()
+    end = models.DateTimeField(null=True, blank=True)
+    location = models.CharField(max_length=255, null=True, blank=True)
+    email = models.CharField(max_length=255, null=True, blank=True)
+    website = models.URLField(max_length=255, null=True, blank=True)
 
 
 class HomePageOrder(models.Model):
