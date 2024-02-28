@@ -14,7 +14,7 @@ from penndata.models import Event
 PENN_TODAY_WEBSITE = "https://penntoday.upenn.edu/events"
 
 
-class Command(BaseCommand):    
+class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         now = datetime.datetime.now()
         current_month = now.month
@@ -57,7 +57,7 @@ class Command(BaseCommand):
             end_date_elem = article.find(
                 "p", class_="tease__meta--sm", string=lambda x: "Through" in str(x)
             )
-            
+
             if start_date_str == "02/29" or start_date_str == "2/29":
                 # If it's February 29th
                 start_date = datetime.datetime.strptime("02/28", "%m/%d").replace(
@@ -102,7 +102,7 @@ class Command(BaseCommand):
                     )
                 else:  # no end date or end time
                     end_date = (start_date + datetime.timedelta(days=1)
-                            - datetime.timedelta(seconds=1))
+                                - datetime.timedelta(seconds=1))
 
             Event.objects.update_or_create(
                 name=name,
@@ -120,7 +120,6 @@ class Command(BaseCommand):
             )
 
         self.stdout.write("Uploaded Events!")
-
 
     def get_end_time(event_url):
         driver = webdriver.Chrome()
