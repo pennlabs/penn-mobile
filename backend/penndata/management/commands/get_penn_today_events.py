@@ -19,8 +19,7 @@ ALL_DAY = "all day"
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         now = timezone.localtime()
-        current_month = now.month
-        current_year = now.year
+        current_month, current_year = now.month, now.year
 
         # Clears out previous Events
         # past_events = Event.objects.filter(end__lt=now.date())
