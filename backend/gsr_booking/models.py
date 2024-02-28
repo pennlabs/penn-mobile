@@ -84,6 +84,11 @@ class Group(models.Model):
         )
 
 
+class GSRManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(in_use=True)
+
+
 class GSR(models.Model):
 
     KIND_WHARTON = "WHARTON"
@@ -95,6 +100,11 @@ class GSR(models.Model):
     gid = models.IntegerField(null=True)
     name = models.CharField(max_length=255)
     image_url = models.URLField()
+
+    in_use = models.BooleanField(default=True)
+
+    objects = GSRManager()
+    all_objects = models.Manager()  # for admin page
 
     def __str__(self):
         return f"{self.lid}-{self.gid}"
