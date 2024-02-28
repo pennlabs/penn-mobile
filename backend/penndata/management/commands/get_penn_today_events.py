@@ -53,7 +53,7 @@ class Command(BaseCommand):
                 start_time_str = meta_elements[0].text.strip().replace(".", "")
                 location = meta_elements[1].text.strip()
             else:
-                start_time_str = "all day"
+                start_time_str = ALL_DAY
                 location = None
 
             end_date_elem = article.find(
