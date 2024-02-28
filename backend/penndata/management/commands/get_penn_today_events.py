@@ -131,7 +131,7 @@ class Command(BaseCommand):
         end_time_range_str = end_time_soup.find(
             "p", class_="event__meta event__time").text.strip().replace(".", "")
         print(end_time_range_str)
-        if not end_time_range_str or all_day in end_time_range_str.lower():
+        if not end_time_range_str or ALL_DAY in end_time_range_str.lower():
             driver.quit()
             return None  # No end time if the event is all day
         times = end_time_range_str.split(" - ")
