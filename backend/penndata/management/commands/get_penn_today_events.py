@@ -113,7 +113,6 @@ class Command(BaseCommand):
                     "website": event_url,
                     "description": description,
                     "email": "",
-                    "facebook": "",
                 },
             )
 

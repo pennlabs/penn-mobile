@@ -23,7 +23,6 @@ class EventSerializer(serializers.ModelSerializer):
             "end",
             "email",
             "website",
-            "facebook",
         )
 
 
