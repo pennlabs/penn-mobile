@@ -14,7 +14,7 @@ from penndata.models import Event
 PENN_TODAY_WEBSITE = "https://penntoday.upenn.edu/events"
 
 
-class Command(BaseCommand):
+class Command(BaseCommand):    
     def handle(self, *args, **kwargs):
         now = datetime.datetime.now()
         current_month = now.month
@@ -57,20 +57,16 @@ class Command(BaseCommand):
             end_date_elem = article.find(
                 "p", class_="tease__meta--sm", string=lambda x: "Through" in str(x)
             )
-            end_date = None
-            if end_date_elem:
-                end_date_str = end_date_elem.text.strip().split(" ")[-1]
-                end_date = (
-                    datetime.datetime.strptime(end_date_str, "%m/%d/%Y")
-                    + datetime.timedelta(days=1)
-                    - datetime.timedelta(seconds=1)
-                )
-
+            
             if start_date_str == "02/29" or start_date_str == "2/29":
                 # If it's February 29th
                 start_date = datetime.datetime.strptime("02/28", "%m/%d").replace(
                     year=current_year
-                ) + datetime.timedelta(days=1)
+                )
+                if start_date.month < current_month:
+                    # If scraped month is before current month, increment year
+                    start_date = start_date.replace(year=current_year + 1)
+                start_date = start_date + datetime.timedelta(days=1)
             else:
                 start_date = datetime.datetime.strptime(start_date_str, "%m/%d").replace(
                     year=current_year
@@ -85,6 +81,28 @@ class Command(BaseCommand):
             start_date = datetime.datetime.combine(start_date, start_time)
 
             event_url = urljoin(PENN_TODAY_WEBSITE, article.find("a", class_="tease__link")["href"])
+
+            end_time = self.get_end_time(event_url)
+            if end_time is not None:
+                if end_date_elem:  # end date and end time
+                    end_date_str = end_date_elem.text.strip().split(" ")[-1]
+                    end_date = datetime.datetime.strptime(end_date_str, "%m/%d/%Y")
+                    end_time = datetime.datetime.strptime(end_time, "%I:%M %p").time()
+                    end_date = datetime.datetime.combine(end_date, end_time)
+                else:  # no end date but end time
+                    end_time = datetime.datetime.strptime(end_time, "%I:%M %p").time()
+                    end_date = datetime.datetime.combine(start_date, end_time)
+            else:
+                if end_date_elem:  # end date but no end time
+                    end_date_str = end_date_elem.text.strip().split(" ")[-1]
+                    end_date = (
+                        datetime.datetime.strptime(end_date_str, "%m/%d/%Y")
+                        + datetime.timedelta(days=1)
+                        - datetime.timedelta(seconds=1)
+                    )
+                else:  # no end date or end time
+                    end_date = (start_date + datetime.timedelta(days=1)
+                            - datetime.timedelta(seconds=1))
 
             Event.objects.update_or_create(
                 name=name,
@@ -102,3 +120,26 @@ class Command(BaseCommand):
             )
 
         self.stdout.write("Uploaded Events!")
+
+
+    def get_end_time(event_url):
+        driver = webdriver.Chrome()
+        driver.get(event_url)
+        event_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "event__topper-content"))
+        )
+        end_time_soup = BeautifulSoup(event_element.get_attribute("innerHTML"), "html.parser")
+
+        end_time_range_str = end_time_soup.find(
+            "p", class_="event__meta event__time").text.strip().replace(".", "")
+        print(end_time_range_str)
+        if not end_time_range_str or "all day" in end_time_range_str.lower():
+            driver.quit()
+            return None  # No end time if the event is all day
+        times = end_time_range_str.split(" - ")
+        if len(times) <= 1:
+            driver.quit()
+            return None
+        end_time_str = times[1]
+        driver.quit()
+        return end_time_str
