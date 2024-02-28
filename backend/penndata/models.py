@@ -18,7 +18,6 @@ class Event(models.Model):
     location = models.CharField(max_length=255, null=True, blank=True)
     email = models.CharField(max_length=255, null=True, blank=True)
     website = models.URLField(max_length=255, null=True, blank=True)
-    facebook = models.URLField(max_length=255, null=True, blank=True)
 
 
 class HomePageOrder(models.Model):

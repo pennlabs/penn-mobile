@@ -3,6 +3,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -12,11 +13,12 @@ from penndata.models import Event
 
 
 PENN_TODAY_WEBSITE = "https://penntoday.upenn.edu/events"
+ALL_DAY = "all day"
 
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-        now = datetime.datetime.now()
+        now = timezone.localtime()
         current_month = now.month
         current_year = now.year
 
@@ -51,7 +53,7 @@ class Command(BaseCommand):
                 start_time_str = meta_elements[0].text.strip().replace(".", "")
                 location = meta_elements[1].text.strip()
             else:
-                start_time_str = "All day"
+                start_time_str = "all day"
                 location = None
 
             end_date_elem = article.find(
@@ -74,7 +76,7 @@ class Command(BaseCommand):
                 if start_date.month < current_month:
                     # If scraped month is before current month, increment year
                     start_date = start_date.replace(year=current_year + 1)
-            if start_time_str == "All day":
+            if start_time_str == ALL_DAY:
                 start_time = datetime.time(0, 0)
             else:
                 start_time = datetime.datetime.strptime(start_time_str, "%I:%M%p").time()
@@ -93,16 +95,13 @@ class Command(BaseCommand):
                     end_time = datetime.datetime.strptime(end_time, "%I:%M %p").time()
                     end_date = datetime.datetime.combine(start_date, end_time)
             else:
+                end_of_day = datetime.time(23, 59, 59)
                 if end_date_elem:  # end date but no end time
                     end_date_str = end_date_elem.text.strip().split(" ")[-1]
-                    end_date = (
-                        datetime.datetime.strptime(end_date_str, "%m/%d/%Y")
-                        + datetime.timedelta(days=1)
-                        - datetime.timedelta(seconds=1)
-                    )
+                    end_date = datetime.combine(
+                        datetime.datetime.strptime(end_date_str, "%m/%d/%Y"), end_of_day)
                 else:  # no end date or end time
-                    end_date = (start_date + datetime.timedelta(days=1)
-                                - datetime.timedelta(seconds=1))
+                    end_date = datetime.combine(start_date, end_of_day)
 
             Event.objects.update_or_create(
                 name=name,
@@ -132,7 +131,7 @@ class Command(BaseCommand):
         end_time_range_str = end_time_soup.find(
             "p", class_="event__meta event__time").text.strip().replace(".", "")
         print(end_time_range_str)
-        if not end_time_range_str or "all day" in end_time_range_str.lower():
+        if not end_time_range_str or all_day in end_time_range_str.lower():
             driver.quit()
             return None  # No end time if the event is all day
         times = end_time_range_str.split(" - ")
