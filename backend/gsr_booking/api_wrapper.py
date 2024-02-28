@@ -206,7 +206,13 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
             raise APIError("LibCal: Connection timeout")
 
     def book_room(self, rid, start, end, user):
-        """Books room if pennkey is valid"""
+        """
+        Books room if pennkey is valid
+
+        If this ever breaks for certain rooms but not others, 99% chance the
+        questions changed and we are not supplying the right answers
+        """
+
         # turns parameters into valid json format, then books room
         payload = {
             "start": start,
@@ -217,14 +223,14 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
             "q43": f"{user.username} GSR Booking",
             "bookings": [{"id": rid, "to": end}],
             "test": False,
-            "q2555": "5",
-            "q2537": "5",
+            "q2555": "4-5",  # corresponds to radio button
+            "q2537": "4-5",  # corresponds to radio button
             "q3699": self.get_affiliation(user.email),
             "q2533": "000-000-0000",
-            "q16801": "5",
-            "q16802": "5",
-            "q16805": "Yes",
-            "q16804": "Yes",
+            "q16801": "4",  # has to be between 2 and 4
+            "q16802": "5",  # has to be between 5 and 10
+            "q16805": "Yes",  # has to be "Yes"
+            "q16804": "Yes",  # has to be "Yes"
         }
 
         response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=payload)
