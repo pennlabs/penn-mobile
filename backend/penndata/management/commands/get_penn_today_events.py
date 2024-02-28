@@ -62,9 +62,7 @@ class Command(BaseCommand):
 
             if start_date_str == "02/29" or start_date_str == "2/29":
                 # If it's February 29th
-                start_date = datetime.datetime.strptime("02/28", "%m/%d").replace(
-                    year=current_year
-                )
+                start_date = datetime.datetime.strptime("02/28", "%m/%d").replace(year=current_year)
                 if start_date.month < current_month:
                     # If scraped month is before current month, increment year
                     start_date = start_date.replace(year=current_year + 1)
@@ -99,7 +97,8 @@ class Command(BaseCommand):
                 if end_date_elem:  # end date but no end time
                     end_date_str = end_date_elem.text.strip().split(" ")[-1]
                     end_date = datetime.combine(
-                        datetime.datetime.strptime(end_date_str, "%m/%d/%Y"), end_of_day)
+                        datetime.datetime.strptime(end_date_str, "%m/%d/%Y"), end_of_day
+                    )
                 else:  # no end date or end time
                     end_date = datetime.combine(start_date, end_of_day)
 
@@ -128,8 +127,9 @@ class Command(BaseCommand):
         )
         end_time_soup = BeautifulSoup(event_element.get_attribute("innerHTML"), "html.parser")
 
-        end_time_range_str = end_time_soup.find(
-            "p", class_="event__meta event__time").text.strip().replace(".", "")
+        end_time_range_str = (
+            end_time_soup.find("p", class_="event__meta event__time").text.strip().replace(".", "")
+        )
         print(end_time_range_str)
         if not end_time_range_str or ALL_DAY in end_time_range_str.lower():
             driver.quit()
