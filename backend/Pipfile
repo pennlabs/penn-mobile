@@ -30,7 +30,7 @@ pyyaml = "*"
 uritemplate = "*"
 uwsgi = {version = "*", sys_platform = "== 'linux'"}
 django-filter = "*"
-django-labs-accounts = "==0.9.4"
+django-labs-accounts = "*"
 django-debug-toolbar = "*"
 django-runtime-options = "*"
 django-storages = "*"

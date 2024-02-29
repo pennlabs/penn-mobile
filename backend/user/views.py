@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from identity.permissions import B2BPermission
+# from identity.permissions import B2BPermission
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -64,7 +64,7 @@ class NotificationSettingView(viewsets.ModelViewSet):
     Checks if user wants notification for specified serice.
     """
 
-    permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
+    # permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
     serializer_class = NotificationSettingSerializer
 
     def is_authorized(self, request):
@@ -105,7 +105,7 @@ class NotificationAlertView(APIView):
     sends push notification alert if one exists
     """
 
-    permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
+    # permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
 
     def post(self, request):
         users = (
