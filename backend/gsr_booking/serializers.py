@@ -99,7 +99,7 @@ class UserSerializer(serializers.ModelSerializer):
 class GSRSerializer(serializers.ModelSerializer):
     class Meta:
         model = GSR
-        fields = "__all__"
+        exclude = ["in_use"]
 
 
 class GSRBookingSerializer(serializers.ModelSerializer):
