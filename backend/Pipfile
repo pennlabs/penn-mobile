@@ -44,6 +44,7 @@ celery = "*"
 django-redis = "*"
 redis = "*"
 python-dateutil = "*"
+selenium = "*"
 
 [requires]
 python_version = "3.9.14"
