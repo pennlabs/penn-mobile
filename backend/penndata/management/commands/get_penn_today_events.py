@@ -117,7 +117,7 @@ class Command(BaseCommand):
 
         self.stdout.write("Uploaded Events!")
 
-    def get_end_time(event_url):
+    def get_end_time(self, event_url):
         driver = webdriver.Chrome()
         driver.get(event_url)
         event_element = WebDriverWait(driver, 10).until(
