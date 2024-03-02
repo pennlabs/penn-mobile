@@ -6,8 +6,10 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.firefox import GeckoDriverManager
 
 from penndata.models import Event
 
@@ -27,7 +29,7 @@ class Command(BaseCommand):
 
         # Scrapes Penn Today
         try:
-            driver = webdriver.Chrome()
+            driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
 
             driver.get(PENN_TODAY_WEBSITE)
             events_list = WebDriverWait(driver, 10).until(
@@ -37,6 +39,7 @@ class Command(BaseCommand):
             html_content = events_list.get_attribute("innerHTML")
             driver.quit()
         except ConnectionError:
+            print("Connection Error to webdriver")
             return None
 
         soup = BeautifulSoup(html_content, "html.parser")

@@ -45,6 +45,7 @@ django-redis = "*"
 redis = "*"
 python-dateutil = "*"
 selenium = "*"
+webdriver-manager = "*"
 
 [requires]
 python_version = "3.9.14"
