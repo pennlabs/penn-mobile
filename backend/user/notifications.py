@@ -17,8 +17,6 @@ if sys.version_info.major >= 3 and sys.version_info.minor >= 10:
     collections.Mapping = abc.Mapping
     collections.MutableSet = abc.MutableSet
     collections.MutableMapping = abc.MutableMapping
-else:
-    import collections
 
 from apns2.client import APNsClient
 from apns2.credentials import TokenCredentials
