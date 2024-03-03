@@ -3,13 +3,14 @@ import os
 import sys
 
 
-# Monkey Patch for apn2 errors, referenced from https://github.com/jazzband/django-push-notifications/issues/622
+# Monkey Patch for apn2 errors, referenced from:
+# https://github.com/jazzband/django-push-notifications/issues/622
 if sys.version_info.major >= 3 and sys.version_info.minor >= 10:
     """
-    The apns2 package is throwing errors because some aliases in collections were removed in 3.10. Specifically, the
-    error is coming from a dependency of apns2 named hyper.
+    The apns2 package is throwing errors because some aliases in collections
+    were removed in 3.10. Specifically, the error is coming from a dependency
+    of apns2 named hyper.
     """
-    import collections
     from collections import abc
 
     collections.Iterable = abc.Iterable

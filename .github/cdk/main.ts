@@ -6,7 +6,7 @@ new LabsApplicationStack(app, {
   djangoProjectName: 'pennmobile',
   dockerImageBaseName: 'penn-mobile',
   djangoCheckProps: {
-    pythonVersion: "3.9.14-buster",
+    pythonVersion: "3.11-bookworm",
   }
 });
 

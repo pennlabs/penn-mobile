@@ -6,9 +6,9 @@ verify_ssl = true
 [dev-packages]
 black = "==19.10b0"
 unittest-xml-reporting = "*"
-flake8 = "*"
-flake8-isort = "*"
-flake8-quotes = "*"
+flake8 = "==6.1.0"
+flake8-isort = "==6.1.0"
+flake8-quotes = "==3.3.2"
 django-extensions = "*"
 flake8-absolute-import = "*"
 rope = "*"
@@ -28,7 +28,7 @@ django = "==5.0.2"
 django-cors-headers = "*"
 pyyaml = "*"
 uritemplate = "*"
-uwsgi = {version = "*", sys_platform = "== 'linux'"}
+uwsgi = {version = "*", markers = "sys_platform== 'linux'"}
 django-filter = "*"
 django-labs-accounts = "==0.9.5"
 django-debug-toolbar = "*"
