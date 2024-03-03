@@ -30,7 +30,7 @@ pyyaml = "*"
 uritemplate = "*"
 uwsgi = {version = "*", sys_platform = "== 'linux'"}
 django-filter = "*"
-django-labs-accounts = "*"
+django-labs-accounts = "==0.9.5"
 django-debug-toolbar = "*"
 django-runtime-options = "*"
 django-storages = "*"
@@ -44,6 +44,7 @@ celery = "*"
 django-redis = "*"
 redis = "*"
 python-dateutil = "*"
+selenium = "*"
 
 [requires]
 python_version = "3.11"
