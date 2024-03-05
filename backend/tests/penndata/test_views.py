@@ -40,6 +40,9 @@ class TestNews(TestCase):
 
 
 class TestCalender(TestCase):
+    def setUp(self):
+        call_command("get_calendar")
+
     def test_response(self):
         response = self.client.get(reverse("calendar"))
         res_json = json.loads(response.content)
@@ -53,35 +56,42 @@ class TestCalender(TestCase):
 class TestEvent(TestCase):
     def setUp(self):
         self.client = APIClient()
-        Event.objects.create(
-            event_type="type",
-            name="test1",
-            description="asdf",
-            image_url="https://pennlabs.org/",
-            start_time=timezone.localtime(),
-            end_time=timezone.localtime(),
-            email="a",
+        self.event1 = Event.objects.create(
+            event_type="type1",
+            name="Event 1",
+            description="Description 1",
+            start="2024-02-14T10:00:00Z",
+            end="2099-02-14T12:00:00Z",
+            location="Location 1",
             website="https://pennlabs.org/",
-            facebook="https://pennlabs.org/",
         )
-        Event.objects.create(
-            event_type="type",
-            name="test2",
-            description="asdaf",
-            image_url="https://pennlabs.org/",
-            start_time=timezone.localtime(),
-            end_time=timezone.localtime(),
-            email="a",
+        self.event2 = Event.objects.create(
+            event_type="type2",
+            name="Event 2",
+            description="Description 2",
+            start="2024-02-15T10:00:00Z",
+            end="2099-02-15T12:00:00Z",
+            location="Location 2",
             website="https://pennlabs.org/",
-            facebook="https://pennlabs.org/",
         )
 
-    def test_response(self):
-        response = self.client.get(reverse("events", args=["type"]))
+    def test_get_all_events(self):
+        """Test GET request to retrieve all events (no type)"""
+        url = reverse("events")
+        response = self.client.get(url)
+        events = Event.objects.all()
         res_json = json.loads(response.content)
-        self.assertEquals(2, len(res_json))
-        self.assertEquals(res_json[0]["name"], "test1")
-        self.assertEquals(res_json[1]["name"], "test2")
+        self.assertEqual(len(events), len(res_json))
+
+    def test_get_events_by_type(self):
+        """Test GET request to retrieve events by type"""
+        url = reverse("events-type", kwargs={"type": "type1"})
+        response = self.client.get(url)
+        events = Event.objects.filter(event_type="type1")
+        res_json = json.loads(response.content)
+        self.assertEqual(len(events), len(res_json))
+        event = res_json[0]
+        self.assertEqual("Event 1", event["name"])
 
 
 class TestHomePage(TestCase):
@@ -102,8 +112,8 @@ class TestHomePage(TestCase):
         self.assertIn(1442, dining_info)
         self.assertIn(636, dining_info)
 
-        self.assertEqual(res_json[3]["type"], "laundry")
-        self.assertEqual(res_json[3]["info"]["room_id"], 0)
+        self.assertEqual(res_json[2]["type"], "laundry")
+        self.assertEqual(res_json[2]["info"]["room_id"], 0)
 
         self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=747))
         self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=1733))
@@ -122,10 +132,9 @@ class TestHomePage(TestCase):
         self.assertIn(1733, new_dining_info)
         self.assertIn(638, new_dining_info)
 
-        self.assertEqual(new_res_json[3]["info"]["room_id"], 3)
+        self.assertEqual(new_res_json[2]["info"]["room_id"], 3)
 
         self.assertEqual(new_res_json[1]["type"], "news")
-        self.assertEqual(new_res_json[2]["type"], "calendar")
 
 
 class TestGetRecentFitness(TestCase):

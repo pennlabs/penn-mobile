@@ -38,13 +38,13 @@ const DatePickerForm = ({
           ? [moment(startDate), moment(expireDate)]
           : undefined
       }
-      onChange={(dates) =>
+      onChange={(dates) => {
         dates &&
-        updateState({
-          start_date: dates[0]?.toDate(),
-          expire_date: dates[1]?.toDate(),
-        })
-      }
+          updateState({
+            start_date: dates[0]?.toDate(),
+            expire_date: dates[1]?.toDate(),
+          })
+      }}
       style={{
         fontFamily: 'inherit',
         padding: '0.5rem',

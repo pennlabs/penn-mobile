@@ -1,6 +1,13 @@
 from rest_framework import serializers
 
-from penndata.models import AnalyticsEvent, Event, FitnessRoom, FitnessSnapshot, HomePageOrder
+from penndata.models import (
+    AnalyticsEvent,
+    CalendarEvent,
+    Event,
+    FitnessRoom,
+    FitnessSnapshot,
+    HomePageOrder,
+)
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -10,13 +17,19 @@ class EventSerializer(serializers.ModelSerializer):
             "event_type",
             "name",
             "description",
+            "location",
             "image_url",
-            "start_time",
-            "end_time",
+            "start",
+            "end",
             "email",
             "website",
-            "facebook",
         )
+
+
+class CalendarEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CalendarEvent
+        fields = ("event", "date")
 
 
 class HomePageOrderSerializer(serializers.ModelSerializer):

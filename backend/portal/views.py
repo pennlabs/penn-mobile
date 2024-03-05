@@ -149,7 +149,9 @@ class Polls(viewsets.ModelViewSet):
         # )
 
         return Response(
-            RetrievePollSerializer(polls.distinct().order_by("expire_date"), many=True).data
+            RetrievePollSerializer(
+                polls.distinct().order_by("-priority", "start_date", "expire_date"), many=True
+            ).data
         )
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
@@ -304,7 +306,11 @@ class Posts(viewsets.ModelViewSet):
         # excludes the bad polls
         posts = unfiltered_posts.exclude(id__in=bad_posts)
 
-        return Response(PostSerializer(posts.distinct().order_by("expire_date"), many=True).data)
+        return Response(
+            PostSerializer(
+                posts.distinct().order_by("-priority", "start_date", "expire_date"), many=True
+            ).data
+        )
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
     def review(self, request):

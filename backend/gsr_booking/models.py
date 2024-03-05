@@ -1,9 +1,6 @@
-import requests
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
-from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 
 User = get_user_model()
@@ -45,20 +42,7 @@ class GroupMembership(models.Model):
         super().save(*args, **kwargs)
 
     def check_wharton(self):
-        # not using api_wrapper.py to prevent circular dependency
-        url = f"https://apps.wharton.upenn.edu/gsr/api/v1/{self.user.username}/privileges"
-        try:
-            response = requests.get(
-                url, headers={"Authorization": f"Token {settings.WHARTON_TOKEN}"}
-            )
-
-            if response.status_code != 200:
-                return None
-
-            res_json = response.json()
-            return res_json.get("type") == "whartonMBA" or res_json.get("type") == "whartonUGR"
-        except (ConnectTimeout, ReadTimeout, KeyError, ConnectionError):
-            return None
+        return WhartonGSRBooker.is_wharton(self.user)
 
     class Meta:
         verbose_name = "Group Membership"
@@ -100,6 +84,11 @@ class Group(models.Model):
         )
 
 
+class GSRManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(in_use=True)
+
+
 class GSR(models.Model):
 
     KIND_WHARTON = "WHARTON"
@@ -112,15 +101,20 @@ class GSR(models.Model):
     name = models.CharField(max_length=255)
     image_url = models.URLField()
 
+    in_use = models.BooleanField(default=True)
+
+    objects = GSRManager()
+    all_objects = models.Manager()  # for admin page
+
     def __str__(self):
-        return f"{self.lid}-{self.gid}"
+        return f"{self.name}: {self.lid}-{self.gid}"
 
 
 class Reservation(models.Model):
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(default=timezone.now)
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True)
     is_cancelled = models.BooleanField(default=False)
     reminder_sent = models.BooleanField(default=False)
 
@@ -136,3 +130,10 @@ class GSRBooking(models.Model):
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(default=timezone.now)
     is_cancelled = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user} - {self.gsr.name} - {self.start} - {self.end}"
+
+
+# import at end to prevent circular dependency
+from gsr_booking.api_wrapper import WhartonGSRBooker  # noqa: E402
