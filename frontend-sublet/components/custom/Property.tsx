@@ -62,7 +62,7 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
             <Image
               className="rounded-lg select-none"
               draggable="false"
-              src={property.images[0].image_url}
+              src={"/hamco.jpeg"}
               alt="Property image"
               width={400}
               height={400}

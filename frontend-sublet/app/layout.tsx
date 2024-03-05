@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
+
+import localFont from "next/font/local";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
+
+const satoshi = localFont({
+  src: '../fonts/satoshi/Satoshi-Variable.woff2',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: "Sublet@Portal",
@@ -16,8 +23,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <div className="tracking-tight">
+      <body className={satoshi.className}>
+        <div className="">
           {children}
         </div>
       </body>
