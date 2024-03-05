@@ -32,13 +32,19 @@ import { Label } from "@/components/ui/label";
 
 import { CheckIcon, DotsHorizontalIcon as Dots } from "@radix-ui/react-icons";
 
-const SubletterListing = () => {
+import { PropertyInterface, ImageInterface } from "@/interfaces/Property";
+
+interface PropertyProps {
+  property: PropertyInterface;
+}
+
+const Property: React.FC<PropertyProps> = ({ property }) => {
   return (
     <div>
       <Card className="w-[380px] mb-[20px]">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Property Title</CardTitle>
+            <CardTitle>{property.title}</CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <Dots className="w-4 h-4" />
@@ -56,8 +62,8 @@ const SubletterListing = () => {
             <Image
               className="rounded-lg select-none"
               draggable="false"
-              src="/hamco.jpeg"
-              alt="Hamco pic"
+              src={property.images[0].image_url}
+              alt="Property image"
               width={400}
               height={400}
             />
@@ -131,4 +137,4 @@ const SubletterListing = () => {
   );
 };
 
-export default SubletterListing;
+export default Property;

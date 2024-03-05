@@ -1,3 +1,10 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
+import { fetchProperties } from "../../services/propertyService";
+import { PropertyInterface } from "@/interfaces/Property";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Button } from "@/components/ui/button";
@@ -40,32 +47,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import SubletterListing from "@/components/custom/subletterlisting";
-
-{
-  /* Split inputted property listings into a Posted and Drafts list, and then show it based on which is selected.*/
-}
-const property_listings = [
-  {
-    title: "Radian 2bed/4ba",
-    image: "...",
-    pending: true,
-    startDate: "...",
-    endDate: "...",
-  },
-  {
-    title: "Chestnut 2bed/2ba",
-    image: "...",
-    pending: true,
-    description: "1 hour ago",
-  },
-  {
-    title: "Hamco 3bed/2ba",
-    description: "2 hours ago",
-  },
-];
+import PropertyList from "@/components/custom/PropertyList";
 
 const Dashboard = () => {
+  const [properties, setProperties] = useState<PropertyInterface[]>([]);
+
+  useEffect(() => {
+    fetchProperties()
+      .then((data) => {
+        setProperties(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching properties:", error);
+      });
+  }, []);
+
   return (
     <div className="">
       <Tabs defaultValue="posted" className="">
@@ -123,13 +119,7 @@ const Dashboard = () => {
             <h1 className="text-4xl pl-20 tracking-tighter font-semibold">
               Dashboard
             </h1>
-            <div className="flex justify-center">
-              <div className="grid xl:grid-cols-3 xl:max-w-[76rem] lg:grid-cols-2 sm:grid-cols-1 gap-5">
-                <SubletterListing />
-                <SubletterListing />
-                <SubletterListing />
-              </div>
-            </div>
+            <PropertyList properties={properties} />
           </div>
         </TabsContent>
         <TabsContent value="drafts" className="p-6">
@@ -137,11 +127,7 @@ const Dashboard = () => {
             <h1 className="text-4xl tracking-tighter font-semibold">
               Dashboard
             </h1>
-            <div className="grid xl:grid-cols-3 lg:grid-cols-2 sm:grid-cols-1">
-              <SubletterListing />
-              <SubletterListing />
-              <SubletterListing />
-            </div>
+            <PropertyList properties={properties} />
           </div>
         </TabsContent>
       </Tabs>
