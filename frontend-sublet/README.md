@@ -19,6 +19,6 @@ To run the Penn Mobile Subletting Feature locally, just do:
 `npm run dev`
 
 
-## Attributions:
+## Attributions
 
 Font: [Satoshi](https://www.fontshare.com/fonts/satoshi) by Indian Type Foundry (ITF) - [ITF Free Font License (FFL)](https://www.fontshare.com/licenses/itf-free-font-license)
