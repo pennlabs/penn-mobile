@@ -25,7 +25,6 @@ const PollPage = ({
   filters,
 }: iPollPageProps & { user: User }) => {
   const [state, setState] = useState<PollType>(poll || initialPoll)
-
   const updateState = useCallback((newState) => {
     setState((currentState) => ({ ...currentState, ...newState }))
   }, [])

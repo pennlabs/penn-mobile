@@ -17,12 +17,12 @@ class EventSerializer(serializers.ModelSerializer):
             "event_type",
             "name",
             "description",
+            "location",
             "image_url",
-            "start_time",
-            "end_time",
+            "start",
+            "end",
             "email",
             "website",
-            "facebook",
         )
 
 
