@@ -1,4 +1,5 @@
 import datetime
+
 import requests
 import json
 import html
@@ -21,7 +22,7 @@ class Command(BaseCommand):
         html_content = resp.text
 
         start_marker = '<script type="application/ld+json">'
-        end_marker = '</script>'
+        end_marker = "</script>"
         start_index = html_content.find(start_marker)
         end_index = html_content.find(end_marker, start_index)
         json_ld_content = html_content[start_index + len(start_marker):end_index]
@@ -36,7 +37,7 @@ class Command(BaseCommand):
 
             start = datetime.datetime.fromisoformat(event.get("startDate"))
             end = event.get("endDate", "")
-            if end is not "":
+            if end != "":
                 end = datetime.datetime.fromisoformat(end)
             else:
                 end = None
@@ -44,7 +45,7 @@ class Command(BaseCommand):
             location = None
             if event.get("location"):
                 location = event.get("location").get("name")
-            
+
             email = None
             if event.get("organizer"):
                 email = html.unescape(event.get("organizer").get("email"))
