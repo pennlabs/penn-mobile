@@ -13,8 +13,6 @@ ENGINEERING_EVENTS_WEBSITE = "https://events.seas.upenn.edu/calendar/list/"
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-        now = timezone.localtime()
-
         try:
             resp = requests.get(ENGINEERING_EVENTS_WEBSITE)
         except ConnectionError:

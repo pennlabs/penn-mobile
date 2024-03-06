@@ -145,6 +145,14 @@ export class MyChart extends PennLabsChart {
       cmd: ["python", "manage.py", "get_venture_events"],
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
+
+    new CronJob(this, 'get-rodin-events', {
+      schedule:'0 17 * * *', // Every day at 5 PM
+      image: backendImage,
+      secret,
+      cmd: ["python", "manage.py", "get_rodin_events"],
+      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    });
   }
 }
 
