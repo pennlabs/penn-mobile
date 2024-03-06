@@ -12,8 +12,7 @@ from penndata.models import Event
 
 VENTURE_EVENTS_WEBSITE = "https://venturelab.upenn.edu/venture-lab-events"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Apple" +
-    "WebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 Chrome/91.0.4472.124 Safari/537.36"
 }
 
 
@@ -26,7 +25,7 @@ class Command(BaseCommand):
             resp = requests.get(VENTURE_EVENTS_WEBSITE, headers=HEADERS)
         except ConnectionError:
             return None
-        
+
         soup = BeautifulSoup(resp.text, "html.parser")
 
         event_containers = soup.find_all("div", class_="PromoSearchResultEvent")

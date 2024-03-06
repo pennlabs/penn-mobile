@@ -11,8 +11,7 @@ from penndata.models import Event
 
 RODIN_EVENTS_WEBSITE = "https://rodin.house.upenn.edu"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Apple" +
-    "WebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 Chrome/91.0.4472.124 Safari/537.36"
 }
 
 
