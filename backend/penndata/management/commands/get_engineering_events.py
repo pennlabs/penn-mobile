@@ -1,11 +1,10 @@
 import datetime
 import json
-import html
 
 import requests
-
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+import html
 
 from penndata.models import Event
 
