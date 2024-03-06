@@ -1,8 +1,9 @@
 import datetime
-
-import requests
 import json
 import html
+
+import requests
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 

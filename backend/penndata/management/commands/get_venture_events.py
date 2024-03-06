@@ -2,17 +2,18 @@ import datetime
 
 import requests
 import html
+from bs4 import BeautifulSoup
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from bs4 import BeautifulSoup
 
 from penndata.models import Event
 
 
 VENTURE_EVENTS_WEBSITE = "https://venturelab.upenn.edu/venture-lab-events"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" +
-    " (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Apple" +
+    "WebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 }
 
 
