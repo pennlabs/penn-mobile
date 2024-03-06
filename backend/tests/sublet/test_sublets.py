@@ -40,7 +40,7 @@ class TestSublets(TestCase):
             "title": "Test Sublet1",
             "address": "1234 Test Street",
             "beds": 2,
-            "baths": 1,
+            "baths": "1.5",
             "description": "This is a test sublet.",
             "external_link": "https://example.com",
             "price": 1000,
@@ -64,6 +64,7 @@ class TestSublets(TestCase):
             "expires_at",
             "start_date",
             "end_date",
+            "amenities",
         ]
         [self.assertEqual(payload[key], res_json[key]) for key in match_keys]
         self.assertIn("id", res_json)
@@ -184,7 +185,7 @@ class TestSublets(TestCase):
             "title": "Test Sublet2",
             "address": "1234 Test Street",
             "beds": 2,
-            "baths": 1,
+            "baths": "1.5",
             "description": "This is a test sublet.",
             "external_link": "https://example.com",
             "price": 1000,
@@ -201,7 +202,8 @@ class TestSublets(TestCase):
         self.assertEqual(res_json["title"], "Test Sublet2")
         self.assertEqual(res_json["address"], "1234 Test Street")
         self.assertEqual(res_json["beds"], 2)
-        self.assertEqual(res_json["baths"], 1)
+        self.assertEqual(res_json["baths"], "1.5")
+        self.assertEqual(res_json["amenities"], ["Amenity1", "Amenity2"])
 
     def test_delete_sublet(self):
         sublets_count = Sublet.objects.all().count()

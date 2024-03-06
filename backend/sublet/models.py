@@ -39,7 +39,7 @@ class Sublet(models.Model):
     title = models.CharField(max_length=255)
     address = models.CharField(max_length=255, null=True, blank=True)
     beds = models.IntegerField(null=True, blank=True)
-    baths = models.IntegerField(null=True, blank=True)
+    baths = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     external_link = models.URLField(max_length=255)
     price = models.IntegerField()
