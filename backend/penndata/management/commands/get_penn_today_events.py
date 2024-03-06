@@ -70,6 +70,9 @@ class Command(BaseCommand):
             else:
                 start_time = datetime.datetime.strptime(start_time_str, "%I:%M%p").time()
             start_date = datetime.datetime.combine(start_date, start_time)
+            
+            if start_date > now + datetime.timedelta(days=31):
+                continue
 
             event_url = urljoin(PENN_TODAY_WEBSITE, article.find("a", class_="tease__link")["href"])
 
@@ -97,7 +100,7 @@ class Command(BaseCommand):
             Event.objects.update_or_create(
                 name=name,
                 defaults={
-                    "event_type": "",
+                    "event_type": "Penn Today",
                     "image_url": "",
                     "start": timezone.make_aware(start_date),
                     "end": timezone.make_aware(end_date),
@@ -108,7 +111,7 @@ class Command(BaseCommand):
                 },
             )
 
-        self.stdout.write("Uploaded Events!")
+        self.stdout.write("Uploaded Penn Today Events!")
 
     def connect_and_parse_html(self, event_url, condition):
         try:
