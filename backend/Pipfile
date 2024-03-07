@@ -28,7 +28,7 @@ django = "==5.0.2"
 django-cors-headers = "*"
 pyyaml = "*"
 uritemplate = "*"
-uwsgi = {version = "*", markers = "sys_platform== 'linux'"}
+uwsgi = "*"
 django-filter = "*"
 django-labs-accounts = "==0.9.5"
 django-debug-toolbar = "*"
@@ -45,6 +45,7 @@ django-redis = "*"
 redis = "*"
 python-dateutil = "*"
 selenium = "*"
+webdriver-manager = "*"
 
 [requires]
 python_version = "3.11"
