@@ -21,7 +21,7 @@ class Event(models.Model):
         (TYPE_RODIN_COLLEGE_HOUSE, "Rodin College House"),
     )
 
-    event_type = models.CharField(max_length=63, choices=TYPE_CHOICES, 
+    event_type = models.CharField(max_length=63, choices=TYPE_CHOICES,
                                   default=None, null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)

@@ -63,7 +63,8 @@ class Command(BaseCommand):
             if not event_link:
                 continue
             name = event_link.text.strip()
-            url = f"{RODIN_EVENTS_WEBSITE}{event_link["href"]}"
+            url = event_link["href"]
+            url = f"{RODIN_EVENTS_WEBSITE}{url}"
 
             location, start_time, end_time, description = self.scrape_details(url)
             Event.objects.update_or_create(
