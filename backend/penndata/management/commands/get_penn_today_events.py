@@ -104,7 +104,7 @@ class Command(BaseCommand):
             Event.objects.update_or_create(
                 name=name,
                 defaults={
-                    "event_type": "",
+                    "event_type": Event.TYPE_PENN_TODAY,
                     "image_url": "",
                     "start": start_date,
                     "end": end_date,

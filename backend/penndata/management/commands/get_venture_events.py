@@ -23,6 +23,7 @@ class Command(BaseCommand):
         try:
             resp = requests.get(VENTURE_EVENTS_WEBSITE, headers=HEADERS)
         except ConnectionError:
+            print("Error:", ConnectionError)
             return None
 
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -96,7 +97,7 @@ class Command(BaseCommand):
             Event.objects.update_or_create(
                 name=title,
                 defaults={
-                    "event_type": "Venture Lab",
+                    "event_type": Event.TYPE_VENTURE_LAB,
                     "image_url": "",
                     "start": timezone.make_aware(event_start_datetime),
                     "end": timezone.make_aware(event_end_datetime),

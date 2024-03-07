@@ -9,7 +9,20 @@ User = get_user_model()
 
 
 class Event(models.Model):
-    event_type = models.CharField(max_length=255, null=True, blank=True)
+    TYPE_PENN_TODAY = "PENN TODAY"
+    TYPE_VENTURE_LAB = "VENTURE LAB"
+    TYPE_PENN_ENGINEERING = "PENN ENGINEERING"
+    TYPE_RODIN_COLLEGE_HOUSE = "RODIN COLLEGE HOUSE"
+
+    TYPE_CHOICES = (
+        (TYPE_PENN_TODAY, "Penn Today"),
+        (TYPE_VENTURE_LAB, "Venture Lab"),
+        (TYPE_PENN_ENGINEERING, "Penn Engineering"),
+        (TYPE_RODIN_COLLEGE_HOUSE, "Rodin College House"),
+    )
+
+    event_type = models.CharField(max_length=63, choices=TYPE_CHOICES, 
+                                  default=None, null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)

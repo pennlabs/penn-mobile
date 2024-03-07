@@ -17,6 +17,7 @@ class Command(BaseCommand):
         try:
             resp = requests.get(ENGINEERING_EVENTS_WEBSITE)
         except ConnectionError:
+            print("Error:", ConnectionError)
             return None
 
         html_content = resp.text
@@ -36,14 +37,10 @@ class Command(BaseCommand):
             url = event.get("url", "")
 
             start = datetime.datetime.fromisoformat(event.get("startDate"))
-            end = event.get("endDate", "")
-            if end != "":
-                end = datetime.datetime.fromisoformat(end)
-            else:
-                end = None
+            end = datetime.datetime.fromisoformat(event["endDate"]) if "endDate" in event else None
 
             location = None
-            if event.get("location"):
+            if "location" in event:
                 location = event.get("location").get("name")
 
             email = None
@@ -53,7 +50,7 @@ class Command(BaseCommand):
             Event.objects.update_or_create(
                 name=event_name,
                 defaults={
-                    "event_type": "Engineering",
+                    "event_type": Event.TYPE_PENN_ENGINEERING,
                     "image_url": "",
                     "start": timezone.make_aware(start),
                     "end": timezone.make_aware(end),

@@ -9,28 +9,26 @@ from penndata.models import Event
 
 
 RODIN_EVENTS_WEBSITE = "https://rodin.house.upenn.edu"
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 Chrome/91.0.4472.124 Safari/537.36"
-}
 
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-        self.scrape_calendar_page(RODIN_EVENTS_WEBSITE + "/calendar")
+        self.scrape_calendar_page(f"{RODIN_EVENTS_WEBSITE}/calendar")
         now = timezone.localtime()
         current_day, current_month, current_year = now.day, now.month, now.year
         if current_day > 25:
-            next_month_year = current_year if current_month < 12 else current_year + 1
-            next_month = current_month + 1 if current_month < 12 else 1
-            next_month_url = f"{RODIN_EVENTS_WEBSITE}/calendar/{next_month_year}-{next_month:02d}"
+            next = now + datetime.timedelta(months=1)
+            next_month, next_year = next.month, next.year
+            next_month_url = f"{RODIN_EVENTS_WEBSITE}/calendar/{next_year}-{next_month:02d}"
             self.scrape_calendar_page(next_month_url)
 
         self.stdout.write("Uploaded Rodin College House Events!")
 
     def scrape_details(self, event_url):
         try:
-            resp = requests.get(event_url, headers=HEADERS)
+            resp = requests.get(event_url)
         except ConnectionError:
+            print("Error:", ConnectionError)
             return None
         soup = BeautifulSoup(resp.text, "html.parser")
 
@@ -50,7 +48,7 @@ class Command(BaseCommand):
 
     def scrape_calendar_page(self, calendar_url):
         try:
-            resp = requests.get(calendar_url, headers=HEADERS)
+            resp = requests.get(calendar_url)
         except ConnectionError:
             return None
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -59,29 +57,27 @@ class Command(BaseCommand):
 
         for cell in event_cells:
             item = cell.find("div", class_="item")
-            if item:
-                event_link = item.find("a", href=True)
-                if event_link:
-                    name = event_link.text.strip()
-                    url = RODIN_EVENTS_WEBSITE + event_link["href"]
+            if not item:
+                continue
+            event_link = item.find("a", href=True)
+            if not event_link:
+                continue
+            name = event_link.text.strip()
+            url = f"{RODIN_EVENTS_WEBSITE}{event_link["href"]}"
 
-                    location, start_time, end_time, description = self.scrape_details(url)
-                    print("Location:", location)
-                    print("Start Time:", start_time)
-                    print("End Time:", end_time)
-                    print("Description:", description)
-                    Event.objects.update_or_create(
-                        name=name,
-                        defaults={
-                            "event_type": "Rodin College House",
-                            "image_url": "",
-                            "start": timezone.make_aware(start_time),
-                            "end": timezone.make_aware(end_time),
-                            "location": location,
-                            "website": url,
-                            "description": description,
-                            "email": "",
-                        },
-                    )
-                    if start_time > timezone.localtime() + datetime.timedelta(days=30):
-                        break
+            location, start_time, end_time, description = self.scrape_details(url)
+            Event.objects.update_or_create(
+                name=name,
+                defaults={
+                    "event_type": Event.TYPE_RODIN_COLLEGE_HOUSE,
+                    "image_url": "",
+                    "start": timezone.make_aware(start_time),
+                    "end": timezone.make_aware(end_time),
+                    "location": location,
+                    "website": url,
+                    "description": description,
+                    "email": "",
+                },
+            )
+            if start_time > timezone.localtime() + datetime.timedelta(days=30):
+                break
