@@ -6,11 +6,11 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.firefox import GeckoDriverManager
-from selenium.webdriver.firefox.options import Options
 
 from penndata.models import Event
 
@@ -29,7 +29,11 @@ class Command(BaseCommand):
         # past_events.delete()
 
         # Scrapes Penn Today
-        if not (soup := self.connect_and_parse_html(PENN_TODAY_WEBSITE, EC.presence_of_element_located((By.ID, "events-list")))):
+        if not (
+            soup := self.connect_and_parse_html(
+                PENN_TODAY_WEBSITE, EC.presence_of_element_located((By.ID, "events-list"))
+            )
+        ):
             return
 
         event_articles = soup.find_all("article", class_="tease")
@@ -70,7 +74,7 @@ class Command(BaseCommand):
             else:
                 start_time = datetime.datetime.strptime(start_time_str, "%I:%M%p").time()
             start_date = datetime.datetime.combine(start_date, start_time)
-            
+
             if start_date > now + datetime.timedelta(days=31):
                 continue
 
@@ -117,7 +121,9 @@ class Command(BaseCommand):
         try:
             options = Options()
             options.add_argument("--headless")
-            driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+            driver = webdriver.Firefox(
+                service=FirefoxService(GeckoDriverManager().install()), options=options
+            )
 
             driver.get(event_url)
             print("WAITING FOR ELEMENT")
@@ -132,13 +138,19 @@ class Command(BaseCommand):
             return None
 
     def get_end_time(self, event_url):
-        end_time_soup = self.connect_and_parse_html(event_url, EC.presence_of_element_located((By.CLASS_NAME, "event__topper-content")))
+        end_time_soup = self.connect_and_parse_html(
+            event_url, EC.presence_of_element_located((By.CLASS_NAME, "event__topper-content"))
+        )
 
         end_time_range_str = (
             end_time_soup.find("p", class_="event__meta event__time").text.strip().replace(".", "")
         )
 
-        if not end_time_range_str or ALL_DAY in end_time_range_str.lower() or len(times := end_time_range_str.split(" - ")) <= 1:
+        if (
+            not end_time_range_str
+            or ALL_DAY in end_time_range_str.lower()
+            or len(times := end_time_range_str.split(" - ")) <= 1
+        ):
             return None  # No end time if the event is all day
-    
+
         return times[1]
