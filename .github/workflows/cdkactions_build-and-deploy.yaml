@@ -42,7 +42,7 @@ jobs:
           name: codecov-umbrella
           verbose: true
     container:
-      image: python:3.9.14-buster
+      image: python:3.11-bookworm
     env:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
     services:

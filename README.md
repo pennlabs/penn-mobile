@@ -18,7 +18,7 @@ This repository is the Django-based successor to `labs-api-server`, containing A
 - `git clone https://github.com/pennlabs/penn-mobile.git`
 - `cd penn-mobile/backend`
 - `brew install postgres`
-- `pipenv install --dev --python 3.9`
+- `pipenv install --dev --python 3.11`
 
 Note that the above command will likely throw some ugly errors at you with regards to the `psycopg2` packages. If that is the case, just manually install them:
 - `pipenv install psycopg2`

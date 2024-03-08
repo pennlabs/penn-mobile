@@ -7,14 +7,11 @@ from django.utils.timezone import make_aware
 from requests.exceptions import ConnectTimeout, ReadTimeout
 
 from dining.models import DiningItem, DiningMenu, DiningStation, Venue
+from utils.errors import APIError
 
 
 OPEN_DATA_URL = "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/"
 OPEN_DATA_ENDPOINTS = {"VENUES": OPEN_DATA_URL + "venues", "MENUS": OPEN_DATA_URL + "menus"}
-
-
-class APIError(ValueError):
-    pass
 
 
 class DiningAPIWrapper:

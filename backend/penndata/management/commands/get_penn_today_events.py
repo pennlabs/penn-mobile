@@ -6,8 +6,11 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.firefox import GeckoDriverManager
 
 from penndata.models import Event
 
@@ -26,20 +29,12 @@ class Command(BaseCommand):
         # past_events.delete()
 
         # Scrapes Penn Today
-        try:
-            driver = webdriver.Chrome()
-
-            driver.get(PENN_TODAY_WEBSITE)
-            events_list = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "events-list"))
+        if not (
+            soup := self.connect_and_parse_html(
+                PENN_TODAY_WEBSITE, EC.presence_of_element_located((By.ID, "events-list"))
             )
-
-            html_content = events_list.get_attribute("innerHTML")
-            driver.quit()
-        except ConnectionError:
-            return None
-
-        soup = BeautifulSoup(html_content, "html.parser")
+        ):
+            return
 
         event_articles = soup.find_all("article", class_="tease")
 
@@ -73,11 +68,15 @@ class Command(BaseCommand):
                 if start_date.month < current_month:
                     # If scraped month is before current month, increment year
                     start_date = start_date.replace(year=current_year + 1)
-            if start_time_str == ALL_DAY:
+            print(start_date_str)
+            if ALL_DAY in start_time_str.lower():
                 start_time = datetime.time(0, 0)
             else:
                 start_time = datetime.datetime.strptime(start_time_str, "%I:%M%p").time()
             start_date = datetime.datetime.combine(start_date, start_time)
+
+            if start_date > now + datetime.timedelta(days=31):
+                continue
 
             event_url = urljoin(PENN_TODAY_WEBSITE, article.find("a", class_="tease__link")["href"])
 
@@ -95,19 +94,21 @@ class Command(BaseCommand):
                 end_of_day = datetime.time(23, 59, 59)
                 if end_date_elem:  # end date but no end time
                     end_date_str = end_date_elem.text.strip().split(" ")[-1]
-                    end_date = datetime.combine(
+                    end_date = datetime.datetime.combine(
                         datetime.datetime.strptime(end_date_str, "%m/%d/%Y"), end_of_day
                     )
+
                 else:  # no end date or end time
-                    end_date = datetime.combine(start_date, end_of_day)
+                    end_date = datetime.datetime.combine(start_date, end_of_day)
 
             Event.objects.update_or_create(
                 name=name,
                 defaults={
                     "event_type": Event.TYPE_PENN_TODAY,
+                    "event_type": "Penn Today",
                     "image_url": "",
-                    "start": start_date,
-                    "end": end_date,
+                    "start": timezone.make_aware(start_date),
+                    "end": timezone.make_aware(end_date),
                     "location": location,
                     "website": event_url,
                     "description": description,
@@ -115,27 +116,42 @@ class Command(BaseCommand):
                 },
             )
 
-        self.stdout.write("Uploaded Events!")
+        self.stdout.write("Uploaded Penn Today Events!")
 
-    def get_end_time(event_url):
-        driver = webdriver.Chrome()
-        driver.get(event_url)
-        event_element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "event__topper-content"))
+    def connect_and_parse_html(self, event_url, condition):
+        try:
+            options = Options()
+            options.add_argument("--headless")
+            driver = webdriver.Firefox(
+                service=FirefoxService(GeckoDriverManager().install()), options=options
+            )
+
+            driver.get(event_url)
+            print("WAITING FOR ELEMENT")
+            element = WebDriverWait(driver, 10).until(condition)
+            print("ELEMENT FOUND")
+
+            html_content = element.get_attribute("innerHTML")
+            driver.quit()
+            return BeautifulSoup(html_content, "html.parser")
+        except ConnectionError:
+            print("Connection Error to webdriver")
+            return None
+
+    def get_end_time(self, event_url):
+        end_time_soup = self.connect_and_parse_html(
+            event_url, EC.presence_of_element_located((By.CLASS_NAME, "event__topper-content"))
         )
-        end_time_soup = BeautifulSoup(event_element.get_attribute("innerHTML"), "html.parser")
 
         end_time_range_str = (
             end_time_soup.find("p", class_="event__meta event__time").text.strip().replace(".", "")
         )
-        print(end_time_range_str)
-        if not end_time_range_str or ALL_DAY in end_time_range_str.lower():
-            driver.quit()
+
+        if (
+            not end_time_range_str
+            or ALL_DAY in end_time_range_str.lower()
+            or len(times := end_time_range_str.split(" - ")) <= 1
+        ):
             return None  # No end time if the event is all day
-        times = end_time_range_str.split(" - ")
-        if len(times) <= 1:
-            driver.quit()
-            return None
-        end_time_str = times[1]
-        driver.quit()
-        return end_time_str
+
+        return times[1]
