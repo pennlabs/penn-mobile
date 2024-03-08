@@ -26,14 +26,15 @@ class Command(BaseCommand):
         end_marker = "</script>"
         start_index = html_content.find(start_marker)
         end_index = html_content.find(end_marker, start_index)
-        json_ld_content = html_content[start_index + len(start_marker):end_index]
+        json_ld_content = html_content[start_index + len(start_marker) : end_index]
 
         events_data = json.loads(json_ld_content)
 
         for event in events_data:
             event_name = html.unescape(event.get("name", ""))
-            description = html.unescape(event.get("description", "")).replace(
-                "<p>", "").replace("</p>\n", "")
+            description = (
+                html.unescape(event.get("description", "")).replace("<p>", "").replace("</p>\n", "")
+            )
             url = event.get("url", "")
 
             start = datetime.datetime.fromisoformat(event.get("startDate"))

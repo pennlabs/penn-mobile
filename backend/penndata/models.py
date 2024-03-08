@@ -47,8 +47,9 @@ class Event(models.Model):
         (TYPE_STOUFFER_COLLEGE_HOUSE, "Stouffer College House"),
     )
 
-    event_type = models.CharField(max_length=63, choices=TYPE_CHOICES,
-                                  default=None, null=True, blank=True)
+    event_type = models.CharField(
+        max_length=63, choices=TYPE_CHOICES, default=None, null=True, blank=True
+    )
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)

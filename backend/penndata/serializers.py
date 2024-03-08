@@ -45,7 +45,6 @@ class FitnessRoomSerializer(serializers.ModelSerializer):
 
 
 class FitnessSnapshotSerializer(serializers.ModelSerializer):
-
     room = FitnessRoomSerializer()
 
     class Meta:

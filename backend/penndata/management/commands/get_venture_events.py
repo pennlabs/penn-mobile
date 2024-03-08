@@ -10,9 +10,7 @@ from penndata.models import Event
 
 
 VENTURE_EVENTS_WEBSITE = "https://venturelab.upenn.edu/venture-lab-events"
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 Chrome/91.0.4472.124 Safari/537.36"
-}
+HEADERS = {"User-Agent": "Mozilla/5.0 AppleWebKit/537.36 Chrome/91.0.4472.124 Safari/537.36"}
 
 
 class Command(BaseCommand):
@@ -44,9 +42,11 @@ class Command(BaseCommand):
                 event_end_str = event_date_parts[1].split(" - ")[1].strip()
 
                 event_start_datetime = datetime.strptime(
-                    event_date_parts[0] + " " + event_start_str, "%B %d, %Y %I:%M%p")
+                    event_date_parts[0] + " " + event_start_str, "%B %d, %Y %I:%M%p"
+                )
                 event_end_datetime = datetime.strptime(
-                    event_date_parts[0] + " " + event_end_str, "%B %d, %Y %I:%M%p")
+                    event_date_parts[0] + " " + event_end_str, "%B %d, %Y %I:%M%p"
+                )
                 last_start_datetime = event_start_datetime
             else:  # if no year given
                 event_month_elem = event.find("div", class_="PromoSearchResultEvent-month")
@@ -68,8 +68,9 @@ class Command(BaseCommand):
                         else:
                             start_year = current_year
 
-                    event_start_datetime = datetime(start_year, datetime.strptime(
-                        event_month, "%B").month, event_day)
+                    event_start_datetime = datetime(
+                        start_year, datetime.strptime(event_month, "%B").month, event_day
+                    )
 
             # events are ordered from future to past, so break once we find a past event
             if event_start_datetime < now:

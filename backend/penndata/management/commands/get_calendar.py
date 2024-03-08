@@ -13,7 +13,6 @@ UPENN_ALMANAC_WEBSITE = "https://almanac.upenn.edu/penn-academic-calendar"
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-
         # Clears out previous CalendarEvents
         CalendarEvent.objects.all().delete()
 

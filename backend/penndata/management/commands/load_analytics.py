@@ -13,7 +13,6 @@ User = get_user_model()
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-
         analytics_objects = []
 
         # read in file and convert into array

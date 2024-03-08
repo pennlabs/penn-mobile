@@ -7,20 +7,23 @@ from django.utils import timezone
 
 from penndata.models import Event
 
-EVENT_SITES = ["https://rodin.house.upenn.edu",
-               "https://harrison.house.upenn.edu",
-               "https://harnwell.house.upenn.edu",
-               "https://gutmann.house.upenn.edu",
-               "https://radian.house.upenn.edu",
-               "https://lauder.house.upenn.edu",
-               "https://hill.house.upenn.edu",
-               "https://kcech.house.upenn.edu",
-               "https://ware.house.upenn.edu",
-               "https://fh.house.upenn.edu",
-               "https://riepe.house.upenn.edu",
-               "https://dubois.house.upenn.edu",
-               "https://gregory.house.upenn.edu",
-               "https://stouffer.house.upenn.edu"]
+
+EVENT_SITES = [
+    "https://rodin.house.upenn.edu",
+    "https://harrison.house.upenn.edu",
+    "https://harnwell.house.upenn.edu",
+    "https://gutmann.house.upenn.edu",
+    "https://radian.house.upenn.edu",
+    "https://lauder.house.upenn.edu",
+    "https://hill.house.upenn.edu",
+    "https://kcech.house.upenn.edu",
+    "https://ware.house.upenn.edu",
+    "https://fh.house.upenn.edu",
+    "https://riepe.house.upenn.edu",
+    "https://dubois.house.upenn.edu",
+    "https://gregory.house.upenn.edu",
+    "https://stouffer.house.upenn.edu",
+]
 
 EVENT_TYPE_MAP = {
     "rodin": Event.TYPE_RODIN_COLLEGE_HOUSE,
@@ -36,7 +39,7 @@ EVENT_TYPE_MAP = {
     "riepe": Event.TYPE_RIEPE_COLLEGE_HOUSE,
     "dubois": Event.TYPE_DUBOIS_COLLEGE_HOUSE,
     "gregory": Event.TYPE_GREGORY_COLLEGE_HOUSE,
-    "stouffer": Event.TYPE_STOUFFER_COLLEGE_HOUSE
+    "stouffer": Event.TYPE_STOUFFER_COLLEGE_HOUSE,
 }
 
 
@@ -61,18 +64,36 @@ class Command(BaseCommand):
             return None
         soup = BeautifulSoup(resp.text, "html.parser")
 
-        location = soup.select_one(".field-name-field-room").text.strip() if soup.select_one(
-            ".field-name-field-room") else ""
-        start_time_str = soup.select_one(".date-display-start").get("content") if soup.select_one(
-            ".date-display-start") else ""
-        end_time_str = soup.select_one(
-            ".date-display-end").get("content") if soup.select_one(".date-display-end") else ""
-        start_time = datetime.datetime.strptime(start_time_str, "%Y-%m-%dT%H:%M:%S%z"
-                                                ) if start_time_str else None
-        end_time = datetime.datetime.strptime(end_time_str, "%Y-%m-%dT%H:%M:%S%z"
-                                              ) if end_time_str else None
-        description = soup.select_one(
-            ".field-name-body").text.strip() if soup.select_one(".field-name-body") else ""
+        location = (
+            soup.select_one(".field-name-field-room").text.strip()
+            if soup.select_one(".field-name-field-room")
+            else ""
+        )
+        start_time_str = (
+            soup.select_one(".date-display-start").get("content")
+            if soup.select_one(".date-display-start")
+            else ""
+        )
+        end_time_str = (
+            soup.select_one(".date-display-end").get("content")
+            if soup.select_one(".date-display-end")
+            else ""
+        )
+        start_time = (
+            datetime.datetime.strptime(start_time_str, "%Y-%m-%dT%H:%M:%S%z")
+            if start_time_str
+            else None
+        )
+        end_time = (
+            datetime.datetime.strptime(end_time_str, "%Y-%m-%dT%H:%M:%S%z")
+            if end_time_str
+            else None
+        )
+        description = (
+            soup.select_one(".field-name-body").text.strip()
+            if soup.select_one(".field-name-body")
+            else ""
+        )
         return location, start_time, end_time, description
 
     def scrape_calendar_page(self, calendar_url):
@@ -93,7 +114,7 @@ class Command(BaseCommand):
                 continue
             name = event_link.text.strip()
             url = event_link["href"]
-            index = calendar_url.find('/', calendar_url.find('://') + 3)
+            index = calendar_url.find("/", calendar_url.find("://") + 3)
             base_url = calendar_url[:index]
             url = f"{base_url}{url}"
 
