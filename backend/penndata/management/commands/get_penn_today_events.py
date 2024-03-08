@@ -105,7 +105,6 @@ class Command(BaseCommand):
                 name=name,
                 defaults={
                     "event_type": Event.TYPE_PENN_TODAY,
-                    "event_type": "Penn Today",
                     "image_url": "",
                     "start": timezone.make_aware(start_date),
                     "end": timezone.make_aware(end_date),
