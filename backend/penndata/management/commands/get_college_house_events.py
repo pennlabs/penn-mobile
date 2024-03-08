@@ -7,20 +7,49 @@ from django.utils import timezone
 
 from penndata.models import Event
 
+EVENT_SITES = ["https://rodin.house.upenn.edu",
+               "https://harrison.house.upenn.edu",
+               "https://harnwell.house.upenn.edu",
+               "https://gutmann.house.upenn.edu",
+               "https://radian.house.upenn.edu",
+               "https://lauder.house.upenn.edu",
+               "https://hill.house.upenn.edu",
+               "https://kcech.house.upenn.edu",
+               "https://ware.house.upenn.edu",
+               "https://fh.house.upenn.edu",
+               "https://riepe.house.upenn.edu",
+               "https://dubois.house.upenn.edu",
+               "https://gregory.house.upenn.edu",
+               "https://stouffer.house.upenn.edu"]
 
-RODIN_EVENTS_WEBSITE = "https://rodin.house.upenn.edu"
+EVENT_TYPE_MAP = {
+    "rodin": Event.TYPE_RODIN_COLLEGE_HOUSE,
+    "harnwell": Event.TYPE_HARNWELL_COLLEGE_HOUSE,
+    "harrison": Event.TYPE_HARRISON_COLLEGE_HOUSE,
+    "gutmann": Event.TYPE_GUTMANN_COLLEGE_HOUSE,
+    "radian": Event.TYPE_RADIAN_COLLEGE_HOUSE,
+    "lauder": Event.TYPE_LAUDER_COLLEGE_HOUSE,
+    "hill": Event.TYPE_HILL_COLLEGE_HOUSE,
+    "kcech": Event.TYPE_KCECH_COLLEGE_HOUSE,
+    "ware": Event.TYPE_WARE_COLLEGE_HOUSE,
+    "fh": Event.TYPE_FH_COLLEGE_HOUSE,
+    "riepe": Event.TYPE_RIEPE_COLLEGE_HOUSE,
+    "dubois": Event.TYPE_DUBOIS_COLLEGE_HOUSE,
+    "gregory": Event.TYPE_GREGORY_COLLEGE_HOUSE,
+    "stouffer": Event.TYPE_STOUFFER_COLLEGE_HOUSE
+}
 
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-        self.scrape_calendar_page(f"{RODIN_EVENTS_WEBSITE}/calendar")
+        for site in EVENT_SITES:
+            self.scrape_calendar_page(f"{site}/calendar")
         now = timezone.localtime()
-        current_day, current_month, current_year = now.day, now.month, now.year
-        if current_day > 25:
-            next = now + datetime.timedelta(months=1)
+        if now.day > 25:
+            next = now + datetime.timedelta(days=30)
             next_month, next_year = next.month, next.year
-            next_month_url = f"{RODIN_EVENTS_WEBSITE}/calendar/{next_year}-{next_month:02d}"
-            self.scrape_calendar_page(next_month_url)
+            for site in EVENT_SITES:
+                self.scrape_calendar_page(f"{site}/calendar/{next_year}-{next_month:02d}")
 
         self.stdout.write("Uploaded Rodin College House Events!")
 
@@ -64,13 +93,19 @@ class Command(BaseCommand):
                 continue
             name = event_link.text.strip()
             url = event_link["href"]
-            url = f"{RODIN_EVENTS_WEBSITE}{url}"
+            index = calendar_url.find('/', calendar_url.find('://') + 3)
+            base_url = calendar_url[:index]
+            url = f"{base_url}{url}"
 
             location, start_time, end_time, description = self.scrape_details(url)
+
+            house = calendar_url.split("/")[2].split(".")[0]
+
+            event_type = EVENT_TYPE_MAP.get(house, None)
             Event.objects.update_or_create(
                 name=name,
                 defaults={
-                    "event_type": Event.TYPE_RODIN_COLLEGE_HOUSE,
+                    "event_type": event_type,
                     "image_url": "",
                     "start": timezone.make_aware(start_time),
                     "end": timezone.make_aware(end_time),
