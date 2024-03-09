@@ -28,13 +28,13 @@ EVENT_TYPE_MAP = {
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-        for site in EVENT_SITES:
+        for site in EVENT_TYPE_MAP:
             self.scrape_calendar_page(f"{site}/calendar")
         now = timezone.localtime()
         if now.day > 25:
             next = now + datetime.timedelta(days=30)
             next_month, next_year = next.month, next.year
-            for site in EVENT_SITES:
+            for site in EVENT_TYPE_MAP:
                 self.scrape_calendar_page(f"{site}/calendar/{next_year}-{next_month:02d}")
 
         self.stdout.write("Uploaded Rodin College House Events!")
