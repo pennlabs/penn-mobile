@@ -12,6 +12,7 @@ class Event(models.Model):
     TYPE_PENN_TODAY = "PENN TODAY"
     TYPE_VENTURE_LAB = "VENTURE LAB"
     TYPE_PENN_ENGINEERING = "PENN ENGINEERING"
+    TYPE_WHARTON = "WHARTON"
     TYPE_RODIN_COLLEGE_HOUSE = "RODIN COLLEGE HOUSE"
     TYPE_HARNWELL_COLLEGE_HOUSE = "HARNWELL COLLEGE HOUSE"
     TYPE_HARRISON_COLLEGE_HOUSE = "HARRISON COLLEGE HOUSE"
@@ -31,6 +32,7 @@ class Event(models.Model):
         (TYPE_PENN_TODAY, "Penn Today"),
         (TYPE_VENTURE_LAB, "Venture Lab"),
         (TYPE_PENN_ENGINEERING, "Penn Engineering"),
+        (TYPE_WHARTON, "Wharton"),
         (TYPE_RODIN_COLLEGE_HOUSE, "Rodin College House"),
         (TYPE_HARNWELL_COLLEGE_HOUSE, "Harnwell College House"),
         (TYPE_HARRISON_COLLEGE_HOUSE, "Harrison College House"),

@@ -146,6 +146,14 @@ export class MyChart extends PennLabsChart {
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
 
+    new CronJob(this, 'get-wharton-events', {
+      schedule:'0 16 * * *', // Every day at 4 PM
+      image: backendImage,
+      secret,
+      cmd: ["python", "manage.py", "get_wharton_events"],
+      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    });
+
     new CronJob(this, 'get-college-house-events', {
       schedule:'0 17 * * *', // Every day at 5 PM
       image: backendImage,
