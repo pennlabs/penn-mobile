@@ -42,10 +42,10 @@ class Command(BaseCommand):
                 event_end_str = event_date_parts[1].split(" - ")[1].strip()
 
                 event_start_datetime = datetime.strptime(
-                    event_date_parts[0] + " " + event_start_str, "%B %d, %Y %I:%M%p"
+                    f"{event_date_parts[0]} {event_start_str}", "%B %d, %Y %I:%M%p"
                 )
                 event_end_datetime = datetime.strptime(
-                    event_date_parts[0] + " " + event_end_str, "%B %d, %Y %I:%M%p"
+                    f"{event_date_parts[0]} {event_end_str}", "%B %d, %Y %I:%M%p"
                 )
                 last_start_datetime = event_start_datetime
             else:  # if no year given
@@ -76,36 +76,29 @@ class Command(BaseCommand):
             if event_start_datetime < now:
                 break
 
-            print("Event Start:", event_start_datetime)
-            print("Event End:", event_end_datetime)
-
-            title = event.find("div", class_="PromoSearchResultEvent-title")
-            if title:
+            if title := event.find("div", class_="PromoSearchResultEvent-title"):
                 title = html.unescape(title.text.strip())
 
-            location = event.find("div", class_="PromoSearchResultEvent-eventLocation")
-            if location:
+            if location := event.find("div", class_="PromoSearchResultEvent-eventLocation"):
                 location = location.text.strip()
 
-            description = event.find("div", class_="PromoSearchResultEvent-description")
-            if description:
+            if description := event.find("div", class_="PromoSearchResultEvent-description"):
                 description = html.unescape(description.text.strip())
 
-            url = event.find("div", class_="PromoSearchResultEvent-cta").find("a", href=True)
-            if url:
+            if url := event.find("div", class_="PromoSearchResultEvent-cta").find("a", href=True):
                 url = url["href"]
 
             Event.objects.update_or_create(
                 name=title,
                 defaults={
                     "event_type": Event.TYPE_VENTURE_LAB,
-                    "image_url": "",
+                    "image_url": None,
                     "start": timezone.make_aware(event_start_datetime),
                     "end": timezone.make_aware(event_end_datetime),
                     "location": location,
                     "website": url,
                     "description": description,
-                    "email": "",
+                    "email": None,
                 },
             )
 

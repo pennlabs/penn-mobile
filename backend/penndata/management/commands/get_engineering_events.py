@@ -31,28 +31,25 @@ class Command(BaseCommand):
         events_data = json.loads(json_ld_content)
 
         for event in events_data:
-            event_name = html.unescape(event.get("name", ""))
+            if (event_name := html.unescape(event.get("name", ""))) == "":
+                continue
+
             description = (
                 html.unescape(event.get("description", "")).replace("<p>", "").replace("</p>\n", "")
             )
-            url = event.get("url", "")
+            url = event.get("url", None)
 
             start = datetime.datetime.fromisoformat(event.get("startDate"))
             end = datetime.datetime.fromisoformat(event["endDate"]) if "endDate" in event else None
 
-            location = None
-            if "location" in event:
-                location = event.get("location").get("name")
-
-            email = None
-            if event.get("organizer"):
-                email = html.unescape(event.get("organizer").get("email"))
+            location = event.get("location", dict()).get("name")
+            email = html.unescape(event.get("organizer", dict()).get("email"))
 
             Event.objects.update_or_create(
                 name=event_name,
                 defaults={
                     "event_type": Event.TYPE_PENN_ENGINEERING,
-                    "image_url": "",
+                    "image_url": None,
                     "start": timezone.make_aware(start),
                     "end": timezone.make_aware(end),
                     "location": location,

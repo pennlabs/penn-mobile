@@ -31,9 +31,7 @@ class Command(BaseCommand):
             link = entry.find(class_="entry-title").a["href"]
 
             info = entry.find(class_="info").span.text.strip()
-            match = re.match(
-                r"(\w+\s+\d+) \| (\d{1,2}:\d{2} [AP]M) - (\d{1,2}:\d{2} [AP]M)", info
-            )
+            match = re.match(r"(\w+\s+\d+) \| (\d{1,2}:\d{2} [AP]M) - (\d{1,2}:\d{2} [AP]M)", info)
             if match:
                 _, start_time, end_time = match.groups()
                 start_time_obj = datetime.datetime.strptime(start_time, "%I:%M %p")
@@ -46,13 +44,14 @@ class Command(BaseCommand):
                 name=title,
                 defaults={
                     "event_type": Event.TYPE_WHARTON,
-                    "image_url": "",
+                    "image_url": None,
                     "start": timezone.make_aware(start_time_obj),
                     "end": timezone.make_aware(end_time_obj),
                     "location": location.strip(),
                     "website": link,
                     "description": description,
-                    "email": "",
+                    "email": None,
                 },
             )
+
         self.stdout.write("Uploaded Wharton Events!")

@@ -8,38 +8,21 @@ from django.utils import timezone
 from penndata.models import Event
 
 
-EVENT_SITES = [
-    "https://rodin.house.upenn.edu",
-    "https://harrison.house.upenn.edu",
-    "https://harnwell.house.upenn.edu",
-    "https://gutmann.house.upenn.edu",
-    "https://radian.house.upenn.edu",
-    "https://lauder.house.upenn.edu",
-    "https://hill.house.upenn.edu",
-    "https://kcech.house.upenn.edu",
-    "https://ware.house.upenn.edu",
-    "https://fh.house.upenn.edu",
-    "https://riepe.house.upenn.edu",
-    "https://dubois.house.upenn.edu",
-    "https://gregory.house.upenn.edu",
-    "https://stouffer.house.upenn.edu",
-]
-
 EVENT_TYPE_MAP = {
-    "rodin": Event.TYPE_RODIN_COLLEGE_HOUSE,
-    "harnwell": Event.TYPE_HARNWELL_COLLEGE_HOUSE,
-    "harrison": Event.TYPE_HARRISON_COLLEGE_HOUSE,
-    "gutmann": Event.TYPE_GUTMANN_COLLEGE_HOUSE,
-    "radian": Event.TYPE_RADIAN_COLLEGE_HOUSE,
-    "lauder": Event.TYPE_LAUDER_COLLEGE_HOUSE,
-    "hill": Event.TYPE_HILL_COLLEGE_HOUSE,
-    "kcech": Event.TYPE_KCECH_COLLEGE_HOUSE,
-    "ware": Event.TYPE_WARE_COLLEGE_HOUSE,
-    "fh": Event.TYPE_FH_COLLEGE_HOUSE,
-    "riepe": Event.TYPE_RIEPE_COLLEGE_HOUSE,
-    "dubois": Event.TYPE_DUBOIS_COLLEGE_HOUSE,
-    "gregory": Event.TYPE_GREGORY_COLLEGE_HOUSE,
-    "stouffer": Event.TYPE_STOUFFER_COLLEGE_HOUSE,
+    "https://rodin.house.upenn.edu": Event.TYPE_RODIN_COLLEGE_HOUSE,
+    "https://harnwell.house.upenn.edu": Event.TYPE_HARNWELL_COLLEGE_HOUSE,
+    "https://harrison.house.upenn.edu": Event.TYPE_HARRISON_COLLEGE_HOUSE,
+    "https://gutmann.house.upenn.edu": Event.TYPE_GUTMANN_COLLEGE_HOUSE,
+    "https://radian.house.upenn.edu": Event.TYPE_RADIAN_COLLEGE_HOUSE,
+    "https://lauder.house.upenn.edu": Event.TYPE_LAUDER_COLLEGE_HOUSE,
+    "https://hill.house.upenn.edu": Event.TYPE_HILL_COLLEGE_HOUSE,
+    "https://kcech.house.upenn.edu": Event.TYPE_KCECH_COLLEGE_HOUSE,
+    "https://ware.house.upenn.edu": Event.TYPE_WARE_COLLEGE_HOUSE,
+    "https://fh.house.upenn.edu": Event.TYPE_FH_COLLEGE_HOUSE,
+    "https://riepe.house.upenn.edu": Event.TYPE_RIEPE_COLLEGE_HOUSE,
+    "https://dubois.house.upenn.edu": Event.TYPE_DUBOIS_COLLEGE_HOUSE,
+    "https://gregory.house.upenn.edu": Event.TYPE_GREGORY_COLLEGE_HOUSE,
+    "https://stouffer.house.upenn.edu": Event.TYPE_STOUFFER_COLLEGE_HOUSE,
 }
 
 
@@ -65,9 +48,9 @@ class Command(BaseCommand):
         soup = BeautifulSoup(resp.text, "html.parser")
 
         location = (
-            soup.select_one(".field-name-field-room").text.strip()
-            if soup.select_one(".field-name-field-room")
-            else ""
+            soup.find("div", class_="field-name-field-public-display-location").text.strip()
+            if soup.find("div", class_="field-name-field-public-display-location")
+            else None
         )
         start_time_str = (
             soup.select_one(".date-display-start").get("content")
@@ -92,7 +75,7 @@ class Command(BaseCommand):
         description = (
             soup.select_one(".field-name-body").text.strip()
             if soup.select_one(".field-name-body")
-            else ""
+            else None
         )
         return location, start_time, end_time, description
 
@@ -100,40 +83,39 @@ class Command(BaseCommand):
         try:
             resp = requests.get(calendar_url)
         except ConnectionError:
-            return None
+            print("Error:", ConnectionError)
+            return
         soup = BeautifulSoup(resp.text, "html.parser")
 
         event_cells = soup.find_all("td", class_="single-day future")
 
         for cell in event_cells:
-            item = cell.find("div", class_="item")
-            if not item:
+            if not (item := cell.find("div", class_="item")):
                 continue
-            event_link = item.find("a", href=True)
-            if not event_link:
+            if not (event_link := item.find("a", href=True)):
                 continue
             name = event_link.text.strip()
-            url = event_link["href"]
+            if not (url := event_link.get("href")):
+                continue
             index = calendar_url.find("/", calendar_url.find("://") + 3)
             base_url = calendar_url[:index]
             url = f"{base_url}{url}"
 
             location, start_time, end_time, description = self.scrape_details(url)
 
-            house = calendar_url.split("/")[2].split(".")[0]
-
-            event_type = EVENT_TYPE_MAP.get(house, None)
+            base_url = "/".join(calendar_url.split("/", 3)[:3])
+            event_type = EVENT_TYPE_MAP.get(base_url, None)
             Event.objects.update_or_create(
                 name=name,
                 defaults={
                     "event_type": event_type,
-                    "image_url": "",
+                    "image_url": None,
                     "start": timezone.make_aware(start_time),
                     "end": timezone.make_aware(end_time),
                     "location": location,
                     "website": url,
                     "description": description,
-                    "email": "",
+                    "email": None,
                 },
             )
             if start_time > timezone.localtime() + datetime.timedelta(days=30):

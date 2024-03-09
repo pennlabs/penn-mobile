@@ -105,13 +105,13 @@ class Command(BaseCommand):
                 name=name,
                 defaults={
                     "event_type": Event.TYPE_PENN_TODAY,
-                    "image_url": "",
+                    "image_url": None,
                     "start": timezone.make_aware(start_date),
                     "end": timezone.make_aware(end_date),
                     "location": location,
                     "website": event_url,
                     "description": description,
-                    "email": "",
+                    "email": None,
                 },
             )
 
