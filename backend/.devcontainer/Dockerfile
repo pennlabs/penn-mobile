@@ -1,4 +1,4 @@
-FROM python:3.11-slim-buster
+FROM --platform=linux/amd64 python:3.11-slim-buster
 
 ARG IMAGE_NAME=pennlabs/mobile-backend-devcontainer
 
