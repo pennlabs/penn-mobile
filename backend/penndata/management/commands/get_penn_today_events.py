@@ -11,6 +11,8 @@ from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.firefox import GeckoDriverManager
+import chromedriver_binary  # Adds chromedriver binary to path
+
 
 from penndata.models import Event
 
@@ -121,9 +123,7 @@ class Command(BaseCommand):
         try:
             options = Options()
             options.add_argument("--headless")
-            driver = webdriver.Firefox(
-                service=FirefoxService(GeckoDriverManager().install()), options=options
-            )
+            driver = webdriver.Chrome(options=options)
 
             driver.get(event_url)
             print("WAITING FOR ELEMENT")
