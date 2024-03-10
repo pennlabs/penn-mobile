@@ -117,14 +117,14 @@ class Command(BaseCommand):
 
     def connect_and_parse_html(self, event_url, condition):
         try:
-            from selenium.webdriver.chrome.service import Service
 
             print(chromedriver_binary.chromedriver_filename)
+            from selenium.webdriver.chrome.options import Options
 
-            service = Service(executable_path=chromedriver_binary.chromedriver_filename)
-            options = webdriver.ChromeOptions()
+            options = Options()
+
             options.add_argument("--headless")
-            driver = webdriver.Chrome(options=options, service=service)
+            driver = webdriver.Chrome(options=options)
 
             driver.get(event_url)
             print("WAITING FOR ELEMENT")
