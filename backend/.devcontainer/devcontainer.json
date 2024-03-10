@@ -1,0 +1,6 @@
+{
+    "name": "Penn Mobile Backend",
+    "build": {
+        "dockerfile": "Dockerfile"
+    }
+}
