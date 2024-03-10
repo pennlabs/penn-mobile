@@ -1,0 +1,7 @@
+{
+    "name": "Penn Mobile Backend",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "runArgs": ["--platform=linux/amd64" ]
+}
