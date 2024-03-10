@@ -1,18 +1,15 @@
 import datetime
 from urllib.parse import urljoin
 
+import chromedriver_binary
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.service import Service as FirefoxService
+# from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.firefox import GeckoDriverManager
-import chromedriver_binary  # Adds chromedriver binary to path
-
 
 from penndata.models import Event
 
@@ -75,7 +72,7 @@ class Command(BaseCommand):
                 start_time = datetime.time(0, 0)
             else:
                 start_time = datetime.datetime.strptime(start_time_str, "%I:%M%p").time()
-            start_date = datetime.datetime.combine(start_date, start_time)
+            start_date = timezone.make_aware(datetime.datetime.combine(start_date, start_time))
 
             if start_date > now + datetime.timedelta(days=31):
                 continue
@@ -108,7 +105,7 @@ class Command(BaseCommand):
                 defaults={
                     "event_type": "Penn Today",
                     "image_url": "",
-                    "start": timezone.make_aware(start_date),
+                    "start": start_date,
                     "end": timezone.make_aware(end_date),
                     "location": location,
                     "website": event_url,
@@ -121,7 +118,11 @@ class Command(BaseCommand):
 
     def connect_and_parse_html(self, event_url, condition):
         try:
-            options = Options()
+            # from selenium.webdriver.chrome.service import Service
+            print(chromedriver_binary.chromedriver_filename)
+
+            # service = Service(executable_path=chromedriver_binary.chromedriver_filename)
+            options = webdriver.ChromeOptions()
             options.add_argument("--headless")
             driver = webdriver.Chrome(options=options)
 
