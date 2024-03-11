@@ -45,7 +45,7 @@ django-redis = "*"
 redis = "*"
 python-dateutil = "*"
 selenium = "*"
-webdriver-manager = "*"
+chromedriver-binary = "*"
 
 [requires]
 python_version = "3.11"
