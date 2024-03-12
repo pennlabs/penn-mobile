@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowLeftIcon, ArrowRightIcon } from "@radix-ui/react-icons"
+import { ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons"
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react"
@@ -206,7 +206,8 @@ const CarouselPrevious = React.forwardRef<
       variant={variant}
       size={size}
       className={cn(
-        "absolute h-6 w-6 rounded-full",
+        "absolute h-5 w-5 rounded-full opacity-80 hover:opacity-100 hover:scale-125 ease-in-out transition duration-300",
+        canScrollPrev ? "" : "hidden",
         orientation === "horizontal"
           ? "left-3 top-1/2 -translate-y-1/2"
           : "-top-12 left-1/2 -translate-x-1/2 rotate-90",
@@ -216,7 +217,7 @@ const CarouselPrevious = React.forwardRef<
       onClick={scrollPrev}
       {...props}
     >
-      <ArrowLeftIcon className="h-4 w-4" />
+      <ChevronLeftIcon className="h-4 w-4" />
       <span className="sr-only">Previous slide</span>
     </Button>
   )
@@ -235,7 +236,8 @@ const CarouselNext = React.forwardRef<
       variant={variant}
       size={size}
       className={cn(
-        "absolute h-6 w-6 rounded-full",
+        "absolute h-5 w-5 rounded-full opacity-80 hover:opacity-100 hover:scale-125 ease-in-out transition duration-300",
+        canScrollNext ? "" : "hidden",
         orientation === "horizontal"
           ? "right-3 top-1/2 -translate-y-1/2"
           : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
@@ -245,7 +247,7 @@ const CarouselNext = React.forwardRef<
       onClick={scrollNext}
       {...props}
     >
-      <ArrowRightIcon className="h-4 w-4" />
+      <ChevronRightIcon className="h-4 w-4" />
       <span className="sr-only">Next slide</span>
     </Button>
   )

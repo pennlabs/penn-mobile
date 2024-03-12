@@ -7,7 +7,7 @@ interface PropertyListProps {
 
 const PropertyList: React.FC<PropertyListProps> = ({ properties }) => {
   return (
-    <ul className=" grid max-w-[80rem] 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 gap-8 list-none">
+    <ul className="grid max-w-[80rem] xl:grid-cols-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-1 gap-8 max-md:gap-5 list-none">
       {properties.map((property) => (
         <li key={property.id}>
           <Property property={property} />

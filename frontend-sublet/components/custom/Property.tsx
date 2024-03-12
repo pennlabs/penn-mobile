@@ -33,6 +33,9 @@ import { Label } from "@/components/ui/label";
 import { CheckIcon, DotsHorizontalIcon as Dots } from "@radix-ui/react-icons";
 */}
 
+import { CalendarIcon } from "@radix-ui/react-icons";
+import { MapPinIcon, DollarSignIcon } from 'lucide-react';
+
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Carousel,
@@ -65,8 +68,11 @@ interface PropertyProps {
 
 const Property: React.FC<PropertyProps> = ({ property }) => {
   return (
-    <div className="space-y-1">
-      <Carousel className="w-full max-w-xs rounded-xl overflow-hidden">
+    <div className="relative space-y-1">
+
+      <div className="absolute w-7 h-7 bg-red-500 rounded-full z-30 -top-2 -right-2 text-white font-bold text-xs flex justify-center items-center">1</div>
+
+      <Carousel className="w-full max-w-xs rounded-xl overflow-hidden group">
         <CarouselContent className="">
           {Array.from({ length: 5 }).map((_, index) => (
             <CarouselItem key={index}>
@@ -87,9 +93,16 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
         <CarouselNext />
       </Carousel>
 
-      <div className="flex justify-between pt-3">
+      <div className="flex justify-between pt-3 max-sm:flex-col max-sm:gap-3 max-sm:pb-3">
         <div className="font-bold text-xl">{property.title}</div>
-        <p className="text-xs font-medium text-muted-foreground">{formatDate(property.start_date)} - {formatDate(property.end_date)}</p>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <span className="flex h-3 w-3 rounded-full bg-green-500" />
+            <span className="flex h-3 w-3 rounded-full bg-green-500 animate-ping absolute top-0" />
+          </div>
+          <p className="text-sm font-medium leading-none sm:hidden">Pending</p>
+        </div>
+
         {/*<DropdownMenu>
           <DropdownMenuTrigger>
             <Dots className="w-4 h-4" />
@@ -102,13 +115,23 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
   </DropdownMenu>*/}
       </div>
 
-      <div className="mb-4 items-start pb-4 pt-2 space-y-1 last:mb-0 last:pb-0">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <span className="flex h-3 w-3 rounded-full bg-green-500" />
-            <span className="flex h-3 w-3 rounded-full bg-green-500 animate-ping absolute top-0" />
-          </div>
-          <p className="text-sm font-medium leading-none">Pending</p>
+      <div className="mb-4 items-start pb-4 space-y-1 last:mb-0 last:pb-0">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <CalendarIcon className="w-4 h-4" />
+          <p className="text-sm font-medium">{formatDate(property.start_date)} - {formatDate(property.end_date)}</p>
+        </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <MapPinIcon className="w-4 h-4" />
+          <p className="text-sm font-medium">{property.address?.split(',')[0]}</p>
+        </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <DollarSignIcon className="w-4 h-4" />
+          <p className="text-sm font-medium">
+            <span className="text-muted-foreground font-extrabold">
+              {property.price}
+            </span>
+            /month
+          </p>
         </div>
 
       </div>

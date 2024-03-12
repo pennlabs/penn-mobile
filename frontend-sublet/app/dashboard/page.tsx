@@ -45,7 +45,7 @@ const Dashboard = () => {
         </div>
 
 
-        <TabsContent value="posted" className="p-14">
+        <TabsContent value="posted" className="p-5">
           <div className="items-center flex flex-col justify-center px-10 max-md:px-0">
             <div className="space-y-12">
               <h1 className="text-4xl tracking-tight font-bold">
