@@ -46,11 +46,13 @@ const Dashboard = () => {
 
 
         <TabsContent value="posted" className="p-14">
-          <div className="flex flex-col justify-center space-y-12">
-            <h1 className="text-4xl tracking-tight font-bold">
-              Your Listings
-            </h1>
-            <PropertyList properties={properties} />
+          <div className="items-center flex flex-col justify-center px-10 max-md:px-0">
+            <div className="space-y-12">
+              <h1 className="text-4xl tracking-tight font-bold">
+                Your Listings
+              </h1>
+              <PropertyList properties={properties} />
+            </div>
           </div>
         </TabsContent>
 

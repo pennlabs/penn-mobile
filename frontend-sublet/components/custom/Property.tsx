@@ -66,16 +66,19 @@ interface PropertyProps {
 const Property: React.FC<PropertyProps> = ({ property }) => {
   return (
     <div className="space-y-1">
-      <Carousel className="w-full max-w-xs">
-        <CarouselContent>
+      <Carousel className="w-full max-w-xs rounded-xl overflow-hidden">
+        <CarouselContent className="">
           {Array.from({ length: 5 }).map((_, index) => (
             <CarouselItem key={index}>
-              <div className="p-1">
-                <Card>
-                  <CardContent className="flex aspect-square items-center justify-center p-6">
-                    <span className="text-4xl font-semibold">{index + 1}</span>
-                  </CardContent>
-                </Card>
+              <div className="flex items-center justify-center">
+                <Image
+                  className="rounded-xl select-none"
+                  draggable="false"
+                  src={"/hamco.jpeg"}
+                  alt="Property image"
+                  width={800}
+                  height={800}
+                />
               </div>
             </CarouselItem>
           ))}
@@ -83,14 +86,6 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
         <CarouselPrevious />
         <CarouselNext />
       </Carousel>
-      <Image
-        className="rounded-xl select-none"
-        draggable="false"
-        src={"/hamco.jpeg"}
-        alt="Property image"
-        width={800}
-        height={800}
-      />
 
       <div className="flex justify-between pt-3">
         <div className="font-bold text-xl">{property.title}</div>
