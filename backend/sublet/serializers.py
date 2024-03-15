@@ -61,6 +61,22 @@ class SubletSerializer(serializers.ModelSerializer):
         many=True, queryset=Amenity.objects.all(), required=False
     )
 
+    def validate_not_draft(self, validated_data):
+        if not validated_data["is_draft"]:
+            # check that certain fields are there
+            fields = [
+                "title",
+                "address",
+                "price",
+                "negotiable",
+                "start_date",
+                "end_date",
+                "expires_at",
+            ]
+
+            if bad_fields := [field for field in fields if not validated_data[field]]:
+                raise serializers.ValidationError(f"{', '.join(bad_fields)} are required to publish sublet.")
+
     class Meta:
         model = Sublet
         read_only_fields = [
@@ -72,7 +88,7 @@ class SubletSerializer(serializers.ModelSerializer):
         ]
         fields = [
             "id",
-            "subletter",
+            "is_draft",
             "amenities",
             "title",
             "address",
@@ -93,6 +109,7 @@ class SubletSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["subletter"] = self.context["request"].user
+        self.validate_not_draft(validated_data)
         instance = super().create(validated_data)
         instance.save()
         return instance
@@ -104,6 +121,7 @@ class SubletSerializer(serializers.ModelSerializer):
             self.context["request"].user == instance.subletter
             or self.context["request"].user.is_superuser
         ):
+            self.validate_not_draft(validated_data)
             instance = super().update(instance, validated_data)
             instance.save()
             return instance
