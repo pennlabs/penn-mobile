@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Button } from "@/components/ui/button";
 
-import { PlusIcon } from "@radix-ui/react-icons";
+import { PlusIcon } from "lucide-react";
 
 import PropertyList from "@/components/custom/PropertyList";
 
@@ -38,7 +38,7 @@ const Dashboard = () => {
             <TabsTrigger value="drafts">Drafts</TabsTrigger>
           </TabsList>
           <PropertyForm>
-            <Button className="p-2">
+            <Button className="p-2 rounded-full">
               <PlusIcon className="w-5" />
             </Button>
           </PropertyForm>
@@ -49,7 +49,7 @@ const Dashboard = () => {
           <div className="items-center flex flex-col justify-center px-10 max-md:px-0">
             <div className="space-y-12">
               <h1 className="text-4xl tracking-tight font-bold">
-                Your Listings
+                My Listings
               </h1>
               <PropertyList properties={properties} />
             </div>
@@ -61,7 +61,7 @@ const Dashboard = () => {
           <div className="items-center flex flex-col justify-center px-10 max-md:px-0">
             <div className="space-y-12">
               <h1 className="text-4xl tracking-tight font-bold">
-                Your Drafts
+                My Drafts
               </h1>
               <PropertyList properties={properties} />
             </div>

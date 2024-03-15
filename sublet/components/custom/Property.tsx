@@ -70,7 +70,7 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
   return (
     <div className="relative space-y-1">
 
-      <div className="absolute w-7 h-7 bg-red-500 rounded-full z-30 -top-2 -right-2 text-white font-bold text-xs flex justify-center items-center">1</div>
+      <div className="absolute w-7 h-7 bg-red-500 rounded-full z-30 -top-2 -right-2 text-white font-bold text-sm flex justify-center items-center">1</div>
 
       <Carousel className="w-full max-w-xs rounded-xl overflow-hidden group">
         <CarouselContent className="">
