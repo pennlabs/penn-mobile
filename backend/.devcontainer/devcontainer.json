@@ -3,5 +3,16 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
-    "runArgs": ["--platform=linux/amd64" ]
+    "runArgs": ["--platform=linux/amd64" ],
+    "features": {
+        "common": {
+            "username": "automatic",
+            "uid": "automatic",
+            "gid": "automatic",
+            "installZsh": true,
+            "installOhMyZsh": true,
+            "upgradePackages": true,
+            "nonFreePackages": false
+        }
+    }
 }
