@@ -4,7 +4,6 @@ import json
 
 import requests
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 from penndata.models import Event
 
@@ -43,15 +42,18 @@ class Command(BaseCommand):
             end = datetime.datetime.fromisoformat(event["endDate"]) if "endDate" in event else None
 
             location = event.get("location", dict()).get("name")
-            email = html.unescape(event.get("organizer", dict()).get("email"))
+            if (organizer := event.get("organizer")) and (email := organizer.get("email")):
+                email = html.unescape(email)
+            else:
+                email = None
 
             Event.objects.update_or_create(
                 name=event_name,
                 defaults={
                     "event_type": Event.TYPE_PENN_ENGINEERING,
                     "image_url": None,
-                    "start": timezone.make_aware(start),
-                    "end": timezone.make_aware(end),
+                    "start": start,
+                    "end": end,
                     "location": location,
                     "website": url,
                     "description": description,

@@ -37,7 +37,7 @@ class Command(BaseCommand):
             for site in EVENT_TYPE_MAP:
                 self.scrape_calendar_page(f"{site}/calendar/{next_year}-{next_month:02d}")
 
-        self.stdout.write("Uploaded Rodin College House Events!")
+        self.stdout.write("Uploaded College House Events!")
 
     def scrape_details(self, event_url):
         try:
@@ -77,7 +77,12 @@ class Command(BaseCommand):
             if soup.select_one(".field-name-body")
             else None
         )
-        return location, start_time, end_time, description
+        image_url = (
+            soup.select_one(".field-name-field-image img")["src"]
+            if soup.select_one(".field-name-field-image img")
+            else None
+        )
+        return location, start_time, end_time, description, image_url
 
     def scrape_calendar_page(self, calendar_url):
         try:
@@ -88,6 +93,9 @@ class Command(BaseCommand):
         soup = BeautifulSoup(resp.text, "html.parser")
 
         event_cells = soup.find_all("td", class_="single-day future")
+
+        email_element = soup.find("div", class_="views-field-field-office-email-contact").find("a")
+        email = email_element["href"].split(":")[1] if email_element else None
 
         for cell in event_cells:
             if not (item := cell.find("div", class_="item")):
@@ -101,22 +109,23 @@ class Command(BaseCommand):
             base_url = calendar_url[:index]
             url = f"{base_url}{url}"
 
-            location, start_time, end_time, description = self.scrape_details(url)
+            location, start_time, end_time, description, image_url = self.scrape_details(url)
 
             base_url = "/".join(calendar_url.split("/", 3)[:3])
             event_type = EVENT_TYPE_MAP.get(base_url, None)
+            print(base_url + " " + name)
             Event.objects.update_or_create(
                 name=name,
                 defaults={
                     "event_type": event_type,
-                    "image_url": None,
-                    "start": timezone.make_aware(start_time),
-                    "end": timezone.make_aware(end_time),
+                    "image_url": image_url,
+                    "start": start_time,
+                    "end": end_time,
                     "location": location,
                     "website": url,
                     "description": description,
-                    "email": None,
+                    "email": email,
                 },
             )
-            if start_time > timezone.localtime() + datetime.timedelta(days=30):
+            if start_time and start_time > timezone.localtime() + datetime.timedelta(days=30):
                 break

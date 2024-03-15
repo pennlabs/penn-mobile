@@ -55,7 +55,7 @@ class Event(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
-    start = models.DateTimeField()
+    start = models.DateTimeField(null=True, blank=True)
     end = models.DateTimeField(null=True, blank=True)
     location = models.CharField(max_length=255, null=True, blank=True)
     email = models.CharField(max_length=255, null=True, blank=True)

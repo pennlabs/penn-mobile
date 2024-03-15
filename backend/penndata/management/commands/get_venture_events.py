@@ -41,10 +41,10 @@ class Command(BaseCommand):
                 event_start_str = event_date_parts[1].split(" - ")[0].strip()
                 event_end_str = event_date_parts[1].split(" - ")[1].strip()
 
-                event_start_datetime = datetime.strptime(
+                event_start_datetime = datetime.datetime.strptime(
                     f"{event_date_parts[0]} {event_start_str}", "%B %d, %Y %I:%M%p"
                 )
-                event_end_datetime = datetime.strptime(
+                event_end_datetime = datetime.datetime.strptime(
                     f"{event_date_parts[0]} {event_end_str}", "%B %d, %Y %I:%M%p"
                 )
                 last_start_datetime = event_start_datetime
@@ -57,23 +57,26 @@ class Command(BaseCommand):
                     event_day = int(event_day_elem.text.strip())
 
                     if last_start_datetime:  # has to be before any previous events
-                        if datetime.strptime(event_month, "%B").month > last_start_datetime.month:
+                        if (
+                            datetime.datetime.strptime(event_month, "%B").month
+                            > last_start_datetime.month
+                        ):
                             start_year = current_year - 1
                         else:
                             start_year = current_year
                     else:  # if no date time yet
                         # if in future and next year
-                        if current_month > datetime.strptime(event_month, "%B").month:
+                        if current_month > datetime.datetime.strptime(event_month, "%B").month:
                             start_year = current_year + 1
                         else:
                             start_year = current_year
 
-                    event_start_datetime = datetime(
-                        start_year, datetime.strptime(event_month, "%B").month, event_day
+                    event_start_datetime = datetime.datetime(
+                        start_year, datetime.datetime.strptime(event_month, "%B").month, event_day
                     )
 
             # events are ordered from future to past, so break once we find a past event
-            if event_start_datetime < now:
+            if event_start_datetime < now.replace(tzinfo=None):
                 break
 
             if title := event.find("div", class_="PromoSearchResultEvent-title"):
@@ -93,12 +96,14 @@ class Command(BaseCommand):
                 defaults={
                     "event_type": Event.TYPE_VENTURE_LAB,
                     "image_url": None,
-                    "start": timezone.make_aware(event_start_datetime),
-                    "end": timezone.make_aware(event_end_datetime),
+                    "start": (
+                        timezone.make_aware(event_start_datetime) if event_start_datetime else None
+                    ),
+                    "end": timezone.make_aware(event_end_datetime) if event_end_datetime else None,
                     "location": location,
                     "website": url,
                     "description": description,
-                    "email": None,
+                    "email": "venturelab@upenn.edu",
                 },
             )
 

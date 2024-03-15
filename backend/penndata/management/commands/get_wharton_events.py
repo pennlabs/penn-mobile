@@ -1,10 +1,10 @@
 import datetime
 import re
 
+import pytz
 import requests
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 from penndata.models import Event
 
@@ -14,7 +14,7 @@ WHARTON_EVENTS_WEBSITE = "https://events.wharton.upenn.edu/events-hq/#list"
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-        # now = timezone.localtime()
+        eastern = pytz.timezone("US/Eastern")
 
         try:
             resp = requests.get(WHARTON_EVENTS_WEBSITE)
@@ -37,16 +37,30 @@ class Command(BaseCommand):
                 start_time_obj = datetime.datetime.strptime(start_time, "%I:%M %p")
                 end_time_obj = datetime.datetime.strptime(end_time, "%I:%M %p")
             else:
-                print("Error: Cannot find date, update scraper.")
-                return
+                match = re.match(
+                    r"(\w+\s+\d+)(?: \| (\d{1,2}:\d{2} [AP]M))?"
+                    r"(?: - (\w+\s+\d+ \| )?(\d{1,2}:\d{2} [AP]M))?",
+                    info,
+                )
+                if match:
+                    start_date, start_time, end_date, end_time = match.groups()
+                    start_time_obj = (
+                        datetime.datetime.strptime(start_time, "%I:%M %p") if start_time else None
+                    )
+                    end_time_obj = (
+                        datetime.datetime.strptime(end_time, "%I:%M %p") if end_time else None
+                    )
+                else:
+                    print("Error: Cannot find date, update scraper.")
+                    return
             location = ",".join([info.split("•")[-2], info.split("•")[-1]])
             Event.objects.update_or_create(
                 name=title,
                 defaults={
                     "event_type": Event.TYPE_WHARTON,
                     "image_url": None,
-                    "start": timezone.make_aware(start_time_obj),
-                    "end": timezone.make_aware(end_time_obj),
+                    "start": eastern.localize(start_time_obj) if start_time_obj else None,
+                    "end": eastern.localize(end_time_obj) if end_time_obj else None,
                     "location": location.strip(),
                     "website": link,
                     "description": description,
