@@ -74,16 +74,17 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
 
       <Carousel className="w-full max-w-xs rounded-xl overflow-hidden group">
         <CarouselContent className="">
-          {Array.from({ length: 5 }).map((_, index) => (
+          {property.images.map((_, index) => (
             <CarouselItem key={index}>
               <div className="flex items-center justify-center">
                 <Image
                   className="rounded-xl select-none"
                   draggable="false"
-                  src={"/hamco.jpeg"}
+                  src={property.images[index].image_url}
                   alt="Property image"
-                  width={800}
-                  height={800}
+                  width={1280}
+                  height={720}
+                  objectFit="cover"
                 />
               </div>
             </CarouselItem>
