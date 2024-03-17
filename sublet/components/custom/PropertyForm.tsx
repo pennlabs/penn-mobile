@@ -131,7 +131,7 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                     <FormControl className="col-span-3">
                       <Input type="number" placeholder="1000" {...field} />
                     </FormControl>
-                    <FormMessage className="col-span-4" />
+                    <FormMessage className="col-span-4 text-right" />
                   </FormItem>
                 )}
               />
@@ -155,7 +155,7 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                         Negotiable?
                       </FormLabel>
                     </div>
-                    <FormMessage className="col-span-4" />
+                    <FormMessage className="col-span-4 text-right" />
                   </FormItem>
                 )}
               />
@@ -168,7 +168,7 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                     <FormControl className="col-span-3">
                       <Input type="string" placeholder="123 Main St, New York, NY 10001" {...field} />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="col-span-4 text-right" />
                   </FormItem>
                 )}
               />
@@ -204,13 +204,55 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                           selected={new Date(field.value)}
                           onSelect={field.onChange}
                           disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
+                            date < new Date()
                           }
                           initialFocus
                         />
                       </PopoverContent>
                     </Popover>
-                    <FormMessage />
+                    <FormMessage className="col-span-4 text-right" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="end_date"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel htmlFor="end_date" className="text-right">End Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl className="col-span-3">
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-[240px] pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={new Date(field.value)}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date < new Date(form.getValues("start_date"))
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage className="col-span-4 text-right" />
                   </FormItem>
                 )}
               />

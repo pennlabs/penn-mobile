@@ -76,7 +76,7 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
         <CarouselContent className="">
           {property.images.map((_, index) => (
             <CarouselItem key={index}>
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center object-cover">
                 <Image
                   className="rounded-xl select-none"
                   draggable="false"
@@ -84,7 +84,6 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
                   alt="Property image"
                   width={1280}
                   height={720}
-                  objectFit="cover"
                 />
               </div>
             </CarouselItem>
