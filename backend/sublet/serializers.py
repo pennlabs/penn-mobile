@@ -62,7 +62,7 @@ class SubletSerializer(serializers.ModelSerializer):
     )
 
     def validate_not_draft(self, validated_data):
-        if not validated_data["is_draft"]:
+        if "is_draft" in validated_data and not validated_data["is_draft"]:
             # check that certain fields are there
             fields = [
                 "title",
