@@ -15,6 +15,7 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from gsr_booking.models import GSR, GroupMembership, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
+from utils.errors import APIError
 
 
 User = get_user_model()
@@ -36,10 +37,6 @@ class CreditType(Enum):
     LIBCAL = "Libcal"
     HUNTSMAN = "JMHH"
     ARB = "ARB"
-
-
-class APIError(ValueError):
-    pass
 
 
 class AbstractBookingWrapper(ABC):

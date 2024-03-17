@@ -122,7 +122,9 @@ class SubletSerializer(serializers.ModelSerializer):
 
 
 class SubletSerializerRead(serializers.ModelSerializer):
-    amenities = AmenitySerializer(many=True, required=False)
+    amenities = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Amenity.objects.all(), required=False
+    )
     images = SubletImageURLSerializer(many=True, required=False)
 
     class Meta:
@@ -149,7 +151,9 @@ class SubletSerializerRead(serializers.ModelSerializer):
 
 # simple sublet serializer for use when pulling all serializers/etc
 class SubletSerializerSimple(serializers.ModelSerializer):
-    amenities = AmenitySerializer(many=True, required=False)
+    amenities = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Amenity.objects.all(), required=False
+    )
     images = SubletImageURLSerializer(many=True, required=False)
 
     class Meta:
