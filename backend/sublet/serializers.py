@@ -1,6 +1,5 @@
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
-
 from sublet.models import Amenity, Offer, Sublet, SubletImage
 
 
@@ -75,7 +74,9 @@ class SubletSerializer(serializers.ModelSerializer):
             ]
 
             if bad_fields := [field for field in fields if not validated_data[field]]:
-                raise serializers.ValidationError(f"{', '.join(bad_fields)} are required to publish sublet.")
+                raise serializers.ValidationError(
+                    f"{', '.join(bad_fields)} are required to publish sublet."
+                )
 
     class Meta:
         model = Sublet
@@ -121,7 +122,8 @@ class SubletSerializer(serializers.ModelSerializer):
             self.context["request"].user == instance.subletter
             or self.context["request"].user.is_superuser
         ):
-            self.validate_not_draft(validated_data)
+            if instance.is_draft:
+                self.validate_not_draft(validated_data)
             instance = super().update(instance, validated_data)
             instance.save()
             return instance
