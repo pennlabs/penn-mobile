@@ -31,12 +31,14 @@ class Command(BaseCommand):
             link = entry.find(class_="entry-title").a["href"]
 
             info = entry.find(class_="info").span.text.strip()
+            # event has start and end times on same date
             match = re.match(r"(\w+\s+\d+) \| (\d{1,2}:\d{2} [AP]M) - (\d{1,2}:\d{2} [AP]M)", info)
             if match:
                 _, start_time, end_time = match.groups()
                 start_time_obj = datetime.datetime.strptime(start_time, "%I:%M %p")
                 end_time_obj = datetime.datetime.strptime(end_time, "%I:%M %p")
             else:
+                # event has start and end times on different dates
                 match = re.match(
                     r"(\w+\s+\d+)(?: \| (\d{1,2}:\d{2} [AP]M))?"
                     r"(?: - (\w+\s+\d+ \| )?(\d{1,2}:\d{2} [AP]M))?",
