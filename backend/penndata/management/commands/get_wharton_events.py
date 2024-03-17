@@ -55,7 +55,7 @@ class Command(BaseCommand):
                 else:
                     print("Error: Cannot find date, update scraper.")
                     return
-            location = ",".join([info.split("•")[-2], info.split("•")[-1]])
+            location = ",".join(info.split("•")[-2:])
             Event.objects.update_or_create(
                 name=title,
                 defaults={
