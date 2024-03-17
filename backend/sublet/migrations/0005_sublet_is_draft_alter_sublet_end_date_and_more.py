@@ -11,14 +11,10 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name="sublet",
-            name="is_draft",
-            field=models.BooleanField(default=True),
+            model_name="sublet", name="is_draft", field=models.BooleanField(default=True),
         ),
         migrations.AlterField(
-            model_name="sublet",
-            name="end_date",
-            field=models.DateField(blank=True, null=True),
+            model_name="sublet", name="end_date", field=models.DateField(blank=True, null=True),
         ),
         migrations.AlterField(
             model_name="sublet",
@@ -26,13 +22,9 @@ class Migration(migrations.Migration):
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name="sublet",
-            name="price",
-            field=models.IntegerField(blank=True, null=True),
+            model_name="sublet", name="price", field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name="sublet",
-            name="start_date",
-            field=models.DateField(blank=True, null=True),
+            model_name="sublet", name="start_date", field=models.DateField(blank=True, null=True),
         ),
     ]
