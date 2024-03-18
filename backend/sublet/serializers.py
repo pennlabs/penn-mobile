@@ -61,7 +61,7 @@ class SubletSerializer(serializers.ModelSerializer):
         many=True, queryset=Amenity.objects.all(), required=False
     )
 
-    def validate_not_draft(self, validated_data):
+    def validate_not_draft(self, validated_data, instance=None):
         if "is_draft" in validated_data and not validated_data["is_draft"]:
             # check that certain fields are there
             fields = [
@@ -73,8 +73,19 @@ class SubletSerializer(serializers.ModelSerializer):
                 "end_date",
                 "expires_at",
             ]
-
-            if bad_fields := [field for field in fields if not validated_data[field]]:
+            if bad_fields := [
+                field
+                for field in fields
+                if (field in validated_data and not validated_data[field])
+                or (
+                    field not in validated_data
+                    and (
+                        instance is None
+                        or not hasattr(instance, field)
+                        or not getattr(instance, field)
+                    )
+                )
+            ]:
                 raise serializers.ValidationError(
                     f"{', '.join(bad_fields)} are required to publish sublet."
                 )
