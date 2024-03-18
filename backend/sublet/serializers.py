@@ -135,7 +135,7 @@ class SubletSerializer(serializers.ModelSerializer):
             or self.context["request"].user.is_superuser
         ):
             if instance.is_draft:
-                self.validate_not_draft(validated_data)
+                self.validate_not_draft(validated_data, instance)
             instance = super().update(instance, validated_data)
             instance.save()
             return instance
