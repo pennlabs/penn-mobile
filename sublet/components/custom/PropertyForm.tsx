@@ -42,12 +42,17 @@ const decimalRegex = /^-?\d+(\.\d)?$/;
 const formSchema = z.object({
   amenities: z.array(z.string().max(255)),
   title: z.string().max(255),
-  address: z.string().max(255).optional(),
-  beds: z.number().min(-2147483648).max(2147483647).nullable(),
+  address: z.string().max(255),
+  beds: z.preprocess((value) => {
+    // If value is already a number, return it
+    if (typeof value === 'number') return value;
+    // If it's a string, attempt to parse it
+    if (typeof value === 'string') return parseFloat(value);
+  }, z.number().min(0).max(2147483647)),
   baths: z.union([
-    z.string().regex(decimalRegex).nullable().transform((val) => val !== null ? parseFloat(val) : null),
-    z.number().min(-100).max(100).nullable()
-  ]).refine((val) => val === null || (typeof val === 'number' && val >= -100 && val <= 100 && decimalRegex.test(val.toString())), {
+    z.string().regex(decimalRegex).optional().transform((val) => val !== undefined ? parseFloat(val) : undefined),
+    z.number().min(0).max(100).optional()
+  ]).refine((val) => val === undefined || (typeof val === 'number' && val >= 0 && val <= 100 && decimalRegex.test(val.toString())), {
     message: "Baths must be a decimal with at most one decimal place and within the range -100 to 100."
   }),
   description: z.string().nullable(),
@@ -59,9 +64,12 @@ const formSchema = z.object({
     if (typeof value === 'string') return parseFloat(value);
   }, z.number().min(-2147483648).max(2147483647)),
   negotiable: z.boolean().optional(),
-  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  expires_at: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/),
+  start_date: z.date(),
+  end_date: z.date(),
+  expires_at: z.date(),
+  //start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  //end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  //expires_at: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/),
 });
 
 interface PropertyFormProps {
@@ -75,16 +83,16 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
     defaultValues: {
       amenities: [],
       title: "",
-      address: "123",
-      beds: null,
-      baths: null,
+      address: "",
+      beds: 0,
+      baths: 0,
       description: "",
       external_link: "",
       price: 0,
       negotiable: false,
-      start_date: "",
-      end_date: "",
-      expires_at: "",
+      start_date: undefined,
+      end_date: undefined,
+      expires_at: undefined,
     },
   })
 
@@ -113,12 +121,12 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                 control={form.control}
                 name="title"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="title" className="text-right">Name</FormLabel>
+                  <FormItem className="grid grid-cols-4 items-center gap-1">
+                    <FormLabel htmlFor="title" className="text-right pr-3">Name</FormLabel>
                     <FormControl className="col-span-3">
-                      <Input placeholder="Chestnut 2bed 2ba" {...field} />
+                      <Input placeholder="ex. Chestnut 2bed 2ba" {...field} />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="col-span-4 text-right" />
                   </FormItem>
                 )}
               />
@@ -126,10 +134,10 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                 control={form.control}
                 name="price"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="price" className="text-right">Price</FormLabel>
+                  <FormItem className="grid grid-cols-4 items-center gap-1">
+                    <FormLabel htmlFor="price" className="text-right pr-3">Price</FormLabel>
                     <FormControl className="col-span-3">
-                      <Input type="number" placeholder="1000" {...field} />
+                      <Input type="number" {...field} />
                     </FormControl>
                     <FormMessage className="col-span-4 text-right" />
                   </FormItem>
@@ -139,15 +147,15 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                 control={form.control}
                 name="negotiable"
                 render={({ field }) => (
-                  <FormItem className="flex justify-end items-center gap-4">
+                  <FormItem className="flex justify-end items-center gap-1">
                     <div className="flex gap-2">
                       <FormControl className="">
                         <Checkbox
                           onClick={(e) => {
                             //const checked = (e.target as HTMLInputElement).checked;
                             //field.onChange(checked); // Use the form library's onChange method
-                            field.value = !field.value;
-                            console.log(field.value);
+                            field.onChange(!field.value);
+                            //console.log(field.value);
                           }}
                         />
                       </FormControl>
@@ -163,10 +171,10 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                 control={form.control}
                 name="address"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="address" className="text-right">Address</FormLabel>
+                  <FormItem className="grid grid-cols-4 items-center gap-1">
+                    <FormLabel htmlFor="address" className="text-right pr-3">Address</FormLabel>
                     <FormControl className="col-span-3">
-                      <Input type="string" placeholder="123 Main St, New York, NY 10001" {...field} />
+                      <Input type="string" placeholder="123 Main St, Philadelphia, PA 19104" {...field} />
                     </FormControl>
                     <FormMessage className="col-span-4 text-right" />
                   </FormItem>
@@ -177,15 +185,99 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                 control={form.control}
                 name="start_date"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="start_date" className="text-right">Start Date</FormLabel>
+                  <FormItem className="grid grid-cols-4 items-center gap-1">
+                    <FormLabel htmlFor="start_date" className="text-right pr-3">Start Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild className="">
+                        <FormControl className="col-span-3">
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={new Date(field.value)}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date < new Date() || date > form.getValues("end_date")!
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage className="col-span-4 text-right" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="end_date"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-1">
+                    <FormLabel htmlFor="end_date" className="text-right pr-3">End Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl className="col-span-3">
                           <Button
                             variant={"outline"}
                             className={cn(
-                              "w-[240px] pl-3 text-left font-normal",
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={new Date(field.value)}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            form.getValues("start_date") ? date < new Date(form.getValues("start_date")) : date < new Date()
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage className="col-span-4 text-right" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="expires_at"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-1 pb-5">
+                    <FormLabel htmlFor="expires_at" className="text-right pr-3">Expires At</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild className="">
+                        <FormControl className="col-span-3">
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "pl-3 text-left font-normal",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -215,137 +307,57 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="end_date"
-                render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel htmlFor="end_date" className="text-right">End Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl className="col-span-3">
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-[240px] pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={new Date(field.value)}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < new Date(form.getValues("start_date"))
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage className="col-span-4 text-right" />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 items-center gap-1 justify-start items-start">
+                <FormField
+                  control={form.control}
+                  name="beds"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-2 items-center gap-1">
+                      <FormLabel htmlFor="beds" className="text-right pr-3">Beds</FormLabel>
+                      <FormControl className="col-span-1">
+                        <Input type="number" {...field} />
+                      </FormControl>
+
+                      {/*<FormMessage className="col-span-4 text-right" />*/}
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="baths"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-2 items-center  gap-1">
+                      <FormLabel htmlFor="baths" className="text-right pr-3">Baths</FormLabel>
+                      <FormControl className="col-span-1">
+                        <Input type="number" {...field} />
+                      </FormControl>
+
+                      {/*<FormMessage className="col-span-4 text-right" />*/}
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Button onClick={() => {
+                console.log(form.getValues())
+                //console.log("Start Date:", format(form.getValues("start_date"), "yyyy-MM-dd"));
+                //console.log("End Date:", format(form.getValues("end_date"), "yyyy-MM-dd"));
+                console.log(form.getFieldState("beds"))
+                //console.log(form.getFieldState("end_date"))
+              }}>
+                console log
+              </Button>
 
               <SheetFooter className="max-sm:flex max-sm: max-sm:gap-2">
                 <SheetClose asChild>
-                  <Button variant="secondary" type="submit">Close</Button>
+                  <Button variant="secondary">Close</Button>
                 </SheetClose>
                 <Button type="submit">Save</Button>
               </SheetFooter>
 
             </form>
           </Form>
-          {/*
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel htmlFor="title" className="text-right">
-                    Title
-                  </FormLabel>
-                  <Input
-                    id="title"
-                    placeholder="Spacious 2 Bedroom Apartment"
-                    className="col-span-3"
-                    {...form.register("title")}
-                  />
-                  <FormMessage>{form.formState.errors.title?.message}</FormMessage>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel htmlFor="address" className="text-right">
-                    Address
-                  </FormLabel>
-                  <Input
-                    id="address"
-                    placeholder="123 Main St, New York, NY 10001"
-                    className="col-span-3"
-                    {...form.register("address")}
-                  />
-                  <FormMessage>{form.formState.errors.address?.message}</FormMessage>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel htmlFor="price" className="text-right">
-                    Price
-                  </FormLabel>
-                  <Input
-                    id="price"
-                    placeholder="1000"
-                    className="col-span-3"
-                    type="number"
-                    {...form.register("price")}
-                  />
-                  <FormMessage className="col-span-4 flex gap-1 items-center justify-center">
-                    {form.formState.errors.price ? <CrossCircledIcon /> : <></>}
-                    {form.formState.errors.price?.message}
-                  </FormMessage>
-                </div>
-              </div>
-              <SheetFooter>
-                <SheetClose asChild>
-                  <Button type="submit">Submit</Button>
-                </SheetClose>
-              </SheetFooter>
-            </form>
-          </Form>
-          
-          
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                placeholder="Pedro Duarte"
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="username" className="text-right">
-                Username
-              </Label>
-              <Input
-                id="username"
-                value="@peduarte"
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <SheetFooter>
-            <SheetClose asChild>
-              <Button type="submit">Save changes</Button>
-            </SheetClose>
-                </SheetFooter>*/}
         </SheetContent>
       </Sheet >
     </div >
