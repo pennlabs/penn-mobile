@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 
 import localFont from "next/font/local";
-import { Inter } from "next/font/google";
+//import { Inter } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+//const inter = Inter({ subsets: ["latin"] });
+
+import { Toaster } from "@/components/ui/toaster"
 
 const satoshi = localFont({
   src: '../fonts/satoshi/Satoshi-Variable.woff2',
@@ -27,6 +29,7 @@ export default function RootLayout({
         <div className="">
           {children}
         </div>
+        <Toaster />
       </body>
     </html>
   );

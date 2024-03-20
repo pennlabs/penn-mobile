@@ -1,8 +1,11 @@
 "use client"
 
+import { fetchAmenities, createProperty } from "@/services/propertyService"
+
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+//import { useToast } from "@/components/ui/use-toast"
 
 import {
   Sheet,
@@ -34,8 +37,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { Textarea } from "../ui/textarea";
+import { useEffect, useState } from "react"
+import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group"
 
-const uriRegex = new RegExp('^(?:[a-z0-9.+-]*)://(?:[^\s:@/]+(?::[^\s:@/]*)?@)?(?:(?:0|25[0-5]|2[0-4][0-9]|1[0-9]?[0-9]?|[1-9][0-9]?)(?:\.(?:0|25[0-5]|2[0-4][0-9]|1[0-9]?[0-9]?|[1-9][0-9]?)){3}|\[[0-9a-f:.]+\]|([a-z¡-￿0-9](?:[a-z¡-￿0-9-]{0,61}[a-z¡-￿0-9])?(?:\.(?!-)[a-z¡-￿0-9-]{1,63}(?<!-))*\.(?!-)(?:[a-z¡-￿-]{2,63}|xn--[a-z0-9]{1,59})(?<!-)\.?|localhost))(?::[0-9]{1,5})?(?:[/?#][^\s]*)?\z');
+const uriRegex = new RegExp('^(https?:\/\/)(localhost|[\da-z\.-]+)\.([a-z\.]{2,6}|[0-9]{1,5})([\/\w \.-]*)*\/?$');
 
 const decimalRegex = /^-?\d+(\.\d)?$/;
 
@@ -48,21 +54,21 @@ const formSchema = z.object({
     if (typeof value === 'number') return value;
     // If it's a string, attempt to parse it
     if (typeof value === 'string') return parseFloat(value);
-  }, z.number().min(0).max(2147483647)),
+  }, z.number().int().min(0).max(2147483647)),
   baths: z.union([
     z.string().regex(decimalRegex).optional().transform((val) => val !== undefined ? parseFloat(val) : undefined),
     z.number().min(0).max(100).optional()
   ]).refine((val) => val === undefined || (typeof val === 'number' && val >= 0 && val <= 100 && decimalRegex.test(val.toString())), {
     message: "Baths must be a decimal with at most one decimal place and within the range -100 to 100."
   }),
-  description: z.string().nullable(),
+  description: z.string().optional(),
   external_link: z.string().regex(uriRegex).max(255),
   price: z.preprocess((value) => {
     // If value is already a number, return it
     if (typeof value === 'number') return value;
     // If it's a string, attempt to parse it
     if (typeof value === 'string') return parseFloat(value);
-  }, z.number().min(-2147483648).max(2147483647)),
+  }, z.number().int().min(-2147483648).max(2147483647)),
   negotiable: z.boolean().optional(),
   start_date: z.date(),
   end_date: z.date(),
@@ -77,6 +83,19 @@ interface PropertyFormProps {
 }
 
 const PropertyForm = ({ children }: PropertyFormProps) => {
+
+  //const { toast } = useToast();
+  const [amenities, setAmenities] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchAmenities()
+      .then((data) => {
+        setAmenities(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching properties:", error);
+      });
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -97,9 +116,23 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values)
+    const property = {
+      ...values,
+      start_date: format(values.start_date, "yyyy-MM-dd") as string,
+      end_date: format(values.end_date, "yyyy-MM-dd") as string,
+      expires_at: format(values.expires_at, "yyyy-MM-dd") as string,
+      baths: values.baths!.toString(),
+    };
+
+    console.log(JSON.stringify(property));
+
+    createProperty(property)
+      .then((data) => {
+        console.log("Property created:", data);
+      })
+      .catch((error) => {
+        console.error("Error fetching properties:", error);
+      });
   }
 
   return (
@@ -108,7 +141,7 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
         <SheetTrigger asChild>
           {children}
         </SheetTrigger>
-        <SheetContent className="space-y-4">
+        <SheetContent className="space-y-4 overflow-y-scroll">
           <SheetHeader>
             <SheetTitle className="text-2xl">New Listing</SheetTitle>
             <SheetDescription>
@@ -121,10 +154,23 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                 control={form.control}
                 name="title"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-1">
+                  <FormItem className="grid grid-cols-4 items-center gap-1  pt-5">
                     <FormLabel htmlFor="title" className="text-right pr-3">Name</FormLabel>
                     <FormControl className="col-span-3">
                       <Input placeholder="ex. Chestnut 2bed 2ba" {...field} />
+                    </FormControl>
+                    <FormMessage className="col-span-4 text-right" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-1">
+                    <FormLabel htmlFor="address" className="text-right pr-3">Address</FormLabel>
+                    <FormControl className="col-span-3">
+                      <Input type="string" placeholder="123 Main St, Philadelphia, PA 19104" {...field} />
                     </FormControl>
                     <FormMessage className="col-span-4 text-right" />
                   </FormItem>
@@ -151,12 +197,8 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                     <div className="flex gap-2">
                       <FormControl className="">
                         <Checkbox
-                          onClick={(e) => {
-                            //const checked = (e.target as HTMLInputElement).checked;
-                            //field.onChange(checked); // Use the form library's onChange method
-                            field.onChange(!field.value);
-                            //console.log(field.value);
-                          }}
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
                         />
                       </FormControl>
                       <FormLabel htmlFor="negotiable" className="text-right col-start-3">
@@ -169,17 +211,49 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
               />
               <FormField
                 control={form.control}
-                name="address"
+                name="external_link"
                 render={({ field }) => (
                   <FormItem className="grid grid-cols-4 items-center gap-1">
-                    <FormLabel htmlFor="address" className="text-right pr-3">Address</FormLabel>
+                    <FormLabel htmlFor="external_link" className="text-right pr-3">Link</FormLabel>
                     <FormControl className="col-span-3">
-                      <Input type="string" placeholder="123 Main St, Philadelphia, PA 19104" {...field} />
+                      <Input placeholder="https://example.com" {...field} />
                     </FormControl>
                     <FormMessage className="col-span-4 text-right" />
                   </FormItem>
                 )}
               />
+
+              <div className="grid grid-cols-2 items-center gap-1 justify-start items-start pb-5">
+                <FormField
+                  control={form.control}
+                  name="beds"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-2 items-center gap-1">
+                      <FormLabel htmlFor="beds" className="text-right pr-3">Beds</FormLabel>
+                      <FormControl className="col-span-1">
+                        <Input type="number" {...field} />
+                      </FormControl>
+
+                      {/*<FormMessage className="col-span-4 text-right" />*/}
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="baths"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-2 items-center  gap-1">
+                      <FormLabel htmlFor="baths" className="text-right pr-3">Baths</FormLabel>
+                      <FormControl className="col-span-1">
+                        <Input type="number" {...field} />
+                      </FormControl>
+
+                      {/*<FormMessage className="col-span-4 text-right" />*/}
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
@@ -254,7 +328,7 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                           selected={new Date(field.value)}
                           onSelect={field.onChange}
                           disabled={(date) =>
-                            form.getValues("start_date") ? date < new Date(form.getValues("start_date")) : date < new Date()
+                            (form.getValues("start_date") ? date < new Date(form.getValues("start_date")) : date < new Date()) || date < form.getValues("expires_at")
                           }
                           initialFocus
                         />
@@ -296,7 +370,7 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                           selected={new Date(field.value)}
                           onSelect={field.onChange}
                           disabled={(date) =>
-                            date < new Date()
+                            date < new Date() || date > form.getValues("end_date")
                           }
                           initialFocus
                         />
@@ -307,49 +381,69 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
                 )}
               />
 
-              <div className="grid grid-cols-2 items-center gap-1 justify-start items-start">
-                <FormField
-                  control={form.control}
-                  name="beds"
-                  render={({ field }) => (
-                    <FormItem className="grid grid-cols-2 items-center gap-1">
-                      <FormLabel htmlFor="beds" className="text-right pr-3">Beds</FormLabel>
-                      <FormControl className="col-span-1">
-                        <Input type="number" {...field} />
-                      </FormControl>
+              <FormField
+                control={form.control}
+                name="amenities"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-1 pb-5">
+                    <FormLabel htmlFor="amenities" className="text-right pr-3">Amenities</FormLabel>
+                    <FormControl className="col-span-3">
+                      <ToggleGroup
+                        type="multiple"
+                        className="flex flex-wrap justify-start gap-2"
+                      >
+                        {amenities.map((amenity, id) => (
+                          <ToggleGroupItem
+                            key={id}
+                            value={amenity}
+                            data-state={field.value?.includes(amenity) ? "on" : "off"}
+                            aria-label="Toggle bold"
+                            className="border"
+                            onClick={() => {
+                              const currentAmenities = field.value || [];
+                              const updatedAmenities = currentAmenities.includes(amenity)
+                                ? currentAmenities.filter(a => a !== amenity)  // Remove the amenity if it was selected
+                                : [...currentAmenities, amenity];  // Add the amenity if it was not selected
 
-                      {/*<FormMessage className="col-span-4 text-right" />*/}
-                    </FormItem>
-                  )}
-                />
+                              field.onChange(updatedAmenities);  // Update the form field's value
+                            }}
+                          >
+                            <Label className="p-0">
+                              {amenity}
+                            </Label>
+                          </ToggleGroupItem>
+                        ))}
+                      </ToggleGroup>
+                    </FormControl>
+                    <FormMessage className="col-span-4 text-right" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-1">
+                    <FormLabel htmlFor="description" className="text-right pr-3">Description</FormLabel>
+                    <FormControl className="col-span-3">
+                      <Textarea placeholder="Add features or descriptors..." {...field} />
+                    </FormControl>
+                    <FormMessage className="col-span-4 text-right" />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="baths"
-                  render={({ field }) => (
-                    <FormItem className="grid grid-cols-2 items-center  gap-1">
-                      <FormLabel htmlFor="baths" className="text-right pr-3">Baths</FormLabel>
-                      <FormControl className="col-span-1">
-                        <Input type="number" {...field} />
-                      </FormControl>
-
-                      {/*<FormMessage className="col-span-4 text-right" />*/}
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <Button onClick={() => {
+              {/*<Button onClick={() => {
                 console.log(form.getValues())
                 //console.log("Start Date:", format(form.getValues("start_date"), "yyyy-MM-dd"));
                 //console.log("End Date:", format(form.getValues("end_date"), "yyyy-MM-dd"));
-                console.log(form.getFieldState("beds"))
+                console.log(form.getFieldState("external_link"))
                 //console.log(form.getFieldState("end_date"))
               }}>
                 console log
-              </Button>
+            </Button>*/}
 
-              <SheetFooter className="max-sm:flex max-sm: max-sm:gap-2">
+              <SheetFooter className="max-sm:flex max-sm: max-sm:gap-2 py-5">
                 <SheetClose asChild>
                   <Button variant="secondary">Close</Button>
                 </SheetClose>
