@@ -1,6 +1,6 @@
 "use client"
 
-import { fetchAmenities, createProperty } from "@/services/propertyService"
+import { fetchAmenities, createProperty, fetchProperties } from "@/services/propertyService"
 
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -79,10 +79,11 @@ const formSchema = z.object({
 });
 
 interface PropertyFormProps {
+  onNewProperty: any;
   children: React.ReactNode;
 }
 
-const PropertyForm = ({ children }: PropertyFormProps) => {
+const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
 
   //const { toast } = useToast();
   const [amenities, setAmenities] = useState<string[]>([]);
@@ -120,7 +121,7 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
       ...values,
       start_date: format(values.start_date, "yyyy-MM-dd") as string,
       end_date: format(values.end_date, "yyyy-MM-dd") as string,
-      expires_at: format(values.expires_at, "yyyy-MM-dd") as string,
+      expires_at: format(values.expires_at, "yyyy-MM-dd'T'HH:mm:ssxxx") as string,
       baths: values.baths!.toString(),
     };
 
@@ -128,7 +129,13 @@ const PropertyForm = ({ children }: PropertyFormProps) => {
 
     createProperty(property)
       .then((data) => {
-        console.log("Property created:", data);
+        fetchProperties()
+          .then((data) => {
+            onNewProperty(data);
+          })
+          .catch((error) => {
+            console.error("Error fetching properties:", error);
+          });
       })
       .catch((error) => {
         console.error("Error fetching properties:", error);

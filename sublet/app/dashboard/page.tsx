@@ -37,7 +37,7 @@ const Dashboard = () => {
             <TabsTrigger value="posted">Posted</TabsTrigger>
             <TabsTrigger value="drafts">Drafts</TabsTrigger>
           </TabsList>
-          <PropertyForm>
+          <PropertyForm onNewProperty={setProperties}>
             <Button className="p-2 rounded-full">
               <PlusIcon className="w-5" />
             </Button>

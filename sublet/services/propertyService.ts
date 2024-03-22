@@ -1,5 +1,21 @@
 import { PropertyInterface } from '../interfaces/Property';
-import getCsrf from '../utils/csrf';
+//import getCsrf from '../utils/csrf';
+
+function getCookie(name: string) {
+  let cookieValue = "";
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      // Does this cookie string begin with the name we want?
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
 
 export const fetchProperties = async (): Promise<PropertyInterface[]> => {
   // Retrieve username and password from environment variables
@@ -58,11 +74,13 @@ export const createProperty = async (property: any): Promise<any> => {
 
   const encodedCredentials = btoa(`${username}:${password}`);
 
+  const csrfToken = getCookie('csrftoken');
+
   // Set up the HTTP headers with Basic Authentication
   const headers = new Headers({
     'Authorization': `Basic ${encodedCredentials}`,
     'Content-Type': 'application/json',
-    'X-CSRFToken': getCsrf()
+    'X-CSRFToken': csrfToken
   });
 
   // Make the fetch request with the headers
