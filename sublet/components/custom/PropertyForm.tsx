@@ -5,6 +5,7 @@ import { fetchAmenities, createProperty, fetchProperties } from "@/services/prop
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+import { ChangeEvent } from "react";
 //import { useToast } from "@/components/ui/use-toast"
 
 import {
@@ -40,10 +41,15 @@ import { format } from "date-fns";
 import { Textarea } from "../ui/textarea";
 import { useEffect, useState } from "react"
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 
 const uriRegex = new RegExp('^(https?:\/\/)(localhost|[\da-z\.-]+)\.([a-z\.]{2,6}|[0-9]{1,5})([\/\w \.-]*)*\/?$');
 
 const decimalRegex = /^-?\d+(\.\d)?$/;
+
+const MAX_UPLOAD_SIZE = 1024 * 1024 * 3; // 3MB for each file
+const ACCEPTED_FILE_TYPES = ['image/jpeg', 'image/png']; // Accepted image formats
+const MAX_FILES = 6; // Maximum number of images
 
 const formSchema = z.object({
   amenities: z.array(z.string().max(255)),
@@ -73,10 +79,26 @@ const formSchema = z.object({
   start_date: z.date(),
   end_date: z.date(),
   expires_at: z.date(),
-  //start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  //end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  //expires_at: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/),
+  images: z.array(z.instanceof(File)) // An array of File instances
+    .refine((files) => files.length <= MAX_FILES, { message: `You can upload a maximum of ${MAX_FILES} images.` }) // Limit the number of files
+    .refine((files) => files.every(file => file.size <= MAX_UPLOAD_SIZE), { message: `Each file must be less than ${MAX_UPLOAD_SIZE / (1024 * 1024)}MB.` }) // Check size for each file
+    .refine((files) => files.every(file => ACCEPTED_FILE_TYPES.includes(file.type)), { message: 'Only JPEG and PNG files are accepted.' }), // Check type for each file
 });
+
+function getImageData(event: ChangeEvent<HTMLInputElement>) {
+  // FileList is immutable, so we need to create a new one
+  const dataTransfer = new DataTransfer();
+
+  // Add newly uploaded images
+  Array.from(event.target.files!).forEach((image) =>
+    dataTransfer.items.add(image)
+  );
+
+  const files = dataTransfer.files;
+  const displayUrl = URL.createObjectURL(event.target.files![0]);
+
+  return { files, displayUrl };
+}
 
 interface PropertyFormProps {
   onNewProperty: any;
@@ -87,6 +109,7 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
 
   //const { toast } = useToast();
   const [amenities, setAmenities] = useState<string[]>([]);
+  const [preview, setPreview] = useState("");
 
   useEffect(() => {
     fetchAmenities()
@@ -113,6 +136,7 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
       start_date: undefined,
       end_date: undefined,
       expires_at: undefined,
+      images: [],
     },
   })
 
@@ -157,6 +181,36 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
           </SheetHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <Avatar className="w-24 h-24">
+                <AvatarImage src={preview} />
+                <AvatarFallback>BU</AvatarFallback>
+              </Avatar>
+              <FormField
+                control={form.control}
+                name="images"
+                render={({ field: { onChange, value, ...rest } }) => (
+                  <>
+                    <FormItem>
+                      <FormLabel htmlFor="images">Circle Image</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          {...rest}
+                          onChange={(event) => {
+                            const { files, displayUrl } = getImageData(event)
+                            setPreview(displayUrl);
+                            onChange(files);
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Choose best image that bring spirits to your circle.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  </>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="title"
