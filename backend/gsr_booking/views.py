@@ -69,7 +69,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(
-                    user=user, accepted=False, group__in=self.request.user.booking_groups.all(),
+                    user=user,
+                    accepted=False,
+                    group__in=self.request.user.booking_groups.all(),
                 ),
                 many=True,
             ).data
