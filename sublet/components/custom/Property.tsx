@@ -48,6 +48,7 @@ import {
 import Image from "next/image";
 
 import { PropertyInterface, ImageInterface } from "@/interfaces/Property";
+import { AspectRatio } from "../ui/aspect-ratio";
 
 function formatDate(dateString: string): string {
   // Convert the input string to a Date object
@@ -77,14 +78,15 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
           {property.images.map((_, index) => (
             <CarouselItem key={index}>
               <div className="flex items-center justify-center object-cover">
-                <Image
-                  className="rounded-xl select-none"
-                  draggable="false"
-                  src={property.images[index].image_url}
-                  alt="Property image"
-                  width={1280}
-                  height={720}
-                />
+                <AspectRatio ratio={16 / 9}>
+                  <Image
+                    className="rounded-xl select-none object-cover"
+                    draggable="false"
+                    src={property.images[index].image_url}
+                    alt="Property image"
+                    fill
+                  />
+                </AspectRatio>
               </div>
             </CarouselItem>
           ))}

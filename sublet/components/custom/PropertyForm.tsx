@@ -43,6 +43,8 @@ import { useEffect, useState } from "react"
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 
+import Image from 'next/image'
+
 const uriRegex = new RegExp('^(https?:\/\/)(localhost|[\da-z\.-]+)\.([a-z\.]{2,6}|[0-9]{1,5})([\/\w \.-]*)*\/?$');
 
 const decimalRegex = /^-?\d+(\.\d)?$/;
@@ -185,6 +187,14 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
                 <AvatarImage src={preview} />
                 <AvatarFallback>BU</AvatarFallback>
               </Avatar>
+              <div className="rounded-xl overflow-hidden">
+                <Image
+                  src={preview}
+                  alt="Preview"
+                  width={480}
+                  height={480}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="images"

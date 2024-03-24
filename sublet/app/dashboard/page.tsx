@@ -14,6 +14,8 @@ import { PlusIcon } from "lucide-react";
 import PropertyList from "@/components/custom/PropertyList";
 
 import PropertyForm from "@/components/custom/PropertyForm";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import Image from "next/image";
 
 const Dashboard = () => {
   const [properties, setProperties] = useState<PropertyInterface[]>([]);
@@ -30,6 +32,7 @@ const Dashboard = () => {
 
   return (
     <div className="">
+
       <Tabs defaultValue="posted" className="">
 
         <div className="w-screen flex justify-end p-6 gap-4">
@@ -46,13 +49,21 @@ const Dashboard = () => {
 
 
         <TabsContent value="posted" className="p-5">
-          <div className="items-center flex flex-col justify-center px-10 max-md:px-0">
+          <div className="px-10 max-md:px-0">
             <div className="space-y-12">
               <h1 className="text-4xl tracking-tight font-bold">
                 My Listings
               </h1>
               <PropertyList properties={properties} />
             </div>
+            <AspectRatio ratio={16 / 9}>
+              <Image
+                src="/phone_header.png"
+                alt="Hero image"
+                className="object-cover"
+                fill
+              />
+            </AspectRatio>
           </div>
         </TabsContent>
 
