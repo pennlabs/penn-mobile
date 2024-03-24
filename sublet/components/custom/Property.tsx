@@ -77,17 +77,16 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
         <CarouselContent>
           {property.images.map((_, index) => (
             <CarouselItem key={index}>
-              <div className="flex items-center justify-center object-cover">
-                <AspectRatio ratio={16 / 9}>
-                  <Image
-                    className="rounded-xl select-none object-cover"
-                    draggable="false"
-                    src={property.images[index].image_url}
-                    alt="Property image"
-                    fill
-                  />
-                </AspectRatio>
-              </div>
+              <AspectRatio ratio={16 / 9}>
+                <Image
+                  className="rounded-xl"
+                  draggable="false"
+                  src={property.images[index].image_url}
+                  alt="Property image"
+                  objectFit="cover"
+                  fill
+                />
+              </AspectRatio>
             </CarouselItem>
           ))}
         </CarouselContent>
