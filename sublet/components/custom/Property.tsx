@@ -72,7 +72,7 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
   return (
     <div className="relative space-y-1">
 
-      <div className="absolute z-30 -top-1 -right-1">
+      <div className="absolute z-30 -top-2 -right-2">
         <span className="flex h-4 w-4 rounded-full bg-green-500" />
         <span className="flex h-4 w-4 rounded-full bg-green-500 animate-ping absolute top-0" />
       </div>
