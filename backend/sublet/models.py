@@ -33,7 +33,7 @@ class Sublet(models.Model):
     sublettees = models.ManyToManyField(
         User, through=Offer, related_name="sublets_offered", blank=True
     )
-    is_draft = models.BooleanField(default=True)
+    is_published = models.BooleanField(default=False)
     favorites = models.ManyToManyField(User, related_name="sublets_favorited", blank=True)
     amenities = models.ManyToManyField(Amenity, blank=True)
 

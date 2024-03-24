@@ -49,9 +49,11 @@ class TestSublets(TestCase):
             "start_date": "3000-04-09",
             "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
+            "is_published": True,
         }
         response = self.client.post("/sublet/properties/", payload)
         res_json = json.loads(response.content)
+        print(res_json)
         match_keys = [
             "title",
             "address",
@@ -65,6 +67,7 @@ class TestSublets(TestCase):
             "start_date",
             "end_date",
             "amenities",
+            "is_published",
         ]
         [self.assertEqual(payload[key], res_json[key]) for key in match_keys]
         self.assertIn("id", res_json)
@@ -99,6 +102,9 @@ class TestSublets(TestCase):
         self.assertEqual("New Title", Sublet.objects.get(id=old_id).title)
         self.assertEqual("New Title", res_json["title"])
         self.assertEqual(1, len(res_json["amenities"]))
+        payload["address"] = ""
+        payload["is_published"] = True
+        self.client.patch(f"/sublet/properties/{str(old_id)}/", payload)
 
     def test_browse_sublets(self):
         response = self.client.get("/sublet/properties/")
