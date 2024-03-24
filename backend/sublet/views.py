@@ -140,7 +140,8 @@ class Properties(viewsets.ModelViewSet):
         beds = params.get("beds", None)
         baths = params.get("baths", None)
 
-        queryset = Sublet.objects.all().filter(expires_at__gte=timezone.now())
+        queryset = self.get_queryset()
+
         # Apply filters based on query parameters
         if title:
             queryset = queryset.filter(title__icontains=title)
@@ -151,6 +152,8 @@ class Properties(viewsets.ModelViewSet):
                 queryset = queryset.filter(amenities__name=amenity)
         if subletter.lower() == "true":
             queryset = queryset.filter(subletter=request.user)
+        else:
+            queryset = queryset.filter(expires_at__gte=timezone.now())
         if starts_before:
             queryset = queryset.filter(start_date__lt=starts_before)
         if starts_after:
