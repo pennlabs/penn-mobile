@@ -72,16 +72,16 @@ class SubletSerializer(serializers.ModelSerializer):
             "expires_at",
         ]
 
-        def field_bad(field, validated_data, instance):
-            if field in validated_data:
-                if not validated_data[field]:
-                    return True
-            else:
-                if not instance or not hasattr(instance, field) or not getattr(instance, field):
-                    return True
-            return False
+        newest_fields = [
+            (field, validated_data[field])
+            if field in validated_data
+            else (field, getattr(instance, field))
+            if instance and hasattr(instance, field)
+            else (field, None)
+            for field in fields
+        ]
 
-        if bad_fields := [field for field in fields if field_bad(field, validated_data, instance)]:
+        if bad_fields := [field[0] for field in newest_fields if not field[1]]:
             raise serializers.ValidationError(
                 f"fields: {', '.join(bad_fields)} are required to publish sublet."
             )
