@@ -93,7 +93,7 @@ class TestSublets(TestCase):
         response = self.client.post("/sublet/properties/", payload)
         old_id = json.loads(response.content)["id"]
         # Update the sublet using the serializer
-        data = {"title": "New Title", "beds": 3, "amenities": ["Amenity1"]}
+        data = {"title": "New Title", "beds": 3, "amenities": ["Amenity1"], "address": ""}
         response = self.client.patch(f"/sublet/properties/{str(old_id)}/", data)
         res_json = json.loads(response.content)
         self.assertEqual(3, res_json["beds"])
@@ -103,7 +103,13 @@ class TestSublets(TestCase):
         self.assertEqual(1, len(res_json["amenities"]))
         payload["address"] = ""
         payload["is_published"] = True
-        self.client.patch(f"/sublet/properties/{str(old_id)}/", payload)
+        response = self.client.patch(f"/sublet/properties/{str(old_id)}/", payload)
+        self.assertEqual(400, response.status_code)
+        payload["is_published"] = False
+        response = self.client.patch(f"/sublet/properties/{str(old_id)}/", payload)
+        self.assertEqual(200, response.status_code)
+        response = self.client.patch(f"/sublet/properties/{str(old_id)}/", {"is_published": True})
+        self.assertEqual(400, response.status_code)
 
     def test_browse_sublets(self):
         response = self.client.get("/sublet/properties/")

@@ -83,7 +83,7 @@ class SubletSerializer(serializers.ModelSerializer):
 
         if bad_fields := [field for field in fields if field_bad(field, validated_data, instance)]:
             raise serializers.ValidationError(
-                f"{', '.join(bad_fields)} are required to publish sublet."
+                f"fields: {', '.join(bad_fields)} are required to publish sublet."
             )
 
     class Meta:
