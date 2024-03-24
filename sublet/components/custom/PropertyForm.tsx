@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label";
-import { CalendarIcon, CrossCircledIcon } from "@radix-ui/react-icons";
+import { CalendarIcon, ImageIcon } from "@radix-ui/react-icons";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,8 @@ import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 
 import Image from 'next/image'
+import { AspectRatio } from "../ui/aspect-ratio"
+import { Skeleton } from "../ui/skeleton"
 
 const uriRegex = new RegExp('^(https?:\/\/)(localhost|[\da-z\.-]+)\.([a-z\.]{2,6}|[0-9]{1,5})([\/\w \.-]*)*\/?$');
 
@@ -182,39 +184,44 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
             </SheetDescription>
           </SheetHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <Avatar className="w-24 h-24">
-                <AvatarImage src={preview} />
-                <AvatarFallback>BU</AvatarFallback>
-              </Avatar>
-              <div className="rounded-xl overflow-hidden">
-                <Image
-                  src={preview}
-                  alt="Preview"
-                  width={480}
-                  height={480}
-                />
-              </div>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField
                 control={form.control}
                 name="images"
                 render={({ field: { onChange, value, ...rest } }) => (
                   <>
-                    <FormItem>
-                      <FormLabel htmlFor="images">Circle Image</FormLabel>
+                    <FormItem className="py-2">
                       <FormControl>
-                        <Input
-                          type="file"
-                          {...rest}
-                          onChange={(event) => {
-                            const { files, displayUrl } = getImageData(event)
-                            setPreview(displayUrl);
-                            onChange(files);
-                          }}
-                        />
+                        <div className="relative rounded-xl overflow-hidden select-none">
+                          <AspectRatio ratio={16 / 9} className="z-10">
+                            {preview ?
+                              <Image
+                                src={preview}
+                                alt="Preview"
+                                objectFit="cover"
+                                fill
+                              />
+                              :
+                              <Skeleton className="h-full flex items-center justify-center">
+                                <ImageIcon className="w-6 h-6" />
+                              </Skeleton>
+                            }
+
+                          </AspectRatio>
+                          <Input
+                            type="file"
+                            className="z-40 absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            {...rest}
+                            onChange={(event) => {
+                              const { files, displayUrl } = getImageData(event)
+                              setPreview(displayUrl);
+                              onChange(files);
+                            }}
+                          />
+                        </div>
                       </FormControl>
                       <FormDescription>
-                        Choose best image that bring spirits to your circle.
+                        Select up to 6 images.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -225,7 +232,7 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
                 control={form.control}
                 name="title"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-1  pt-5">
+                  <FormItem className="grid grid-cols-4 items-center gap-1">
                     <FormLabel htmlFor="title" className="text-right pr-3">Name</FormLabel>
                     <FormControl className="col-span-3">
                       <Input placeholder="ex. Chestnut 2bed 2ba" {...field} />
