@@ -56,14 +56,6 @@ const Dashboard = () => {
               </h1>
               <PropertyList properties={properties} />
             </div>
-            <AspectRatio ratio={16 / 9}>
-              <Image
-                src="/phone_header.png"
-                alt="Hero image"
-                className="object-cover"
-                fill
-              />
-            </AspectRatio>
           </div>
         </TabsContent>
 
