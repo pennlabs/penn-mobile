@@ -73,8 +73,8 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
 
       <div className="absolute w-7 h-7 bg-red-500 rounded-full z-30 -top-2 -right-2 text-white font-bold text-sm flex justify-center items-center">1</div>
 
-      <Carousel className="w-full max-w-xs rounded-xl overflow-hidden group">
-        <CarouselContent className="">
+      <Carousel className="w-full rounded-xl overflow-hidden group">
+        <CarouselContent>
           {property.images.map((_, index) => (
             <CarouselItem key={index}>
               <div className="flex items-center justify-center object-cover">
