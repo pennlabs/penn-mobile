@@ -163,6 +163,8 @@ class SubletSerializerRead(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "subletter", "sublettees"]
         fields = [
             "id",
+            "subletter",
+            "sublettees",
             "is_published",
             "amenities",
             "title",
@@ -173,6 +175,7 @@ class SubletSerializerRead(serializers.ModelSerializer):
             "external_link",
             "price",
             "negotiable",
+            "created_at",
             "start_date",
             "end_date",
             "expires_at",

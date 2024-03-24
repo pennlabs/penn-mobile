@@ -53,7 +53,6 @@ class TestSublets(TestCase):
         }
         response = self.client.post("/sublet/properties/", payload)
         res_json = json.loads(response.content)
-        print(res_json)
         match_keys = [
             "title",
             "address",
