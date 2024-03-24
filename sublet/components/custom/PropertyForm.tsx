@@ -190,7 +190,7 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
                 name="images"
                 render={({ field: { onChange, value, ...rest } }) => (
                   <>
-                    <FormItem className="py-2">
+                    <FormItem className="py-2 space-y-1">
                       <FormControl>
                         <div className="relative rounded-xl overflow-hidden select-none">
                           <AspectRatio ratio={16 / 9} className="z-10">

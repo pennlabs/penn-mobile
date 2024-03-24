@@ -106,7 +106,7 @@ const Property: React.FC<PropertyProps> = ({ property }) => {
         </AspectRatio>
       }
 
-      <div className="flex justify-between pt-3 max-sm:flex-col max-sm:gap-3 max-sm:pb-3">
+      <div className="flex justify-between pt-3 max-sm:flex-col max-sm:gap-3 max-sm:pb-3 pb-1">
         <div className="font-bold text-xl">{property.title}</div>
         {/*
         <div className="flex items-center gap-2">
