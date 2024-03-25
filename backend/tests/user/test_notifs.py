@@ -290,7 +290,9 @@ class TestNotificationAlert(TestCase):
             "service": "PENN_MOBILE",
         }
         response = self.client.post(
-            "/user/notifications/alerts/", json.dumps(payload), content_type="application/json",
+            "/user/notifications/alerts/",
+            json.dumps(payload),
+            content_type="application/json",
         )
         res_json = json.loads(response.content)
         self.assertEqual(1, len(res_json["success_users"]))
