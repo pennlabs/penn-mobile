@@ -128,6 +128,7 @@ class TestSublets(TestCase):
             "start_date": "3000-04-09",
             "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
+            "is_published": True,
         }
         response = self.client.post("/sublet/properties/", payload)
         old_id = json.loads(response.content)["id"]
@@ -154,6 +155,7 @@ class TestSublets(TestCase):
             "start_date": "3000-04-09",
             "end_date": "3000-08-07",
             "amenities": ["Amenity1", "Amenity2"],
+            "is_published": True,
         }
         response = self.client.post("/sublet/properties/", payload)
         old_id = json.loads(response.content)["id"]
