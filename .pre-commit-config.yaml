@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pennlabs/pre-commit-hooks
-    rev: a91c550e051920dcb36e123fe8e2edac66ebf937
+    rev: v1.0-mobile-backend
     hooks:
       - id: black
         args: [-l100]
