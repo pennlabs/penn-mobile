@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from identity.permissions import B2BPermission
 from rest_framework import generics, viewsets
@@ -129,3 +130,21 @@ class NotificationAlertView(APIView):
         )
 
         return Response({"success_users": success_users, "failed_users": failed_users})
+
+
+class ClearCookiesView(APIView):
+    """
+    post:
+    Clears all cookies from the browser
+    """
+
+    def get(self, request):
+        next_url = request.GET.get("next", "/")
+        response = (
+            HttpResponseRedirect(f"/api/accounts/login?next=${next_url}")
+            if next_url
+            else Response({"detail": "Cookies Cleared"})
+        )
+        response.delete_cookie("sessionid")
+        response.delete_cookie("csrftoken")
+        return response
