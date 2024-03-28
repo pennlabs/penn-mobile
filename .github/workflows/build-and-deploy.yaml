@@ -11,9 +11,9 @@ jobs:
       projectName: pennmobile
       path: backend
       pythonVersion: 3.11-bookworm
-      flake: false
-      black: false
-      ruff: true
+      flake: true
+      black: true
+      ruff: false
 
   frontend-check:
     name: "Frontend Check"
