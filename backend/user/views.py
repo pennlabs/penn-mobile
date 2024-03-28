@@ -143,7 +143,7 @@ class ClearCookiesView(APIView):
         next_url = request.GET.get("next", "/")
         response = (
             HttpResponseRedirect(f"/api/accounts/login?next=${next_url}")
-            if next
+            if next_url
             else Response({"detail": "Cookies Cleared"})
         )
         response.delete_cookie("sessionid")
