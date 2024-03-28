@@ -22,6 +22,7 @@ export const getServerSideProps = async (
     credentials: 'include',
     headers: { cookie: context.req.headers.cookie },
   })
+
   if (res.ok) {
     return {
       redirect: {
@@ -29,12 +30,13 @@ export const getServerSideProps = async (
         permanent: false,
       },
     }
-  }
-
-  await doApiRequest('/api/user/clear-cookies', { method: 'POST' })
-
-  return {
-    props: {},
+  } else {
+    return {
+      redirect: {
+        destination: `/api/user/clear-cookies/?next=${DASHBOARD_ROUTE}`,
+        permanent: false,
+      },
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from identity.permissions import B2BPermission
 from rest_framework import generics, viewsets
@@ -137,8 +138,15 @@ class ClearCookiesView(APIView):
     Clears all cookies from the browser
     """
 
-    def post(self, request):
-        response = Response({"success": True})
+    def get(self, request):
+        # get ?next
+        print("OK")
+        next_url = request.GET.get("next", "/")
+        response = (
+            HttpResponseRedirect(f"/api/accounts/login?next=${next_url}")
+            if next
+            else Response({"detail": "Cookies Cleared"})
+        )
         response.delete_cookie("sessionid")
         response.delete_cookie("csrftoken")
         return response
