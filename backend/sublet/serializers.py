@@ -73,11 +73,16 @@ class SubletSerializer(serializers.ModelSerializer):
         ]
 
         newest_fields = [
-            (field, validated_data[field])
-            if field in validated_data
-            else (field, getattr(instance, field, None))
-            if instance
-            else (field, None)
+            (
+                field,
+                (
+                    validated_data[field]
+                    if field in validated_data
+                    else getattr(instance, field, None)
+                    if instance
+                    else None
+                ),
+            )
             for field in fields
         ]
 
