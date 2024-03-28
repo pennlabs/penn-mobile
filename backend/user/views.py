@@ -139,7 +139,6 @@ class ClearCookiesView(APIView):
     """
 
     def get(self, request):
-        # get ?next
         print("OK")
         next_url = request.GET.get("next", "/")
         response = (
