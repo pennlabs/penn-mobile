@@ -129,3 +129,16 @@ class NotificationAlertView(APIView):
         )
 
         return Response({"success_users": success_users, "failed_users": failed_users})
+
+
+class ClearCookiesView(APIView):
+    """
+    post:
+    Clears all cookies from the browser
+    """
+
+    def post(self, request):
+        response = Response({"success": True})
+        response.delete_cookie("sessionid")
+        response.delete_cookie("csrftoken")
+        return response

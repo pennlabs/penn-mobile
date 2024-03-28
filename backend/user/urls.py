@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework import routers
 
 from user.views import (
+    ClearCookiesView,
     NotificationAlertView,
     NotificationSettingView,
     NotificationTokenView,
@@ -18,6 +19,7 @@ router.register(r"notifications/settings", NotificationSettingView, basename="no
 additional_urls = [
     path("me/", UserView.as_view(), name="user"),
     path("notifications/alerts/", NotificationAlertView.as_view(), name="alert"),
+    path("clear-cookies/", ClearCookiesView.as_view(), name="clear-cookies"),
 ]
 
 urlpatterns = router.urls + additional_urls
