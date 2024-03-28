@@ -61,6 +61,36 @@ class SubletSerializer(serializers.ModelSerializer):
         many=True, queryset=Amenity.objects.all(), required=False
     )
 
+    def validate_publish(self, validated_data, instance=None):
+        fields = [
+            "title",
+            "address",
+            "price",
+            "negotiable",
+            "start_date",
+            "end_date",
+            "expires_at",
+        ]
+
+        newest_fields = [
+            (
+                field,
+                (
+                    validated_data[field]
+                    if field in validated_data
+                    else getattr(instance, field, None)
+                    if instance
+                    else None
+                ),
+            )
+            for field in fields
+        ]
+
+        if bad_fields := [field[0] for field in newest_fields if not field[1]]:
+            raise serializers.ValidationError(
+                f"fields: {', '.join(bad_fields)} are required to publish sublet."
+            )
+
     class Meta:
         model = Sublet
         read_only_fields = [
@@ -72,7 +102,7 @@ class SubletSerializer(serializers.ModelSerializer):
         ]
         fields = [
             "id",
-            "subletter",
+            "is_published",
             "amenities",
             "title",
             "address",
@@ -93,6 +123,8 @@ class SubletSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["subletter"] = self.context["request"].user
+        if validated_data["is_published"]:
+            self.validate_publish(validated_data)
         instance = super().create(validated_data)
         instance.save()
         return instance
@@ -104,6 +136,10 @@ class SubletSerializer(serializers.ModelSerializer):
             self.context["request"].user == instance.subletter
             or self.context["request"].user.is_superuser
         ):
+            if ("is_published" in validated_data and validated_data["is_published"]) or (
+                "is_published" not in validated_data and instance.is_published
+            ):
+                self.validate_publish(validated_data, instance)
             instance = super().update(instance, validated_data)
             instance.save()
             return instance
@@ -133,6 +169,8 @@ class SubletSerializerRead(serializers.ModelSerializer):
         fields = [
             "id",
             "subletter",
+            "sublettees",
+            "is_published",
             "amenities",
             "title",
             "address",
@@ -142,6 +180,7 @@ class SubletSerializerRead(serializers.ModelSerializer):
             "external_link",
             "price",
             "negotiable",
+            "created_at",
             "start_date",
             "end_date",
             "expires_at",
@@ -160,6 +199,7 @@ class SubletSerializerSimple(serializers.ModelSerializer):
         model = Sublet
         fields = [
             "id",
+            "is_published",
             "subletter",
             "amenities",
             "title",
