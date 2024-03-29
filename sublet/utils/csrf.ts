@@ -1,15 +1,20 @@
 /**
  * @returns {string} The CSRF token used by the Django REST Framework
  */
-const getCsrf = (): string => {
-  const cookiesArray = document.cookie.split('; ')
-  const filteredArray = cookiesArray.filter((cookie) =>
-    cookie.startsWith('csrftoken=')
-  )
+export default function getCsrfTokenCookie() {
+  let cookieValue = "";
+  const csrfTokenName = "csrfToken";
 
-  return cookiesArray[0]
-    ? decodeURIComponent(filteredArray[0].substring('csrftoken='.length))
-    : ''
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      // Does this cookie string begin with the CSRF token name we want?
+      if (cookie.startsWith(csrfTokenName + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(csrfTokenName.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
 }
-
-export default getCsrf
