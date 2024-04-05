@@ -1,6 +1,6 @@
 "use client"
 
-import { fetchAmenities, createProperty, fetchProperties } from "@/services/propertyService"
+import { fetchAmenities, createProperty, createPropertyImage, fetchProperties } from "@/services/propertyService"
 
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -145,18 +145,50 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    // Assuming values contains an 'images' property along with other properties
+    const { images, ...rest } = values;
+
+    console.log(images);
+
+    // Now, 'images' is a separate variable containing the images array
+    // and 'rest' contains the rest of the properties from 'values'
+
     const property = {
-      ...values,
-      start_date: format(values.start_date, "yyyy-MM-dd") as string,
-      end_date: format(values.end_date, "yyyy-MM-dd") as string,
-      expires_at: format(values.expires_at, "yyyy-MM-dd'T'HH:mm:ssxxx") as string,
-      baths: values.baths!.toString(),
+      ...rest, // Spread the rest of the properties here
+      start_date: format(rest.start_date, "yyyy-MM-dd") as string,
+      end_date: format(rest.end_date, "yyyy-MM-dd") as string,
+      expires_at: format(rest.expires_at, "yyyy-MM-dd'T'HH:mm:ssxxx") as string,
+      baths: rest.baths!.toString(),
     };
 
     console.log(JSON.stringify(property));
 
     createProperty(property)
       .then((data) => {
+        const subletId = data.id;
+        console.log(subletId);
+
+        const imageUploadPromises = images.reduce((promiseChain, image) => {
+          return promiseChain.then(() => createPropertyImage(subletId, image)
+            .then((data) => {
+              console.log("return: " + data);
+            })
+            .catch((error) => {
+              console.error('An error occurred during image upload:', error);
+            })
+          );
+        }, Promise.resolve());
+        imageUploadPromises
+          .then(() => {
+            console.log('All images have been uploaded successfully.');
+            return subletId;
+          })
+          .catch((error) => {
+            console.error('An error occurred during image upload:', error);
+          });
+      })
+      .then((subletId) => {
+        // Images have been uploaded, now fetch properties
         fetchProperties()
           .then((data) => {
             onNewProperty(data);
@@ -166,7 +198,7 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
           });
       })
       .catch((error) => {
-        console.error("Error fetching properties:", error);
+        console.error("Error in property creation or image upload:", error);
       });
   }
 
@@ -215,8 +247,9 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
                             onChange={(event) => {
                               const { files, displayUrl } = getImageData(event)
                               setPreview(displayUrl);
-                              onChange(files);
+                              onChange([...value, ...Array.from(files).slice(0, 6 - value.length)]);
                             }}
+                            multiple
                           />
                         </div>
                       </FormControl>
