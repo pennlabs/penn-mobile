@@ -3,7 +3,7 @@
  */
 export default function getCsrfTokenCookie() {
   let cookieValue = "";
-  const csrfTokenName = "csrfToken";
+  const csrfTokenName = "csrftoken";
 
   if (document.cookie && document.cookie !== '') {
     const cookies = document.cookie.split(';');
