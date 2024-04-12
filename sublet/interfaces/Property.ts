@@ -19,6 +19,6 @@ export interface PropertyInterface {
   negotiable: boolean;
   start_date: string;
   end_date: string;
-  expires_at: string;
+  expires_at?: string;
   images: ImageInterface[];
 }

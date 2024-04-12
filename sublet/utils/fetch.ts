@@ -1,4 +1,4 @@
-import getCsrfTokenCookie from '../utils/csrf';
+import getCsrfTokenCookie from './csrf';
 
 /**
  * Generic API request function.
