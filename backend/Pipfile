@@ -15,7 +15,6 @@ rope = "*"
 pytest = "*"
 tblib = "*"
 coverage = "*"
-pre-commit = "*"
 
 [packages]
 beautifulsoup4 = "*"
@@ -47,6 +46,7 @@ redis = "*"
 python-dateutil = "*"
 selenium = "*"
 webdriver-manager = "*"
+pre-commit = "*"
 
 [requires]
 python_version = "3.11"
