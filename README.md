@@ -28,6 +28,9 @@ Final Steps:
 - `pipenv run python manage.py migrate`
 - `pipenv run python manage.py runserver 8000`
 
+Setting up precommit:
+- `pipenv run pre-commit install`
+
 ## Creating Users
 
 To create users, you first have to create a main superuser.

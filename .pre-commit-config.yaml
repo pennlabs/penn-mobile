@@ -1,10 +1,11 @@
 repos:
   - repo: https://github.com/pennlabs/pre-commit-hooks
-    rev: stable
+    rev: v1.0-mobile-backend
     hooks:
-        - id: isort
-        - id: flake8
-  - repo: https://github.com/psf/black
-    rev: 22.3.0
-    hooks:
-        - id: black
+      - id: black
+        args: [-l100]
+      - id: isort
+        args: []
+      - id: flake8
+        args: [--config, backend/setup.cfg]
+      - id: detect-private-key
