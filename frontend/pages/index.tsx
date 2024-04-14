@@ -30,10 +30,13 @@ export const getServerSideProps = async (
         permanent: false,
       },
     }
-  }
-
-  return {
-    props: {},
+  } else {
+    return {
+      redirect: {
+        destination: `/api/user/clear-cookies/?next=${DASHBOARD_ROUTE}`,
+        permanent: false,
+      },
+    }
   }
 }
 
