@@ -8,6 +8,12 @@ const nextConfig = {
         port: '',
         pathname: '/penn.mobile.portal/sublet/images/**',
       },
+      {
+        protocol: 'https',
+        hostname: 's3.us-west-2.amazonaws.com',
+        port: '',
+        pathname: '/penn.mobile.portal/sublet/images/**',
+      },
     ],
   },
 };
