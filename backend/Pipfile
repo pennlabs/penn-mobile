@@ -47,7 +47,6 @@ redis = "*"
 python-dateutil = "*"
 selenium = "*"
 webdriver-manager = "*"
-pre-commit = "*"
 
 [requires]
 python_version = "3.11"
