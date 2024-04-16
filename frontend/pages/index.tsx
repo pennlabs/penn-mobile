@@ -23,21 +23,20 @@ export const getServerSideProps = async (
     headers: { cookie: context.req.headers.cookie },
   })
 
-  if (res.ok) {
-    return {
-      redirect: {
-        destination: DASHBOARD_ROUTE,
-        permanent: false,
-      },
-    }
-  } else {
-    return {
-      redirect: {
-        destination: `/api/user/clear-cookies/?next=${DASHBOARD_ROUTE}`,
-        permanent: false,
-      },
-    }
+  if (
+    res.status === 403 &&
+    (await res.json()).detail ===
+      'Authentication credentials were not provided.'
+  ) {
+    return { props: {} } // homepage if user not logged in
   }
+
+  // otherwise redirect to dashboard
+  const destination = res.ok
+    ? DASHBOARD_ROUTE
+    : `/api/user/clear-cookies/?next=${DASHBOARD_ROUTE}`
+
+  return { redirect: { destination, permanent: false } }
 }
 
 export default Home
