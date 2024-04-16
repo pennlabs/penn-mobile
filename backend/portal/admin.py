@@ -22,7 +22,7 @@ class ContentAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         return queryset.annotate(ar=Content.ACTION_REQUIRED_CONDITION).order_by(
-            "-ar", "created_date"
+            "-ar", "-created_date"
         )
 
     def ar(self, obj):
