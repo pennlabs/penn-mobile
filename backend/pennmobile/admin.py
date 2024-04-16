@@ -8,7 +8,7 @@ def add_post_poll_message(request, model):
         messages.info(
             request,
             f"Action Required: There {'is' if count == 1 else 'are'} {count} "
-            + f"{model._meta.verbose_name if count == 1 else model._meta.verbose_name_plural}"
+            + f"{model._meta.verbose_name if count == 1 else model._meta.verbose_name_plural} "
             + "that need to be reviewed.",
         )
 

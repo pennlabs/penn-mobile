@@ -32,8 +32,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    # "django.contrib.admin",
-    "pennmobile.admin.PennMobileAdminConfig",
+    "pennmobile.admin.PennMobileAdminConfig",  # "replaces django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
