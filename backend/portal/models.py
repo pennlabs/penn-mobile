@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 
 
@@ -35,6 +36,8 @@ class Content(models.Model):
         (STATUS_REVISION, "Revision"),
         (STATUS_APPROVED, "Approved"),
     )
+
+    ACTION_REQUIRED_CONDITION = Q(expire_date__gt=timezone.now()) & Q(status=STATUS_DRAFT)
 
     club_code = models.CharField(max_length=255, blank=True)
     created_date = models.DateTimeField(default=timezone.now)

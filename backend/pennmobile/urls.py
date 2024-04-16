@@ -5,8 +5,6 @@ from django.views.generic import TemplateView
 from rest_framework.schemas import get_schema_view
 
 
-admin.site.site_header = "Penn Mobile Backend Admin"
-
 urlpatterns = [
     path("gsr/", include("gsr_booking.urls")),
     path("portal/", include("portal.urls")),
