@@ -1,15 +1,20 @@
 # CUSTOM ADMIN SETTUP FOR PENN MOBILE
 from django.contrib import admin, messages
 from django.contrib.admin.apps import AdminConfig
+from django.urls import reverse
+from django.utils.html import format_html
 
 
 def add_post_poll_message(request, model):
     if (count := model.objects.filter(model.ACTION_REQUIRED_CONDITION).count()) > 0:
+        link = reverse(f"admin:{model._meta.app_label}_{model._meta.model_name}_changelist")
         messages.info(
             request,
-            f"Action Required: There {'is' if count == 1 else 'are'} {count} "
-            + f"{model._meta.verbose_name if count == 1 else model._meta.verbose_name_plural} "
-            + "that need to be reviewed.",
+            format_html(
+                f"Action Required: There {'is' if count == 1 else 'are'} {count} "
+                + f"<a href='{link}'>{model._meta.verbose_name_plural}</a> "
+                + "that need to be reviewed."
+            ),
         )
 
 
