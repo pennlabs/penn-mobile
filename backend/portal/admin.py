@@ -32,9 +32,9 @@ class ContentAdmin(admin.ModelAdmin):
 
 
 class PostAdmin(ContentAdmin):
-    def image_tag(instance, width):
+    def image_tag(instance, height):
         return mark_safe(
-            f'<img src="%s" height="{width}" />' % escape(instance.image and instance.image.url)
+            f'<img src="%s" height="{height}" />' % escape(instance.image and instance.image.url)
         )
 
     def small_image(self, instance):
