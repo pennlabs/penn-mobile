@@ -11,9 +11,9 @@ def add_post_poll_message(request, model):
         messages.info(
             request,
             format_html(
-                f"Action Required: There {'is' if count == 1 else 'are'} {count} "
-                + f"<a href='{link}'>{model._meta.verbose_name_plural}</a> "
-                + "that need to be reviewed."
+                f"Action Required: There {'is' if count == 1 else 'are'} {count} <a href='{link}'>"
+                + f"{model._meta.verbose_name if count == 1 else model._meta.verbose_name_plural}"
+                + "</a> that need to be reviewed."
             ),
         )
 
