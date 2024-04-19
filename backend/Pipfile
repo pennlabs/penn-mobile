@@ -4,7 +4,7 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-black = "==19.10b0"
+black = "*"
 unittest-xml-reporting = "*"
 flake8 = "==6.1.0"
 flake8-isort = "==6.1.0"
@@ -39,8 +39,7 @@ pillow = "*"
 boto3 = "*"
 apns2 = "*"
 numpy = "*"
-click = "==8.0.4"
-celery = "*"
+celery = "==5.4.0"
 django-redis = "*"
 redis = "*"
 python-dateutil = "*"
