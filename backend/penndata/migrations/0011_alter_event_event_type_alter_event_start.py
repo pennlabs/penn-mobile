@@ -41,6 +41,8 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="event", name="start", field=models.DateTimeField(blank=True, null=True),
+            model_name="event",
+            name="start",
+            field=models.DateTimeField(blank=True, null=True),
         ),
     ]

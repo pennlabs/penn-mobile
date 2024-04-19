@@ -133,7 +133,7 @@ class HallUsageViewTestCase(TestCase):
         )
         self.laundry_room = LaundryRoom.objects.get(hall_id=0, name="Bishop White", location="Quad")
         self.snapshot = LaundrySnapshot.objects.create(
-            room=self.laundry_room, available_washers=5, available_dryers=10,
+            room=self.laundry_room, available_washers=5, available_dryers=10
         )
         self.client = APIClient()
 
