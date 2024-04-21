@@ -18,7 +18,8 @@ class DiningItem(models.Model):
     ingredients = models.CharField(max_length=1000)  # comma separated list
     allergens = models.CharField(max_length=1000)  # comma separated list
     nutrition_info = models.CharField(max_length=1000)  # json string.
-    # Technically, postgres supports json fields but that involves local postgres instead of sqlite AND we don't need to query on this field
+    # Technically, postgres supports json fields but that involves local postgres
+    # instead of sqlite AND we don't need to query on this field
 
     def __str__(self):
         return f"{self.name}"
