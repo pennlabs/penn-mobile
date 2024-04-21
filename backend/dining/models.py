@@ -29,6 +29,7 @@ class DiningStation(models.Model):
     items = models.ManyToManyField(DiningItem)
     menu = models.ForeignKey("DiningMenu", on_delete=models.CASCADE)
 
+
 class DiningMenu(models.Model):
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
     date = models.DateField(default=timezone.now)
