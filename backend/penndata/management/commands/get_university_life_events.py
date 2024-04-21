@@ -16,8 +16,6 @@ class Command(BaseCommand):
         return timezone.make_aware(parser.parse(date_str))
 
     def parse_event_section(self, event_section):
-        event_objects = list()
-
         date_str = event_section.find(class_="heading").find("h2").get("id")
 
         events = event_section.find(class_="info").find_all("a", attrs={"attr-event-id": True})
@@ -54,8 +52,6 @@ class Command(BaseCommand):
                 description=event_description,
                 email=None,
             )
-
-        return event_objects
 
     def handle(self, *args, **kwargs):
 
