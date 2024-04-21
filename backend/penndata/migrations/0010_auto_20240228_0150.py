@@ -10,9 +10,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="event", name="facebook",),
+        migrations.RemoveField(
+            model_name="event",
+            name="facebook",
+        ),
         migrations.AlterField(
-            model_name="event", name="description", field=models.TextField(blank=True, null=True),
+            model_name="event",
+            name="description",
+            field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
             model_name="event",
@@ -20,7 +25,9 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name="event", name="end", field=models.DateTimeField(blank=True, null=True),
+            model_name="event",
+            name="end",
+            field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AlterField(
             model_name="event",
@@ -28,7 +35,9 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name="event", name="image_url", field=models.URLField(blank=True, null=True),
+            model_name="event",
+            name="image_url",
+            field=models.URLField(blank=True, null=True),
         ),
         migrations.AlterField(
             model_name="event",

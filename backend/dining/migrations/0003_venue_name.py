@@ -11,6 +11,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name="venue", name="name", field=models.CharField(max_length=255, null=True),
+            model_name="venue",
+            name="name",
+            field=models.CharField(max_length=255, null=True),
         ),
     ]
