@@ -405,9 +405,11 @@ class BookingHandler:
         members = (
             [(user, datetime.timedelta(days=99))]
             if group is None
-            else self.get_wharton_members(group, gsr.id)
-            if gsr.kind == GSR.KIND_WHARTON
-            else self.get_libcal_members(group)
+            else (
+                self.get_wharton_members(group, gsr.id)
+                if gsr.kind == GSR.KIND_WHARTON
+                else self.get_libcal_members(group)
+            )
         )
 
         total_time_available = sum(
@@ -457,7 +459,7 @@ class BookingHandler:
             gsr_booking := GSRBooking.objects.filter(booking_id=booking_id)
             .prefetch_related(Prefetch("reservation__gsrbooking_set"), Prefetch("gsr"))
             .first()
-        ) :
+        ):
             if gsr_booking.user != user and gsr_booking.reservation.creator != user:
                 raise APIError("Error: Unauthorized: This reservation was booked by someone else.")
 

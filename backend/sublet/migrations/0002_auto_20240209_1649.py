@@ -10,9 +10,18 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RenameField(model_name="sublet", old_name="max_price", new_name="price",),
-        migrations.RemoveField(model_name="sublet", name="min_price",),
+        migrations.RenameField(
+            model_name="sublet",
+            old_name="max_price",
+            new_name="price",
+        ),
+        migrations.RemoveField(
+            model_name="sublet",
+            name="min_price",
+        ),
         migrations.AddField(
-            model_name="sublet", name="negotiable", field=models.BooleanField(default=True),
+            model_name="sublet",
+            name="negotiable",
+            field=models.BooleanField(default=True),
         ),
     ]
