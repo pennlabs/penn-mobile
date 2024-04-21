@@ -10,5 +10,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="notificationtoken", name="dev",),
+        migrations.RemoveField(
+            model_name="notificationtoken",
+            name="dev",
+        ),
     ]
