@@ -1,4 +1,5 @@
 from phonenumber_field.serializerfields import PhoneNumberField
+from profanity_check import predict
 from rest_framework import serializers
 
 from sublet.models import Amenity, Offer, Sublet, SubletImage
@@ -90,6 +91,21 @@ class SubletSerializer(serializers.ModelSerializer):
             # this serializer isn't used for getting,
             # but gets on sublets will include ids/urls for images
         ]
+
+    def validate_title(self, value):
+        # Check for profanity in the title
+        if self.contains_profanity(value):
+            raise serializers.ValidationError("The title contains inappropriate language.")
+        return value
+
+    def validate_description(self, value):
+        # Check for profanity in the description
+        if self.contains_profanity(value):
+            raise serializers.ValidationError("The description contains inappropriate language.")
+        return value
+
+    def contains_profanity(self, text):
+        return predict([text])[0] == 1
 
     def create(self, validated_data):
         validated_data["subletter"] = self.context["request"].user
