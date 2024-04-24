@@ -93,19 +93,17 @@ class SubletSerializer(serializers.ModelSerializer):
         ]
 
     def validate_title(self, value):
-        # Check for profanity in the title
         if self.contains_profanity(value):
             raise serializers.ValidationError("The title contains inappropriate language.")
         return value
 
     def validate_description(self, value):
-        # Check for profanity in the description
         if self.contains_profanity(value):
             raise serializers.ValidationError("The description contains inappropriate language.")
         return value
 
     def contains_profanity(self, text):
-        return predict([text])[0] == 1
+        return predict([text])[0]
 
     def create(self, validated_data):
         validated_data["subletter"] = self.context["request"].user
