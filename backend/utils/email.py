@@ -12,8 +12,7 @@ def send_mail(subject, recipient_list, message=None, html_message=None):
         subject=subject,
         message=message,
         from_email=None,
-        # recipient_list=recipient_list if isinstance(recipient_list, list) else [recipient_list],
-        recipient_list=["caiv@seas.upenn.edu"],
+        recipient_list=recipient_list if isinstance(recipient_list, list) else [recipient_list],
         fail_silently=False,
         html_message=html_message,
     )
