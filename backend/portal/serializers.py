@@ -59,7 +59,6 @@ class ContentSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # if Content is updated, then approve should be false
 
-        print(validated_data["admin_comment"])
         if not self.context["request"].user.is_superuser:
             validated_data["status"] = Content.STATUS_DRAFT
         return super().update(instance, validated_data)
@@ -230,7 +229,7 @@ class PostSerializer(ContentSerializer):
             self.initial_data["target_populations"] = list(
                 (
                     map(int, self.initial_data["target_populations"].split(","))
-                    if self.initial_data["target_populations"]
+                    if "target_populations" in self.initial_data
                     else []
                 ),
             )

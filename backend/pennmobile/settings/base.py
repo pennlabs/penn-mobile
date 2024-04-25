@@ -185,4 +185,4 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = os.environ.get("SMTP_PORT", 587)
 EMAIL_HOST_USER = os.environ.get("SMTP_USERNAME", "")
 EMAIL_HOST_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
-DEFAULT_FROM_EMAIL = "Penn Mobile <pennmobile@pennlabs.org>"
+DEFAULT_FROM_EMAIL = os.environ.get("SMTP_FROM_EMAIL", EMAIL_HOST_USER)

@@ -55,35 +55,39 @@ class Content(models.Model):
     class Meta:
         abstract = True
 
-    def get_email_subject(self):
+    def _get_email_subject(self):
         return f"[Portal] {self.__class__._meta.model_name.capitalize()} #{self.id}"
+
+    def _on_create(self):
+        send_automated_email.delay_on_commit(
+            self._get_email_subject(),
+            get_backend_manager_emails(),
+            (
+                f"A new {self.__class__._meta.model_name} for {self.club_code}"
+                f"has been created by {self.creator}"
+            ),
+        )
+
+    def _on_status_change(self):
+        send_automated_email.delay_on_commit(
+            self._get_email_subject(),
+            getattr(self.creator, "email", None),
+            f"Your {self.__class__._meta.model_name} status for {self.club_code} has been"
+            + "changed to {self.status}."
+            + (
+                f"\n\nAdmin comment: {self.admin_comment}"
+                if self.admin_comment and self.status == self.STATUS_REVISION
+                else ""
+            ),
+        )
 
     def save(self, *args, **kwargs):
         prev = self.__class__.objects.filter(id=self.id).first()
         super().save(*args, **kwargs)
         if prev is None:
-            send_automated_email.delay_on_commit(
-                self.get_email_subject(),
-                get_backend_manager_emails(),
-                (
-                    f"A new {self.__class__._meta.model_name} for {self.club_code}"
-                    f"has been created by {self.creator}"
-                ),
-            )
-            return
-
+            return self._on_create()
         if self.status != prev.status:
-            send_automated_email.delay_on_commit(
-                self.get_email_subject(),
-                getattr(self.creator, "email", None),
-                f"Your {self.__class__._meta.model_name} status for {self.club_code} has been"
-                + "changed to {self.status}."
-                + (
-                    f"\n\nAdmin comment: {self.admin_comment}"
-                    if self.admin_comment and self.status == self.STATUS_REVISION
-                    else ""
-                ),
-            )
+            self._on_status_change()
 
 
 class Poll(Content):
