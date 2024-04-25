@@ -46,6 +46,7 @@ python-dateutil = "*"
 selenium = "*"
 webdriver-manager = "*"
 pre-commit = "*"
+alt-profanity-check = "*"
 
 [requires]
 python_version = "3.11"
