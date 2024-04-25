@@ -3,6 +3,8 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
+from utils.email import get_backend_manager_emails, send_automated_email
+
 
 User = get_user_model()
 
@@ -48,9 +50,40 @@ class Content(models.Model):
     admin_comment = models.CharField(max_length=255, null=True, blank=True)
     target_populations = models.ManyToManyField(TargetPopulation, blank=True)
     priority = models.IntegerField(default=0)
+    creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         abstract = True
+
+    def get_email_subject(self):
+        return f"[Portal] {self.__class__._meta.model_name.capitalize()} #{self.id}"
+
+    def save(self, *args, **kwargs):
+        prev = self.__class__.objects.filter(id=self.id).first()
+        super().save(*args, **kwargs)
+        if prev is None:
+            send_automated_email.delay_on_commit(
+                self.get_email_subject(),
+                get_backend_manager_emails(),
+                (
+                    f"A new {self.__class__._meta.model_name} for {self.club_code}"
+                    f"has been created by {self.creator}"
+                ),
+            )
+            return
+
+        if self.status != prev.status:
+            send_automated_email.delay_on_commit(
+                self.get_email_subject(),
+                getattr(self.creator, "email", None),
+                f"Your {self.__class__._meta.model_name} status for {self.club_code} has been"
+                + "changed to {self.status}."
+                + (
+                    f"\n\nAdmin comment: {self.admin_comment}"
+                    if self.admin_comment and self.status == self.STATUS_REVISION
+                    else ""
+                ),
+            )
 
 
 class Poll(Content):
@@ -58,7 +91,7 @@ class Poll(Content):
     multiselect = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.id} - {self.club_code} - {self.question}"
+        return self.question
 
 
 class PollOption(models.Model):
@@ -85,4 +118,4 @@ class Post(Content):
     image = models.ImageField(upload_to="portal/images", null=True, blank=True)
 
     def __str__(self):
-        return f"{self.id} - {self.club_code} - {self.title}"
+        return self.title
