@@ -17,6 +17,7 @@ from gsr_booking.serializers import (
     GSRSerializer,
     UserSerializer,
 )
+from pennmobile.analytics import Metric, record_analytics
 
 
 User = get_user_model()
@@ -251,6 +252,9 @@ class BookRoom(APIView):
                 request.user,
                 request.user.booking_groups.filter(name="Penn Labs").first(),
             )
+
+            record_analytics(Metric.GSR_BOOK, request.user.username)
+
             return Response({"detail": "success"})
         except APIError as e:
             return Response({"error": str(e)}, status=400)
