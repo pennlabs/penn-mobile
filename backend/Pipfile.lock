@@ -391,12 +391,12 @@
         },
         "django-labs-accounts": {
             "hashes": [
-                "sha256:45f2b53ecde763b71f02da76b7fe5e253318f708351210b3f95cac0b2f863140",
-                "sha256:68bff837d4e540b7ddaaaa0f96bbaf88cf1e71f98135d2d538e2e010dfdaff60"
+                "sha256:28197a10137e65c8ec81f0c9769d005822c8d110591fb27f7d7d677c7c394f63",
+                "sha256:fe519874cf5a50df47a8117fc993c9a4a68f5e1a915f04a863eca6ee92d09025"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.11' and python_version < '4.0'",
-            "version": "==1.0.0"
+            "version": "==1.0.1"
         },
         "django-phonenumber-field": {
             "extras": [
