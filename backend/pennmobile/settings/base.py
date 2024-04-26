@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     "laundry.apps.LaundryConfig",
     "penndata.apps.PenndataConfig",
     "accounts.apps.AccountsConfig",
+    "identity.apps.IdentityConfig",
+    "analytics.apps.AnalyticsConfig",
     "django_filters",
     "debug_toolbar",
     "gsr_booking",
@@ -135,9 +137,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 PLATFORM_ACCOUNTS = {
     "REDIRECT_URI": os.environ.get("LABS_REDIRECT_URI", "http://localhost:8000/accounts/callback/"),
-    "CLIENT_ID": "clientid",
-    "CLIENT_SECRET": "supersecretclientsecret",
-    "PLATFORM_URL": "https://platform-dev.pennlabs.org",
+    "CLIENT_ID": os.environ.get("CLIENT_ID", "clientid"),
+    "CLIENT_SECRET": os.environ.get("CLIENT_SECRET", "supersecretclientsecret"),
+    "PLATFORM_URL": os.environ.get("PLATFORM_URL", "https://platform.pennlabs.org"),
     "CUSTOM_ADMIN": False,
 }
 
