@@ -42,7 +42,7 @@ class ContentSerializer(serializers.ModelSerializer):
         if not any([x["club"]["code"] == club_code for x in get_user_clubs(user)]):
             raise serializers.ValidationError(
                 detail={
-                    "detail": "You do not have access to create a"
+                    "detail": "You do not have access to create a "
                     + f"{self.Meta.model._meta.model_name.capitalize()} under this club."
                 }
             )
