@@ -27,13 +27,24 @@ class ContentSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_date")
         abstract = True
 
+    def _get_auto_add_target_population(self, target_populations):
+        auto_add_kind = [
+            kind
+            for kind, _ in TargetPopulation.KIND_OPTIONS
+            if not any(population.kind == kind for population in target_populations)
+        ]
+        return TargetPopulation.objects.filter(kind__in=auto_add_kind)
+
     def create(self, validated_data):
         club_code = validated_data["club_code"]
         user = self.context["request"].user
         # ensures user is part of club
         if not any([x["club"]["code"] == club_code for x in get_user_clubs(user)]):
             raise serializers.ValidationError(
-                detail={"detail": "You do not access to create a Poll under this club."}
+                detail={
+                    "detail": "You do not have access to create a"
+                    + f"{self.Meta.model._meta.model_name.capitalize()} under this club."
+                }
             )
 
         # ensuring user cannot create an admin comment upon creation
@@ -41,15 +52,8 @@ class ContentSerializer(serializers.ModelSerializer):
         validated_data["status"] = Content.STATUS_DRAFT
 
         # auto add all target populations of a kind if not specified
-        auto_add_kind = [
-            kind
-            for kind, _ in TargetPopulation.KIND_OPTIONS
-            if not any(
-                population.kind == kind for population in validated_data["target_populations"]
-            )
-        ]
-        validated_data["target_populations"] += TargetPopulation.objects.filter(
-            kind__in=auto_add_kind
+        validated_data["target_populations"] += self._get_auto_add_target_population(
+            validated_data["target_populations"]
         )
 
         validated_data["creator"] = user
@@ -58,9 +62,13 @@ class ContentSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         # if Content is updated, then approve should be false
-
         if not self.context["request"].user.is_superuser:
             validated_data["status"] = Content.STATUS_DRAFT
+
+        validated_data["target_populations"] += self._get_auto_add_target_population(
+            validated_data["target_populations"]
+        )
+
         return super().update(instance, validated_data)
 
 

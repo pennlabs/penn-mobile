@@ -95,7 +95,9 @@ class TestPosts(TestCase):
         response = self.client.post("/portal/posts/", payload)
         res_json = json.loads(response.content)
         # should not create post under pennlabs if not aprt of pennlabs
-        self.assertEqual("You do not access to create a Poll under this club.", res_json["detail"])
+        self.assertEqual(
+            "You do not have access to create a Post under this club.", res_json["detail"]
+        )
 
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)

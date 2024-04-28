@@ -61,31 +61,33 @@ class Content(models.Model):
     def _on_create(self):
         send_automated_email.delay_on_commit(
             self._get_email_subject(),
-            get_backend_manager_emails(),
+            list(get_backend_manager_emails()),
             (
                 f"A new {self.__class__._meta.model_name} for {self.club_code}"
-                f"has been created by {self.creator}"
+                f"has been created by {self.creator}."
             ),
         )
 
     def _on_status_change(self):
-        send_automated_email.delay_on_commit(
-            self._get_email_subject(),
-            getattr(self.creator, "email", None),
-            f"Your {self.__class__._meta.model_name} status for {self.club_code} has been"
-            + "changed to {self.status}."
-            + (
-                f"\n\nAdmin comment: {self.admin_comment}"
-                if self.admin_comment and self.status == self.STATUS_REVISION
-                else ""
-            ),
-        )
+        if email := getattr(self.creator, "email", None):
+            send_automated_email.delay_on_commit(
+                self._get_email_subject(),
+                [email],
+                f"Your {self.__class__._meta.model_name} status for {self.club_code} has been"
+                + "changed to {self.status}."
+                + (
+                    f"\n\nAdmin comment: {self.admin_comment}"
+                    if self.admin_comment and self.status == self.STATUS_REVISION
+                    else ""
+                ),
+            )
 
     def save(self, *args, **kwargs):
         prev = self.__class__.objects.filter(id=self.id).first()
         super().save(*args, **kwargs)
         if prev is None:
-            return self._on_create()
+            self._on_create()
+            return
         if self.status != prev.status:
             self._on_status_change()
 

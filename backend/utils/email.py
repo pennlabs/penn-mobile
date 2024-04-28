@@ -7,12 +7,12 @@ from django.template.loader import get_template
 @shared_task(name="utils.send_mail")
 def send_mail(subject, recipient_list, message=None, html_message=None):
     if recipient_list is None:
-        return False
+        raise ValueError("Recipient list cannot be None")
     success = django_send_mail(
         subject=subject,
         message=message,
         from_email=None,
-        recipient_list=recipient_list if isinstance(recipient_list, list) else [recipient_list],
+        recipient_list=recipient_list,
         fail_silently=False,
         html_message=html_message,
     )
@@ -29,5 +29,9 @@ def send_automated_email(subject, recipient_list, message):
 
 def get_backend_manager_emails():
     if group := Group.objects.filter(name="backend_managers").first():
-        return group.user_set.values_list("email", flat=True)
+        return (
+            group.user_set.exclude(email="")
+            .exclude(email__isnull=True)
+            .values_list("email", flat=True)
+        )
     return []
