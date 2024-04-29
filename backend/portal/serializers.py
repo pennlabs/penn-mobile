@@ -27,13 +27,19 @@ class ContentSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_date")
         abstract = True
 
-    def _get_auto_add_target_population(self, target_populations):
-        auto_add_kind = [
-            kind
-            for kind, _ in TargetPopulation.KIND_OPTIONS
-            if not any(population.kind == kind for population in target_populations)
-        ]
-        return TargetPopulation.objects.filter(kind__in=auto_add_kind)
+    def _auto_add_target_population(self, validated_data):
+        # auto add all target populations of a kind if not specified
+        if target_populations := validated_data.get("target_populations"):
+            auto_add_kind = [
+                kind
+                for kind, _ in TargetPopulation.KIND_OPTIONS
+                if not any(population.kind == kind for population in target_populations)
+            ]
+            validated_data["target_populations"] += TargetPopulation.objects.filter(
+                kind__in=auto_add_kind
+            )
+        else:
+            validated_data["target_populations"] = list(TargetPopulation.objects.all())
 
     def create(self, validated_data):
         club_code = validated_data["club_code"]
@@ -51,10 +57,7 @@ class ContentSerializer(serializers.ModelSerializer):
         validated_data["admin_comment"] = None
         validated_data["status"] = Content.STATUS_DRAFT
 
-        # auto add all target populations of a kind if not specified
-        validated_data["target_populations"] += self._get_auto_add_target_population(
-            validated_data["target_populations"]
-        )
+        self._auto_add_target_population(validated_data)
 
         validated_data["creator"] = user
 
@@ -65,9 +68,7 @@ class ContentSerializer(serializers.ModelSerializer):
         if not self.context["request"].user.is_superuser:
             validated_data["status"] = Content.STATUS_DRAFT
 
-        validated_data["target_populations"] += self._get_auto_add_target_population(
-            validated_data["target_populations"]
-        )
+        self._auto_add_target_population(validated_data)
 
         return super().update(instance, validated_data)
 

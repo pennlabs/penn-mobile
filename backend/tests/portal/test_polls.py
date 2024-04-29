@@ -264,7 +264,7 @@ class TestPolls(TestCase):
         poll.save()
 
         self.assertEqual(mock_send_email.call_count, 2)
-        self.assertEqual(mock_send_email.call_args[0][1], self.test_user.email)
+        self.assertEqual(mock_send_email.call_args[0][1], [self.test_user.email])
 
 
 class TestPollVotes(TestCase):

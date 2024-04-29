@@ -190,4 +190,4 @@ class TestPosts(TestCase):
         post.save()
 
         self.assertEqual(mock_send_email.call_count, 2)
-        self.assertEqual(mock_send_email.call_args[0][1], post.creator.email)
+        self.assertEqual(mock_send_email.call_args[0][1], [post.creator.email])
