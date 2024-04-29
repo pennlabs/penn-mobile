@@ -2,11 +2,13 @@ from enum import Enum
 
 from analytics.analytics import AnalyticsTxn, LabsAnalytics, Product
 
+
 try:
     AnalyticsEngine = LabsAnalytics()
 except Exception as e:
     print("Error initializing AnalyticsEngine: ", e)
     AnalyticsEngine = None
+
 
 class Metric(str, Enum):
     GSR_BOOK = "gsr.book"
