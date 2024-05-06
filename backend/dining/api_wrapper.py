@@ -1,4 +1,5 @@
 import datetime
+import json
 
 import requests
 from django.conf import settings
@@ -68,7 +69,7 @@ class DiningAPIWrapper:
 
             value["id"] = int(key)
             remove_items = [
-                "cor_icons",
+                # "cor_icons",
                 "city",
                 "state",
                 "zip",
@@ -118,11 +119,8 @@ class DiningAPIWrapper:
 
         # TODO: Handle API responses during empty menus (holidays)
         menu_base = OPEN_DATA_ENDPOINTS["MENUS"]
-        venues = Venue.objects.all()
+        venues = [v for v in Venue.objects.all() if v.venue_id not in skipped_venues]
         for venue in venues:
-            if venue.venue_id in skipped_venues:
-                continue
-
             response = self.request("GET", f"{menu_base}?cafe={venue.venue_id}&date={date}").json()
             # Load new items into database
             # TODO: There is something called a "goitem" for venues like English House.
@@ -147,33 +145,42 @@ class DiningAPIWrapper:
                     service=daypart["label"],
                 )
                 # Append stations to dining menu
-                stations = self.load_stations(daypart["stations"])
-                dining_menu.stations.add(*stations)
-                dining_menu.save()
+                self.load_stations(daypart["stations"], dining_menu)
 
-    def load_stations(self, station_response):
-        stations = [None] * len(station_response)
-        for i, station_data in enumerate(station_response):
+    def load_stations(self, station_response, dining_menu):
+        for station_data in station_response:
             # TODO: This is inefficient for venues such as Houston Market
-            station = DiningStation.objects.create(name=station_data["label"])
+            station = DiningStation.objects.create(name=station_data["label"], menu=dining_menu)
             item_ids = [int(item) for item in station_data["items"]]
 
             # Bulk add the items into the station
             items = DiningItem.objects.filter(item_id__in=item_ids)
             station.items.add(*items)
             station.save()
-            stations[i] = station
-        return stations
 
     def load_items(self, item_response):
-        item_list = [None] * len(item_response)
-        for i, key in enumerate(item_response):
-            value = item_response[key]
-            item_list[i] = DiningItem(
+        item_list = [
+            DiningItem(
                 item_id=key,
                 name=value["label"],
                 description=value["description"],
                 ingredients=value["ingredients"],
+                allergens=", ".join(value["cor_icon"].values()) if value["cor_icon"] else "",
+                nutrition_info=json.dumps(
+                    {
+                        x["label"]: f"{x['value']}{x['unit']}"
+                        for x in value["nutrition_details"].values()
+                    }
+                ),
             )
+            for key, value in item_response.items()
+        ]
         # Ignore conflicts because possibility of duplicate items
-        DiningItem.objects.bulk_create(item_list, ignore_conflicts=True)
+        DiningItem.objects.bulk_create(
+            item_list,
+            update_conflicts=True,
+            update_fields=[
+                field.name for field in DiningItem._meta.fields if not field.primary_key
+            ],
+            unique_fields=[DiningItem._meta.pk.name],
+        )

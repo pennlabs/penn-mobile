@@ -14,10 +14,10 @@ class Venue(models.Model):
 class DiningItem(models.Model):
     item_id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
-    description = models.CharField(max_length=1000)
-    ingredients = models.CharField(max_length=1000)  # comma separated list
-    allergens = models.CharField(max_length=1000)  # comma separated list
-    nutrition_info = models.CharField(max_length=1000)  # json string.
+    description = models.CharField(max_length=1000, blank=True)
+    ingredients = models.CharField(max_length=1000, blank=True)  # comma separated list
+    allergens = models.CharField(max_length=1000, blank=True)  # comma separated list
+    nutrition_info = models.CharField(max_length=1000, blank=True)  # json string.
     # Technically, postgres supports json fields but that involves local postgres
     # instead of sqlite AND we don't need to query on this field
 
@@ -28,7 +28,7 @@ class DiningItem(models.Model):
 class DiningStation(models.Model):
     name = models.CharField(max_length=255)
     items = models.ManyToManyField(DiningItem)
-    menu = models.ForeignKey("DiningMenu", on_delete=models.CASCADE)
+    menu = models.ForeignKey("DiningMenu", on_delete=models.CASCADE, related_name="stations")
 
 
 class DiningMenu(models.Model):
@@ -36,5 +36,4 @@ class DiningMenu(models.Model):
     date = models.DateField(default=timezone.now)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
-    stations = models.ManyToManyField(DiningStation)
     service = models.CharField(max_length=255)
