@@ -69,7 +69,7 @@ class DiningAPIWrapper:
 
             value["id"] = int(key)
             remove_items = [
-                # "cor_icons",
+                "cor_icons",
                 "city",
                 "state",
                 "zip",
