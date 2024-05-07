@@ -61,7 +61,7 @@ class Content(models.Model):
     def _on_create(self):
         send_automated_email.delay_on_commit(
             self._get_email_subject(),
-            list(get_backend_manager_emails()),
+            get_backend_manager_emails(),
             (
                 f"A new {self.__class__._meta.model_name} for {self.club_code}"
                 f"has been created by {self.creator}."

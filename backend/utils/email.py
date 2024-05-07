@@ -29,7 +29,7 @@ def send_automated_email(subject, recipient_list, message):
 
 def get_backend_manager_emails():
     if group := Group.objects.filter(name="backend_managers").first():
-        return (
+        return list(
             group.user_set.exclude(email="")
             .exclude(email__isnull=True)
             .values_list("email", flat=True)
