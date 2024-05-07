@@ -45,6 +45,7 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
           form_data.append(key, value?.toString())
         }
       })
+    }
     return form_data
   }
 
