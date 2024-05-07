@@ -154,7 +154,7 @@ class TestPosts(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertEqual("notpennlabs", res_json[0]["club_code"])
         self.assertEqual(2, Post.objects.all().count())
-    
+
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("utils.email.send_automated_email.delay_on_commit")
