@@ -6,13 +6,13 @@ from dining.models import DiningItem, DiningMenu, DiningStation, Venue
 class VenueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Venue
-        fields = ("venue_id", "name", "image_url")
+        fields = "__all__"
 
 
 class DiningItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiningItem
-        fields = ("item_id", "name", "description", "ingredients")
+        fields = "__all__"
 
 
 class DiningStationSerializer(serializers.ModelSerializer):
@@ -29,4 +29,4 @@ class DiningMenuSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DiningMenu
-        fields = ("venue", "date", "start_time", "end_time", "stations", "service")
+        fields = "__all__"
