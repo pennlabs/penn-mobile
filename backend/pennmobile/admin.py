@@ -32,3 +32,6 @@ class CustomAdminSite(admin.AdminSite):
 
 class PennMobileAdminConfig(AdminConfig):
     default_site = "pennmobile.admin.CustomAdminSite"
+
+
+admin.AdminSite = CustomAdminSite  # anything else that overrides default admin should override ours
