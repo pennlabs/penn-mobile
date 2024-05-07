@@ -230,7 +230,8 @@ class TestPolls(TestCase):
         # test that options key is in response
         self.assertIn("options", res_json)
 
-    # test send email on create
+    @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("utils.email.send_automated_email.delay_on_commit")
     def test_send_email_on_create(self, mock_send_email):
         payload = {
@@ -245,7 +246,8 @@ class TestPolls(TestCase):
         mock_send_email.assert_called_once()
         self.assertEqual(mock_send_email.call_args[0][1], get_backend_manager_emails())
 
-    # test send email on status change
+    @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("utils.email.send_automated_email.delay_on_commit")
     def test_send_email_on_status_change(self, mock_send_email):
         payload = {

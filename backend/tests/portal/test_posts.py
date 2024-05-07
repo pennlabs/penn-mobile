@@ -154,7 +154,9 @@ class TestPosts(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertEqual("notpennlabs", res_json[0]["club_code"])
         self.assertEqual(2, Post.objects.all().count())
-
+    
+    @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("utils.email.send_automated_email.delay_on_commit")
     def test_send_email_on_create(self, mock_send_email):
         payload = {
@@ -170,6 +172,8 @@ class TestPosts(TestCase):
         mock_send_email.assert_called_once()
         self.assertEqual(mock_send_email.call_args[0][1], get_backend_manager_emails())
 
+    @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("utils.email.send_automated_email.delay_on_commit")
     def test_send_email_on_status_change(self, mock_send_email):
         payload = {
