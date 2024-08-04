@@ -36,7 +36,8 @@ class News(APIView):
     def get_article(self):
         article = {"source": "The Daily Pennsylvanian"}
         try:
-            resp = requests.get("https://www.thedp.com/")
+            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+            resp = requests.get("https://www.thedp.com/", headers=headers)
         except ConnectionError:
             return None
 
@@ -44,14 +45,14 @@ class News(APIView):
 
         soup = BeautifulSoup(html, "html5lib")
 
-        frontpage = soup.find("div", {"class": "col-lg-6 col-md-5 col-sm-12 frontpage-carousel"})
+        if not (frontpage := soup.find("div", {"class": "col-lg-6 col-md-5 col-sm-12 frontpage-carousel"})):
+            return None
 
         # adds all variables for news object
-        if frontpage:
-            title_html = frontpage.find("a", {"class": "frontpage-link large-link"})
-        if title_html:
-            article["link"] = title_html["href"]
-            article["title"] = title_html.get_text()
+        if not (title_html := frontpage.find("a", {"class": "frontpage-link large-link"})):
+            return None
+        article["link"] = title_html["href"]
+        article["title"] = title_html.get_text()
 
         subtitle_html = frontpage.find("p")
         if subtitle_html:
