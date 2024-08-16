@@ -73,7 +73,7 @@ class Command(BaseCommand):
             user_nursing = User.objects.get(username="user_nursing")
 
         # Create target populations
-        call_command("load_target_populations")
+        call_command("load_target_populations", "--years", "2022, 2023, 2024, 2025")
         target_pop_seas = TargetPopulation.objects.get(
             population="School of Engineering and Applied Science"
         ).id
