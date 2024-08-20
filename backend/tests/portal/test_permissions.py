@@ -22,7 +22,7 @@ def mock_get_user_clubs(*args, **kwargs):
 
 class PollPermissions(TestCase):
     def setUp(self):
-        call_command("load_target_populations")
+        call_command("load_target_populations", "--years", "2022, 2023, 2024, 2025")
 
         self.client = APIClient()
         self.admin = User.objects.create_superuser("admin@example.com", "admin", "admin")

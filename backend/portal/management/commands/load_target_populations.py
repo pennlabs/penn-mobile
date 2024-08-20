@@ -6,6 +6,14 @@ from portal.models import TargetPopulation
 
 
 class Command(BaseCommand):
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--years",
+            type=str,
+            help="Comma seperated years to use for get_years."
+            "This is only used for testing currently.",
+        )
+
     def handle(self, *args, **kwargs):
         # loads majors, years, schools, and degrees onto TargetPopulations
         # runs get_or_create to ensure no duplicates
@@ -24,17 +32,20 @@ class Command(BaseCommand):
             TargetPopulation.objects.get_or_create(
                 kind=TargetPopulation.KIND_DEGREE, population=degree
             )
-        for year in self.get_years():
+        for year in self.get_years(kwargs["years"]):
             TargetPopulation.objects.get_or_create(kind=TargetPopulation.KIND_YEAR, population=year)
         self.stdout.write("Uploaded Target Populations!")
 
     def get_degrees(self):
         return ["BACHELORS", "MASTERS", "PHD", "PROFESSIONAL"]
 
-    def get_years(self):
+    def get_years(self, years):
         # creates new class year in August in preparation for upcoming school year
-        return (
-            [timezone.localtime().year + x for x in range(4)]
-            if timezone.localtime().month < 8
-            else [timezone.localtime().year + x for x in range(1, 5)]
-        )
+        if years is None:
+            return (
+                [+x for x in range(4)]
+                if timezone.localtime().month < 8
+                else [timezone.localtime().year + x for x in range(1, 5)]
+            )
+        else:
+            return [int(x) for x in years.split(",")]

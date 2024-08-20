@@ -61,7 +61,7 @@ class TestPolls(TestCase):
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     def setUp(self):
-        call_command("load_target_populations")
+        call_command("load_target_populations", "--years", "2022, 2023, 2024, 2025")
         self.target_id = TargetPopulation.objects.get(population="2024").id
         year = TargetPopulation.objects.get(population="2024").id
         major = TargetPopulation.objects.get(population="Computer Science, BSE").id
@@ -234,7 +234,7 @@ class TestPollVotes(TestCase):
     """Tests Create/Update Polls and History"""
 
     def setUp(self):
-        call_command("load_target_populations")
+        call_command("load_target_populations", "--years", "2022, 2023, 2024, 2025")
         self.target_id = TargetPopulation.objects.get(population="2024").id
 
         self.client = APIClient()
