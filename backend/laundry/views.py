@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from laundry.api_wrapper import check_is_working, hall_status
 from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundryRoomSerializer
+from pennmobile.analytics import Metric, record_analytics
 from utils.cache import Cache
 
 
@@ -51,6 +52,8 @@ class MultipleHallInfo(APIView):
             hall_data["id"] = hall_id
             hall_data["usage_data"] = HallUsage.compute_usage(hall_id)
             output["rooms"].append(hall_data)
+
+        record_analytics(Metric.LAUNDRY_VIEWED, request.user.username)
 
         return Response(output)
 

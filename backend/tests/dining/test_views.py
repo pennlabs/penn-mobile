@@ -128,6 +128,8 @@ class TestMenus(TestCase):
                     self.assertIn("name", item)
                     self.assertIn("description", item)
                     self.assertIn("ingredients", item)
+                    self.assertIn("allergens", item)
+                    self.assertIn("nutrition_info", item)
 
     def test_get_default(self):
         response = self.client.get(reverse("menus"))

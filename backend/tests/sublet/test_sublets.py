@@ -72,6 +72,35 @@ class TestSublets(TestCase):
         self.assertEqual(2, len(res_json["amenities"]))
         self.assertIn("images", res_json)
 
+    def test_create_sublet_with_profanity(self):
+        # Payload with profanity in the title and description
+        payload_with_profanity = {
+            "title": "fuck",
+            "address": "1234 Test Street",
+            "beds": 2,
+            "baths": "1.5",
+            "description": "shit.",
+            "external_link": "https://example.com",
+            "price": 1000,
+            "negotiable": True,
+            "expires_at": "3000-02-01T10:48:02-05:00",
+            "start_date": "3000-01-01",
+            "end_date": "3000-12-31",
+            "amenities": ["Amenity1", "Amenity2"],
+        }
+
+        response = self.client.post("/sublet/properties/", payload_with_profanity)
+
+        self.assertEqual(response.status_code, 400)
+
+        res_json = response.json()
+        self.assertIn("title", res_json)
+        self.assertIn("description", res_json)
+        self.assertEqual(res_json["title"][0], "The title contains inappropriate language.")
+        self.assertEqual(
+            res_json["description"][0], "The description contains inappropriate language."
+        )
+
     def test_update_sublet(self):
         # Create a sublet to be updated
         payload = {
