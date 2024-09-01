@@ -47,6 +47,7 @@ selenium = "*"
 webdriver-manager = "*"
 pre-commit = "*"
 alt-profanity-check = "*"
+inflection = "*"
 
 [requires]
 python_version = "3.11"
