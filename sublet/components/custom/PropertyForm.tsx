@@ -115,7 +115,7 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
   const [amenities, setAmenities] = useState<string[]>([]);
   const [preview, setPreview] = useState("");
 
-  useEffect(() => {
+  /*useEffect(() => {
     fetchAmenities()
       .then((data) => {
         setAmenities(data);
@@ -123,7 +123,7 @@ const PropertyForm = ({ onNewProperty, children }: PropertyFormProps) => {
       .catch((error) => {
         console.error("Error fetching properties:", error);
       });
-  }, []);
+  }, []);*/
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

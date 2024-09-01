@@ -14,10 +14,17 @@ app.prepare().then(() => {
   const devProxy = {
     target: 'http://127.0.0.1:8000', // Target backend server
     changeOrigin: true,
-    pathRewrite: { '^/api': '' }, // Rewrite the '/api' prefix from the request path if needed
+    //pathRewrite: { '^/api': '' }, // Rewrite the '/api' prefix from the request path if needed
+    logLevel: 'debug'
   };
 
   // Use the proxy middleware for requests to '/api'
+
+  server.use('/api', (req, res, next) => {
+    console.log(`Received request for ${req.url}`);
+    next();
+  });
+
   server.use('/api', createProxyMiddleware(devProxy));
 
   // Default catch-all handler to allow Next.js to handle all other routes

@@ -39,10 +39,7 @@ async function apiRequest(path: string, method: string, body: any = null, header
     options.body = body;
   } else if (method !== 'GET' && body) {
     // For JSON, set 'Content-Type' to 'application/json' and stringify the body
-    if (!options.headers) {
-      options.headers = new Headers();
-    }
-    (options.headers as Headers).append('Content-Type', 'application/json');
+    options.headers = new Headers({ 'Content-Type': 'application/json', ...headers });
     options.body = JSON.stringify(body);
   }
 
