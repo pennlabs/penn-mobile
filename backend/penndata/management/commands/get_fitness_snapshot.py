@@ -3,8 +3,8 @@ from bs4 import BeautifulSoup
 from dateutil import parser
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-
 from penndata.models import FitnessRoom, FitnessSnapshot
+from penndata.analytics import Metric, record_analytics
 
 
 def cap_string(s):
@@ -56,6 +56,13 @@ def get_usages():
                 count = int(cells[1].getText())
                 capacity = float(cells[2].getText().strip("%"))
                 usages[location] = {"count": count, "capacity": capacity}
+
+                analytic_string = (
+                    Metric.FITNESS + "."
+                    str(location).replace(" ", "").upper()
+                )
+                
+                record_analytics(analytic_string, None, str(count))
             except ValueError:
                 pass
         else:
