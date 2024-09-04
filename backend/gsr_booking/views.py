@@ -17,6 +17,7 @@ from gsr_booking.serializers import (
     GSRSerializer,
     UserSerializer,
 )
+from datetime import datetime
 from pennmobile.analytics import Metric, record_analytics
 
 
@@ -253,7 +254,13 @@ class BookRoom(APIView):
                 request.user.booking_groups.filter(name="Penn Labs").first(),
             )
 
-            record_analytics(Metric.GSR_BOOK, request.user.username)
+            date_format = "%Y-%m-%dT%H:%M:%S%z"
+            start_date_obj = datetime.strptime(start, date_format)
+            end_date_obj = datetime.strptime(end, date_format)
+
+            gsr_analytic = Metric.GSR_BOOK + "." + str(room_id).replace(" ", "").upper() + "." + str(room_name).replace(" ", "").upper()
+            record_analytics(gsr_analytic + ".start", request.user.username, start)
+            record_analytics(gsr_analytic + ".duration", request.user.username, (end_date_obj-start_date_obj).total_seconds() / 60)
 
             return Response({"detail": "success"})
         except APIError as e:
