@@ -255,21 +255,24 @@ class BookRoom(APIView):
                 request.user.booking_groups.filter(name="Penn Labs").first(),
             )
 
-            date_format = "%Y-%m-%dT%H:%M:%S%z"
-            start_date_obj = datetime.strptime(start, date_format)
-            end_date_obj = datetime.strptime(end, date_format)
+            try:
+                date_format = "%Y-%m-%dT%H:%M:%S%z"
+                start_date_obj = datetime.strptime(start, date_format)
+                end_date_obj = datetime.strptime(end, date_format)
 
-            gsr_analytic = (
-                Metric.GSR_BOOK + ".",
-                str(room_id).replace(" ", "").upper() + ".",
-                str(room_name).replace(" ", "").upper(),
-            )
+                gsr_analytic = (
+                    Metric.GSR_BOOK + ".",
+                    str(room_id).replace(" ", "").upper() + ".",
+                    str(room_name).replace(" ", "").upper(),
+                )
 
-            elapsed_minutes = (end_date_obj - start_date_obj).total_seconds() / 60
-            record_analytics(str(gsr_analytic) + ".start", request.user.username, start)
-            record_analytics(
-                str(gsr_analytic) + ".duration", request.user.username, str(elapsed_minutes)
-            )
+                elapsed_minutes = (end_date_obj - start_date_obj).total_seconds() / 60
+                record_analytics(str(gsr_analytic) + ".start", request.user.username, start)
+                record_analytics(
+                    str(gsr_analytic) + ".duration", request.user.username, str(elapsed_minutes)
+                )
+            except (APIError, ValueError):
+                pass
 
             return Response({"detail": "success"})
         except APIError as e:
