@@ -19,7 +19,7 @@ from gsr_booking.serializers import (
     GSRSerializer,
     UserSerializer,
 )
-from pennmobile.analytics import Metric, record_analytics
+from pennmobile.analytics import record_analytics
 
 
 User = get_user_model()
