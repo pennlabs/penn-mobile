@@ -19,7 +19,7 @@ from gsr_booking.serializers import (
     GSRSerializer,
     UserSerializer,
 )
-from pennmobile.analytics import record_analytics
+from pennmobile.analytics import Metric, record_analytics
 
 
 User = get_user_model()
@@ -260,15 +260,15 @@ class BookRoom(APIView):
             end_date_obj = datetime.strptime(end, date_format)
 
             gsr_analytic = (
-                "gsr.book.",
+                Metric.GSR_BOOK + ".",
                 str(room_id).replace(" ", "").upper() + ".",
                 str(room_name).replace(" ", "").upper(),
             )
 
             elapsed_minutes = (end_date_obj - start_date_obj).total_seconds() / 60
-            record_analytics(gsr_analytic + ".start", request.user.username, start)
+            record_analytics(str(gsr_analytic) + ".start", request.user.username, start)
             record_analytics(
-                gsr_analytic + ".duration", request.user.username, str(elapsed_minutes)
+                str(gsr_analytic) + ".duration", request.user.username, str(elapsed_minutes)
             )
 
             return Response({"detail": "success"})

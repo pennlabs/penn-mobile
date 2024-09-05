@@ -15,7 +15,7 @@ class Metric(str, Enum):
 
 
 # TODO: Support multiple data objects in a single transaction
-def record_analytics(metric, username=None, value="1"):
+def record_analytics(metric: str, username=None, value="1"):
     if not AnalyticsEngine:
         print("AnalyticsEngine not initialized")
         return
