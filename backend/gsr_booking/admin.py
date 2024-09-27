@@ -15,7 +15,8 @@ class GroupMembershipInline(admin.TabularInline):
     def get_fields(self, request, obj=None):
         fields = super().get_fields(request, obj)
         to_remove = ["user", "name"]
-        return ['name'] + [f for f in fields if f not in to_remove]
+        return ["name"] + [f for f in fields if f not in to_remove]
+
 
 class GroupAdmin(admin.ModelAdmin):
     search_fields = ["name__icontains"]
@@ -23,6 +24,7 @@ class GroupAdmin(admin.ModelAdmin):
     ordering = ["name"]
 
     inlines = [GroupMembershipInline]
+
 
 class GroupMembershipAdmin(admin.ModelAdmin):
     search_fields = ["user__username__icontains", "group__name__icontains"]
