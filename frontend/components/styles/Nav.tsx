@@ -1,4 +1,5 @@
 import React, { useContext } from 'react'
+import Image from 'next/image'
 import s from 'styled-components'
 import Link from 'next/link'
 
@@ -89,7 +90,7 @@ const NavWrapper = s.div`
   background-color: ${colors.NAV_BACKGROUND};
   text-align: center;
   min-height: 99vh;
-  position: fixed;
+  position: absolute;
 `
 
 export const Nav = () => {
@@ -97,12 +98,22 @@ export const Nav = () => {
 
   return (
     <NavWrapper>
-      {user && <Profile user={user} />}
+      <h1 className="flex justify-center items-center gap-4">
+        <Image
+          src="/penn-mobile.svg"
+          alt="Penn Mobile"
+          width={26}
+          height={26}
+        />
+        <span className="hidden md:inline text-2xl font-medium">Portal</span>
+      </h1>
+
       <Group center>
         <NavItem icon="dashboard" title="Dashboard" link={DASHBOARD_ROUTE} />
         <NavItem icon="analytics" title="Analytics" link={ANALYTICS_ROUTE} />
         <NavItem icon="settings" title="Settings" link={SETTINGS_ROUTE} />
       </Group>
+      {/* {user && <Profile user={user} />} */}
     </NavWrapper>
   )
 }
