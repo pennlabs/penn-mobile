@@ -6,7 +6,7 @@
     "dev": "NODE_ENV=development node server.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
-    "lint": "eslint . --ext .tsx --ext .ts && tsc -b tsconfig.json",
+    "lint": "eslint . && tsc -b tsconfig.json",
     "test": "echo no tests yet",
     "codecov": "echo no codecov"
   },
@@ -44,7 +44,7 @@
     "autoprefixer": "^10.4.20",
     "babel-eslint": "^10.1.0",
     "babel-plugin-styled-components": "^1.13.3",
-    "eslint": "^9.11.1",
+    "eslint": "^8",
     "eslint-config-airbnb": "^18.2.1",
     "eslint-config-next": "11.1.2",
     "eslint-config-prettier": "^8.3.0",
