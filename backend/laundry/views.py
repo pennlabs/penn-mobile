@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from laundry.api_wrapper import check_is_working, hall_status
+from laundry.api_wrapper import check_is_working, room_status
 from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundryRoomSerializer
 from pennmobile.analytics import Metric, record_analytics
@@ -31,9 +31,9 @@ class HallInfo(APIView):
     GET: returns list of a particular hall, its respective machines and machine details
     """
 
-    def get(self, request, hall_id):
+    def get(self, request, room_id):
         try:
-            return Response(hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id)))
+            return Response(room_status(get_object_or_404(LaundryRoom, room_id=room_id)))
         except HTTPError:
             return Response({"error": "The laundry api is currently unavailable."}, status=503)
 
@@ -43,15 +43,15 @@ class MultipleHallInfo(APIView):
     GET: returns list of hall information as well as hall usage
     """
 
-    def get(self, request, hall_ids):
-        halls = [int(x) for x in hall_ids.split(",")]
+    def get(self, request, room_ids):
+        rooms = [int(x) for x in room_ids.split(",")]
         output = {"rooms": []}
 
-        for hall_id in halls:
-            hall_data = hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id))
-            hall_data["id"] = hall_id
-            hall_data["usage_data"] = HallUsage.compute_usage(hall_id)
-            output["rooms"].append(hall_data)
+        for room_id in rooms:
+            room_data = room_status(get_object_or_404(LaundryRoom, room_id=room_id))
+            room_data["id"] = room_id
+            room_data["usage_data"] = HallUsage.compute_usage(room_id)
+            output["rooms"].append(room_id)
 
         record_analytics(Metric.LAUNDRY_VIEWED, request.user.username)
 
@@ -66,9 +66,9 @@ class HallUsage(APIView):
     def safe_division(a, b):
         return round(a / float(b), 3) if b > 0 else 0
 
-    def get_snapshot_info(hall_id):
+    def get_snapshot_info(room_id):
         # filters for LaundrySnapshots within timeframe
-        room = get_object_or_404(LaundryRoom, hall_id=hall_id)
+        room = get_object_or_404(LaundryRoom, room_id=room_id)
 
         # get start time, which is now without the times
         start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -83,9 +83,9 @@ class HallUsage(APIView):
         snapshots = LaundrySnapshot.objects.filter(filter).order_by("-date")
         return (room, snapshots)
 
-    def compute_usage(hall_id):
+    def compute_usage(room_id):
         try:
-            (room, snapshots) = HallUsage.get_snapshot_info(hall_id)
+            (room, snapshots) = HallUsage.get_snapshot_info(room_id)
         except ValueError:
             return Response({"error": "Invalid hall id passed to server."}, status=404)
 
@@ -156,6 +156,9 @@ class Preferences(APIView):
         if cached_preferences is None:
             preferences = request.user.profile.laundry_preferences.all()
             cached_preferences = preferences.values_list("hall_id", flat=True)
+            # get all laundries with one of thse
+            valid_rooms = LaundryRoom.objects.filter(room_id__in=cached_preferences, new=True)
+            cached_preferences = valid_rooms.values_list("room_id", flat=True)
             cache.set(key, cached_preferences, Cache.MONTH)
 
         return Response({"rooms": cached_preferences})
@@ -168,7 +171,7 @@ class Preferences(APIView):
             return Response({"success": False, "error": "No rooms provided"}, status=400)
 
         halls = [
-            get_object_or_404(LaundryRoom, hall_id=int(hall_id))
+            get_object_or_404(LaundryRoom, room_id=int(hall_id))
             for hall_id in request.data["rooms"]
         ]
 

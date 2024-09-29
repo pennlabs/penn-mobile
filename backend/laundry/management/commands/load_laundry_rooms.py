@@ -8,19 +8,20 @@ from laundry.models import LaundryRoom
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
 
-        with open("laundry/data/laundry_data.csv") as data:
+        with open("laundry/data/laundry_data_new.csv") as data:
             reader = csv.reader(data)
 
             for i, row in enumerate(reader):
-                hall_id, hall_name, location, uuid, total_washers, total_dryers = row
+                room_id, name, location, location_id, total_washers, total_dryers = row
 
-                LaundryRoom.objects.get_or_create(
-                    hall_id=int(hall_id),
-                    name=hall_name,
+                LaundryRoom.objects.create(
+                    room_id=room_id,
+                    name=name,
                     location=location,
-                    uuid=uuid,
+                    location_id=location_id,
                     total_washers=total_washers,
                     total_dryers=total_dryers,
+                    new=True,
                 )
 
         self.stdout.write("Uploaded Laundry Rooms!")

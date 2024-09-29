@@ -3,7 +3,7 @@ from unittest import mock
 from django.conf import settings
 from django.test import TestCase
 
-from laundry.api_wrapper import all_status, hall_status, save_data
+from laundry.api_wrapper import all_status, room_status, save_data
 from laundry.models import LaundryRoom, LaundrySnapshot
 from tests.laundry.test_commands import fakeLaundryGet
 
@@ -75,7 +75,7 @@ class TestHallStatus(TestCase):
         for room in LaundryRoom.objects.all():
 
             # asserts fields are present
-            status = hall_status(room)
+            status = room_status(room)
             machines = status["machines"]
             self.assertIn("washers", machines)
             self.assertIn("dryers", machines)

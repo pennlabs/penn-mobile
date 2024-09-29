@@ -160,7 +160,9 @@ CELERY_TIMEZONE = TIME_ZONE
 
 # Laundry API URL
 # LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
-LAUNDRY_URL = "http://laundry.sketchy.dev/"
+LAUNDRY_URL = "https://api.alliancelslabs.com"
+LAUNDRY_X_API_KEY = os.environ.get("LAUNDRY_X_API_KEY", None)
+LAUNDRY_ALLIANCELS_API_KEY = os.environ.get("LAUNDRY_ALLIANCE_LS_KEY", None)
 
 # Dining API Credentials
 DINING_USERNAME = os.environ.get("DINING_USERNAME", None)
