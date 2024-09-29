@@ -6,7 +6,7 @@
     "dev": "NODE_ENV=development node server.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
-    "lint": "eslint . && tsc -b tsconfig.json",
+    "lint": "eslint -c .eslintrc.json . && tsc -b tsconfig.json",
     "test": "echo no tests yet",
     "codecov": "echo no codecov"
   },
@@ -51,7 +51,7 @@
     "eslint-config-react-app": "^6.0.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-import-resolver-typescript": "^2.5.0",
-    "eslint-plugin-flowtype": "^6.1.0",
+    "eslint-plugin-flowtype": "^8.0.3",
     "eslint-plugin-prettier": "^4.0.0",
     "postcss": "^8.4.47",
     "prettier": "^2.4.1",
