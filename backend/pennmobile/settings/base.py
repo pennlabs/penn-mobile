@@ -139,7 +139,7 @@ PLATFORM_ACCOUNTS = {
     "REDIRECT_URI": os.environ.get("LABS_REDIRECT_URI", "http://localhost:8000/accounts/callback/"),
     "CLIENT_ID": os.environ.get("CLIENT_ID", "clientid"),
     "CLIENT_SECRET": os.environ.get("CLIENT_SECRET", "supersecretclientsecret"),
-    "PLATFORM_URL": os.environ.get("PLATFORM_URL", "https://platform.pennlabs.org"),
+    "PLATFORM_URL": os.environ.get("PLATFORM_URL", "https://platform-dev.pennlabs.org"),
     "CUSTOM_ADMIN": False,
 }
 
