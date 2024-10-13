@@ -1,3 +1,4 @@
+import React from 'react'
 import s from 'styled-components'
 
 import { colors } from '@/components/styles/colors'
@@ -44,20 +45,29 @@ export const Toggle = s.div`
   height: 2.5rem;
 `
 
-export const ToggleOption = s.button<{ active: boolean }>`
-  border-width: 0;
-  background-color: ${(props) =>
-    props.active ? colors.MEDIUM_BLUE : colors.LIGHTER_GRAY};
-  color: ${(props) => props.active && 'white'};
-  border-radius: 100px;
-  padding: 0.25rem 1rem;
-  outline: none;
+export const ToggleOption = React.forwardRef<
+  HTMLButtonElement,
+  { active: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ active, className, ...props }, ref) => (
+  <button
+    ref={ref}
+    type="button"
+    className={`
+      border-0
+      ${active ? 'bg-blue-500 text-white' : 'bg-neutral-100 text-gray-700'}
+      rounded-full
+      py-1 px-4
+      outline-none
+      hover:cursor-pointer
+      hover:opacity-80
+      transition-opacity
+      ${className || ''}
+    `}
+    {...props}
+  />
+))
 
-  &:hover {
-    cursor: pointer;
-    opacity: 0.7;
-  }
-`
+ToggleOption.displayName = 'ToggleOption'
 
 export const PostPollToggle = ({
   activeOption,
@@ -66,7 +76,7 @@ export const PostPollToggle = ({
   activeOption: PageType
   setActiveOption: React.Dispatch<React.SetStateAction<PageType>>
 }) => (
-  <Toggle style={{ verticalAlign: 'middle' }}>
+  <div className="flex items-center rounded-full bg-neutral-100 p-1.5 h-10 align-middle border shadow-sm shadow-neutral-50">
     <ToggleOption
       active={activeOption === PageType.POST}
       onClick={() => setActiveOption(PageType.POST)}
@@ -83,5 +93,5 @@ export const PostPollToggle = ({
         Polls
       </InlineText>
     </ToggleOption>
-  </Toggle>
+  </div>
 )
