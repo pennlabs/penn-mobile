@@ -114,35 +114,4 @@ class CalendarEvent(models.Model):
     def __str__(self):
         return f"{self.date}-{self.event}"
 
-
-
-# Adding statistics tracking here
-class GlobalStat(models.Model):
-    stat_key = models.CharField(max_length=50, 
-                                null=False, blank=False)
-    stat_value = models.CharField(max_length=50, 
-                                  null=False, blank=False)
-    year = models.IntegerField()
-
-    class Meta:
-        unique_together = ("stat_key", "year")
-
-    def __str__(self):
-        return f"Global -- {self.stat_key}-{str(self.year)} : {self.stat_value}"
-    
-class IndividualStat(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    stat_key = models.CharField(max_length=50, 
-                                null=False, blank=False)
-    stat_value = models.CharField(max_length=50, 
-                                  null=False, blank=False)
-    year = models.IntegerField()
-
-    class Meta: 
-        unique_together = ("stat_key", "year", "user")
-
-    def __str__(self) -> str:
-        return f"User: {self.user} -- {self.stat_key}-{str(self.year)} : {self.stat_value}"
-    
-
     

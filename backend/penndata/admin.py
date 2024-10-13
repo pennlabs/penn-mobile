@@ -7,9 +7,7 @@ from penndata.models import (
     Event,
     FitnessRoom,
     FitnessSnapshot,
-    HomePageOrder,
-    GlobalStat, 
-    IndividualStat
+    HomePageOrder
 )
 
 
@@ -27,5 +25,4 @@ admin.site.register(HomePageOrder)
 admin.site.register(FitnessRoom, FitnessRoomAdmin)
 admin.site.register(FitnessSnapshot)
 admin.site.register(AnalyticsEvent)
-admin.site.register(GlobalStat)
-admin.site.register(IndividualStat)
+
