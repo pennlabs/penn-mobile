@@ -4,7 +4,7 @@ import Head from 'next/head'
 const Header = () => (
   <>
     <Head>
-      <title>Penn Mobile Portal</title>
+      <title>Portal</title>
       <meta
         name="description"
         content="A web-based portal for organizations to reach Penn Mobile users."

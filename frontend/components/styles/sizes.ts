@@ -1,5 +1,5 @@
 export const NAV_HEIGHT = '4.25rem'
-export const NAV_WIDTH = '14%'
+export const NAV_WIDTH = '12rem'
 export const MAX_BODY_HEIGHT = `calc(100vh - ${NAV_HEIGHT})`
 
 export const DESKTOP = '1248px'

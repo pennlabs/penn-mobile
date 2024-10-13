@@ -42,11 +42,16 @@ export const DashboardHeader = ({
               : CREATE_POLL_ROUTE
           }
         >
-          <a>
-            <Button color={colors.GREEN} round style={{ margin: '0 0 0 1rem' }}>
+          <Button
+            className="flex items-center justify-center"
+            color={colors.GREEN}
+            round
+            style={{ margin: '0 0 0 1rem' }}
+          >
+            <span className="text-base font-work-sans text-nowrap">
               Create +
-            </Button>
-          </a>
+            </span>
+          </Button>
         </Link>
       </Group>
     </Row>
