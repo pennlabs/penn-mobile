@@ -1,5 +1,6 @@
 from enum import Enum
 from functools import wraps
+
 from analytics.analytics import AnalyticsTxn, LabsAnalytics, Product
 
 

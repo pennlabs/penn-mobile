@@ -51,3 +51,6 @@ inflection = "*"
 
 [requires]
 python_version = "3.11"
+
+[scripts]
+lint = "sh -c 'black --check . && isort --check-only . && flake8 .'"
