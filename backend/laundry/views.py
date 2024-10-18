@@ -43,6 +43,7 @@ class MultipleHallInfo(APIView):
     GET: returns list of hall information as well as hall usage
     """
 
+    @record_analytics(Metric.LAUNDRY_VIEWED, "1")
     def get(self, request, hall_ids):
         halls = [int(x) for x in hall_ids.split(",")]
         output = {"rooms": []}
@@ -52,8 +53,6 @@ class MultipleHallInfo(APIView):
             hall_data["id"] = hall_id
             hall_data["usage_data"] = HallUsage.compute_usage(hall_id)
             output["rooms"].append(hall_data)
-
-        record_analytics(Metric.LAUNDRY_VIEWED, request.user.username)
 
         return Response(output)
 

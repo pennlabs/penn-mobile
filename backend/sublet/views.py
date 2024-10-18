@@ -80,13 +80,12 @@ class Properties(viewsets.ModelViewSet):
     def get_queryset(self):
         return Sublet.objects.all()
 
+    @record_analytics(Metric.SUBLET_CREATED)
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)  # Check if the data is valid
         instance = serializer.save()  # Create the Sublet
         instance_serializer = SubletSerializerRead(instance=instance, context={"request": request})
-
-        record_analytics(Metric.SUBLET_CREATED, request.user.username)
 
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -126,6 +125,7 @@ class Properties(viewsets.ModelViewSet):
     #     sublet.save()
     # return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @record_analytics(Metric.SUBLET_BROWSE, "1")
     def list(self, request, *args, **kwargs):
         """Returns a list of Sublets that match query parameters and user ownership."""
         # Get query parameters from request (e.g., amenities, user_owned)
@@ -177,8 +177,6 @@ class Properties(viewsets.ModelViewSet):
             queryset = queryset.filter(beds=beds)
         if baths:
             queryset = queryset.filter(baths=baths)
-
-        record_analytics(Metric.SUBLET_BROWSE, request.user.username)
 
         # Serialize and return the queryset
         serializer = SubletSerializerSimple(queryset, many=True)
@@ -238,6 +236,7 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
         user = self.request.user
         return user.sublets_favorited
 
+    @record_analytics(Metric.SUBLET_FAVORITED, "1")
     def create(self, request, *args, **kwargs):
         sublet_id = int(self.kwargs["sublet_id"])
         queryset = self.get_queryset()
@@ -245,8 +244,6 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
             raise exceptions.NotAcceptable("Favorite already exists")
         sublet = get_object_or_404(Sublet, id=sublet_id)
         self.get_queryset().add(sublet)
-
-        record_analytics(Metric.SUBLET_FAVORITED, request.user.username)
 
         return Response(status=status.HTTP_201_CREATED)
 
@@ -277,6 +274,7 @@ class Offers(viewsets.ModelViewSet):
             "created_date"
         )
 
+    @record_analytics(Metric.SUBLET_OFFER, "1")
     def create(self, request, *args, **kwargs):
         data = request.data
         request.POST._mutable = True
@@ -287,8 +285,6 @@ class Offers(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
-        record_analytics(Metric.SUBLET_OFFER, request.user.username)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

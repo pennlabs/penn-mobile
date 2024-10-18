@@ -1,5 +1,5 @@
 from enum import Enum
-
+from functools import wraps
 from analytics.analytics import AnalyticsTxn, LabsAnalytics, Product
 
 
@@ -23,9 +23,26 @@ class Metric(str, Enum):
     PORTAL_POLL_VOTED = "portal.poll.voted"
 
 
-def record_analytics(metric: Metric, username=None):
-    if not AnalyticsEngine:
-        print("AnalyticsEngine not initialized")
-        return
-    txn = AnalyticsTxn(Product.MOBILE_BACKEND, username, data=[{"key": metric, "value": "1"}])
-    AnalyticsEngine.submit(txn)
+def record_analytics(metric: Metric, value: str = "1"):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if not AnalyticsEngine:
+                print("AnalyticsEngine not initialized")
+                return func(*args, **kwargs)
+
+            # Call the original function
+            result = func(*args, **kwargs)
+
+            # Record the analytics
+            username = kwargs.get("username", None)
+            txn = AnalyticsTxn(
+                Product.MOBILE_BACKEND, username, data=[{"key": metric, "value": value}]
+            )
+            AnalyticsEngine.submit(txn)
+
+            return result
+
+        return wrapper
+
+    return decorator

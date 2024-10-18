@@ -235,6 +235,7 @@ class BookRoom(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @record_analytics(Metric.GSR_BOOK, value="1")
     def post(self, request):
         start = request.data["start_time"]
         end = request.data["end_time"]
@@ -252,9 +253,6 @@ class BookRoom(APIView):
                 request.user,
                 request.user.booking_groups.filter(name="Penn Labs").first(),
             )
-
-            record_analytics(Metric.GSR_BOOK, request.user.username)
-
             return Response({"detail": "success"})
         except APIError as e:
             return Response({"error": str(e)}, status=400)
