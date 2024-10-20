@@ -5,18 +5,18 @@ from django.utils import timezone
 
 
 class LaundryRoom(models.Model):
-    hall_id = models.IntegerField(default=0)
+    room_id = models.IntegerField(default=0)
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
+    location_id = models.IntegerField(default=0)
     total_washers = models.IntegerField(default=0)
     total_dryers = models.IntegerField(default=0)
 
-    # Each Laundry Room has a UUID that we need to
-    # access Penn API laundry data
-    uuid = models.UUIDField(default=uuid.uuid4)
+    # laundry api update 9/29/2024; new indicates it is new, added to avoid nuking old info
+    new = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Hall No. {self.hall_id} | {self.name}"
+        return f"Hall {self.name} | {self.location}"
 
 
 class LaundrySnapshot(models.Model):
@@ -26,4 +26,4 @@ class LaundrySnapshot(models.Model):
     available_dryers = models.IntegerField()
 
     def __str__(self):
-        return f"Hall No. {self.room.hall_id} | {self.date.date()}"
+        return f"Hall {self.room.name} | {self.date.date()}"
