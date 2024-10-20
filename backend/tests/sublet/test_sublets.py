@@ -6,7 +6,7 @@ from django.core.files.storage import Storage
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from sublet.models import Amenity, Offer, Sublet, SubletImage
+from marketplace.models import Amenity, Offer, Sublet, SubletImage
 
 
 User = get_user_model()

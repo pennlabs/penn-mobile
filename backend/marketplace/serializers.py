@@ -2,7 +2,7 @@ from phonenumber_field.serializerfields import PhoneNumberField
 from profanity_check import predict
 from rest_framework import serializers
 
-from sublet.models import Amenity, Offer, Sublet, SubletImage
+from marketplace.models import Amenity, Offer, Sublet, SubletImage
 
 
 class AmenitySerializer(serializers.ModelSerializer):
