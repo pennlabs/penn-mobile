@@ -8,7 +8,8 @@ const BASE_URL = 'api/sublet'
 export const getOffers = async (subletId: string): Promise<OfferResponse[]> => {
   const response = await doApiRequest(`${BASE_URL}/listOffers/${subletId}`)
   if (!response.ok) {
-    throw new Error('Failed to fetch offers')
+    console.error('Failed to fetch offers')
+    return []
   }
   return response.json()
 }
@@ -17,23 +18,27 @@ export const getOffers = async (subletId: string): Promise<OfferResponse[]> => {
 export const createOffer = async (
   subletId: string,
   data: CreateOfferRequest
-): Promise<void> => {
+): Promise<boolean> => {
   const response = await doApiRequest(`${BASE_URL}/createOffer/${subletId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
   if (!response.ok) {
-    throw new Error('Failed to create offer')
+    console.error('Failed to create offer')
+    return false
   }
+  return true
 }
 
 // Delete an offer by sublet ID (no request body required)
-export const deleteOffer = async (subletId: string): Promise<void> => {
+export const deleteOffer = async (subletId: string): Promise<boolean> => {
   const response = await doApiRequest(`${BASE_URL}/destroyOffer/${subletId}`, {
     method: 'DELETE',
   })
   if (!response.ok) {
-    throw new Error('Failed to delete offer')
+    console.error('Failed to delete offer')
+    return false
   }
+  return true
 }
