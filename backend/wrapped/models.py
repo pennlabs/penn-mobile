@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db.models import Q
+
 User = get_user_model()
 
 
@@ -43,21 +45,32 @@ class IndividualStat(models.Model):
     def __str__(self) -> str:
         return f"User: {self.user} -- {self.stat_key}-{str(self.semester)} : {self.stat_value}"
     
-class Template(models.Model):
+class StatLocation(models.Model):
+    IndividualStatKey = models.ForeignKey(UserStatKey,null=True, blank=True, default=None ,on_delete=models.CASCADE)
+    GlobalStatKey = models.ForeignKey(GlobalStat, null=True,blank=True,default=None,on_delete=models.CASCADE)
 
-    # Some file path
-    name = models.CharField(max_length=10, null=False, blank=False)
-    template_path = models.CharField(max_length=50, null=False, blank=False)
-    num_fields = models.IntegerField()
-    def __str__(self) -> str:
-        return f"{self.name}"
+    text_field_name = models.CharField(max_length=50, null=False, blank=False)
+    def save(self, *args, **kwargs):
+        print(self.GlobalStatKey)
+        if not self.GlobalStatKey:
+            self.GlobalStatKey = None
+        if not self.IndividualStatKey:
+            self.IndividualStatKey = None
+        if self.IndividualStatKey != None and self.GlobalStatKey != None:
+            raise Exception("Gave two stat values")
+        
 
+        super(StatLocation, self).save(*args, **kwargs)
+    def __str__(self):
+        return f"{self.text_field_name} -> {self.IndividualStatKey} --> {self.GlobalStatKey}"
 
+# Why do we want time? Ask Vincent 
 class Page(models.Model):
 
     # How to do this, using individual vs stat_key ?
-
-    template = models.ForeignKey(Template, on_delete=models.CASCADE, null=False, blank=False)
-    IndividualStat = models.ManyToManyField(IndividualStat, blank=True)
-    GlobalStat = models.ManyToManyField(GlobalStat, blank=True)
-    
+    name = models.CharField(max_length=50, null=False, blank=False)
+    template_path = models.CharField(max_length=50, null=False, blank=False)
+    stat_locations = models.ManyToManyField(StatLocation, blank=True)
+    semester = models.CharField(max_length=5, null=False, blank=False)
+    def __str__(self):
+        return f"{self.name}"
