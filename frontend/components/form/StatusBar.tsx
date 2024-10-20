@@ -43,11 +43,7 @@ const StatusBar = ({ status }: iStatusBarProps) => {
 
   return (
     <>
-      <Group
-        horizontal
-        className="flex items-center"
-        style={{ margin: '0 0.5rem' }}
-      >
+      <Group horizontal className="flex items-center mx-2">
         <IconCircle color={colors.MEDIUM_BLUE} />
         <StatusGroup compareStatus={Status.REVISION} />
         <StatusGroup compareStatus={Status.APPROVED} />

@@ -5,7 +5,6 @@ import 'react-loading-skeleton/dist/skeleton.css'
 
 import { Group, Row } from '@/components/styles/Layout'
 import { Subtitle } from '@/components/styles/Text'
-import { colors } from '@/components/styles/colors'
 import { PageType } from '@/utils/types'
 import { Button, PostPollToggle } from '@/components/styles/Buttons'
 import { CREATE_POLL_ROUTE, CREATE_POST_ROUTE } from '@/utils/routes'
@@ -43,8 +42,7 @@ export const DashboardHeader = ({
           }
         >
           <Button
-            className="flex items-center justify-center"
-            color={colors.GREEN}
+            className="flex items-center justify-center bg-green"
             round
             style={{ margin: '0 0 0 1rem' }}
           >

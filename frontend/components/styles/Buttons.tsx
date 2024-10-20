@@ -54,7 +54,7 @@ export const ToggleOption = React.forwardRef<
     type="button"
     className={`
       border-0
-      ${active ? 'bg-blue-500 text-white' : 'bg-neutral-100 text-gray-700'}
+      ${active ? 'bg-mediumBlue text-white' : 'bg-neutral-100 text-gray-700'}
       rounded-full
       py-1 px-4
       outline-none
@@ -76,7 +76,7 @@ export const PostPollToggle = ({
   activeOption: PageType
   setActiveOption: React.Dispatch<React.SetStateAction<PageType>>
 }) => (
-  <div className="flex items-center rounded-full bg-neutral-100 p-1.5 h-10 align-middle border shadow-sm shadow-neutral-50">
+  <div className="flex items-center rounded-full bg-neutral-100 p-1.5 h-10 align-middle border border-lighterGray shadow-sm shadow-neutral-50">
     <ToggleOption
       active={activeOption === PageType.POST}
       onClick={() => setActiveOption(PageType.POST)}

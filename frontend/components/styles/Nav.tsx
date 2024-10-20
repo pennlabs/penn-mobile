@@ -5,7 +5,6 @@ import { useRouter } from 'next/router'
 
 import { AuthUserContext } from '@/utils/auth'
 import { User } from '@/utils/types'
-import { colors } from '@/components/styles/colors'
 import {
   ANALYTICS_ROUTE,
   DASHBOARD_ROUTE,
@@ -21,7 +20,7 @@ const iconSrcMap: { [key: string]: string } = {
 const Profile = ({ user }: { user: User }) => {
   return (
     <div className="flex items-center gap-2 font-work-sans">
-      <div className="p-2 w-10 h-10 bg-gray-100 flex items-center justify-center rounded-full">
+      <div className="p-2 w-10 h-10 bg-lighterGray flex items-center justify-center rounded-full">
         {user.first_name[0].toUpperCase()}
         {user.last_name[0].toUpperCase()}
       </div>
@@ -49,7 +48,7 @@ const NavItem = ({
       <div
         className={`flex gap-2 cursor-pointer items-center py-2 px-4 rounded-full border ${
           isActive
-            ? 'bg-neutral-50 shadow-sm shadow-neutral-100'
+            ? 'bg-neutral-50 shadow-sm shadow-neutral-100 border-lighterGray'
             : 'border-transparent'
         }`}
       >
@@ -76,9 +75,7 @@ export const Nav = () => {
   const { user } = useContext(AuthUserContext)
 
   return (
-    <div
-      className={`w-[12rem] bg-${colors.NAV_BACKGROUND} flex flex-col justify-between items-center min-h-screen fixed py-4`}
-    >
+    <div className="w-[12rem] bg-white flex flex-col justify-between items-center min-h-screen fixed py-4">
       <div className="flex flex-initial flex-col gap-6 justify-center items-center">
         <h1 className="flex justify-center items-center gap-4">
           <Image
