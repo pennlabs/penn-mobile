@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import mark_safe
 
-from sublet.models import Amenity, Offer, Sublet, SubletImage
+from market.models import Amenity, Offer, Sublet, SubletImage
 
 
 class SubletAdmin(admin.ModelAdmin):
