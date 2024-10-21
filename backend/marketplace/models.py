@@ -44,30 +44,6 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
-    
-
-class ValueTag(models.Model):
-    name = models.CharField(max_length=255, primary_key=True)
-
-    def __str__(self):
-        return self.name
-    
-
-class ItemTag(models.Model):
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
-    item = models.ForeignKey("Item", on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.tag} for {self.item}"
-
-
-class ItemTagValue(models.Model):
-    tag = models.ForeignKey(ValueTag, on_delete=models.CASCADE)
-    item = models.ForeignKey("Item", on_delete=models.CASCADE)
-    value = models.CharField(max_length=255)
-
-    def __str__(self):
-        return f"{self.tag} for {self.item}"
 
 
 class Item(models.Model):
@@ -76,7 +52,7 @@ class Item(models.Model):
         User, through=Offer, related_name="items_offered", blank=True
     )
     favorites = models.ManyToManyField(User, related_name="items_favorited", blank=True)
-
+    tags = models.ManyToManyField(Tag, related_name="items", blank=True)
     title = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
     external_link = models.URLField(max_length=255, null=True, blank=True)
@@ -88,6 +64,15 @@ class Item(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.seller}"
+
+
+class Sublet(models.Model):
+    item = models.OneToOneField(Item, on_delete=models.CASCADE, related_name="sublet")
+    address = models.CharField(max_length=255)
+    beds = models.IntegerField()
+    baths = models.IntegerField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
 
 
 class ItemImage(models.Model):
