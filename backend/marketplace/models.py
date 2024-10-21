@@ -22,7 +22,7 @@ class Offer(models.Model):
         return f"Offer for {self.item} made by {self.user}"
 
 
-class Category(Enum):
+class Category(models.TextChoices):
     SUBLET = "sublet"
     APPLIANCE = "appliance"
     COOKWARE = "cookware"
@@ -48,17 +48,19 @@ class Tag(models.Model):
 
 class Item(models.Model):
     seller = models.ForeignKey(User, on_delete=models.CASCADE)
-    buyers = models.ManyToManyField(
-        User, through=Offer, related_name="items_offered", blank=True
+    tags = models.ManyToManyField(Tag, related_name="items", blank=True)
+    category = models.CharField(
+        max_length=50,
+        choices=Category.choices,
+        default=Category.OTHER,
     )
     favorites = models.ManyToManyField(User, related_name="items_favorited", blank=True)
-    tags = models.ManyToManyField(Tag, related_name="items", blank=True)
+
     title = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
     external_link = models.URLField(max_length=255, null=True, blank=True)
     price = models.IntegerField()
     negotiable = models.BooleanField(default=True)
-    category = models.CharField(max_length=50, choices=[(category, category.value) for category in Category])
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
