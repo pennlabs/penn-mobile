@@ -8,14 +8,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from pennmobile.analytics import Metric, record_analytics
-from sublet.models import Amenity, Offer, Sublet, SubletImage
-from sublet.permissions import (
+from marketplace.models import Amenity, Offer, Sublet, SubletImage
+from marketplace.permissions import (
     IsSuperUser,
     OfferOwnerPermission,
     SubletImageOwnerPermission,
     SubletOwnerPermission,
 )
-from sublet.serializers import (
+from marketplace.serializers import (
     AmenitySerializer,
     OfferSerializer,
     SubletImageSerializer,
