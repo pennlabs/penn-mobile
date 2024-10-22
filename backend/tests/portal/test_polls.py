@@ -9,6 +9,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
+from utils.email import get_backend_manager_emails
 
 
 User = get_user_model()
@@ -228,6 +229,44 @@ class TestPolls(TestCase):
         self.assertEqual("pennlabs", res_json["club_code"])
         # test that options key is in response
         self.assertIn("options", res_json)
+
+    @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("utils.email.send_automated_email.delay_on_commit")
+    def test_send_email_on_create(self, mock_send_email):
+        payload = {
+            "club_code": "pennlabs",
+            "question": "How is this question? 2",
+            "expire_date": timezone.localtime() + datetime.timedelta(days=1),
+            "admin_comment": "asdfs 2",
+            "target_populations": [],
+        }
+        self.client.post("/portal/polls/", payload)
+
+        mock_send_email.assert_called_once()
+        self.assertEqual(mock_send_email.call_args[0][1], get_backend_manager_emails())
+
+    @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("utils.email.send_automated_email.delay_on_commit")
+    def test_send_email_on_status_change(self, mock_send_email):
+        payload = {
+            "club_code": "pennlabs",
+            "question": "How is this question? 2",
+            "expire_date": timezone.localtime() + datetime.timedelta(days=1),
+            "admin_comment": "asdfs 2",
+            "target_populations": [],
+        }
+        self.client.force_authenticate(user=self.test_user)
+        self.client.post("/portal/polls/", payload)
+        mock_send_email.assert_called_once()
+
+        poll = Poll.objects.last()
+        poll.status = Poll.STATUS_REVISION
+        poll.save()
+
+        self.assertEqual(mock_send_email.call_count, 2)
+        self.assertEqual(mock_send_email.call_args[0][1], [self.test_user.email])
 
 
 class TestPollVotes(TestCase):
