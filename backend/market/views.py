@@ -7,7 +7,6 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from pennmobile.analytics import Metric, record_analytics
 from market.models import Amenity, Offer, Sublet, SubletImage
 from market.permissions import (
     IsSuperUser,
@@ -24,6 +23,7 @@ from market.serializers import (
     SubletSerializerRead,
     SubletSerializerSimple,
 )
+from pennmobile.analytics import Metric, record_analytics
 
 
 User = get_user_model()
