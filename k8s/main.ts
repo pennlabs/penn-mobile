@@ -122,13 +122,14 @@ export class MyChart extends PennLabsChart {
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
 
-    new CronJob(this, 'get-penn-today-events', {
-      schedule:'0 15 * * *', // Every day at 3 PM
-      image: backendImage,
-      secret,
-      cmd: ["python", "manage.py", "get_penn_today_events"],
-      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
-    });
+    // TODO: Fix selenium so we can run this cron job
+    // new CronJob(this, 'get-penn-today-events', {
+    //   schedule:'0 15 * * *', // Every day at 3 PM
+    //   image: backendImage,
+    //   secret,
+    //   cmd: ["python", "manage.py", "get_penn_today_events"],
+    //   env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    // });
 
     new CronJob(this, 'get-engineering-events', {
       schedule:'0 16 * * *', // Every day at 4 PM
