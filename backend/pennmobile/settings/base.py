@@ -163,6 +163,10 @@ CELERY_TIMEZONE = TIME_ZONE
 LAUNDRY_URL = "https://api.alliancelslabs.com"
 LAUNDRY_X_API_KEY = os.environ.get("LAUNDRY_X_API_KEY", None)
 LAUNDRY_ALLIANCELS_API_KEY = os.environ.get("LAUNDRY_ALLIANCE_LS_KEY", None)
+LAUNDRY_HEADERS = {
+    "x-api-key": LAUNDRY_X_API_KEY,
+    "alliancels-auth-token": LAUNDRY_ALLIANCELS_API_KEY,
+}
 
 # Dining API Credentials
 DINING_USERNAME = os.environ.get("DINING_USERNAME", None)

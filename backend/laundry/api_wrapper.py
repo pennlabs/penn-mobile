@@ -1,7 +1,7 @@
 import requests
 from django.conf import settings
 from django.utils import timezone
-from requests.exceptions import ConnectTimeout, HTTPError, ReadTimeout
+from requests.exceptions import HTTPError
 
 from laundry.models import LaundryRoom, LaundrySnapshot
 
@@ -10,19 +10,14 @@ def get_room_url(room_id: int):
     return f"{settings.LAUNDRY_URL}/rooms/{room_id}/machines?raw=true"
 
 
-headers = {
-    "x-api-key": settings.LAUNDRY_X_API_KEY,
-    "alliancels-auth-token": settings.LAUNDRY_ALLIANCELS_API_KEY,
-}
-
-
 def update_machine_object(machine, machine_type_data):
     """
     Updates Machine status and time remaining
     """
 
-    #  TODO: Early stage in update 9/29/2024, known status codes are "IN_USE", "AVAILABLE", "COMPLETE"; need to update
-    #  TODO: if we identify other codes, especially error
+    #  TODO: Early stage in update 9/29/2024, known status codes are
+    #  TODO: "IN_USE", "AVAILABLE", "COMPLETE";
+    #  TODO: need to update if we identify other codes, especially error
     status = machine["currentStatus"]["statusId"]
     if status == "IN_USE":
         time_remaining = machine[3].getText().split(" ")[0]
@@ -33,10 +28,7 @@ def update_machine_object(machine, machine_type_data):
             pass
     elif status in ["AVAILABLE", "COMPLETE"]:
         machine_type_data["open"] += 1
-    # elif status == "Out of order":
-    #     machine_type_data["out_of_order"] += 1
-    # elif status == "Not online":
-    #     machine_type_data["offline"] += 1
+    # TODO: Verify there are no other statuses
     else:
         machine_type_data["offline"] += 1
 
@@ -61,28 +53,34 @@ def parse_a_room(room_request_link):
     detailed = []
 
     try:
-        request = requests.get(room_request_link, timeout=60, headers=headers)
+        request = requests.get(room_request_link, timeout=60, headers=settings.LAUNDRY_HEADERS)
         request.raise_for_status()
     except HTTPError:
         return {"washers": washers, "dryers": dryers, "details": detailed}
 
     request_json = request.json()
 
-    for machine in request_json:
-        if machine["isWasher"]:
-            washers = update_machine_object(machine, washers)
-        elif machine["isDryer"]:
-            dryers = update_machine_object(machine, dryers)
-        if machine["isWasher"] or machine["isDryer"]:
-            # TODO: Unsure if remaining seconds and the new status ids work on frontend
-            detailed.append(
-                {
-                    "id": machine["id"],
-                    "type": "washer" if machine["isWasher"] else "dryer",
-                    "status": machine["currentStatus"]["statusId"],
-                    "time_remaining": machine["currentStatus"]["remainingSeconds"],
-                }
-            )
+    [
+        update_machine_object(machine, washers) if machine["isWasher"] else None
+        for machine in request_json
+    ]
+    [
+        update_machine_object(machine, dryers) if machine["isDryer"] else None
+        for machine in request_json
+    ]
+    [
+        detailed.append(
+            {
+                "id": machine["id"],
+                "type": "washer" if machine["isWasher"] else "dryer",
+                "status": machine["currentStatus"]["statusId"],
+                "time_remaining": machine["currentStatus"]["remainingSeconds"],
+            }
+        )
+        for machine in request_json
+        if machine["isWasher"] or machine["isDryer"]
+    ]
+
     return {"washers": washers, "dryers": dryers, "details": detailed}
 
 
@@ -93,11 +91,13 @@ def check_is_working():
 
     try:
         all_rooms_request = requests.get(
-            f"{settings.LAUNDRY_URL}/geoBoundaries/5610?raw=true", timeout=60, headers=headers
+            f"{settings.LAUNDRY_URL}/geoBoundaries/5610?raw=true",
+            timeout=60,
+            headers=settings.LAUNDRY_HEADERS,
         )
         all_rooms_request.raise_for_status()
 
-    except HTTPError as e:
+    except HTTPError:
         return False
     return True
 

@@ -1,5 +1,4 @@
 import csv
-from functools import reduce
 
 import requests
 from django.conf import settings
@@ -30,17 +29,22 @@ class Command(BaseCommand):
         locations = all_rooms_request_json["geoBoundaries"][0]["geoBoundaries"]
 
         laundry_rooms = [
-            [room["id"], room["roomName"], location["description"], location["id"]]
+            {
+                "room_id": room["id"],
+                "room_name": room["roomName"],
+                "room_description": location["description"],
+                "room_location": location["id"],
+            }
             for location in locations
             for room in location["rooms"]
         ]
 
         # for each room, send a request to find number of washers and dryers
-        # TODO: This is really inefficient, but may require change in frontend code so leaving it for now
+        # TODO: This is really inefficient, but may require change in frontend code to update
         for room in laundry_rooms:
             try:
                 room_request = requests.get(
-                    f"{settings.LAUNDRY_URL}/rooms/{room[0]}/machines?raw=true",
+                    f"{settings.LAUNDRY_URL}/rooms/{room['room_id']}/machines?raw=true",
                     timeout=60,
                     headers=headers,
                 )
@@ -51,16 +55,25 @@ class Command(BaseCommand):
 
             room_request_json = room_request.json()
             # count washers and dryers
-            count = (0, 0)
-            f = lambda acc, x: (
-                (acc[0] + 1, acc[1])
-                if x["isWasher"]
-                else (acc[0], acc[1] + 1) if x["isDryer"] else acc
-            )
-            count = reduce(f, room_request_json, count)
-            room.extend(count)
+            count_washers = 0
+            count_dryers = 0
+            for machine in room_request_json:
+                if machine["isWasher"]:
+                    count_washers += 1
+                if machine["isDryer"]:
+                    count_dryers += 1
+            room["count_washers"] = count_washers
+            room["count_dryers"] = count_dryers
 
         # write to csv
-        with open("laundry/data/laundry_data_new.csv", "w") as data:
-            writer = csv.writer(data)
+        keys = [
+            "room_id",
+            "room_name",
+            "room_description",
+            "room_location",
+            "count_washers",
+            "count_dryers",
+        ]
+        with open("laundry/data/laundry_data.csv", "w") as f:
+            writer = csv.DictWriter(f, keys)
             writer.writerows(laundry_rooms)
