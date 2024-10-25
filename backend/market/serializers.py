@@ -2,12 +2,18 @@ from phonenumber_field.serializerfields import PhoneNumberField
 from profanity_check import predict
 from rest_framework import serializers
 
-from market.models import Amenity, Offer, Sublet, SubletImage
+from market.models import Tag, Category, Offer, Item, Sublet, ItemImage
 
 
-class AmenitySerializer(serializers.ModelSerializer):
+class TagSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Amenity
+        model = Tag
+        fields = "__all__"
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
         fields = "__all__"
 
 
@@ -25,16 +31,16 @@ class OfferSerializer(serializers.ModelSerializer):
 
 
 # Create/Update Image Serializer
-class SubletImageSerializer(serializers.ModelSerializer):
+class ItemImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(write_only=True, required=False, allow_null=True)
 
     class Meta:
-        model = SubletImage
-        fields = ["sublet", "image"]
+        model = ItemImage
+        fields = ["item", "image"]
 
 
 # Browse images
-class SubletImageURLSerializer(serializers.ModelSerializer):
+class ItemImageURLSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField("get_image_url")
 
     def get_image_url(self, obj):
@@ -50,31 +56,31 @@ class SubletImageURLSerializer(serializers.ModelSerializer):
             return image.url
 
     class Meta:
-        model = SubletImage
+        model = ItemImage
         fields = ["id", "image_url"]
 
 
-# complex sublet serializer for use in C/U/D + getting info about a singular sublet
-class SubletSerializer(serializers.ModelSerializer):
-    # amenities = AmenitySerializer(many=True, required=False)
-    # images = SubletImageURLSerializer(many=True, required=False)
-    amenities = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Amenity.objects.all(), required=False
+# complex item serializer for use in C/U/D + getting info about a singular tag
+class ItemSerializer(serializers.ModelSerializer):
+    # amenities = ItemSerializer(many=True, required=False)
+    # images = ItemImageURLSerializer(many=True, required=False)
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Tag.objects.all(), required=False
     )
 
     class Meta:
-        model = Sublet
+        model = Item
         read_only_fields = [
             "id",
             "created_at",
-            "subletter",
-            "sublettees",
+            "seller",
+            "buyer",
             # "images"
         ]
         fields = [
             "id",
-            "subletter",
-            "amenities",
+            "seller",
+            "tags",
             "title",
             "address",
             "beds",
@@ -89,7 +95,7 @@ class SubletSerializer(serializers.ModelSerializer):
             # "images",
             # images are now created/deleted through a separate endpoint (see urls.py)
             # this serializer isn't used for getting,
-            # but gets on sublets will include ids/urls for images
+            # but gets on tags will include ids/urls for images
         ]
 
     def validate_title(self, value):
@@ -106,47 +112,47 @@ class SubletSerializer(serializers.ModelSerializer):
         return predict([text])[0]
 
     def create(self, validated_data):
-        validated_data["subletter"] = self.context["request"].user
+        validated_data["seller"] = self.context["request"].user
         instance = super().create(validated_data)
         instance.save()
         return instance
 
     # delete_images is a list of image ids to delete
     def update(self, instance, validated_data):
-        # Check if the user is the subletter before allowing the update
+        # Check if the user is the seller before allowing the update
         if (
-            self.context["request"].user == instance.subletter
+            self.context["request"].user == instance.seller
             or self.context["request"].user.is_superuser
         ):
             instance = super().update(instance, validated_data)
             instance.save()
             return instance
         else:
-            raise serializers.ValidationError("You do not have permission to update this sublet.")
+            raise serializers.ValidationError("You do not have permission to update this item.")
 
     def destroy(self, instance):
-        # Check if the user is the subletter before allowing the delete
+        # Check if the user is the seller before allowing the delete
         if (
-            self.context["request"].user == instance.subletter
+            self.context["request"].user == instance.seller
             or self.context["request"].user.is_superuser
         ):
             instance.delete()
         else:
-            raise serializers.ValidationError("You do not have permission to delete this sublet.")
+            raise serializers.ValidationError("You do not have permission to delete this item.")
 
 
-class SubletSerializerRead(serializers.ModelSerializer):
+class ItemSerializerRead(serializers.ModelSerializer):
     amenities = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Amenity.objects.all(), required=False
+        many=True, queryset=Tag.objects.all(), required=False
     )
-    images = SubletImageURLSerializer(many=True, required=False)
+    images = ItemImageURLSerializer(many=True, required=False)
 
     class Meta:
-        model = Sublet
-        read_only_fields = ["id", "created_at", "subletter", "sublettees"]
+        model = Item
+        read_only_fields = ["id", "created_at", "seller", "buyer"]
         fields = [
             "id",
-            "subletter",
+            "seller",
             "amenities",
             "title",
             "address",
@@ -163,18 +169,18 @@ class SubletSerializerRead(serializers.ModelSerializer):
         ]
 
 
-# simple sublet serializer for use when pulling all serializers/etc
-class SubletSerializerSimple(serializers.ModelSerializer):
+# simple tag serializer for use when pulling all serializers/etc
+class ItemSerializerSimple(serializers.ModelSerializer):
     amenities = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Amenity.objects.all(), required=False
+        many=True, queryset=Tag.objects.all(), required=False
     )
-    images = SubletImageURLSerializer(many=True, required=False)
+    images = ItemImageURLSerializer(many=True, required=False)
 
     class Meta:
-        model = Sublet
+        model = Item
         fields = [
             "id",
-            "subletter",
+            "seller",
             "amenities",
             "title",
             "address",
@@ -186,4 +192,4 @@ class SubletSerializerSimple(serializers.ModelSerializer):
             "end_date",
             "images",
         ]
-        read_only_fields = ["id", "subletter"]
+        read_only_fields = ["id", "seller"]

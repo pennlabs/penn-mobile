@@ -8,9 +8,9 @@ User = get_user_model()
 
 class Offer(models.Model):
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["user", "item"], name="unique_offer")]
+        constraints = [models.UniqueConstraint(fields=["user", "item"], name="unique_offer_market")]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="offers_made")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="offers_made_market")
     item = models.ForeignKey("Item", on_delete=models.CASCADE, related_name="offers")
     email = models.EmailField(max_length=255, null=True, blank=True)
     phone_number = PhoneNumberField(null=True, blank=True)
@@ -59,11 +59,7 @@ class Item(models.Model):
         User, through=Offer, related_name="items_offered", blank=True
     )
     tags = models.ManyToManyField(Tag, related_name="items", blank=True)
-    category = models.CharField(
-        max_length=50,
-        choices=Category.choices,
-        default=Category.OTHER,
-    )
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="items")
     favorites = models.ManyToManyField(User, related_name="items_favorited", blank=True)
 
     title = models.CharField(max_length=255)
