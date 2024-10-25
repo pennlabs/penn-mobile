@@ -21,7 +21,9 @@ class Offer(models.Model):
         return f"Offer for {self.item} made by {self.user}"
 
 
-class Category(models.TextChoices):
+class Category(models.Model):
+    '''
+    Current categories include:
     SUBLET = "sublet"
     APPLIANCE = "appliance"
     COOKWARE = "cookware"
@@ -36,6 +38,12 @@ class Category(models.TextChoices):
     TICKETS = "tickets"
     GIFTCARD = "giftcard"
     OTHER = "other"
+    '''
+    name = models.CharField(max_length=50, primary_key=True)
+    
+    def __str__(self):
+        return self.name
+    
 
 
 class Tag(models.Model):
@@ -47,6 +55,9 @@ class Tag(models.Model):
 
 class Item(models.Model):
     seller = models.ForeignKey(User, on_delete=models.CASCADE)
+    buyers = models.ManyToManyField(
+        User, through=Offer, related_name="items_offered", blank=True
+    )
     tags = models.ManyToManyField(Tag, related_name="items", blank=True)
     category = models.CharField(
         max_length=50,
@@ -60,6 +71,7 @@ class Item(models.Model):
     external_link = models.URLField(max_length=255, null=True, blank=True)
     price = models.IntegerField()
     negotiable = models.BooleanField(default=True)
+    used = models.BooleanField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
