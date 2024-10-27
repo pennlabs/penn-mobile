@@ -156,7 +156,7 @@ class Preferences(APIView):
         if cached_preferences is None:
             preferences = request.user.profile.laundry_preferences.all()
             cached_preferences = preferences.values_list("hall_id", flat=True)
-            # get all laundries with one of thse
+            # get all laundries with one of these
             valid_rooms = LaundryRoom.objects.filter(room_id__in=cached_preferences, new=True)
             cached_preferences = valid_rooms.values_list("room_id", flat=True)
             cache.set(key, cached_preferences, Cache.MONTH)

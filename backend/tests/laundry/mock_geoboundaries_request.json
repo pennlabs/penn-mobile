@@ -1,0 +1,225 @@
+{
+    "id": "481806",
+    "organizationName": "University of Pennsylvania",
+    "merchantName": null,
+    "userGuid": "c7970c4c-5e73-4533-82ab-b25a0fcad7d3",
+    "userRole": {
+        "id": "485807",
+        "roleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        }
+    },
+    "weightLookupKey": "POUND",
+    "isAtrium": false,
+    "isMeteredLaundry": false,
+    "isIncludedLaundry": true,
+    "atriumBalanceName": "",
+    "meteredBalanceName": "",
+    "geoBoundaries": [
+        {
+            "fundsRestriction": null,
+            "hasCard": null,
+            "washAlertScaleX": null,
+            "washAlertScaleY": null,
+            "description": "University of Pennsylvania",
+            "id": "5610",
+            "isDup": false,
+            "geoBoundaryType": {
+                "id": "LOCATION"
+            },
+            "breadcrumbIdArray": [
+                "5610"
+            ],
+            "breadcrumbDisplayArray": [
+                "University of Pennsylvania"
+            ],
+            "geoBoundaries": [
+                {
+                    "fundsRestriction": null,
+                    "hasCard": null,
+                    "washAlertScaleX": null,
+                    "washAlertScaleY": null,
+                    "description": "English House",
+                    "id": "14146",
+                    "isDup": false,
+                    "geoBoundaryType": {
+                        "id": "LOCATION"
+                    },
+                    "breadcrumbIdArray": [
+                        "5610",
+                        "14146"
+                    ],
+                    "breadcrumbDisplayArray": [
+                        "University of Pennsylvania",
+                        "English House"
+                    ],
+                    "latitude": "39.9522188",
+                    "longitude": "-75.1932137",
+                    "rooms": [
+                        {
+                            "id": "14089",
+                            "roomName": "English House",
+                            "breadcrumbDisplay": "University of Pennsylvania/English House/English House",
+                            "breadcrumbId": "5610/14146/14089",
+                            "isActive": true,
+                            "createdAt": "2024-06-20T14:42:08.214Z",
+                            "createdBy": "74297e47-3119-4037-9573-5ed1689788aa",
+                            "updatedAt": "2024-06-20T14:42:08.214Z",
+                            "updatedBy": null,
+                            "geomName": "201 S 40th St, Philadelphia, PA 19104",
+                            "latitude": "39.9522188",
+                            "longitude": "-75.1932137",
+                            "timeZoneName": "America/New_York",
+                            "internationalTimeZoneName": "America/New_York",
+                            "internationalTimeZoneAbbreviation": "EDT",
+                            "hasCoin": true,
+                            "hasVtm": false,
+                            "hasWashAlert": true,
+                            "washAlertImageUrl": null,
+                            "washAlertXAxis": null,
+                            "washAlertYAxis": null,
+                            "canSms": true,
+                            "serviceEmail": "campus-service@caleco.net",
+                            "servicePhoneNumber": null,
+                            "roomBanner": null,
+                            "advancedGateway": true,
+                            "connectionType": "CONNECTED",
+                            "subscriptionExpired": false,
+                            "locationPin": "QUAKER",
+                            "signupBonusAmount": null,
+                            "signupBonusExpirationDate": null,
+                            "maxRedemptions": null,
+                            "ordinalValue": 0
+                        }
+                    ],
+                    "ordinalValue": 0,
+                    "isRetail": false
+                },
+                {
+                    "fundsRestriction": null,
+                    "hasCard": null,
+                    "washAlertScaleX": null,
+                    "washAlertScaleY": null,
+                    "description": "Harnwell College House",
+                    "id": "14150",
+                    "isDup": true,
+                    "geoBoundaryType": {
+                        "id": "LOCATION"
+                    },
+                    "breadcrumbIdArray": [
+                        "5610",
+                        "14150"
+                    ],
+                    "breadcrumbDisplayArray": [
+                        "University of Pennsylvania",
+                        "Harnwell College House"
+                    ],
+                    "latitude": "39.9522188",
+                    "longitude": "-75.1932137",
+                    "rooms": [
+                        {
+                            "id": "14099",
+                            "roomName": "Harnwell 10th Floor",
+                            "breadcrumbDisplay": "University of Pennsylvania/Harnwell College House/Harnwell 10th Floor",
+                            "breadcrumbId": "5610/14150/14099",
+                            "isActive": true,
+                            "createdAt": "2024-06-20T15:53:02.144Z",
+                            "createdBy": "74297e47-3119-4037-9573-5ed1689788aa",
+                            "updatedAt": "2024-06-20T15:53:02.144Z",
+                            "updatedBy": null,
+                            "geomName": "201 S 40th St, Philadelphia, PA 19104",
+                            "latitude": "39.9522188",
+                            "longitude": "-75.1932137",
+                            "timeZoneName": "America/New_York",
+                            "internationalTimeZoneName": "America/New_York",
+                            "internationalTimeZoneAbbreviation": "EDT",
+                            "hasCoin": true,
+                            "hasVtm": false,
+                            "hasWashAlert": true,
+                            "washAlertImageUrl": null,
+                            "washAlertXAxis": null,
+                            "washAlertYAxis": null,
+                            "canSms": true,
+                            "serviceEmail": "campus-service@caleco.net",
+                            "servicePhoneNumber": null,
+                            "roomBanner": null,
+                            "advancedGateway": true,
+                            "connectionType": "CONNECTED",
+                            "subscriptionExpired": false,
+                            "locationPin": "QUAKER",
+                            "signupBonusAmount": null,
+                            "signupBonusExpirationDate": null,
+                            "maxRedemptions": null,
+                            "ordinalValue": 0
+                        },
+                        {
+                            "id": "14100",
+                            "roomName": "Harnwell 12th Floor",
+                            "breadcrumbDisplay": "University of Pennsylvania/Harnwell College House/Harnwell 12th Floor",
+                            "breadcrumbId": "5610/14150/14100",
+                            "isActive": true,
+                            "createdAt": "2024-06-20T16:15:21.671Z",
+                            "createdBy": "74297e47-3119-4037-9573-5ed1689788aa",
+                            "updatedAt": "2024-06-20T16:15:21.671Z",
+                            "updatedBy": null,
+                            "geomName": "201 S 40th St, Philadelphia, PA 19104",
+                            "latitude": "39.9522188",
+                            "longitude": "-75.1932137",
+                            "timeZoneName": "America/New_York",
+                            "internationalTimeZoneName": "America/New_York",
+                            "internationalTimeZoneAbbreviation": "EDT",
+                            "hasCoin": true,
+                            "hasVtm": false,
+                            "hasWashAlert": true,
+                            "washAlertImageUrl": null,
+                            "washAlertXAxis": null,
+                            "washAlertYAxis": null,
+                            "canSms": true,
+                            "serviceEmail": "campus-service@caleco.net",
+                            "servicePhoneNumber": null,
+                            "roomBanner": null,
+                            "advancedGateway": true,
+                            "connectionType": "CONNECTED",
+                            "subscriptionExpired": false,
+                            "locationPin": "QUAKER",
+                            "signupBonusAmount": null,
+                            "signupBonusExpirationDate": null,
+                            "maxRedemptions": null,
+                            "ordinalValue": 1
+                        },
+                    ],
+                    "ordinalValue": 4,
+                    "isRetail": false
+                },
+            ],
+            "ordinalValue": 0,
+            "isRetail": false
+        }
+    ],
+    "currency": {
+        "name": "US Dollars",
+        "divisor": 100,
+        "decimalPlaces": 2,
+        "iso4217Code": "USD",
+        "iso4217Id": "840",
+        "id": "840",
+        "symbol": "$",
+        "thousandsSeparator": ",",
+        "decimalSeparator": ".",
+        "overrideDecimalPlaces": null
+    },
+    "country": {
+        "id": "1",
+        "name": "United States",
+        "isoCountryName": "United States of America",
+        "isoCountryCode": "US"
+    },
+    "auxFundsType": null,
+    "hasCvvVerification": false,
+    "hasAddressVerification": false,
+    "isRetail": false,
+    "isCrm": false,
+    "isTrade": false,
+    "hasMailbox": false,
+    "isoStartDayOfWeek": "7"
+}

@@ -10,12 +10,19 @@ from laundry.models import LaundryRoom, LaundrySnapshot
 
 
 def fakeLaundryGet(url, *args, **kwargs):
-    if settings.LAUNDRY_URL in url:
-        with open("tests/laundry/laundry_snapshot.html", "rb") as f:
-            m = mock.MagicMock(content=f.read())
-        return m
-    else:
-        raise NotImplementedError
+    # TODO: should we do this with regex? using split bc I think it's cleaner
+    split = url.split("/")
+    if "/".join(split[0:3]) == settings.LAUNDRY_URL:
+        if split[3] == "rooms":
+            with open(f"tests/laundry/mock_rooms_request_{split[4]}.json", "rb") as f:
+                m = mock.MagicMock(content=f.read())
+                return m
+        elif split[3] == "geoBoundaries":
+            with open("tests/laundry/mock_geoboundaries_request.json", "rb") as f:
+                m = mock.MagicMock(content=f.read())
+                return m
+        else:
+            raise NotImplementedError
 
 
 @mock.patch("requests.get", fakeLaundryGet)

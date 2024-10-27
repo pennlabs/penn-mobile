@@ -1,0 +1,505 @@
+[
+    {
+        "id": "442890",
+        "room": {
+            "id": "14089",
+            "roomName": "English House"
+        },
+        "isDryer": true,
+        "isActive": true,
+        "isWasher": false,
+        "controlId": "176099620618346500",
+        "createdAt": "2024-07-24T15:07:22.001628",
+        "createdBy": 2,
+        "updatedAt": "2024-07-24T15:07:22.001628",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 4",
+        "machineType": {
+            "id": "20",
+            "isDryer": true,
+            "isWasher": false,
+            "typeName": "Dryer"
+        },
+        "modelNumber": "SDENYRGS176TW01",
+        "networkNode": "4",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2405022776",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0004",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": true,
+            "controlId": "176099620618346500",
+            "createdAt": "2024-10-27T16:54:02.706000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000,
+                    1000
+                ],
+                "values": [
+                    "CLo5E",
+                    "door"
+                ]
+            },
+            "gatewayName": "37e5b85195ad97b00f7e45eb07c0b8ee",
+            "id": "442890",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 65,
+            "microType": 0,
+            "receivedAt": "2024-10-27T16:54:02.706000",
+            "remainingSeconds": 3600,
+            "remainingVend": 0,
+            "roomId": "14089",
+            "selectedCycle": {
+                "id": 4,
+                "name": "MEDIUM"
+            },
+            "selectedModifier": {
+                "id": 0
+            },
+            "statusId": "AVAILABLE",
+            "topOffTime": 300,
+            "topOffVend": 25,
+            "topoffFullyDisabled": false,
+            "uuid": "52f7bf39-56c8-4d2e-b946-f9fadc8fbb20"
+        },
+        "ordinalValue": 0
+    },
+    {
+        "id": "442888",
+        "room": {
+            "id": "14089",
+            "roomName": "English House"
+        },
+        "isDryer": false,
+        "isActive": true,
+        "isWasher": true,
+        "controlId": "143031774052786180",
+        "createdAt": "2024-07-24T15:07:17.440014",
+        "createdBy": 2,
+        "updatedAt": "2024-07-24T15:07:17.440014",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 1",
+        "machineType": {
+            "id": "10",
+            "isDryer": false,
+            "isWasher": true,
+            "typeName": "Frontload Washer"
+        },
+        "modelNumber": "SFNNYRSP116TW01",
+        "networkNode": "1",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2310023277",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0001",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": false,
+            "controlId": "143031774052786180",
+            "createdAt": "2024-10-27T17:01:01.079000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000
+                ],
+                "values": [
+                    "oPEn  "
+                ]
+            },
+            "gatewayName": "37e5b85195ad97b00f7e45eb07c0b8ee",
+            "id": "442888",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 53,
+            "microType": 0,
+            "receivedAt": "2024-10-27T17:01:01.079000",
+            "remainingSeconds": 1800,
+            "remainingVend": 0,
+            "roomId": "14089",
+            "selectedCycle": {
+                "id": 2,
+                "name": "NORMAL_WARM"
+            },
+            "selectedModifier": {
+                "id": 0,
+                "name": "LIGHT"
+            },
+            "statusId": "COMPLETE",
+            "topOffTime": 0,
+            "topOffVend": 0,
+            "topoffFullyDisabled": true,
+            "uuid": "95599a7d-1fe6-4729-ae1a-4be79cfdcaf8"
+        },
+        "ordinalValue": 1
+    },
+    {
+        "id": "442886",
+        "room": {
+            "id": "14089",
+            "roomName": "English House"
+        },
+        "isDryer": false,
+        "isActive": true,
+        "isWasher": true,
+        "controlId": "142594022396043268",
+        "createdAt": "2024-07-24T15:07:16.013735",
+        "createdBy": 2,
+        "updatedAt": "2024-07-24T15:07:16.013735",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 2",
+        "machineType": {
+            "id": "10",
+            "isDryer": false,
+            "isWasher": true,
+            "typeName": "Frontload Washer"
+        },
+        "modelNumber": "SFNNYRSP116TW01",
+        "networkNode": "2",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2310045791",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0002",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": false,
+            "controlId": "142594022396043268",
+            "createdAt": "2024-10-27T17:03:04.917000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000
+                ],
+                "values": [
+                    "    :18"
+                ]
+            },
+            "gatewayName": "37e5b85195ad97b00f7e45eb07c0b8ee",
+            "id": "442886",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 53,
+            "microType": 0,
+            "receivedAt": "2024-10-27T17:03:04.917000",
+            "remainingSeconds": 1028,
+            "remainingVend": 0,
+            "roomId": "14089",
+            "selectedCycle": {
+                "id": 3,
+                "name": "NORMAL_COLD"
+            },
+            "selectedModifier": {
+                "id": 0,
+                "name": "LIGHT"
+            },
+            "statusId": "IN_USE",
+            "topOffTime": 0,
+            "topOffVend": 0,
+            "topoffFullyDisabled": true,
+            "uuid": "abf455ce-c829-4076-b4b6-90607f376551"
+        },
+        "ordinalValue": 2
+    },
+    {
+        "id": "442885",
+        "room": {
+            "id": "14089",
+            "roomName": "English House"
+        },
+        "isDryer": false,
+        "isActive": true,
+        "isWasher": true,
+        "controlId": "142593846302384132",
+        "createdAt": "2024-07-24T15:07:15.014176",
+        "createdBy": 2,
+        "updatedAt": "2024-07-24T15:07:15.014176",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 3",
+        "machineType": {
+            "id": "10",
+            "isDryer": false,
+            "isWasher": true,
+            "typeName": "Frontload Washer"
+        },
+        "modelNumber": "SFNNYRSP116TW01",
+        "networkNode": "3",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2310045788",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0003",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": false,
+            "controlId": "142593846302384132",
+            "createdAt": "2024-10-27T17:03:05.920000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000
+                ],
+                "values": [
+                    "    03"
+                ]
+            },
+            "gatewayName": "37e5b85195ad97b00f7e45eb07c0b8ee",
+            "id": "442885",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 64,
+            "microType": 0,
+            "receivedAt": "2024-10-27T17:03:05.920000",
+            "remainingSeconds": 138,
+            "remainingVend": 0,
+            "roomId": "14089",
+            "selectedCycle": {
+                "id": 2,
+                "name": "NORMAL_WARM"
+            },
+            "selectedModifier": {
+                "id": 0,
+                "name": "LIGHT"
+            },
+            "statusId": "IN_USE",
+            "topOffTime": 0,
+            "topOffVend": 0,
+            "topoffFullyDisabled": true,
+            "uuid": "244ae682-041b-451e-9767-d6bda3556a0b"
+        },
+        "ordinalValue": 3
+    },
+    {
+        "id": "442887",
+        "room": {
+            "id": "14089",
+            "roomName": "English House"
+        },
+        "isDryer": true,
+        "isActive": true,
+        "isWasher": false,
+        "controlId": "177830445193994244",
+        "createdAt": "2024-07-24T15:07:16.548421",
+        "createdBy": 2,
+        "updatedAt": "2024-07-24T15:07:16.548421",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 5",
+        "machineType": {
+            "id": "20",
+            "isDryer": true,
+            "isWasher": false,
+            "typeName": "Dryer"
+        },
+        "modelNumber": "SDENYRGS176TW01",
+        "networkNode": "5",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2405015200",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0005",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": true,
+            "controlId": "177830445193994244",
+            "createdAt": "2024-10-27T17:03:07.675000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000
+                ],
+                "values": [
+                    "    :44"
+                ]
+            },
+            "gatewayName": "37e5b85195ad97b00f7e45eb07c0b8ee",
+            "id": "442887",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 58,
+            "microType": 0,
+            "receivedAt": "2024-10-27T17:03:07.675000",
+            "remainingSeconds": 2604,
+            "remainingVend": 0,
+            "roomId": "14089",
+            "selectedCycle": {
+                "id": 1,
+                "name": "HIGH"
+            },
+            "selectedModifier": {
+                "id": 0
+            },
+            "statusId": "IN_USE",
+            "topOffTime": 300,
+            "topOffVend": 25,
+            "topoffFullyDisabled": false,
+            "uuid": "8a94d44d-fd31-4545-b6b3-e118b0c8302e"
+        },
+        "ordinalValue": 4
+    },
+    {
+        "id": "442889",
+        "room": {
+            "id": "14089",
+            "roomName": "English House"
+        },
+        "isDryer": true,
+        "isActive": true,
+        "isWasher": false,
+        "controlId": "177830470963798020",
+        "createdAt": "2024-07-24T15:07:21.831619",
+        "createdBy": 2,
+        "updatedAt": "2024-07-24T15:07:21.831619",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 6",
+        "machineType": {
+            "id": "20",
+            "isDryer": true,
+            "isWasher": false,
+            "typeName": "Dryer"
+        },
+        "modelNumber": "SDENYRGS176TW01",
+        "networkNode": "6",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2405015201",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0006",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": true,
+            "controlId": "177830470963798020",
+            "createdAt": "2024-10-27T17:03:04.184000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000
+                ],
+                "values": [
+                    "    18"
+                ]
+            },
+            "gatewayName": "37e5b85195ad97b00f7e45eb07c0b8ee",
+            "id": "442889",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 56,
+            "microType": 0,
+            "receivedAt": "2024-10-27T17:03:04.184000",
+            "remainingSeconds": 1044,
+            "remainingVend": 0,
+            "roomId": "14089",
+            "selectedCycle": {
+                "id": 1,
+                "name": "HIGH"
+            },
+            "selectedModifier": {
+                "id": 0
+            },
+            "statusId": "IN_USE",
+            "topOffTime": 300,
+            "topOffVend": 25,
+            "topoffFullyDisabled": false,
+            "uuid": "609573cd-6704-48a5-8616-d4e07c02234b"
+        },
+        "ordinalValue": 5
+    }
+]
