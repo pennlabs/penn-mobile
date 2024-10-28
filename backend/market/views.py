@@ -91,7 +91,7 @@ class Items(viewsets.ModelViewSet):
         return ItemSerializerRead if self.action == "retrieve" else ItemSerializer
 
     def get_queryset(self):
-        return Item.objects.all()
+        return Item.objects.prefetch_related('sublet').all()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -176,13 +176,13 @@ class Items(viewsets.ModelViewSet):
         baths = params.get("baths", None)
 
         queryset = self.get_queryset()
-
         # Apply filters based on query parameters
 
         if seller.lower() == "true":
             queryset = queryset.filter(seller=request.user)
         else:
             queryset = queryset.filter(expires_at__gte=timezone.now())
+        
         if title:
             queryset = queryset.filter(title__icontains=title)
         if address:
@@ -210,9 +210,22 @@ class Items(viewsets.ModelViewSet):
             queryset = queryset.filter(beds=beds)
         if baths:
             queryset = queryset.filter(baths=baths)
+        if address:
+            queryset = queryset.filter(sublet__address__icontains=address)
+        if starts_before:
+            queryset = queryset.filter(sublet__start_date__lt=starts_before)
+        if starts_after:
+            queryset = queryset.filter(sublet__start_date__gt=starts_after)
+        if ends_before:
+            queryset = queryset.filter(sublet__end_date__lt=ends_before)
+        if ends_after:
+            queryset = queryset.filter(sublet__end_date__gt=ends_after)
+        if beds:
+            queryset = queryset.filter(sublet__beds=beds)
+        if baths:
+            queryset = queryset.filter(sublet__baths=baths)
 
         #record_analytics(Metric.SUBLET_BROWSE, request.user.username)
-
         # Serialize and return the queryset
         serializer = ItemSerializerSimple(queryset, many=True)
         return Response(serializer.data)

@@ -82,7 +82,6 @@ class ItemSerializer(serializers.ModelSerializer):
     # images = ItemImageURLSerializer(many=True, required=False)
 
     sublet = SubletSerializer(required=False)
-
     tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
     )
@@ -126,10 +125,17 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def contains_profanity(self, text):
         return predict([text])[0]
+    
+    def validate(self, data):
+        print(data)
+        if data.get('category').name=="Sublet" and data.get('sublet') is None:
+            raise serializers.ValidationError("Sublet item must have sublet data.")
+        if data.get('category').name!="Sublet" and (data.get('sublet') is not None or "sublet" not in data):
+            raise serializers.ValidationError("Only Sublet items can have sublet data.")
+        return data
 
     def create(self, validated_data):
         sublet_data = validated_data.pop('sublet', None)
-        print(validated_data)
         validated_data["seller"] = self.context["request"].user
         instance = super().create(validated_data)
 
@@ -182,6 +188,7 @@ class ItemSerializerRead(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
     )
+    sublet = SubletSerializer(read_only=True, required=False)
     images = ItemImageURLSerializer(many=True, required=False)
 
     class Meta:
@@ -208,6 +215,7 @@ class ItemSerializerSimple(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
     )
+    sublet = SubletSerializer(required=False)
     images = ItemImageURLSerializer(many=True, required=False)
 
     class Meta:
