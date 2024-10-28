@@ -65,9 +65,8 @@ class Item(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
     external_link = models.URLField(max_length=255, null=True, blank=True)
-    price = models.IntegerField()
+    price = models.FloatField()
     negotiable = models.BooleanField(default=True)
-    used = models.BooleanField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 

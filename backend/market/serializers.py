@@ -60,10 +60,29 @@ class ItemImageURLSerializer(serializers.ModelSerializer):
         fields = ["id", "image_url"]
 
 
+class SubletSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sublet
+        fields = [
+            'id',
+            'item',
+            'address',
+            'beds',
+            'baths',
+            'start_date',
+            'end_date'
+        ]
+        read_only_fields = ['id', 'item']
+    
+
+
 # complex item serializer for use in C/U/D + getting info about a singular tag
 class ItemSerializer(serializers.ModelSerializer):
     # amenities = ItemSerializer(many=True, required=False)
     # images = ItemImageURLSerializer(many=True, required=False)
+
+    sublet = SubletSerializer(required=False)
+
     tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
     )
@@ -81,16 +100,13 @@ class ItemSerializer(serializers.ModelSerializer):
             "id",
             "seller",
             "tags",
+            "sublet",
+            "category",
             "title",
-            "address",
-            "beds",
-            "baths",
             "description",
             "external_link",
             "price",
             "negotiable",
-            "start_date",
-            "end_date",
             "expires_at",
             # "images",
             # images are now created/deleted through a separate endpoint (see urls.py)
@@ -112,19 +128,37 @@ class ItemSerializer(serializers.ModelSerializer):
         return predict([text])[0]
 
     def create(self, validated_data):
+        sublet_data = validated_data.pop('sublet', None)
+        print(validated_data)
         validated_data["seller"] = self.context["request"].user
         instance = super().create(validated_data)
+
+        if sublet_data:
+            Sublet.objects.create(item=instance, **sublet_data)
+        
         instance.save()
         return instance
 
     # delete_images is a list of image ids to delete
     def update(self, instance, validated_data):
         # Check if the user is the seller before allowing the update
+        sublet_data = validated_data.pop('sublet', None)
         if (
             self.context["request"].user == instance.seller
             or self.context["request"].user.is_superuser
         ):
             instance = super().update(instance, validated_data)
+
+            if sublet_data:
+                if hasattr(instance, 'sublet'):
+                    # If Sublet already exists, update it
+                    for attr, value in sublet_data.items():
+                        setattr(instance.sublet, attr, value)
+                    instance.sublet.save()
+                else:
+                    # If Sublet doesn't exist, create a new one
+                    Sublet.objects.create(item=instance, **sublet_data)
+
             instance.save()
             return instance
         else:
@@ -136,13 +170,16 @@ class ItemSerializer(serializers.ModelSerializer):
             self.context["request"].user == instance.seller
             or self.context["request"].user.is_superuser
         ):
+            if hasattr(instance, 'sublet'):
+                instance.sublet.delete()
+
             instance.delete()
         else:
             raise serializers.ValidationError("You do not have permission to delete this item.")
 
 
 class ItemSerializerRead(serializers.ModelSerializer):
-    amenities = serializers.PrimaryKeyRelatedField(
+    tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
     )
     images = ItemImageURLSerializer(many=True, required=False)
@@ -153,17 +190,14 @@ class ItemSerializerRead(serializers.ModelSerializer):
         fields = [
             "id",
             "seller",
-            "amenities",
+            "tags",
+            "sublet",
+            "category",
             "title",
-            "address",
-            "beds",
-            "baths",
             "description",
             "external_link",
             "price",
             "negotiable",
-            "start_date",
-            "end_date",
             "expires_at",
             "images",
         ]
@@ -171,7 +205,7 @@ class ItemSerializerRead(serializers.ModelSerializer):
 
 # simple tag serializer for use when pulling all serializers/etc
 class ItemSerializerSimple(serializers.ModelSerializer):
-    amenities = serializers.PrimaryKeyRelatedField(
+    tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
     )
     images = ItemImageURLSerializer(many=True, required=False)
@@ -181,15 +215,14 @@ class ItemSerializerSimple(serializers.ModelSerializer):
         fields = [
             "id",
             "seller",
-            "amenities",
+            "tags",
+            "sublet",
+            "category",
             "title",
-            "address",
-            "beds",
-            "baths",
             "price",
             "negotiable",
-            "start_date",
-            "end_date",
             "images",
         ]
         read_only_fields = ["id", "seller"]
+
+

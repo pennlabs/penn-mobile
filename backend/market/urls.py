@@ -3,11 +3,12 @@ from rest_framework import routers
 
 from market.views import (
     Tags,
+    Categories,
     CreateImages,
     DeleteImage,
     Favorites,
     Offers,
-    Properties,
+    Items,
     UserFavorites,
     UserOffers,
 )
@@ -16,11 +17,13 @@ from market.views import (
 app_name = "market"
 
 router = routers.DefaultRouter()
-router.register(r"properties", Properties, basename="properties")
+router.register(r"items", Items, basename="properties")
 
 additional_urls = [
     # List of all amenities
     path("tags/", Tags.as_view(), name="tags"),
+    # List of all categories
+    path("categories/", Categories.as_view(), name="categories"),
     # All favorites for user
     path("favorites/", UserFavorites.as_view(), name="user-favorites"),
     # All offers made by user
@@ -29,7 +32,7 @@ additional_urls = [
     # post: add an item to the user's favorites
     # delete: remove an item from the user's favorites
     path(
-        "properties/<item_id>/favorites/",
+        "items/<item_id>/favorites/",
         Favorites.as_view({"post": "create", "delete": "destroy"}),
     ),
     # Offers
@@ -37,13 +40,13 @@ additional_urls = [
     # post: create an offer for an item
     # delete: delete an offer for an item
     path(
-        "properties/<item_id>/offers/",
+        "items/<item_id>/offers/",
         Offers.as_view({"get": "list", "post": "create", "delete": "destroy"}),
     ),
     # Image Creation
-    path("properties/<item_id>/images/", CreateImages.as_view()),
+    path("items/<item_id>/images/", CreateImages.as_view()),
     # Image Deletion
-    path("properties/images/<item_id>/", DeleteImage.as_view()),
+    path("items/images/<item_id>/", DeleteImage.as_view()),
 ]
 
 urlpatterns = router.urls + additional_urls

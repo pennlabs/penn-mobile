@@ -24,6 +24,7 @@ from market.serializers import (
     ItemSerializerRead,
     ItemSerializerRead,
     ItemSerializerSimple,
+    SubletSerializer,
 )
 from pennmobile.analytics import Metric, record_analytics
 
@@ -34,6 +35,16 @@ User = get_user_model()
 class Tags(generics.ListAPIView):
     serializer_class = TagSerializer
     queryset = Tag.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        temp = super().get(self, request, *args, **kwargs).data
+        response_data = [a["name"] for a in temp]
+        return Response(response_data)
+
+
+class Categories(generics.ListAPIView):
+    serializer_class = CategorySerializer
+    queryset = Category.objects.all()
 
     def get(self, request, *args, **kwargs):
         temp = super().get(self, request, *args, **kwargs).data
@@ -59,7 +70,7 @@ class UserOffers(generics.ListAPIView):
         return Offer.objects.filter(user=user)
 
 
-class Properties(viewsets.ModelViewSet):
+class Items(viewsets.ModelViewSet):
     """
     list:
     Returns a list of Items that match query parameters (e.g., amenities) and belong to the user.
@@ -128,11 +139,29 @@ class Properties(viewsets.ModelViewSet):
     #     item.save()
     # return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # Check if the user has permission to delete the Item and Sublet
+        if self.request.user == instance.seller or self.request.user.is_superuser:
+            # Delete associated Sublet if it exists
+            if hasattr(instance, 'sublet'):
+                instance.sublet.delete()
+
+            # Delete the Item
+            instance.delete()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            raise serializers.ValidationError("You do not have permission to delete this item.")
+        
+
     def list(self, request, *args, **kwargs):
         """Returns a list of Items that match query parameters and user ownership."""
-        # Get query parameters from request (e.g., amenities, user_owned)
+        # Get query parameters from request (e.g., tags, user_owned)
         params = request.query_params
-        amenities = params.getlist("amenities")
+        category = params.get("category")
+        tags = params.getlist("tags")
         title = params.get("title")
         address = params.get("address")
         seller = params.get("seller", "false")  # Defaults to False if not specified
@@ -158,9 +187,11 @@ class Properties(viewsets.ModelViewSet):
             queryset = queryset.filter(title__icontains=title)
         if address:
             queryset = queryset.filter(address__icontains=address)
-        if amenities:
-            for amenity in amenities:
-                queryset = queryset.filter(amenities__name=amenity)
+        if tags:
+            for tag in tags:
+                queryset = queryset.filter(tags__name=tag)
+        if category:
+            queryset = queryset.filter(category__name=category)
         if starts_before:
             queryset = queryset.filter(start_date__lt=starts_before)
         if starts_after:
