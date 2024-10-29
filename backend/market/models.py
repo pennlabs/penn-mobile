@@ -10,8 +10,8 @@ class Offer(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=["user", "item"], name="unique_offer_market")]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="offers_made_market")
-    item = models.ForeignKey("Item", on_delete=models.CASCADE, related_name="offers")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    item = models.ForeignKey("Item", on_delete=models.CASCADE)
     email = models.EmailField(max_length=255, null=True, blank=True)
     phone_number = PhoneNumberField(null=True, blank=True)
     message = models.CharField(max_length=255, blank=True)
@@ -22,23 +22,6 @@ class Offer(models.Model):
 
 
 class Category(models.Model):
-    '''
-    Current categories include:
-    SUBLET = "sublet"
-    APPLIANCE = "appliance"
-    COOKWARE = "cookware"
-    FOOD = "food"
-    BOOK = "book"
-    ELECTRONICS = "electronics"
-    FURNITURE = "furniture"
-    CLOTHING = "clothing"
-    TRANSPORTATION = "transportation"
-    ROOMDECOR = "roomdecor"
-    SPORTS = "sports"
-    TICKETS = "tickets"
-    GIFTCARD = "giftcard"
-    OTHER = "other"
-    '''
     name = models.CharField(max_length=50, primary_key=True)
     
     def __str__(self):
@@ -54,12 +37,12 @@ class Tag(models.Model):
 
 
 class Item(models.Model):
-    seller = models.ForeignKey(User, on_delete=models.CASCADE)
+    seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name="items_listed")
     buyers = models.ManyToManyField(
         User, through=Offer, related_name="items_offered", blank=True
     )
-    tags = models.ManyToManyField(Tag, related_name="items", blank=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="items")
+    tags = models.ManyToManyField(Tag, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
     favorites = models.ManyToManyField(User, related_name="items_favorited", blank=True)
 
     title = models.CharField(max_length=255)
@@ -75,7 +58,7 @@ class Item(models.Model):
 
 
 class Sublet(models.Model):
-    item = models.OneToOneField(Item, on_delete=models.CASCADE, related_name="sublet")
+    item = models.OneToOneField(Item, on_delete=models.CASCADE)
     address = models.CharField(max_length=255)
     beds = models.IntegerField()
     baths = models.IntegerField()
@@ -83,6 +66,7 @@ class Sublet(models.Model):
     end_date = models.DateTimeField()
 
 
+# TODO: Verify that this S2 bucket exists. Check if we need to make it manually or will Django make it for us?
 class ItemImage(models.Model):
-    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="images")
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="marketplace/images")
