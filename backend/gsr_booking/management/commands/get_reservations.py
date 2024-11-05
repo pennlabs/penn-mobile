@@ -27,7 +27,7 @@ class Command(BaseCommand):
     Note: --start/--end and --current are mutually exclusive
     """
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser) -> None:
         # optional flags
         parser.add_argument("--group", type=str, default=None)
         parser.add_argument("--start", type=str, default=None)
@@ -36,7 +36,7 @@ class Command(BaseCommand):
         parser.add_argument("--time", type=bool, default=False)
         parser.add_argument("--user", type=bool, default=False)
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         group = kwargs["group"]
         start = kwargs["start"]
         end = kwargs["end"]
@@ -83,7 +83,7 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Number of reservations: {reservations.count()}")
 
-    def __convert_date(self, date_str):
+    def __convert_date(self, date_str: str) -> datetime | None:
         """
         Converts string in format YYYY-MM-DD to datetime object.
         Returns None if string is not in correct format.

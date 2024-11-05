@@ -1,5 +1,6 @@
 import datetime
 import json
+from typing import Any
 
 import requests
 from django.conf import settings
@@ -16,14 +17,14 @@ OPEN_DATA_ENDPOINTS = {"VENUES": OPEN_DATA_URL + "venues", "MENUS": OPEN_DATA_UR
 
 
 class DiningAPIWrapper:
-    def __init__(self):
+    def __init__(self) -> None:
         self.token = None
         self.expiration = timezone.localtime()
         self.openid_endpoint = (
             "https://sso.apps.k8s.upenn.edu/auth/realms/master/protocol/openid-connect/token"
         )
 
-    def update_token(self):
+    def update_token(self) -> None:
         if self.expiration > timezone.localtime():
             return
         body = {
@@ -37,7 +38,7 @@ class DiningAPIWrapper:
         self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
         self.token = response["access_token"]
 
-    def request(self, *args, **kwargs):
+    def request(self, *args, **kwargs) -> requests.Response:
         """Make a signed request to the dining API."""
         self.update_token()
 
@@ -54,7 +55,7 @@ class DiningAPIWrapper:
         except (ConnectTimeout, ReadTimeout, ConnectionError):
             raise APIError("Dining: Connection timeout")
 
-    def get_venues(self):
+    def get_venues(self) -> list[dict[str, Any]]:
         results = []
         venues_route = OPEN_DATA_ENDPOINTS["VENUES"]
         response = self.request("GET", venues_route)
@@ -107,7 +108,7 @@ class DiningAPIWrapper:
             results.append(value)
         return results
 
-    def load_menu(self, date=timezone.now().date()):
+    def load_menu(self, date: datetime.date = timezone.now().date()) -> None:
         """
         Loads the weeks menu starting from today
         NOTE: This method should only be used in load_next_menu.py, which is
@@ -147,7 +148,9 @@ class DiningAPIWrapper:
                 # Append stations to dining menu
                 self.load_stations(daypart["stations"], dining_menu)
 
-    def load_stations(self, station_response, dining_menu):
+    def load_stations(
+        self, station_response: list[dict[str, Any]], dining_menu: DiningMenu
+    ) -> None:
         for station_data in station_response:
             # TODO: This is inefficient for venues such as Houston Market
             station = DiningStation.objects.create(name=station_data["label"], menu=dining_menu)
@@ -158,7 +161,7 @@ class DiningAPIWrapper:
             station.items.add(*items)
             station.save()
 
-    def load_items(self, item_response):
+    def load_items(self, item_response: dict[str, Any]) -> None:
         item_list = [
             DiningItem(
                 item_id=key,

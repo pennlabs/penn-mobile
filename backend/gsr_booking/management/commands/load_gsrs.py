@@ -6,7 +6,7 @@ from gsr_booking.models import GSR
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
 
         with open("gsr_booking/data/gsr_data.csv") as data:
             reader = csv.reader(data)

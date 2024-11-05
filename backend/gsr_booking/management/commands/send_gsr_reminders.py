@@ -11,7 +11,7 @@ from user.notifications import send_push_notifications
 class Command(BaseCommand):
     help = "Sends reminders for the GSR Bookings."
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
 
         # iterate through all reservations scheduled for the next 30 minutes
         for reservation in Reservation.objects.filter(

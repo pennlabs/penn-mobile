@@ -1,4 +1,5 @@
 import datetime
+from typing import Optional
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
@@ -20,7 +21,7 @@ ALL_DAY = "all day"
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         now = timezone.localtime()
         current_month, current_year = now.month, now.year
 
@@ -117,7 +118,7 @@ class Command(BaseCommand):
 
         self.stdout.write("Uploaded Penn Today Events!")
 
-    def connect_and_parse_html(self, event_url, condition):
+    def connect_and_parse_html(self, event_url: str, condition: EC) -> Optional[str]:
         try:
             options = Options()
             options.add_argument("--headless")
@@ -137,7 +138,7 @@ class Command(BaseCommand):
             print("Connection Error to webdriver")
             return None
 
-    def get_end_time(self, event_url):
+    def get_end_time(self, event_url: str) -> Optional[str]:
         end_time_soup = self.connect_and_parse_html(
             event_url, EC.presence_of_element_located((By.CLASS_NAME, "event__topper-content"))
         )

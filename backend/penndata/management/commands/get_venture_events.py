@@ -14,7 +14,7 @@ HEADERS = {"User-Agent": "Mozilla/5.0 AppleWebKit/537.36 Chrome/91.0.4472.124 Sa
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         now = timezone.localtime()
         current_month, current_year = now.month, now.year
 

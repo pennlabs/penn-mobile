@@ -4,7 +4,7 @@ from penndata.models import FitnessRoom
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         fitness_rooms = [
             "4th Floor Fitness",
             "3rd Floor Fitness",

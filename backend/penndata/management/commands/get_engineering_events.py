@@ -12,7 +12,7 @@ ENGINEERING_EVENTS_WEBSITE = "https://events.seas.upenn.edu/calendar/list/"
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         try:
             resp = requests.get(ENGINEERING_EVENTS_WEBSITE)
         except ConnectionError:

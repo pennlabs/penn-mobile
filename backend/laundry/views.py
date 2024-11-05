@@ -2,11 +2,12 @@ import calendar
 import datetime
 
 from django.core.cache import cache
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from requests.exceptions import HTTPError
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -22,7 +23,7 @@ class Ids(APIView):
     GET: returns list of all hall_ids
     """
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         return Response(LaundryRoomSerializer(LaundryRoom.objects.all(), many=True).data)
 
 
@@ -31,7 +32,7 @@ class HallInfo(APIView):
     GET: returns list of a particular hall, its respective machines and machine details
     """
 
-    def get(self, request, hall_id):
+    def get(self, request: Request, hall_id: int) -> Response:
         try:
             return Response(hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id)))
         except HTTPError:
@@ -43,7 +44,7 @@ class MultipleHallInfo(APIView):
     GET: returns list of hall information as well as hall usage
     """
 
-    def get(self, request, hall_ids):
+    def get(self, request: Request, hall_ids: str) -> Response:
         halls = [int(x) for x in hall_ids.split(",")]
         output = {"rooms": []}
 
@@ -63,10 +64,10 @@ class HallUsage(APIView):
     GET: returns usage data for dryers and washers of a particular hall
     """
 
-    def safe_division(a, b):
+    def safe_division(a: int | None, b: int | None) -> float | None:
         return round(a / float(b), 3) if b > 0 else 0
 
-    def get_snapshot_info(hall_id):
+    def get_snapshot_info(hall_id: int) -> tuple[LaundryRoom, QuerySet[LaundrySnapshot]]:
         # filters for LaundrySnapshots within timeframe
         room = get_object_or_404(LaundryRoom, hall_id=hall_id)
 
@@ -83,7 +84,7 @@ class HallUsage(APIView):
         snapshots = LaundrySnapshot.objects.filter(filter).order_by("-date")
         return (room, snapshots)
 
-    def compute_usage(hall_id):
+    def compute_usage(hall_id: int) -> Response:
         try:
             (room, snapshots) = HallUsage.get_snapshot_info(hall_id)
         except ValueError:
@@ -135,7 +136,7 @@ class HallUsage(APIView):
 
         return content
 
-    def get(self, request, hall_id):
+    def get(self, request: Request, hall_id: int) -> Response:
         return Response(HallUsage.compute_usage(hall_id))
 
 
@@ -150,7 +151,7 @@ class Preferences(APIView):
     permission_classes = [IsAuthenticated]
     key = "laundry_preferences:{user_id}"
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         key = self.key.format(user_id=request.user.id)
         cached_preferences = cache.get(key)
         if cached_preferences is None:
@@ -160,7 +161,7 @@ class Preferences(APIView):
 
         return Response({"rooms": cached_preferences})
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         key = self.key.format(user_id=request.user.id)
         profile = request.user.profile
         preferences = profile.laundry_preferences
@@ -187,7 +188,7 @@ class Status(APIView):
     GET: returns Response according to whether or not Penn Laundry API is working or not
     """
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         if check_is_working():
             return Response({"is_working": True, "error_msg": None})
         else:

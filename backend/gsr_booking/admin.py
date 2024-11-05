@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.db.models import QuerySet
+from rest_framework.request import Request
 
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 
@@ -9,10 +11,10 @@ class GroupMembershipInline(admin.TabularInline):
 
     readonly_fields = ["name"]
 
-    def name(self, obj):
+    def name(self, obj: GroupMembership) -> str:
         return obj.user.get_full_name()
 
-    def get_fields(self, request, obj=None):
+    def get_fields(self, request, obj=None) -> list[str]:
         fields = super().get_fields(request, obj)
         to_remove = ["user", "name"]
         return ["name"] + [f for f in fields if f not in to_remove]
@@ -31,7 +33,7 @@ class GroupMembershipAdmin(admin.ModelAdmin):
 
 
 class GSRAdmin(admin.ModelAdmin):
-    def get_queryset(self, request):
+    def get_queryset(self, request: Request) -> QuerySet[GSR]:
         return GSR.all_objects.all()
 
     list_display = ["name", "kind", "lid", "gid", "in_use"]

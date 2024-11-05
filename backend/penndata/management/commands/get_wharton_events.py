@@ -13,7 +13,7 @@ WHARTON_EVENTS_WEBSITE = "https://events.wharton.upenn.edu/events-hq/#list"
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         eastern = pytz.timezone("US/Eastern")
 
         try:

@@ -8,7 +8,7 @@ from gsr_booking.models import Group, GroupMembership, GSRBooking, Reservation
 class Command(BaseCommand):
     help = "Provides visiblity data for Penn Labs Group GSRs."
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         group = Group.objects.get(name="Penn Labs")
         reservations = Reservation.objects.filter(
             group=group, is_cancelled=False, start__gte=timezone.now()

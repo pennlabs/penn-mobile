@@ -10,7 +10,7 @@ class Command(BaseCommand):
     Loads Venues based on CSV
     """
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
 
         with open("dining/data/dining_venues.csv") as data:
             reader = csv.reader(data)

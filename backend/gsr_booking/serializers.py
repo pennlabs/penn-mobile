@@ -1,9 +1,16 @@
+from typing import TYPE_CHECKING, Any, TypeAlias
+
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User as DjangoUser
+
+UserType: TypeAlias = "DjangoUser"
+ValidatedData: TypeAlias = dict[str, Any]
 User = get_user_model()
 
 
@@ -16,7 +23,7 @@ class GroupRoomBookingRequestSerializer(serializers.Serializer):
 
     is_wharton = serializers.SerializerMethodField()
 
-    def get_is_wharton(self, obj):
+    def get_is_wharton(self, obj: ValidatedData) -> bool:
         return obj["lid"] == 1
 
 
@@ -54,7 +61,7 @@ class GroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = ["owner", "memberships", "name", "color", "id"]
 
-    def create(self, validated_data):
+    def create(self, validated_data: ValidatedData) -> Group:
         request = self.context.get("request", None)
         if request is None:
             return super().create(validated_data)
@@ -66,17 +73,17 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class GroupField(serializers.RelatedField):
-    def to_representation(self, value):
+    def to_representation(self, value: Group) -> dict[str, Any]:
         return {"name": value.name, "id": value.id, "color": value.color}
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: ValidatedData) -> None:
         return None  # TODO: If you want to update based on BookingField, implement this.
 
 
 class UserSerializer(serializers.ModelSerializer):
     booking_groups = serializers.SerializerMethodField()
 
-    def get_booking_groups(self, obj):
+    def get_booking_groups(self, obj: UserType) -> list[dict[str, Any]]:
         result = []
         for membership in GroupMembership.objects.filter(accepted=True, user=obj):
             result.append(

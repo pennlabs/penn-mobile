@@ -1,13 +1,16 @@
 import datetime
 from datetime import timedelta
+from typing import Any, TypeAlias
 
 import requests
 from bs4 import BeautifulSoup
+from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from requests.exceptions import ConnectionError
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -28,12 +31,18 @@ from penndata.serializers import (
 )
 
 
+ValidatedData: TypeAlias = dict[str, Any]
+CalendarEventList: TypeAlias = QuerySet[CalendarEvent]
+EventList: TypeAlias = QuerySet[Event]
+HomePageOrderList: TypeAlias = QuerySet[HomePageOrder]
+
+
 class News(APIView):
     """
     GET: Get's news article from the DP
     """
 
-    def get_article(self):
+    def get_article(self) -> dict[str, Any] | None:
         article = {"source": "The Daily Pennsylvanian"}
         try:
             headers = {
@@ -79,7 +88,7 @@ class News(APIView):
         else:
             return None
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         article = self.get_article()
         if article:
             return Response(article)
@@ -95,7 +104,7 @@ class Calendar(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = CalendarEventSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> CalendarEventList:
         return CalendarEvent.objects.filter(
             date_obj__gte=timezone.localtime(),
             date_obj__lte=timezone.localtime() + timedelta(days=30),
@@ -111,7 +120,7 @@ class Events(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = EventSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> EventList:
         queryset = Event.objects.all()
 
         event_type = self.kwargs.get("type")
@@ -139,7 +148,7 @@ class HomePageOrdering(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = HomePageOrderSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> HomePageOrderList:
         return HomePageOrder.objects.all()
 
 
@@ -151,15 +160,17 @@ class HomePage(APIView):
     permission_classes = [IsAuthenticated]
 
     class Cell:
-        def __init__(self, myType, myInfo=None, myWeight=0):
+        def __init__(
+            self, myType: str, myInfo: ValidatedData | None = None, myWeight: int = 0
+        ) -> None:
             self.type = myType
             self.info = myInfo
             self.weight = myWeight
 
-        def getCell(self):
+        def getCell(self) -> dict[str, Any]:
             return {"type": self.type, "info": self.info}
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
 
         # NOTE: accept arguments: ?version=
 
@@ -231,7 +242,7 @@ class FitnessRoomView(generics.ListAPIView):
         6: (9, 22),
     }
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         response = super().get(self, request)
         # also add last_updated and open/close times to each room in response
         for room in response.data:
@@ -252,10 +263,17 @@ class FitnessRoomView(generics.ListAPIView):
 
 
 class FitnessUsage(APIView):
-    def safe_add(self, a, b):
+    def safe_add(self, a: int | None, b: int | None) -> int | None:
         return None if a is None and b is None else (a or 0) + (b or 0)
 
-    def linear_interpolate(self, before_val, after_val, before_date, current_date, after_date):
+    def linear_interpolate(
+        self,
+        before_val: int | None,
+        after_val: int | None,
+        before_date: datetime.datetime,
+        current_date: datetime.datetime,
+        after_date: datetime.datetime,
+    ) -> int | None:
         return (
             before_val
             + (after_val - before_val)
@@ -263,7 +281,9 @@ class FitnessUsage(APIView):
             / (after_date - before_date).total_seconds()
         )
 
-    def get_usage_on_date(self, room, date, field):
+    def get_usage_on_date(
+        self, room: FitnessRoom, date: datetime.date, field: str
+    ) -> list[int | None]:
         """
         Returns the number of people in the fitness center on a given date per hour
         """
@@ -324,7 +344,9 @@ class FitnessUsage(APIView):
             return [None] * 24
         return usage
 
-    def get_usage(self, room, date, num_samples, group_by, field):
+    def get_usage(
+        self, room: FitnessRoom, date: datetime.date, num_samples: int, group_by: str, field: str
+    ) -> tuple[list[int | None], datetime.date, datetime.date]:
         unit = 1 if group_by == "day" else 7  # skip by 1 or 7 days
         usage_aggs = [(None, 0)] * 24  # (sum, count) for each hour
         min_date = timezone.localtime().date()
@@ -345,7 +367,7 @@ class FitnessUsage(APIView):
         ret = [(sum / count) if count else None for (sum, count) in usage_aggs]
         return ret, min_date, max_date
 
-    def get(self, request, room_id):
+    def get(self, request: Request, room_id: int) -> Response:
         """
         GET: returns the usage in terms of count or capacity of a fitness center for a given date
         per hour aggregated by day or week for a given number of days
@@ -395,14 +417,14 @@ class FitnessPreferences(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
 
         preferences = request.user.profile.fitness_preferences.all()
 
         # returns all ids in a person's preferences
         return Response({"rooms": preferences.values_list("id", flat=True)})
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
 
         if "rooms" not in request.data:
             return Response({"success": False, "error": "No rooms provided"})
@@ -431,7 +453,7 @@ class UniqueCounterView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         query = dict()
         if "post_id" in request.query_params:
             query["post__id"] = request.query_params["post_id"]

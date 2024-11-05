@@ -13,7 +13,7 @@ class Command(BaseCommand):
     the next 7 days, including the original date.
     """
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         d = DiningAPIWrapper()
         d.load_menu(timezone.now().date() + datetime.timedelta(days=6))
         self.stdout.write("Loaded new Dining Menu!")

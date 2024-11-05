@@ -7,7 +7,7 @@ from penndata.models import FitnessRoom
 class Command(BaseCommand):
     help = "Renames fitness rooms."
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         for room in FitnessRoom.objects.all():
             room.name = cap_string(room.name)
             room.save()

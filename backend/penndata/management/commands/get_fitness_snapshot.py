@@ -1,3 +1,5 @@
+import datetime
+
 import requests
 from bs4 import BeautifulSoup
 from dateutil import parser
@@ -7,11 +9,11 @@ from django.utils import timezone
 from penndata.models import FitnessRoom, FitnessSnapshot
 
 
-def cap_string(s):
+def cap_string(s: str) -> str:
     return " ".join([word[0].upper() + word[1:] for word in s.split()])
 
 
-def get_usages():
+def get_usages() -> tuple[dict[str, dict[str, int | float]], datetime.datetime]:
 
     # count/capacities default to 0 since spreadsheet number appears blank if no one there
     locations = [
@@ -66,7 +68,7 @@ def get_usages():
 class Command(BaseCommand):
     help = "Captures a new Fitness Snapshot for every Laundry room."
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         usage_by_location, date = get_usages()
 
         # prevent double creating FitnessSnapshots
