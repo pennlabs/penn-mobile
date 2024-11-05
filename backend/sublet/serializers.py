@@ -1,31 +1,45 @@
+from datetime import datetime
+from typing import Any, Optional, cast
+
 from phonenumber_field.serializerfields import PhoneNumberField
 from profanity_check import predict
 from rest_framework import serializers
+from rest_framework.request import Request
 
 from sublet.models import Amenity, Offer, Sublet, SubletImage
 
 
-class AmenitySerializer(serializers.ModelSerializer):
+class BaseModelSerializer(serializers.ModelSerializer):
+    def get_request(self) -> Request:
+        return cast(Request, self.context.get("request"))
+
+
+class AmenitySerializer(BaseModelSerializer):
+    name: str = serializers.CharField(max_length=255)
+
     class Meta:
         model = Amenity
         fields = "__all__"
 
 
-class OfferSerializer(serializers.ModelSerializer):
-    phone_number = PhoneNumberField()
+class OfferSerializer(BaseModelSerializer):
+    phone_number: str = PhoneNumberField()
+    email: Optional[str] = serializers.EmailField(allow_null=True)
+    message: str = serializers.CharField(max_length=255)
+    created_date: datetime = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Offer
         fields = "__all__"
         read_only_fields = ["id", "created_date", "user"]
 
-    def create(self, validated_data):
-        validated_data["user"] = self.context["request"].user
+    def create(self, validated_data: dict[str, Any]) -> Offer:
+        validated_data["user"] = self.get_request().user
         return super().create(validated_data)
 
 
 # Create/Update Image Serializer
-class SubletImageSerializer(serializers.ModelSerializer):
+class SubletImageSerializer(BaseModelSerializer):
     image = serializers.ImageField(write_only=True, required=False, allow_null=True)
 
     class Meta:
@@ -34,20 +48,19 @@ class SubletImageSerializer(serializers.ModelSerializer):
 
 
 # Browse images
-class SubletImageURLSerializer(serializers.ModelSerializer):
+class SubletImageURLSerializer(BaseModelSerializer):
     image_url = serializers.SerializerMethodField("get_image_url")
 
-    def get_image_url(self, obj):
-        image = obj.image
-
-        if not image:
+    def get_image_url(self, obj) -> Optional[str]:
+        if not obj.image:
             return None
-        if image.url.startswith("http"):
-            return image.url
-        elif "request" in self.context:
-            return self.context["request"].build_absolute_uri(image.url)
-        else:
-            return image.url
+
+        image_url = obj.image.url
+        if image_url.startswith("http"):
+            return image_url
+
+        request = self.get_request()
+        return request.build_absolute_uri(image_url) if request else image_url
 
     class Meta:
         model = SubletImage
@@ -55,10 +68,10 @@ class SubletImageURLSerializer(serializers.ModelSerializer):
 
 
 # complex sublet serializer for use in C/U/D + getting info about a singular sublet
-class SubletSerializer(serializers.ModelSerializer):
+class SubletSerializer(BaseModelSerializer):
     # amenities = AmenitySerializer(many=True, required=False)
     # images = SubletImageURLSerializer(many=True, required=False)
-    amenities = serializers.PrimaryKeyRelatedField(
+    amenities: list[Amenity] = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Amenity.objects.all(), required=False
     )
 
@@ -92,54 +105,48 @@ class SubletSerializer(serializers.ModelSerializer):
             # but gets on sublets will include ids/urls for images
         ]
 
-    def validate_title(self, value):
-        if self.contains_profanity(value):
-            raise serializers.ValidationError("The title contains inappropriate language.")
-        return value
+    def _validate_text_content(self, text: str, field_name: str) -> str:
+        """Validates text content for profanity"""
+        if predict([text])[0]:
+            raise serializers.ValidationError(f"The {field_name} contains inappropriate language.")
+        return text
 
-    def validate_description(self, value):
-        if self.contains_profanity(value):
-            raise serializers.ValidationError("The description contains inappropriate language.")
-        return value
+    def validate_title(self, value: str) -> str:
+        return self._validate_text_content(value, "title")
 
-    def contains_profanity(self, text):
-        return predict([text])[0]
+    def validate_description(self, value: str) -> str:
+        return self._validate_text_content(value, "description")
 
-    def create(self, validated_data):
-        validated_data["subletter"] = self.context["request"].user
+    def create(self, validated_data: dict[str, Any]) -> Sublet:
+        validated_data["subletter"] = self.get_request().user
         instance = super().create(validated_data)
         instance.save()
         return instance
 
     # delete_images is a list of image ids to delete
-    def update(self, instance, validated_data):
+    def update(self, instance: Sublet, validated_data: dict[str, Any]) -> Sublet:
         # Check if the user is the subletter before allowing the update
-        if (
-            self.context["request"].user == instance.subletter
-            or self.context["request"].user.is_superuser
-        ):
+        user = self.get_request().user
+        if user == instance.subletter or user.is_superuser:
             instance = super().update(instance, validated_data)
             instance.save()
             return instance
-        else:
-            raise serializers.ValidationError("You do not have permission to update this sublet.")
+        raise serializers.ValidationError("You do not have permission to update this sublet.")
 
-    def destroy(self, instance):
+    def destroy(self, instance: Sublet) -> None:
         # Check if the user is the subletter before allowing the delete
-        if (
-            self.context["request"].user == instance.subletter
-            or self.context["request"].user.is_superuser
-        ):
+        user = self.get_request().user
+        if user == instance.subletter or user.is_superuser:
             instance.delete()
         else:
             raise serializers.ValidationError("You do not have permission to delete this sublet.")
 
 
-class SubletSerializerRead(serializers.ModelSerializer):
-    amenities = serializers.PrimaryKeyRelatedField(
+class SubletSerializerRead(BaseModelSerializer):
+    amenities: list[Amenity] = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Amenity.objects.all(), required=False
     )
-    images = SubletImageURLSerializer(many=True, required=False)
+    images: list[SubletImage] = SubletImageURLSerializer(many=True, required=False)
 
     class Meta:
         model = Sublet
@@ -162,13 +169,19 @@ class SubletSerializerRead(serializers.ModelSerializer):
             "images",
         ]
 
+    def to_representation(self, instance: Sublet) -> dict[str, Any]:
+        """Override to ensure proper typing of returned data"""
+        data = super().to_representation(instance)
+        assert isinstance(data, dict)
+        return data
+
 
 # simple sublet serializer for use when pulling all serializers/etc
-class SubletSerializerSimple(serializers.ModelSerializer):
-    amenities = serializers.PrimaryKeyRelatedField(
+class SubletSerializerSimple(BaseModelSerializer):
+    amenities: list[Amenity] = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Amenity.objects.all(), required=False
     )
-    images = SubletImageURLSerializer(many=True, required=False)
+    images: list[SubletImage] = SubletImageURLSerializer(many=True, required=False)
 
     class Meta:
         model = Sublet
@@ -187,3 +200,9 @@ class SubletSerializerSimple(serializers.ModelSerializer):
             "images",
         ]
         read_only_fields = ["id", "subletter"]
+
+    def to_representation(self, instance: Sublet) -> dict[str, Any]:
+        """Override to ensure proper typing of returned data"""
+        data = super().to_representation(instance)
+        assert isinstance(data, dict)
+        return data
