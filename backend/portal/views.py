@@ -1,10 +1,13 @@
+from typing import Any, Dict, List, TypeAlias
+
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Q
+from django.db.models import Count, Q, QuerySet
 from django.db.models.functions import Trunc
 from django.utils import timezone
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -35,6 +38,14 @@ from portal.serializers import (
 )
 
 
+PollQuerySet: TypeAlias = QuerySet[Poll]
+PostQuerySet: TypeAlias = QuerySet[Post]
+PollVoteQuerySet: TypeAlias = QuerySet[PollVote]
+ClubData: TypeAlias = List[Dict[str, Any]]
+PollOptionQuerySet: TypeAlias = QuerySet[PollOption]
+TimeSeriesData: TypeAlias = Dict[str, Any]
+VoteStatistics: TypeAlias = Dict[str, Any]
+
 User = get_user_model()
 
 
@@ -43,7 +54,7 @@ class UserInfo(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         return Response({"user": get_user_info(request.user)})
 
 
@@ -52,10 +63,11 @@ class UserClubs(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        club_data = []
-        for club in get_user_clubs(request.user):
-            club_data.append(get_club_info(request.user, club["club"]["code"]))
+    def get(self, request: Request) -> Response:
+        club_data: ClubData = [
+            get_club_info(request.user, club["club"]["code"])
+            for club in get_user_clubs(request.user)
+        ]
         return Response({"clubs": club_data})
 
 
@@ -90,7 +102,7 @@ class Polls(viewsets.ModelViewSet):
     permission_classes = [PollOwnerPermission | IsSuperUser]
     serializer_class = PollSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> PollQuerySet:
         # all polls if superuser, polls corresponding to club for regular user
         return (
             Poll.objects.all()
@@ -101,7 +113,7 @@ class Polls(viewsets.ModelViewSet):
         )
 
     @action(detail=False, methods=["post"])
-    def browse(self, request):
+    def browse(self, request: Request) -> Response:
         """Returns list of all possible polls user can answer but has yet to
         For admins, returns list of all polls they have not voted for and have yet to expire
         """
@@ -156,14 +168,14 @@ class Polls(viewsets.ModelViewSet):
         )
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
-    def review(self, request):
+    def review(self, request: Request) -> Response:
         """Returns list of all Polls that admins still need to approve of"""
         return Response(
             RetrievePollSerializer(Poll.objects.filter(status=Poll.STATUS_DRAFT), many=True).data
         )
 
     @action(detail=True, methods=["get"])
-    def option_view(self, request, pk=None):
+    def option_view(self, request: Request, pk: int = None) -> Response:
         """Returns information on specific poll, including options and vote counts"""
         return Response(RetrievePollSerializer(Poll.objects.filter(id=pk).first(), many=False).data)
 
@@ -184,7 +196,7 @@ class PollOptions(viewsets.ModelViewSet):
     permission_classes = [OptionOwnerPermission | IsSuperUser]
     serializer_class = PollOptionSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> PollOptionQuerySet:
         # if user is admin, they can update anything
         # if user is not admin, they can only update their own options
         return (
@@ -207,11 +219,11 @@ class PollVotes(viewsets.ModelViewSet):
     permission_classes = [PollOwnerPermission | IsSuperUser]
     serializer_class = PollVoteSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> PollVoteQuerySet:
         return PollVote.objects.none()
 
     @action(detail=False, methods=["post"])
-    def recent(self, request):
+    def recent(self, request: Request) -> Response:
 
         id_hash = request.data["id_hash"]
 
@@ -219,14 +231,14 @@ class PollVotes(viewsets.ModelViewSet):
         return Response(RetrievePollVoteSerializer(poll_votes).data)
 
     @action(detail=False, methods=["post"])
-    def all(self, request):
+    def all(self, request: Request) -> Response:
 
         id_hash = request.data["id_hash"]
 
         poll_votes = PollVote.objects.filter(id_hash=id_hash).order_by("-created_date")
         return Response(RetrievePollVoteSerializer(poll_votes, many=True).data)
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         record_analytics(Metric.PORTAL_POLL_VOTED, request.user.username)
         return super().create(request, *args, **kwargs)
 
@@ -236,17 +248,20 @@ class PollVoteStatistics(APIView):
 
     permission_classes = [TimeSeriesPermission | IsSuperUser]
 
-    def get(self, request, poll_id):
-        return Response(
-            {
-                "time_series": PollVote.objects.filter(poll__id=poll_id)
-                .annotate(date=Trunc("created_date", "day"))
-                .values("date")
-                .annotate(votes=Count("date"))
-                .order_by("date"),
-                "poll_statistics": get_demographic_breakdown(poll_id),
-            }
+    def get(self, request: Request, poll_id: int) -> Response:
+        time_series = (
+            PollVote.objects.filter(poll__id=poll_id)
+            .annotate(date=Trunc("created_date", "day"))
+            .values("date")
+            .annotate(votes=Count("date"))
+            .order_by("date")
         )
+
+        statistics: VoteStatistics = {
+            "time_series": time_series,
+            "poll_statistics": get_demographic_breakdown(poll_id),
+        }
+        return Response(statistics)
 
 
 class Posts(viewsets.ModelViewSet):
@@ -270,7 +285,7 @@ class Posts(viewsets.ModelViewSet):
     permission_classes = [PostOwnerPermission | IsSuperUser]
     serializer_class = PostSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> PostQuerySet:
         return (
             Post.objects.all()
             if self.request.user.is_superuser
@@ -280,7 +295,7 @@ class Posts(viewsets.ModelViewSet):
         )
 
     @action(detail=False, methods=["get"])
-    def browse(self, request):
+    def browse(self, request: Request) -> Response:
         """
         Returns a list of all posts that are targeted at the current user
         For admins, returns list of posts that they have not approved and have yet to expire
@@ -318,7 +333,7 @@ class Posts(viewsets.ModelViewSet):
         )
 
     @action(detail=False, methods=["get"], permission_classes=[IsSuperUser])
-    def review(self, request):
+    def review(self, request: Request) -> Response:
         """Returns a list of all Posts that admins still need to approve of"""
         return Response(
             PostSerializer(Post.objects.filter(status=Poll.STATUS_DRAFT), many=True).data

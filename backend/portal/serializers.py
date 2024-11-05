@@ -1,7 +1,13 @@
+from typing import Any, Dict, List, TypeAlias
+
 from rest_framework import serializers
 
 from portal.logic import check_targets, get_user_clubs, get_user_populations
 from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
+
+
+ClubCode: TypeAlias = str
+ValidationData: TypeAlias = Dict[str, Any]
 
 
 class TargetPopulationSerializer(serializers.ModelSerializer):
@@ -28,8 +34,8 @@ class PollSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_date")
 
-    def create(self, validated_data):
-        club_code = validated_data["club_code"]
+    def create(self, validated_data: ValidationData) -> Poll:
+        club_code: ClubCode = validated_data["club_code"]
         # ensures user is part of club
         if club_code not in [
             x["club"]["code"] for x in get_user_clubs(self.context["request"].user)
@@ -78,7 +84,7 @@ class PollSerializer(serializers.ModelSerializer):
 
         return super().create(validated_data)
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Poll, validated_data: ValidationData) -> Poll:
         # if Poll is updated, then approve should be false
         if not self.context["request"].user.is_superuser:
             validated_data["status"] = Poll.STATUS_DRAFT
@@ -96,7 +102,7 @@ class PollOptionSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "vote_count")
 
-    def create(self, validated_data):
+    def create(self, validated_data: ValidationData) -> PollOption:
         poll_options_count = PollOption.objects.filter(poll=validated_data["poll"]).count()
         if poll_options_count >= 5:
             raise serializers.ValidationError(
@@ -142,7 +148,7 @@ class PollVoteSerializer(serializers.ModelSerializer):
             "created_date",
         )
 
-    def create(self, validated_data):
+    def create(self, validated_data: ValidationData) -> PollVote:
 
         options = validated_data["poll_options"]
         id_hash = validated_data["id_hash"]
@@ -209,7 +215,7 @@ class PostSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(write_only=True, required=False, allow_null=True)
     image_url = serializers.SerializerMethodField("get_image_url")
 
-    def get_image_url(self, obj):
+    def get_image_url(self, obj: Post) -> str | None:
         # use thumbnail if exists
         image = obj.image
 
@@ -243,7 +249,9 @@ class PostSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_date", "target_populations")
 
-    def parse_target_populations(self, raw_target_populations):
+    def parse_target_populations(
+        self, raw_target_populations: List[int] | str
+    ) -> List[TargetPopulation]:
         if isinstance(raw_target_populations, list):
             ids = raw_target_populations
         else:
@@ -254,7 +262,9 @@ class PostSerializer(serializers.ModelSerializer):
             )
         return TargetPopulation.objects.filter(id__in=ids)
 
-    def update_target_populations(self, target_populations):
+    def update_target_populations(
+        self, target_populations: List[TargetPopulation]
+    ) -> List[TargetPopulation]:
         year = False
         major = False
         school = False
@@ -281,8 +291,8 @@ class PostSerializer(serializers.ModelSerializer):
 
         return target_populations
 
-    def create(self, validated_data):
-        club_code = validated_data["club_code"]
+    def create(self, validated_data: ValidationData) -> Post:
+        club_code: ClubCode = validated_data["club_code"]
         # Ensures user is part of club
         if club_code not in [
             x["club"]["code"] for x in get_user_clubs(self.context["request"].user)
@@ -309,7 +319,7 @@ class PostSerializer(serializers.ModelSerializer):
 
         return instance
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Post, validated_data: ValidationData) -> Post:
         # if post is updated, then approved should be false
         if not self.context["request"].user.is_superuser:
             validated_data["status"] = Post.STATUS_DRAFT
