@@ -44,43 +44,26 @@ class PollSerializer(serializers.ModelSerializer):
                 detail={"detail": "You do not access to create a Poll under this club."}
             )
         # ensuring user cannot create an admin comment upon creation
-        validated_data["admin_comment"] = None
-        validated_data["status"] = Poll.STATUS_DRAFT
+        validated_data.update(
+            {
+                "admin_comment": None,
+                "status": Poll.STATUS_DRAFT,
+                "multiselect": False,  # TODO: toggle off when multiselect is available
+            }
+        )
 
-        # TODO: toggle this off when multiselect functionality is available
-        validated_data["multiselect"] = False
+        population_kinds = {pop.kind: True for pop in validated_data["target_populations"]}
 
-        year = False
-        major = False
-        school = False
-        degree = False
-
-        for population in validated_data["target_populations"]:
-            if population.kind == TargetPopulation.KIND_YEAR:
-                year = True
-            elif population.kind == TargetPopulation.KIND_MAJOR:
-                major = True
-            elif population.kind == TargetPopulation.KIND_SCHOOL:
-                school = True
-            elif population.kind == TargetPopulation.KIND_DEGREE:
-                degree = True
-
-        if not year:
-            validated_data["target_populations"] += list(
-                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_YEAR)
-            )
-        if not major:
-            validated_data["target_populations"] += list(
-                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_MAJOR)
-            )
-        if not school:
-            validated_data["target_populations"] += list(
-                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_SCHOOL)
-            )
-        if not degree:
-            validated_data["target_populations"] += list(
-                TargetPopulation.objects.filter(kind=TargetPopulation.KIND_DEGREE)
-            )
+        for kind in [
+            TargetPopulation.KIND_YEAR,
+            TargetPopulation.KIND_MAJOR,
+            TargetPopulation.KIND_SCHOOL,
+            TargetPopulation.KIND_DEGREE,
+        ]:
+            if not population_kinds.get(kind):
+                validated_data["target_populations"].extend(
+                    TargetPopulation.objects.filter(kind=kind)
+                )
 
         return super().create(validated_data)
 
