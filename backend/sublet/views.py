@@ -3,6 +3,7 @@ from typing import TypeAlias
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet, prefetch_related_objects
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from rest_framework import exceptions, generics, mixins, status, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -134,61 +135,61 @@ class Properties(viewsets.ModelViewSet):
     #     sublet.save()
     # return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args, **kwargs) -> Response:
         """Returns a list of Sublets that match query parameters and user ownership."""
         # Get query parameters from request (e.g., amenities, user_owned)
         params = request.query_params
-        amenities = params.getlist("amenities")
-        title = params.get("title")
-        address = params.get("address")
-        subletter = params.get("subletter", "false")  # Defaults to False if not specified
-        starts_before = params.get("starts_before", None)
-        starts_after = params.get("starts_after", None)
-        ends_before = params.get("ends_before", None)
-        ends_after = params.get("ends_after", None)
-        min_price = params.get("min_price", None)
-        max_price = params.get("max_price", None)
-        negotiable = params.get("negotiable", None)
-        beds = params.get("beds", None)
-        baths = params.get("baths", None)
+        queryset: SubletQuerySet = self.get_queryset()
 
-        queryset = self.get_queryset()
-
-        # Apply filters based on query parameters
-
-        if subletter.lower() == "true":
+        if params.get("subletter", "false").lower() == "true":
             queryset = queryset.filter(subletter=request.user)
         else:
             queryset = queryset.filter(expires_at__gte=timezone.now())
-        if title:
-            queryset = queryset.filter(title__icontains=title)
-        if address:
-            queryset = queryset.filter(address__icontains=address)
-        if amenities:
+
+        date_filters = {}
+        if end_before := params.get("ends_before"):
+            if parsed_date := parse_date(end_before):
+                date_filters["end_date__lte"] = parsed_date
+        if end_after := params.get("ends_after"):
+            if parsed_date := parse_date(end_after):
+                date_filters["end_date__gte"] = parsed_date
+        if starts_before := params.get("starts_before"):
+            if parsed_date := parse_date(starts_before):
+                date_filters["start_date__lte"] = parsed_date
+        if starts_after := params.get("starts_after"):
+            if parsed_date := parse_date(starts_after):
+                date_filters["start_date__gte"] = parsed_date
+
+        numeric_filters = {}
+        if min_price := params.get("min_price"):
+            try:
+                numeric_filters["price__gte"] = int(min_price)
+            except ValueError:
+                pass
+        if max_price := params.get("max_price"):
+            try:
+                numeric_filters["price__lte"] = int(max_price)
+            except ValueError:
+                pass
+
+        basic_filters = {
+            "title__icontains": params.get("title"),
+            "address__icontains": params.get("address"),
+            "beds": params.get("beds"),
+            "baths": params.get("baths"),
+            "negotiable": params.get("negotiable"),
+        }
+
+        all_filters = {**basic_filters, **date_filters, **numeric_filters}
+        active_filters = {k: v for k, v in all_filters.items() if v is not None}
+        queryset = queryset.filter(**active_filters)
+
+        if amenities := params.getlist("amenities"):
             for amenity in amenities:
                 queryset = queryset.filter(amenities__name=amenity)
-        if starts_before:
-            queryset = queryset.filter(start_date__lt=starts_before)
-        if starts_after:
-            queryset = queryset.filter(start_date__gt=starts_after)
-        if ends_before:
-            queryset = queryset.filter(end_date__lt=ends_before)
-        if ends_after:
-            queryset = queryset.filter(end_date__gt=ends_after)
-        if min_price:
-            queryset = queryset.filter(price__gte=min_price)
-        if max_price:
-            queryset = queryset.filter(price__lte=max_price)
-        if negotiable:
-            queryset = queryset.filter(negotiable=negotiable)
-        if beds:
-            queryset = queryset.filter(beds=beds)
-        if baths:
-            queryset = queryset.filter(baths=baths)
 
         record_analytics(Metric.SUBLET_BROWSE, request.user.username)
 
-        # Serialize and return the queryset
         serializer = SubletSerializerSimple(queryset, many=True)
         return Response(serializer.data)
 
