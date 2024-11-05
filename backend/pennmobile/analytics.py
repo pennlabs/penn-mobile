@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 from analytics.analytics import AnalyticsTxn, LabsAnalytics, Product
 
@@ -23,7 +24,7 @@ class Metric(str, Enum):
     PORTAL_POLL_VOTED = "portal.poll.voted"
 
 
-def record_analytics(metric: Metric, username=None):
+def record_analytics(metric: Metric, username: Optional[str] = None) -> None:
     if not AnalyticsEngine:
         print("AnalyticsEngine not initialized")
         return
