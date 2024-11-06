@@ -11,6 +11,7 @@ from market.views import (
     Items,
     UserFavorites,
     UserOffers,
+    Sublets,
 )
 
 
@@ -18,6 +19,7 @@ app_name = "market"
 
 router = routers.DefaultRouter()
 router.register(r"items", Items, basename="properties")
+router.register(r"sublets", Sublets, basename="sublets")
 
 additional_urls = [
     # List of all amenities

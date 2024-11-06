@@ -58,7 +58,7 @@ class Item(models.Model):
 
 
 class Sublet(models.Model):
-    item = models.OneToOneField(Item, on_delete=models.CASCADE)
+    item = models.OneToOneField(Item, on_delete=models.CASCADE, related_name="sublet")
     address = models.CharField(max_length=255)
     beds = models.IntegerField()
     baths = models.IntegerField()

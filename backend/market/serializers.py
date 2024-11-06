@@ -3,7 +3,9 @@ from profanity_check import predict
 from rest_framework import serializers
 
 from market.models import Tag, Category, Offer, Item, Sublet, ItemImage
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,7 +16,8 @@ class TagSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = "__all__"
+        fields = ["name"]
+        read_only_fields = ["name"]
 
 
 class OfferSerializer(serializers.ModelSerializer):
@@ -60,30 +63,20 @@ class ItemImageURLSerializer(serializers.ModelSerializer):
         fields = ["id", "image_url"]
 
 
-class SubletSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Sublet
-        fields = [
-            'id',
-            'item',
-            'address',
-            'beds',
-            'baths',
-            'start_date',
-            'end_date'
-        ]
-        read_only_fields = ['id', 'item']
-    
-
-
 # complex item serializer for use in C/U/D + getting info about a singular tag
 class ItemSerializer(serializers.ModelSerializer):
     # amenities = ItemSerializer(many=True, required=False)
     # images = ItemImageURLSerializer(many=True, required=False)
 
-    sublet = SubletSerializer(required=False)
     tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
+    )
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), required=True
+    )
+    seller = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
+    favorites = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=User.objects.all(), required=False
     )
 
     class Meta:
@@ -99,8 +92,8 @@ class ItemSerializer(serializers.ModelSerializer):
             "id",
             "seller",
             "tags",
-            "sublet",
             "category",
+            "favorites",
             "title",
             "description",
             "external_link",
@@ -125,46 +118,24 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def contains_profanity(self, text):
         return predict([text])[0]
-    
-    def validate(self, data):
-        print(data)
-        if data.get('category').name=="Sublet" and data.get('sublet') is None:
-            raise serializers.ValidationError("Sublet item must have sublet data.")
-        if data.get('category').name!="Sublet" and (data.get('sublet') is not None or "sublet" not in data):
-            raise serializers.ValidationError("Only Sublet items can have sublet data.")
-        return data
 
     def create(self, validated_data):
-        sublet_data = validated_data.pop('sublet', None)
         validated_data["seller"] = self.context["request"].user
+        category_name = validated_data.pop("category")
+        category_instance = Category.objects.get(name=category_name)
+        validated_data["category"] = category_instance
         instance = super().create(validated_data)
-
-        if sublet_data:
-            Sublet.objects.create(item=instance, **sublet_data)
-        
         instance.save()
         return instance
 
     # delete_images is a list of image ids to delete
     def update(self, instance, validated_data):
         # Check if the user is the seller before allowing the update
-        sublet_data = validated_data.pop('sublet', None)
         if (
             self.context["request"].user == instance.seller
             or self.context["request"].user.is_superuser
         ):
             instance = super().update(instance, validated_data)
-
-            if sublet_data:
-                if hasattr(instance, 'sublet'):
-                    # If Sublet already exists, update it
-                    for attr, value in sublet_data.items():
-                        setattr(instance.sublet, attr, value)
-                    instance.sublet.save()
-                else:
-                    # If Sublet doesn't exist, create a new one
-                    Sublet.objects.create(item=instance, **sublet_data)
-
             instance.save()
             return instance
         else:
@@ -176,9 +147,6 @@ class ItemSerializer(serializers.ModelSerializer):
             self.context["request"].user == instance.seller
             or self.context["request"].user.is_superuser
         ):
-            if hasattr(instance, 'sublet'):
-                instance.sublet.delete()
-
             instance.delete()
         else:
             raise serializers.ValidationError("You do not have permission to delete this item.")
@@ -188,8 +156,11 @@ class ItemSerializerRead(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
     )
-    sublet = SubletSerializer(read_only=True, required=False)
     images = ItemImageURLSerializer(many=True, required=False)
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), required=True
+    )
+    seller = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
 
     class Meta:
         model = Item
@@ -198,8 +169,8 @@ class ItemSerializerRead(serializers.ModelSerializer):
             "id",
             "seller",
             "tags",
-            "sublet",
             "category",
+            "favorites",
             "title",
             "description",
             "external_link",
@@ -215,8 +186,11 @@ class ItemSerializerSimple(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
     )
-    sublet = SubletSerializer(required=False)
     images = ItemImageURLSerializer(many=True, required=False)
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), required=True
+    )
+    seller = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
 
     class Meta:
         model = Item
@@ -224,8 +198,8 @@ class ItemSerializerSimple(serializers.ModelSerializer):
             "id",
             "seller",
             "tags",
-            "sublet",
             "category",
+            "favorites",
             "title",
             "price",
             "negotiable",
@@ -234,3 +208,58 @@ class ItemSerializerSimple(serializers.ModelSerializer):
         read_only_fields = ["id", "seller"]
 
 
+class SubletSerializer(serializers.ModelSerializer):
+    item = ItemSerializer(required=True)
+    class Meta:
+        model = Sublet
+        fields = [
+            'id',
+            'item',
+            'address',
+            'beds',
+            'baths',
+            'start_date',
+            'end_date'
+        ]
+        read_only_fields = ['id']
+
+    def create(self, validated_data):
+        item_data = validated_data.pop('item')
+        item_serializer = ItemSerializer(data=item_data, context=self.context)
+        item_serializer.is_valid(raise_exception=True)
+        item_instance = item_serializer.save(seller=self.context['request'].user)
+        sublet_instance = Sublet.objects.create(item=item_instance, **validated_data)
+        return sublet_instance
+
+    def update(self, instance, validated_data):
+        if (
+            self.context["request"].user == instance.item.seller
+            or self.context["request"].user.is_superuser
+        ):
+            item_data = validated_data.pop('item', None)
+            if item_data:
+                tags = item_data.pop('tags', None)  # Extract tags if present
+                for attr, value in item_data.items():
+                    setattr(instance.item, attr, value)
+                instance.item.save()
+
+                # Update tags if provided
+                if tags is not None:
+                    instance.item.tags.set(tags)  # Use .set() for many-to-many fields
+
+            # Update the remaining Sublet fields
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+            return instance
+        
+    def destroy(self, instance):
+        if (
+            self.context["request"].user == instance.item.seller
+            or self.context["request"].user.is_superuser
+        ):
+            if self.context["request"].user == instance.item.seller or self.context["request"].user.is_superuser:
+                instance.item.delete()
+                instance.delete()
+            else:
+                raise serializers.ValidationError("You do not have permission to delete this sublet.")

@@ -13,6 +13,7 @@ from market.permissions import (
     OfferOwnerPermission,
     ItemImageOwnerPermission,
     ItemOwnerPermission,
+    SubletOwnerPermission,
 )
 from market.serializers import (
     TagSerializer,
@@ -141,14 +142,10 @@ class Items(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-
-        # Check if the user has permission to delete the Item and Sublet
         if self.request.user == instance.seller or self.request.user.is_superuser:
-            # Delete associated Sublet if it exists
             if hasattr(instance, 'sublet'):
                 instance.sublet.delete()
 
-            # Delete the Item
             instance.delete()
 
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -158,76 +155,120 @@ class Items(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         """Returns a list of Items that match query parameters and user ownership."""
-        # Get query parameters from request (e.g., tags, user_owned)
         params = request.query_params
         category = params.get("category")
         tags = params.getlist("tags")
         title = params.get("title")
-        address = params.get("address")
         seller = params.get("seller", "false")  # Defaults to False if not specified
-        starts_before = params.get("starts_before", None)
-        starts_after = params.get("starts_after", None)
-        ends_before = params.get("ends_before", None)
-        ends_after = params.get("ends_after", None)
         min_price = params.get("min_price", None)
         max_price = params.get("max_price", None)
         negotiable = params.get("negotiable", None)
-        beds = params.get("beds", None)
-        baths = params.get("baths", None)
 
         queryset = self.get_queryset()
-        # Apply filters based on query parameters
 
         if seller.lower() == "true":
             queryset = queryset.filter(seller=request.user)
         else:
             queryset = queryset.filter(expires_at__gte=timezone.now())
-        
+        queryset = queryset.exclude(category__name="Sublet")
+        if category:
+            queryset = queryset.filter(category__name=category)
         if title:
             queryset = queryset.filter(title__icontains=title)
-        if address:
-            queryset = queryset.filter(address__icontains=address)
         if tags:
             for tag in tags:
                 queryset = queryset.filter(tags__name=tag)
-        if category:
-            queryset = queryset.filter(category__name=category)
-        if starts_before:
-            queryset = queryset.filter(start_date__lt=starts_before)
-        if starts_after:
-            queryset = queryset.filter(start_date__gt=starts_after)
-        if ends_before:
-            queryset = queryset.filter(end_date__lt=ends_before)
-        if ends_after:
-            queryset = queryset.filter(end_date__gt=ends_after)
         if min_price:
             queryset = queryset.filter(price__gte=min_price)
         if max_price:
             queryset = queryset.filter(price__lte=max_price)
         if negotiable:
             queryset = queryset.filter(negotiable=negotiable)
-        if beds:
-            queryset = queryset.filter(beds=beds)
-        if baths:
-            queryset = queryset.filter(baths=baths)
-        if address:
-            queryset = queryset.filter(sublet__address__icontains=address)
-        if starts_before:
-            queryset = queryset.filter(sublet__start_date__lt=starts_before)
-        if starts_after:
-            queryset = queryset.filter(sublet__start_date__gt=starts_after)
-        if ends_before:
-            queryset = queryset.filter(sublet__end_date__lt=ends_before)
-        if ends_after:
-            queryset = queryset.filter(sublet__end_date__gt=ends_after)
-        if beds:
-            queryset = queryset.filter(sublet__beds=beds)
-        if baths:
-            queryset = queryset.filter(sublet__baths=baths)
+
 
         #record_analytics(Metric.SUBLET_BROWSE, request.user.username)
         # Serialize and return the queryset
         serializer = ItemSerializerSimple(queryset, many=True)
+        return Response(serializer.data)
+ 
+
+class Sublets(viewsets.ModelViewSet):
+    permission_classes = [SubletOwnerPermission | IsSuperUser]
+    serializer_class = SubletSerializer
+
+    def get_queryset(self):
+        return Sublet.objects.filter(item__isnull=False).prefetch_related('item')
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        sublet_instance = serializer.save()
+        response_serializer = self.get_serializer(sublet_instance)
+
+        # record_analytics(Metric.SUBLET_CREATED, request.user.username)
+        
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        queryset = self.filter_queryset(self.get_queryset())
+        if queryset._prefetch_related_lookups:
+            instance._prefetched_objects_cache = {}
+        return Response(self.get_serializer(instance).data, status=status.HTTP_200_OK)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user == instance.item.seller or request.user.is_superuser:
+            if hasattr(instance, 'item'):
+                instance.item.delete()
+            instance.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            raise serializers.ValidationError("You do not have permission to delete this item.")
+
+    def list(self, request, *args, **kwargs):
+        """Returns a filtered list of Sublets based on query parameters."""
+        params = request.query_params
+        queryset = self.get_queryset().filter(
+            item__category__name="Sublet", 
+            item__expires_at__gte=timezone.now() if params.get("seller", "false").lower() != "true" else timezone.now()
+        )
+
+        if params.get("seller", "false").lower() == "true":
+            queryset = queryset.filter(seller=request.user)
+        if title := params.get("title"):
+            queryset = queryset.filter(item__title__icontains=title)
+        if tags := params.getlist("tags"):
+            for tag in tags:
+                queryset = queryset.filter(item__tags__name=tag)
+        if min_price := params.get("min_price"):
+            queryset = queryset.filter(item__price__gte=min_price)
+        if max_price := params.get("max_price"):
+            queryset = queryset.filter(item__price__lte=max_price)
+        if negotiable := params.get("negotiable"):
+            queryset = queryset.filter(item__negotiable=negotiable)
+        if address := params.get("address"):
+            queryset = queryset.filter(address__icontains=address)
+        if beds := params.get("beds"):
+            queryset = queryset.filter(beds=beds)
+        if baths := params.get("baths"):
+            queryset = queryset.filter(baths=baths)
+        if start_date_min := params.get("start_date_min"):
+            queryset = queryset.filter(start_date__gte=start_date_min)
+        if start_date_max := params.get("start_date_max"):
+            queryset = queryset.filter(start_date__lte=start_date_max)
+        if end_date_min := params.get("end_date_min"):
+            queryset = queryset.filter(end_date__gte=end_date_min)
+        if end_date_max := params.get("end_date_max"):
+            queryset = queryset.filter(end_date__lte=end_date_max)
+
+        # record_analytics(Metric.SUBLET_BROWSE, request.user.username)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 
