@@ -73,8 +73,8 @@ class Content(models.Model):
             send_automated_email.delay_on_commit(
                 self._get_email_subject(),
                 [email],
-                f"Your {self.__class__._meta.model_name} status for {self.club_code} has been"
-                + "changed to {self.status}."
+                f"Your {self.__class__._meta.model_name} status for {self.club_code} has been "
+                + f"changed to {self.status}."
                 + (
                     f"\n\nAdmin comment: {self.admin_comment}"
                     if self.admin_comment and self.status == self.STATUS_REVISION
