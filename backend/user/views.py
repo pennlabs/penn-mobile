@@ -1,10 +1,14 @@
+from typing import TYPE_CHECKING, Any, Optional
+
 from django.contrib.auth import get_user_model
+from django.db.models import QuerySet
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from identity.permissions import B2BPermission
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -16,6 +20,13 @@ from user.serializers import (
     UserSerializer,
 )
 
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractUser
+
+    UserType = AbstractUser
+else:
+    UserType = Any
 
 User = get_user_model()
 
@@ -36,7 +47,7 @@ class UserView(generics.RetrieveUpdateAPIView):
 
     serializer_class = UserSerializer
 
-    def get_object(self):
+    def get_object(self) -> "UserType":
         return self.request.user
 
 
@@ -49,7 +60,7 @@ class NotificationTokenView(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationTokenSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[NotificationToken]:
         return NotificationToken.objects.filter(user=self.request.user)
 
 
@@ -68,16 +79,16 @@ class NotificationSettingView(viewsets.ModelViewSet):
     permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
     serializer_class = NotificationSettingSerializer
 
-    def is_authorized(self, request):
+    def is_authorized(self, request: Request) -> bool:
         return request.user and request.user.is_authenticated
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[NotificationSetting]:
         if self.is_authorized(self.request):
             return NotificationSetting.objects.filter(token__user=self.request.user)
         return NotificationSetting.objects.none()
 
     @action(detail=True, methods=["get"])
-    def check(self, request, pk=None):
+    def check(self, request: Request, pk: Optional[str] = None) -> Response:
         """
         Returns whether the user wants notification for specified service.
         :param pk: service name
@@ -108,7 +119,7 @@ class NotificationAlertView(APIView):
 
     permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         users = (
             [self.request.user.username]
             if request.user and request.user.is_authenticated
@@ -138,7 +149,7 @@ class ClearCookiesView(APIView):
     Clears all cookies from the browser
     """
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         next_url = request.GET.get("next", None)
         response = (
             HttpResponseRedirect(f"/api/accounts/login/?next={next_url}")

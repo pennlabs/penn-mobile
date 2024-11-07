@@ -1,4 +1,5 @@
 import csv
+from typing import Any
 
 from django.core.management.base import BaseCommand
 
@@ -10,7 +11,7 @@ class Command(BaseCommand):
     Loads Venues based on CSV
     """
 
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
 
         with open("dining/data/dining_venues.csv") as data:
             reader = csv.reader(data)

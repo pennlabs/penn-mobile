@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from penndata.management.commands.get_fitness_snapshot import cap_string
@@ -7,7 +9,7 @@ from penndata.models import FitnessRoom
 class Command(BaseCommand):
     help = "Renames fitness rooms."
 
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         for room in FitnessRoom.objects.all():
             room.name = cap_string(room.name)
             room.save()

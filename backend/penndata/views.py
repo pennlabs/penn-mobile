@@ -4,7 +4,7 @@ from typing import Any, TypeAlias
 
 import requests
 from bs4 import BeautifulSoup
-from django.db.models import QuerySet
+from django.db.models import Manager, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from requests.exceptions import ConnectionError
@@ -32,9 +32,9 @@ from penndata.serializers import (
 
 
 ValidatedData: TypeAlias = dict[str, Any]
-CalendarEventList: TypeAlias = QuerySet[CalendarEvent]
-EventList: TypeAlias = QuerySet[Event]
-HomePageOrderList: TypeAlias = QuerySet[HomePageOrder]
+CalendarEventList: TypeAlias = QuerySet[CalendarEvent, Manager[CalendarEvent]]
+EventList: TypeAlias = QuerySet[Event, Manager[Event]]
+HomePageOrderList: TypeAlias = QuerySet[HomePageOrder, Manager[HomePageOrder]]
 
 
 class News(APIView):

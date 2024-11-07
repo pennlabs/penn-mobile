@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, TypeAlias
 
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Q, QuerySet
+from django.db.models import Count, Manager, Q, QuerySet
 from django.db.models.functions import Trunc
 from django.utils import timezone
 from rest_framework import generics, viewsets
@@ -38,11 +38,11 @@ from portal.serializers import (
 )
 
 
-PollQuerySet: TypeAlias = QuerySet[Poll]
-PostQuerySet: TypeAlias = QuerySet[Post]
-PollVoteQuerySet: TypeAlias = QuerySet[PollVote]
+PollQuerySet: TypeAlias = QuerySet[Poll, Manager[Poll]]
+PostQuerySet: TypeAlias = QuerySet[Post, Manager[Post]]
+PollVoteQuerySet: TypeAlias = QuerySet[PollVote, Manager[PollVote]]
 ClubData: TypeAlias = List[Dict[str, Any]]
-PollOptionQuerySet: TypeAlias = QuerySet[PollOption]
+PollOptionQuerySet: TypeAlias = QuerySet[PollOption, Manager[PollOption]]
 TimeSeriesData: TypeAlias = Dict[str, Any]
 VoteStatistics: TypeAlias = Dict[str, Any]
 
@@ -71,7 +71,7 @@ class UserClubs(APIView):
         return Response({"clubs": club_data})
 
 
-class TargetPopulations(generics.ListAPIView):
+class TargetPopulations(generics.ListAPIView[TargetPopulation]):
     """List view to see which populations a poll can select"""
 
     permission_classes = [IsAuthenticated]
@@ -79,7 +79,7 @@ class TargetPopulations(generics.ListAPIView):
     queryset = TargetPopulation.objects.all()
 
 
-class Polls(viewsets.ModelViewSet):
+class Polls(viewsets.ModelViewSet[Poll]):
     """
     browse:
     returns a list of Polls that are valid and
@@ -180,7 +180,7 @@ class Polls(viewsets.ModelViewSet):
         return Response(RetrievePollSerializer(Poll.objects.filter(id=pk).first(), many=False).data)
 
 
-class PollOptions(viewsets.ModelViewSet):
+class PollOptions(viewsets.ModelViewSet[PollOption]):
     """
     create:
     Create a Poll Option.
@@ -210,7 +210,7 @@ class PollOptions(viewsets.ModelViewSet):
         )
 
 
-class PollVotes(viewsets.ModelViewSet):
+class PollVotes(viewsets.ModelViewSet[PollVote]):
     """
     create:
     Create a Poll Vote.
@@ -264,7 +264,7 @@ class PollVoteStatistics(APIView):
         return Response(statistics)
 
 
-class Posts(viewsets.ModelViewSet):
+class Posts(viewsets.ModelViewSet[Post]):
     """
     browse:
     returns a list of Posts that are targeted at the current user.
@@ -315,7 +315,7 @@ class Posts(viewsets.ModelViewSet):
 
         # list of polls where user doesn't identify with
         # target populations
-        bad_posts = []
+        bad_posts: List[int] = []
 
         # commented out to make posts
         # if not request.user.is_superuser:

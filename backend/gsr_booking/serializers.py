@@ -7,9 +7,12 @@ from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 
 
 if TYPE_CHECKING:
-    from django.contrib.auth.models import User as DjangoUser
+    from django.contrib.auth.models import AbstractUser
 
-UserType: TypeAlias = "DjangoUser"
+    UserType = AbstractUser
+else:
+    UserType = Any
+
 ValidatedData: TypeAlias = dict[str, Any]
 User = get_user_model()
 
@@ -83,7 +86,7 @@ class GroupField(serializers.RelatedField):
 class UserSerializer(serializers.ModelSerializer):
     booking_groups = serializers.SerializerMethodField()
 
-    def get_booking_groups(self, obj: UserType) -> list[dict[str, Any]]:
+    def get_booking_groups(self, obj: "UserType") -> list[dict[str, Any]]:
         result = []
         for membership in GroupMembership.objects.filter(accepted=True, user=obj):
             result.append(

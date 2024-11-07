@@ -1,6 +1,7 @@
 import collections
 import os
 import sys
+from typing import Optional
 
 
 # Monkey Patch for apn2 errors, referenced from:
@@ -30,7 +31,15 @@ from user.models import NotificationToken
 Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
-def send_push_notifications(users, service, title, body, delay=0, is_dev=False, is_shadow=False):
+def send_push_notifications(
+    users: Optional[list[str]],
+    service: Optional[str],
+    title: str,
+    body: str,
+    delay: int = 0,
+    is_dev: bool = False,
+    is_shadow: bool = False,
+) -> tuple[list[str], list[str]]:
     """
     Sends push notifications.
 
@@ -61,7 +70,9 @@ def send_push_notifications(users, service, title, body, delay=0, is_dev=False, 
     return success_users, failed_users
 
 
-def get_tokens(users=None, service=None):
+def get_tokens(
+    users: Optional[list[str]] = None, service: Optional[str] = None
+) -> list[tuple[str, str]]:
     """Returns list of token objects (with username & token value) for specified users"""
 
     token_objs = NotificationToken.objects.select_related("user").filter(
@@ -77,7 +88,9 @@ def get_tokens(users=None, service=None):
 
 
 @shared_task(name="notifications.send_immediate_notifications")
-def send_immediate_notifications(tokens, title, body, category, is_dev, is_shadow):
+def send_immediate_notifications(
+    tokens: list[str], title: str, body: str, category: str, is_dev: bool, is_shadow: bool
+) -> None:
     client = get_client(is_dev)
     if is_shadow:
         payload = Payload(
@@ -97,20 +110,28 @@ def send_immediate_notifications(tokens, title, body, category, is_dev, is_shado
         client.send_notification(tokens[0], payload, topic)
 
 
-def send_delayed_notifications(tokens, title, body, category, is_dev, is_shadow, delay):
+def send_delayed_notifications(
+    tokens: list[str],
+    title: str,
+    body: str,
+    category: str,
+    is_dev: bool,
+    is_shadow: bool,
+    delay: int,
+) -> None:
     send_immediate_notifications.apply_async(
         (tokens, title, body, category, is_dev, is_shadow), countdown=delay
     )
 
 
-def get_auth_key_path():
+def get_auth_key_path() -> str:
     return os.environ.get(
         "IOS_KEY_PATH",  # for dev purposes
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ios_key.p8"),
     )
 
 
-def get_client(is_dev):
+def get_client(is_dev: bool) -> APNsClient:
     """Creates and returns APNsClient based on iOS credentials"""
 
     auth_key_path = get_auth_key_path()

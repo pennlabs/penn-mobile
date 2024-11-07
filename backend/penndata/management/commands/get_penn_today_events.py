@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
@@ -21,7 +21,7 @@ ALL_DAY = "all day"
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         now = timezone.localtime()
         current_month, current_year = now.month, now.year
 

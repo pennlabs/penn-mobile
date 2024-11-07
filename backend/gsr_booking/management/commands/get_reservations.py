@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
@@ -36,13 +37,13 @@ class Command(BaseCommand):
         parser.add_argument("--time", type=bool, default=False)
         parser.add_argument("--user", type=bool, default=False)
 
-    def handle(self, *args, **kwargs) -> None:
-        group = kwargs["group"]
-        start = kwargs["start"]
-        end = kwargs["end"]
-        current = kwargs["current"]
-        time = kwargs["time"]
-        user = kwargs["user"]
+    def handle(self, *args: Any, **kwargs: Any) -> None:
+        group = kwargs.get("group", None)
+        start = kwargs.get("start", None)
+        end = kwargs.get("end", None)
+        current = kwargs.get("current", False)
+        time = kwargs.get("time", False)
+        user = kwargs.get("user", False)
 
         if start and not (start := self.__convert_date(start)):
             self.stdout.write("Error: invalid start date format")

@@ -1,7 +1,7 @@
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 from django.contrib.auth import get_user_model
-from django.db.models import QuerySet, prefetch_related_objects
+from django.db.models import Manager, QuerySet, prefetch_related_objects
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import exceptions, generics, mixins, status, viewsets
@@ -30,11 +30,11 @@ from sublet.serializers import (
 )
 
 
-SubletQuerySet: TypeAlias = QuerySet[Sublet]
-OfferQuerySet: TypeAlias = QuerySet[Offer]
-ImageList: TypeAlias = QuerySet[SubletImage]
-FavoriteQuerySet: TypeAlias = QuerySet[Sublet]
-UserOfferQuerySet: TypeAlias = QuerySet[Offer]
+SubletQuerySet: TypeAlias = QuerySet[Sublet, Manager[Sublet]]
+OfferQuerySet: TypeAlias = QuerySet[Offer, Manager[Offer]]
+ImageList: TypeAlias = QuerySet[SubletImage, Manager[SubletImage]]
+FavoriteQuerySet: TypeAlias = QuerySet[Sublet, Manager[Sublet]]
+UserOfferQuerySet: TypeAlias = QuerySet[Offer, Manager[Offer]]
 
 User = get_user_model()
 
@@ -43,7 +43,7 @@ class Amenities(generics.ListAPIView):
     serializer_class = AmenitySerializer
     queryset = Amenity.objects.all()
 
-    def get(self, request: Request, *args, **kwargs) -> Response:
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         temp = super().get(request, *args, **kwargs).data
         return Response([a["name"] for a in temp])
 
@@ -89,7 +89,7 @@ class Properties(viewsets.ModelViewSet):
     def get_queryset(self) -> SubletQuerySet:
         return Sublet.objects.all()
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)  # Check if the data is valid
         instance = serializer.save()  # Create the Sublet
@@ -99,7 +99,7 @@ class Properties(viewsets.ModelViewSet):
 
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED)
 
-    def update(self, request: Request, *args, **kwargs) -> Response:
+    def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -135,7 +135,7 @@ class Properties(viewsets.ModelViewSet):
     #     sublet.save()
     # return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Returns a list of Sublets that match query parameters and user ownership."""
         # Get query parameters from request (e.g., amenities, user_owned)
         params = request.query_params
@@ -203,12 +203,12 @@ class CreateImages(generics.CreateAPIView):
         FormParser,
     )
 
-    def get_queryset(self, *args, **kwargs) -> ImageList:
+    def get_queryset(self, *args: Any, **kwargs: Any) -> ImageList:
         sublet = get_object_or_404(Sublet, id=int(self.kwargs["sublet_id"]))
         return SubletImage.objects.filter(sublet=sublet)
 
     # takes an image multipart form data and creates a new image object
-    def post(self, request: Request, *args, **kwargs) -> Response:
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         images = request.data.getlist("images")
         sublet_id = int(self.kwargs["sublet_id"])
         self.get_queryset()  # check if sublet exists
@@ -228,7 +228,7 @@ class DeleteImage(generics.DestroyAPIView):
     permission_classes = [SubletImageOwnerPermission | IsSuperUser]
     queryset = SubletImage.objects.all()
 
-    def destroy(self, request: Request, *args, **kwargs) -> Response:
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         queryset = self.get_queryset()
         filter = {"id": self.kwargs["image_id"]}
         obj = get_object_or_404(queryset, **filter)
@@ -247,7 +247,7 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
         user = self.request.user
         return user.sublets_favorited
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         sublet_id = int(self.kwargs["sublet_id"])
         queryset = self.get_queryset()
         if queryset.filter(id=sublet_id).exists():
@@ -259,7 +259,7 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
 
         return Response(status=status.HTTP_201_CREATED)
 
-    def destroy(self, request: Request, *args, **kwargs) -> Response:
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         queryset = self.get_queryset()
         sublet = get_object_or_404(queryset, pk=int(self.kwargs["sublet_id"]))
         self.get_queryset().remove(sublet)
@@ -286,7 +286,7 @@ class Offers(viewsets.ModelViewSet):
             "created_date"
         )
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         data = request.data
         request.POST._mutable = True
         if self.get_queryset().filter(user=self.request.user).exists():
@@ -301,16 +301,16 @@ class Offers(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def destroy(self, request: Request, *args, **kwargs) -> Response:
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         queryset = self.get_queryset()
         filter = {"user": self.request.user.id, "sublet": int(self.kwargs["sublet_id"])}
-        obj = get_object_or_404(queryset, **filter)
+        obj: Offer = get_object_or_404(queryset, **filter)
         # checking permissions here is kind of redundant
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         sublet = get_object_or_404(Sublet, pk=int(self.kwargs["sublet_id"]))
         self.check_object_permissions(request, sublet)
         return super().list(request, *args, **kwargs)

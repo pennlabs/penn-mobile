@@ -56,7 +56,7 @@ class Command(BaseCommand):
                 email=None,
             )
 
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
 
         response = requests.get(UNIVERSITY_LIFE_URL)
 

@@ -1,3 +1,5 @@
+from argparse import ArgumentParser
+
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
@@ -10,7 +12,7 @@ class Command(BaseCommand):
     Shows all user information given a pennkey or an email.
     """
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("--pennkey", type=str, help="pennkey")
         parser.add_argument("--email", type=str, help="email")
 

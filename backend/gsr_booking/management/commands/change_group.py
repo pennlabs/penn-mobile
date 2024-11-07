@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db.models import Q
@@ -18,7 +20,7 @@ class Command(BaseCommand):
         parser.add_argument("group", type=str, help="group name")
         parser.add_argument("mode", type=str, help="mode of operation (add/remove/reset)")
 
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         usernames = kwargs["usernames"].split(",")
         group = kwargs["group"]
         mode = kwargs["mode"].lower()

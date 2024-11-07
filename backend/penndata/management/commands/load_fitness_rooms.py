@@ -1,10 +1,12 @@
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from penndata.models import FitnessRoom
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         fitness_rooms = [
             "4th Floor Fitness",
             "3rd Floor Fitness",

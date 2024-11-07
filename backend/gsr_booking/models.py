@@ -1,7 +1,17 @@
+from typing import TYPE_CHECKING, Any
+
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import QuerySet
 from django.utils import timezone
 
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractUser
+
+    UserType = AbstractUser
+else:
+    UserType = Any
 
 User = get_user_model()
 
@@ -61,14 +71,14 @@ class Group(models.Model):
     ADMIN = "A"
     MEMBER = "M"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}-{self.pk}"
 
-    def has_member(self, user):
+    def has_member(self, user: "UserType") -> bool:
         memberships = GroupMembership.objects.filter(group=self, user=user)
         return memberships.all().exists()
 
-    def has_admin(self, user):
+    def has_admin(self, user: "UserType") -> bool:
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
         return memberships.all().filter(type="A").filter(user=user).exists()
 
@@ -77,7 +87,7 @@ class Group(models.Model):
         pennkey_active_members_list = memberships.all().filter(pennkey_allow=True).all()
         return [member for member in pennkey_active_members_list]
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         super().save(*args, **kwargs)
         GroupMembership.objects.get_or_create(
             group=self, user=self.owner, type=GroupMembership.ADMIN, accepted=True
@@ -85,7 +95,7 @@ class Group(models.Model):
 
 
 class GSRManager(models.Manager):
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Any]:
         return super().get_queryset().filter(in_use=True)
 
 
@@ -106,7 +116,7 @@ class GSR(models.Model):
     objects = GSRManager()
     all_objects = models.Manager()  # for admin page
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}: {self.lid}-{self.gid}"
 
 
@@ -131,7 +141,7 @@ class GSRBooking(models.Model):
     end = models.DateTimeField(default=timezone.now)
     is_cancelled = models.BooleanField(default=False)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user} - {self.gsr.name} - {self.start} - {self.end}"
 
 

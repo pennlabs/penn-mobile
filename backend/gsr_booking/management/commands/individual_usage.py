@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
@@ -10,7 +12,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser) -> None:
         parser.add_argument("pennkey", type=str, help="Pennkey of user to check")
 
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         pennkey = kwargs["pennkey"]
         groups = Group.objects.filter(memberships__user__username=pennkey)
         bookings = GSRBooking.objects.filter(

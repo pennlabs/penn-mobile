@@ -34,11 +34,11 @@ class DiningAPIWrapper:
         }
         response = requests.post(self.openid_endpoint, data=body).json()
         if "error" in response:
-            raise APIError(f"Dining: {response['error']}, {response.get('error_description')}")
+            raise APIError(f"Dining: {response['error']}, {response.get('error_description', '')}")
         self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
         self.token = response["access_token"]
 
-    def request(self, *args, **kwargs) -> requests.Response:
+    def request(self, *args: Any, **kwargs: Any) -> requests.Response:
         """Make a signed request to the dining API."""
         self.update_token()
 

@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional
+from typing import Any, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -28,7 +28,7 @@ EVENT_TYPE_MAP: list[tuple[str, str]] = [
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         for site, event_type in EVENT_TYPE_MAP:
             self.scrape_calendar_page(f"{site}", event_type)
         now = timezone.localtime()

@@ -1,5 +1,6 @@
 import datetime
 import re
+from typing import Any
 
 import pytz
 import requests
@@ -13,7 +14,7 @@ WHARTON_EVENTS_WEBSITE = "https://events.wharton.upenn.edu/events-hq/#list"
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         eastern = pytz.timezone("US/Eastern")
 
         try:

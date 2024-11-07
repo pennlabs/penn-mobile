@@ -1,4 +1,5 @@
 import datetime
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
@@ -68,7 +69,7 @@ def get_usages() -> tuple[dict[str, dict[str, int | float]], datetime.datetime]:
 class Command(BaseCommand):
     help = "Captures a new Fitness Snapshot for every Laundry room."
 
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         usage_by_location, date = get_usages()
 
         # prevent double creating FitnessSnapshots

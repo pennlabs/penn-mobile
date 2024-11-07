@@ -1,5 +1,6 @@
 import json
 from collections import defaultdict
+from typing import TYPE_CHECKING, Any
 
 from accounts.ipc import authenticated_request
 from django.contrib.auth import get_user_model
@@ -8,10 +9,17 @@ from rest_framework.exceptions import PermissionDenied
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractUser
+
+    UserType = AbstractUser
+else:
+    UserType = Any
+
 User = get_user_model()
 
 
-def get_user_info(user):
+def get_user_info(user: "UserType") -> dict[str, Any]:
     """Returns Platform user information"""
     response = authenticated_request(user, "GET", "https://platform.pennlabs.org/accounts/me/")
     if response.status_code == 403:
@@ -19,7 +27,7 @@ def get_user_info(user):
     return json.loads(response.content)
 
 
-def get_user_clubs(user):
+def get_user_clubs(user: "UserType") -> list[dict[str, Any]]:
     """Returns list of clubs that user is a member of"""
     response = authenticated_request(user, "GET", "https://pennclubs.com/api/memberships/")
     if response.status_code == 403:
@@ -28,7 +36,7 @@ def get_user_clubs(user):
     return res_json
 
 
-def get_club_info(user, club_code):
+def get_club_info(user: "UserType", club_code: str) -> dict[str, Any]:
     """Returns club information based on club code"""
     response = authenticated_request(user, "GET", f"https://pennclubs.com/api/clubs/{club_code}/")
     if response.status_code == 403:
@@ -37,7 +45,7 @@ def get_club_info(user, club_code):
     return {"name": res_json["name"], "image": res_json["image_url"], "club_code": club_code}
 
 
-def get_user_populations(user):
+def get_user_populations(user: "UserType") -> list[TargetPopulation]:
     """Returns the target populations that the user belongs to"""
 
     user_info = get_user_info(user)
@@ -84,7 +92,7 @@ def get_user_populations(user):
     return [year, school, major, degree]
 
 
-def check_targets(obj, user):
+def check_targets(obj: Poll, user: "UserType") -> bool:
     """
     Check if user aligns with target populations of poll or post
     """
@@ -104,7 +112,7 @@ def check_targets(obj, user):
     )
 
 
-def get_demographic_breakdown(poll_id):
+def get_demographic_breakdown(poll_id: int) -> list[dict[str, Any]]:
     """Collects Poll statistics on school and graduation year demographics"""
 
     # passing in id is necessary because

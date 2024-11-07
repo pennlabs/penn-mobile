@@ -1,4 +1,5 @@
 import csv
+from typing import Any
 
 from django.core.management.base import BaseCommand
 
@@ -6,7 +7,7 @@ from gsr_booking.models import GSR
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
 
         with open("gsr_booking/data/gsr_data.csv") as data:
             reader = csv.reader(data)
