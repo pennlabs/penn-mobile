@@ -1,9 +1,10 @@
-from typing import Any, Dict, List, TypeAlias
+from typing import Any, Dict, TypeAlias
 
+from django.http.request import QueryDict
 from rest_framework import serializers
 
 from portal.logic import check_targets, get_user_clubs, get_user_populations
-from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
+from portal.models import Content, Poll, PollOption, PollVote, Post, TargetPopulation
 
 
 ClubCode: TypeAlias = str
@@ -16,62 +17,76 @@ class TargetPopulationSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class PollSerializer(serializers.ModelSerializer):
+class ContentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Poll
         fields = (
             "id",
             "club_code",
-            "question",
             "created_date",
             "start_date",
             "expire_date",
-            "multiselect",
             "club_comment",
             "admin_comment",
             "status",
             "target_populations",
         )
         read_only_fields = ("id", "created_date")
+        abstract = True
+
+    def _auto_add_target_population(self, validated_data: ValidationData) -> None:
+        # auto add all target populations of a kind if not specified
+        if target_populations := validated_data.get("target_populations"):
+            auto_add_kind = [
+                kind
+                for kind, _ in TargetPopulation.KIND_OPTIONS
+                if not any(population.kind == kind for population in target_populations)
+            ]
+            validated_data["target_populations"] += TargetPopulation.objects.filter(
+                kind__in=auto_add_kind
+            )
+        else:
+            validated_data["target_populations"] = list(TargetPopulation.objects.all())
 
     def create(self, validated_data: ValidationData) -> Poll:
         club_code: ClubCode = validated_data["club_code"]
+        user = self.context["request"].user
         # ensures user is part of club
-        if club_code not in [
-            x["club"]["code"] for x in get_user_clubs(self.context["request"].user)
-        ]:
+        if not any([x["club"]["code"] == club_code for x in get_user_clubs(user)]):
             raise serializers.ValidationError(
-                detail={"detail": "You do not access to create a Poll under this club."}
+                detail={
+                    "detail": "You do not have access to create a "
+                    + f"{self.Meta.model._meta.model_name.capitalize()} under this club."
+                }
             )
+
         # ensuring user cannot create an admin comment upon creation
-        validated_data.update(
-            {
-                "admin_comment": None,
-                "status": Poll.STATUS_DRAFT,
-                "multiselect": False,  # TODO: toggle off when multiselect is available
-            }
-        )
+        validated_data["admin_comment"] = None
+        validated_data["status"] = Content.STATUS_DRAFT
 
-        population_kinds = {pop.kind: True for pop in validated_data["target_populations"]}
+        self._auto_add_target_population(validated_data)
 
-        for kind in [
-            TargetPopulation.KIND_YEAR,
-            TargetPopulation.KIND_MAJOR,
-            TargetPopulation.KIND_SCHOOL,
-            TargetPopulation.KIND_DEGREE,
-        ]:
-            if not population_kinds.get(kind):
-                validated_data["target_populations"].extend(
-                    TargetPopulation.objects.filter(kind=kind)
-                )
+        validated_data["creator"] = user
 
         return super().create(validated_data)
 
-    def update(self, instance: Poll, validated_data: ValidationData) -> Poll:
-        # if Poll is updated, then approve should be false
+    def update(self, instance: Content, validated_data: ValidationData) -> Content:
+        # if Content is updated, then approve should be false
         if not self.context["request"].user.is_superuser:
-            validated_data["status"] = Poll.STATUS_DRAFT
+            validated_data["status"] = Content.STATUS_DRAFT
+
+        self._auto_add_target_population(validated_data)
+
         return super().update(instance, validated_data)
+
+
+class PollSerializer(ContentSerializer):
+    class Meta(ContentSerializer.Meta):
+        model = Poll
+        fields = (
+            *ContentSerializer.Meta.fields,
+            "question",
+            "multiselect",
+        )
 
 
 class PollOptionSerializer(serializers.ModelSerializer):
@@ -193,7 +208,7 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
         )
 
 
-class PostSerializer(serializers.ModelSerializer):
+class PostSerializer(ContentSerializer):
 
     image = serializers.ImageField(write_only=True, required=False, allow_null=True)
     image_url = serializers.SerializerMethodField("get_image_url")
@@ -212,110 +227,25 @@ class PostSerializer(serializers.ModelSerializer):
         else:
             return image.url
 
-    class Meta:
+    class Meta(ContentSerializer.Meta):
         model = Post
         fields = (
-            "id",
-            "club_code",
+            *ContentSerializer.Meta.fields,
             "title",
             "subtitle",
             "post_url",
             "image",
             "image_url",
-            "created_date",
-            "start_date",
-            "expire_date",
-            "club_comment",
-            "admin_comment",
-            "status",
-            "target_populations",
         )
-        read_only_fields = ("id", "created_date", "target_populations")
 
-    def parse_target_populations(
-        self, raw_target_populations: List[int] | str
-    ) -> List[TargetPopulation]:
-        if isinstance(raw_target_populations, list):
-            ids = raw_target_populations
-        else:
-            ids = (
-                list()
-                if len(raw_target_populations) == 0
-                else [int(id) for id in raw_target_populations.split(",")]
+    def is_valid(self, *args: Any, **kwargs: Any) -> bool:
+        if isinstance(self.initial_data, QueryDict):
+            self.initial_data = self.initial_data.dict()
+            self.initial_data["target_populations"] = list(
+                (
+                    map(int, self.initial_data["target_populations"].split(","))
+                    if "target_populations" in self.initial_data
+                    else []
+                ),
             )
-        return TargetPopulation.objects.filter(id__in=ids)
-
-    def update_target_populations(
-        self, target_populations: List[TargetPopulation]
-    ) -> List[TargetPopulation]:
-        year = False
-        major = False
-        school = False
-        degree = False
-
-        for population in target_populations:
-            if population.kind == TargetPopulation.KIND_YEAR:
-                year = True
-            elif population.kind == TargetPopulation.KIND_MAJOR:
-                major = True
-            elif population.kind == TargetPopulation.KIND_SCHOOL:
-                school = True
-            elif population.kind == TargetPopulation.KIND_DEGREE:
-                degree = True
-
-        if not year:
-            target_populations |= TargetPopulation.objects.filter(kind=TargetPopulation.KIND_YEAR)
-        if not major:
-            target_populations |= TargetPopulation.objects.filter(kind=TargetPopulation.KIND_MAJOR)
-        if not school:
-            target_populations |= TargetPopulation.objects.filter(kind=TargetPopulation.KIND_SCHOOL)
-        if not degree:
-            target_populations |= TargetPopulation.objects.filter(kind=TargetPopulation.KIND_DEGREE)
-
-        return target_populations
-
-    def create(self, validated_data: ValidationData) -> Post:
-        club_code: ClubCode = validated_data["club_code"]
-        # Ensures user is part of club
-        if club_code not in [
-            x["club"]["code"] for x in get_user_clubs(self.context["request"].user)
-        ]:
-            raise serializers.ValidationError(
-                detail={"detail": "You do not access to create a Poll under this club."}
-            )
-
-        # Ensuring user cannot create an admin comment upon creation
-        validated_data["admin_comment"] = None
-        validated_data["status"] = Post.STATUS_DRAFT
-
-        instance = super().create(validated_data)
-
-        # Update target populations
-        # If none of a categories were selected, then we will auto-select
-        # all populations in that categary
-        data = self.context["request"].data
-        raw_target_populations = self.parse_target_populations(data["target_populations"])
-        target_populations = self.update_target_populations(raw_target_populations)
-
-        instance.target_populations.set(target_populations)
-        instance.save()
-
-        return instance
-
-    def update(self, instance: Post, validated_data: ValidationData) -> Post:
-        # if post is updated, then approved should be false
-        if not self.context["request"].user.is_superuser:
-            validated_data["status"] = Post.STATUS_DRAFT
-
-        data = self.context["request"].data
-
-        # Additional logic for target populations
-        if "target_populations" in data:
-            target_populations = self.parse_target_populations(data["target_populations"])
-            data = self.context["request"].data
-            raw_target_populations = self.parse_target_populations(data["target_populations"])
-            target_populations = self.update_target_populations(raw_target_populations)
-
-            validated_data["target_populations"] = target_populations
-
-        return super().update(instance, validated_data)
+        return super().is_valid(*args, **kwargs)
