@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from pennmobile.analytics import Metric, record_analytics
 from portal.logic import (
     check_targets,
     get_club_info,
@@ -224,6 +225,10 @@ class PollVotes(viewsets.ModelViewSet):
 
         poll_votes = PollVote.objects.filter(id_hash=id_hash).order_by("-created_date")
         return Response(RetrievePollVoteSerializer(poll_votes, many=True).data)
+
+    def create(self, request, *args, **kwargs):
+        record_analytics(Metric.PORTAL_POLL_VOTED, request.user.username)
+        return super().create(request, *args, **kwargs)
 
 
 class PollVoteStatistics(APIView):

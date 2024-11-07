@@ -1,3 +1,5 @@
+import json
+
 from rest_framework import serializers
 
 from dining.models import DiningItem, DiningMenu, DiningStation, Venue
@@ -6,13 +8,21 @@ from dining.models import DiningItem, DiningMenu, DiningStation, Venue
 class VenueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Venue
-        fields = ("venue_id", "name", "image_url")
+        fields = "__all__"
 
 
 class DiningItemSerializer(serializers.ModelSerializer):
+    nutrition_info = serializers.SerializerMethodField()
+
     class Meta:
         model = DiningItem
-        fields = ("item_id", "name", "description", "ingredients")
+        fields = "__all__"
+
+    def get_nutrition_info(self, obj):
+        try:
+            return json.loads(obj.nutrition_info)
+        except json.JSONDecodeError:
+            return obj.nutrition_info
 
 
 class DiningStationSerializer(serializers.ModelSerializer):
@@ -29,4 +39,4 @@ class DiningMenuSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DiningMenu
-        fields = ("venue", "date", "start_time", "end_time", "stations", "service")
+        fields = "__all__"
