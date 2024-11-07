@@ -303,8 +303,7 @@ class FitnessUsage(APIView):
                     # Set value to None if the last retrieved data was
                     # over 2 hours old to avoid extrapolation
                     if hour_date - datetime.timedelta(hours=1) > before_date:
-                        for i in range(hour, 24):
-                            usage[i] = None
+                        usage[hour:24] = [None] * (24 - hour)
                         break
                     else:
                         after_date, after_val = timezone.localtime(), before_val

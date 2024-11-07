@@ -171,8 +171,8 @@ class TestBookingWrapper(TestCase):
         bookings = list(reservation.gsrbooking_set.all())
         bookings.sort(key=lambda x: x.start)
         # check bookings cover entire range and enough time
-        for i in range(len(bookings) - 1):
-            self.assertEqual(bookings[i].end, bookings[i + 1].start)
+        for booking, next_booking in zip(bookings, bookings[1:]):
+            self.assertEqual(booking.end, next_booking.start)
         total_time = sum([booking.end - booking.start for booking in bookings], timedelta())
         self.assertEqual(total_time, timedelta(hours=2))
 
@@ -200,8 +200,8 @@ class TestBookingWrapper(TestCase):
         bookings = list(reservation.gsrbooking_set.all())
         bookings.sort(key=lambda x: x.start)
         # check bookings cover entire range and enough time
-        for i in range(len(bookings) - 1):
-            self.assertEqual(bookings[i].end, bookings[i + 1].start)
+        for booking, next_booking in zip(bookings, bookings[1:]):
+            self.assertEqual(booking.end, next_booking.start)
         total_time = sum([booking.end - booking.start for booking in bookings], timedelta())
         self.assertEqual(total_time, timedelta(hours=2))
         # check reservation exists
