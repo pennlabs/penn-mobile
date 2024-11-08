@@ -6,71 +6,92 @@ from django.db.models import Q
 User = get_user_model()
 
 
-class GlobalStat(models.Model):
-
-    stat_key = models.CharField(max_length=50, 
-                                null=False, blank=False)
-    
-    stat_value = models.CharField(max_length=50, 
-                                  null=False, blank=False)
-    
-    semester = models.CharField(max_length=5, null=False, blank=False)
-
-    class Meta:
-        unique_together = ("stat_key", "semester")
-
-    def __str__(self):
-        return f"Global -- {self.stat_key}-{str(self.semester)} : {self.stat_value}"
 
 
 # Add a new model for keys 
-class UserStatKey(models.Model):
-    stat_key = models.CharField(max_length=50, null=False, blank=False)
+class IndividualStatKey(models.Model):
+    key = models.CharField(max_length=50, primary_key=True,null=False, blank=False)
 
     def __str__(self) -> str:
-        return self.stat_key
-
-
-class IndividualStat(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    stat_key = models.ForeignKey(UserStatKey, on_delete=models.CASCADE)
-
-    stat_value = models.CharField(max_length=50, 
-                                  null=False, blank=False)
-    semester = models.CharField(max_length=5, null=False, blank=False)
-
-    class Meta: 
-        unique_together = ("stat_key", "semester", "user")
-
-    def __str__(self) -> str:
-        return f"User: {self.user} -- {self.stat_key}-{str(self.semester)} : {self.stat_value}"
+        return self.key
     
-class StatLocation(models.Model):
-    IndividualStatKey = models.ForeignKey(UserStatKey,null=True, blank=True, default=None ,on_delete=models.CASCADE)
-    GlobalStatKey = models.ForeignKey(GlobalStat, null=True,blank=True,default=None,on_delete=models.CASCADE)
+class GlobalStatKey(models.Model):
+    key = models.CharField(max_length=50, primary_key=True,null=False, blank=False)
 
-    text_field_name = models.CharField(max_length=50, null=False, blank=False)
-    def save(self, *args, **kwargs):
-        print(self.GlobalStatKey)
-        if not self.GlobalStatKey:
-            self.GlobalStatKey = None
-        if not self.IndividualStatKey:
-            self.IndividualStatKey = None
-        if self.IndividualStatKey != None and self.GlobalStatKey != None:
-            raise Exception("Gave two stat values")
-        
+    def __str__(self) -> str:
+        return self.key
 
-        super(StatLocation, self).save(*args, **kwargs)
-    def __str__(self):
-        return f"{self.text_field_name} -> {self.IndividualStatKey} --> {self.GlobalStatKey}"
+
 
 # Why do we want time? Ask Vincent 
 class Page(models.Model):
 
     # How to do this, using individual vs stat_key ?
-    name = models.CharField(max_length=50, null=False, blank=False)
+    name = models.CharField(max_length=50, primary_key=True,null=False, blank=False)
     template_path = models.CharField(max_length=50, null=False, blank=False)
-    stat_locations = models.ManyToManyField(StatLocation, blank=True)
-    semester = models.CharField(max_length=5, null=False, blank=False)
+    individual_stats = models.ManyToManyField('IndividualStatKey', through="IndividualStatThrough", blank=True)
+    global_stats = models.ManyToManyField('GlobalStatKey', through="GlobalStatThrough", blank=True)
+
+    # semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     def __str__(self):
         return f"{self.name}"
+
+
+
+class Semester(models.Model):
+    semester = models.CharField(max_length=5, primary_key=True,null=False, blank=False)
+    pages = models.ManyToManyField('Page', blank=True)
+
+class GlobalStat(models.Model):
+
+    key = models.ForeignKey(GlobalStatKey, on_delete=models.CASCADE)
+
+    
+    value = models.CharField(max_length=50, 
+                                  null=False, blank=False)
+    
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ("key", "semester")
+
+    def __str__(self):
+        return f"Global -- {self.key}-{str(self.semester)} : {self.value}"
+
+
+
+class IndividualStat(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    key = models.ForeignKey(IndividualStatKey, on_delete=models.CASCADE)
+
+    value = models.CharField(max_length=50, 
+                                  null=False, blank=False)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+
+    class Meta: 
+        unique_together = ("key", "semester", "user")
+
+    def __str__(self) -> str:
+        return f"User: {self.user} -- {self.key}-{str(self.semester)} : {self.value}"
+    
+
+
+
+
+class IndividualStatThrough(models.Model):
+    IndividualStatKey = models.ForeignKey(IndividualStatKey,null=False, blank=False, default=None ,on_delete=models.CASCADE)
+    Page = models.ForeignKey(Page, null=False, blank=False, on_delete=models.CASCADE)
+    text_field_name = models.CharField(max_length=50, null=False, blank=False)
+
+    def __str__(self):
+        return f"{self.Page} -> {self.text_field_name} : {self.IndividualStatKey}"
+
+
+class GlobalStatThrough(models.Model):
+    GlobalStatKey = models.ForeignKey(GlobalStatKey,null=False, blank=False, default=None ,on_delete=models.CASCADE)
+    Page = models.ForeignKey(Page, null=False, blank=False, on_delete=models.CASCADE)
+    text_field_name = models.CharField(max_length=50, null=False, blank=False)
+    def __str__(self):
+        return f"{self.Page} -> {self.text_field_name} : {self.GlobalStatKey}"
+
+

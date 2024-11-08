@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
-from .views import GeneratePage
-urlpatterns = [
-    path('generate/', GeneratePage.as_view({"get" : "user_generation"}), name='user_generation'),
-]
+from .views import SemesterView
 
+urlpatterns = [
+    path('semester/<str:semester_id>/', SemesterView.as_view(), name='semester-detail'),
+]
