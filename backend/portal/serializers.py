@@ -238,7 +238,7 @@ class PostSerializer(ContentSerializer):
             self.initial_data["target_populations"] = list(
                 (
                     map(int, self.initial_data["target_populations"].split(","))
-                    if "target_populations" in self.initial_data
+                    if self.initial_data.get("target_populations", "") != ""
                     else []
                 ),
             )
