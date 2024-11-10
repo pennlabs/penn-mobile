@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 
-from wrapped.models import GlobalStatKey, GlobalStat,IndividualStat, IndividualStatKey, Page, IndividualStatThrough, GlobalStatThrough, Semester
+from wrapped.models import GlobalStatKey, GlobalStat,IndividualStat, IndividualStatKey, Page, IndividualStatPageField, GlobalStatPageField, Semester
 
 
 class WrappedIndividualAdmin(admin.ModelAdmin):
@@ -14,17 +14,17 @@ class WrappedGlobalAdmin(admin.ModelAdmin):
     list_display = ["key", "value", "semester"]
     search_fields = ["key__icontains"]
 
-class IndividualStatThroughAdmin(admin.TabularInline):  
-    model = IndividualStatThrough
+class IndividualStatPageFieldAdmin(admin.TabularInline):  
+    model = IndividualStatPageField
     extra = 1
 
-class GlobalStatThroughAdmin(admin.TabularInline):  
-    model = GlobalStatThrough
+class GlobalStatPageFieldAdmin(admin.TabularInline):  
+    model = GlobalStatPageField
     extra = 1
 
 
 class PageAdmin(admin.ModelAdmin):
-    inlines = [IndividualStatThroughAdmin, GlobalStatThroughAdmin]
+    inlines = [IndividualStatPageFieldAdmin, GlobalStatPageFieldAdmin]
 
 
 

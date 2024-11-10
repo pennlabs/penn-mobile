@@ -2,10 +2,9 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from datetime import timedelta
 
 User = get_user_model()
-
-
 
 
 # Add a new model for keys 
@@ -20,22 +19,6 @@ class GlobalStatKey(models.Model):
 
     def __str__(self) -> str:
         return self.key
-
-
-
-# Why do we want time? Ask Vincent 
-class Page(models.Model):
-
-    # How to do this, using individual vs stat_key ?
-    name = models.CharField(max_length=50, primary_key=True,null=False, blank=False)
-    template_path = models.CharField(max_length=50, null=False, blank=False)
-    individual_stats = models.ManyToManyField('IndividualStatKey', through="IndividualStatThrough", blank=True)
-    global_stats = models.ManyToManyField('GlobalStatKey', through="GlobalStatThrough", blank=True)
-
-    # semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
-    def __str__(self):
-        return f"{self.name}"
-
 
 
 class Semester(models.Model):
@@ -75,23 +58,32 @@ class IndividualStat(models.Model):
         return f"User: {self.user} -- {self.key}-{str(self.semester)} : {self.value}"
     
 
+class Page(models.Model):
+
+    name = models.CharField(max_length=50, primary_key=True,null=False, blank=False)
+    template_path = models.CharField(max_length=50, null=False, blank=False)
+    individual_stats = models.ManyToManyField(IndividualStatKey, through="IndividualStatPageField", blank=True)
+    global_stats = models.ManyToManyField(GlobalStatKey, through="GlobalStatPageField", blank=True)
+    duration = models.DurationField(blank=True, default=timedelta(minutes=0))
+
+    def __str__(self):
+        return f"{self.name}"
 
 
-
-class IndividualStatThrough(models.Model):
-    IndividualStatKey = models.ForeignKey(IndividualStatKey,null=False, blank=False, default=None ,on_delete=models.CASCADE)
+class IndividualStatPageField(models.Model):
+    individual_stat_key = models.ForeignKey(IndividualStatKey,null=False, blank=False, default=None ,on_delete=models.CASCADE)
     Page = models.ForeignKey(Page, null=False, blank=False, on_delete=models.CASCADE)
     text_field_name = models.CharField(max_length=50, null=False, blank=False)
 
     def __str__(self):
-        return f"{self.Page} -> {self.text_field_name} : {self.IndividualStatKey}"
+        return f"{self.Page} -> {self.text_field_name} : {self.individual_stat_key}"
 
 
-class GlobalStatThrough(models.Model):
-    GlobalStatKey = models.ForeignKey(GlobalStatKey,null=False, blank=False, default=None ,on_delete=models.CASCADE)
+class GlobalStatPageField(models.Model):
+    global_stat_key = models.ForeignKey(GlobalStatKey,null=False, blank=False, default=None ,on_delete=models.CASCADE)
     Page = models.ForeignKey(Page, null=False, blank=False, on_delete=models.CASCADE)
     text_field_name = models.CharField(max_length=50, null=False, blank=False)
     def __str__(self):
-        return f"{self.Page} -> {self.text_field_name} : {self.GlobalStatKey}"
+        return f"{self.Page} -> {self.text_field_name} : {self.global_stat_key}"
 
 
