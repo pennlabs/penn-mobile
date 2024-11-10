@@ -9,3 +9,23 @@ repos:
       - id: flake8
         args: [--config, backend/setup.cfg]
       - id: detect-private-key
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-requests
+          - types-python-dateutil
+          - django-stubs
+          - djangorestframework-stubs
+          - types-PyYAML
+        files: ^backend/
+        args: [
+          --ignore-missing-imports,
+          --disallow-untyped-defs,
+          --check-untyped-defs,
+          --warn-redundant-casts,
+          --no-implicit-optional,
+          --strict-optional,
+        ]
