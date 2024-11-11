@@ -78,7 +78,7 @@ class Content(models.Model):
             self._get_email_subject(),
             get_backend_manager_emails(),
             (
-                f"A new {self.__class__._meta.model_name} for {self.club_code}"
+                f"A new {self.__class__._meta.model_name} for {self.club_code} "
                 f"has been created by {self.creator}."
             ),
         )
