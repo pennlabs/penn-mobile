@@ -1,4 +1,4 @@
-from typing import Any, Protocol, Type, TypeAlias, TypeVar, cast, runtime_checkable
+from typing import Any, Optional, Protocol, Type, TypeAlias, TypeVar, cast, runtime_checkable
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
@@ -11,7 +11,9 @@ DjangoUser = get_user_model()
 
 
 class UserManager(Protocol):
-    def create_user(self, username: str, email: str, password: str) -> "UserType": ...
+    def create_user(
+        self, username: str, email: str, password: Optional[str] = None
+    ) -> "UserType": ...
 
     def create_superuser(self, username: str, email: str, password: str) -> "UserType": ...
 

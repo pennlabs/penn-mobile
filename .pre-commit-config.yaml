@@ -3,7 +3,7 @@ repos:
     rev: v1.1-mobile-backend
     hooks:
       - id: black
-        args: [-l100]
+        args: [-l100, --config, backend/pyproject.toml]
       - id: isort
         args: []
       - id: flake8

@@ -17,8 +17,9 @@ from user.serializers import (
     NotificationTokenSerializer,
     UserSerializer,
 )
-from utils.types import DjangoUser, UserType, get_user
 from user.types import NotificationSettingQuerySet, NotificationTokenQuerySet
+from utils.types import DjangoUser, UserType, get_user
+
 
 class UserView(generics.RetrieveUpdateAPIView):
     """

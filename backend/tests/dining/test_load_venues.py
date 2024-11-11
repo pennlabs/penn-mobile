@@ -7,13 +7,13 @@ from dining.models import Venue
 
 
 class TestLoadVenues(TestCase):
-    def test(self):
+    def test(self) -> None:
         out = StringIO()
         call_command("load_venues", stdout=out)
 
         self.assertEqual(len(Venue.objects.all()), 16)
 
-        list_of_ids = []
+        list_of_ids: list[int] = []
         for venue in Venue.objects.all():
             self.assertNotIn(venue.venue_id, list_of_ids)
             list_of_ids.append(venue.venue_id)

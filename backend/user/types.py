@@ -2,7 +2,7 @@ from typing import Tuple
 
 from django.db.models import Manager, QuerySet
 
-from user.models import NotificationToken, NotificationSetting
+from user.models import NotificationSetting, NotificationToken
 
 
 TokenPair = Tuple[str, str]  # (username, token)
