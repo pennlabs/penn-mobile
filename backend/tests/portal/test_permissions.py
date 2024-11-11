@@ -10,7 +10,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from portal.models import Poll, PollOption, PollVote
-from utils.types import DjangoUserModel, DjangoUserType
+from utils.types import DjangoUserModel, UserType
 
 
 def mock_get_user_clubs(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
@@ -23,13 +23,13 @@ class PollPermissions(TestCase):
         call_command("load_target_populations", "--years", "2022, 2023, 2024, 2025")
 
         self.client: APIClient = APIClient()
-        self.admin: DjangoUserType = DjangoUserModel.objects.create_superuser(
+        self.admin: UserType = DjangoUserModel.objects.create_superuser(
             "admin@example.com", "admin", "admin"
         )
-        self.user1: DjangoUserType = DjangoUserModel.objects.create_user(
+        self.user1: UserType = DjangoUserModel.objects.create_user(
             "user1", "user@seas.upenn.edu", "user"
         )
-        self.user2: DjangoUserType = DjangoUserModel.objects.create_user(
+        self.user2: UserType = DjangoUserModel.objects.create_user(
             "user2", "user@seas.upenn.edu", "user"
         )
 
@@ -63,12 +63,7 @@ class PollPermissions(TestCase):
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     def test_authentication(self) -> None:
         # asserts that anonymous users cannot access any route
-        list_urls = [
-            "poll-list",
-            "polloption-list",
-            "pollvote-list",
-            "target-populations",
-        ]
+        list_urls = ["poll-list", "polloption-list", "pollvote-list", "target-populations"]
         for url in list_urls:
             response_1 = self.client.get(reverse(f"portal:{url}"))
             self.assertEqual(response_1.status_code, 403)

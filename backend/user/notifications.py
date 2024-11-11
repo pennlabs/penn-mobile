@@ -12,12 +12,12 @@ if sys.version_info.major >= 3 and sys.version_info.minor >= 10:
     were removed in 3.10. Specifically, the error is coming from a dependency
     of apns2 named hyper.
     """
-    from collections import abc
+    import collections.abc as collections_abc
 
-    collections.Iterable = abc.Iterable
-    collections.Mapping = abc.Mapping
-    collections.MutableSet = abc.MutableSet
-    collections.MutableMapping = abc.MutableMapping
+    setattr(collections, "Iterable", collections_abc.Iterable)
+    setattr(collections, "Mapping", collections_abc.Mapping)
+    setattr(collections, "MutableSet", collections_abc.MutableSet)
+    setattr(collections, "MutableMapping", collections_abc.MutableMapping)
 
 from apns2.client import APNsClient
 from apns2.credentials import TokenCredentials
@@ -25,6 +25,7 @@ from apns2.payload import Payload
 from celery import shared_task
 
 from user.models import NotificationToken
+from user.types import NotificationResult, NotificationTokenQuerySet, TokenPair
 
 
 # taken from the apns2 method for batch notifications
@@ -34,12 +35,12 @@ Notification = collections.namedtuple("Notification", ["token", "payload"])
 def send_push_notifications(
     users: Optional[list[str]],
     service: Optional[str],
-    title: str,
+    title: Optional[str],
     body: str,
     delay: int = 0,
     is_dev: bool = False,
     is_shadow: bool = False,
-) -> tuple[list[str], list[str]]:
+) -> NotificationResult:
     """
     Sends push notifications.
 
@@ -55,27 +56,29 @@ def send_push_notifications(
     # collect available usernames & their respective device tokens
     token_objects = get_tokens(users, service)
     if not token_objects:
-        return [], users
+        return [], users if users is not None else []
     success_users, tokens = zip(*token_objects)
+    success_users_list = list(success_users)
+    tokens_list = list(tokens)
 
     # send notifications
     if delay:
-        send_delayed_notifications(tokens, title, body, service, is_dev, is_shadow, delay)
+        send_delayed_notifications(
+            tokens_list, title or "", body, service or "", is_dev, is_shadow, delay
+        )
     else:
-        send_immediate_notifications(tokens, title, body, service, is_dev, is_shadow)
+        send_immediate_notifications(tokens_list, title, body, service or "", is_dev, is_shadow)
 
     if not users:  # if to all users, can't be any failed pennkeys
-        return success_users, []
-    failed_users = list(set(users) - set(success_users))
-    return success_users, failed_users
+        return success_users_list, []
+    failed_users = list(set(users) - set(success_users_list))
+    return success_users_list, failed_users
 
 
-def get_tokens(
-    users: Optional[list[str]] = None, service: Optional[str] = None
-) -> list[tuple[str, str]]:
+def get_tokens(users: Optional[list[str]] = None, service: Optional[str] = None) -> list[TokenPair]:
     """Returns list of token objects (with username & token value) for specified users"""
 
-    token_objs = NotificationToken.objects.select_related("user").filter(
+    token_objs: NotificationTokenQuerySet = NotificationToken.objects.select_related("user").filter(
         kind=NotificationToken.KIND_IOS  # NOTE: until Android implementation
     )
     if users:
@@ -84,7 +87,7 @@ def get_tokens(
         token_objs = token_objs.filter(
             notificationsetting__service=service, notificationsetting__enabled=True
         )
-    return token_objs.exclude(token="").values_list("user__username", "token")
+    return list(token_objs.exclude(token="").values_list("user__username", "token"))
 
 
 @shared_task(name="notifications.send_immediate_notifications")

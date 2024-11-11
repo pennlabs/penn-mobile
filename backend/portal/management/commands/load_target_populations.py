@@ -1,3 +1,6 @@
+from argparse import ArgumentParser
+from typing import Any
+
 import requests
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -6,7 +9,7 @@ from portal.models import TargetPopulation
 
 
 class Command(BaseCommand):
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
             "--years",
             type=str,
@@ -14,7 +17,7 @@ class Command(BaseCommand):
             "This is only used for testing currently.",
         )
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         # loads majors, years, schools, and degrees onto TargetPopulations
         # runs get_or_create to ensure no duplicates
         majors = requests.get("https://platform.pennlabs.org/accounts/majors/").json()
@@ -36,10 +39,10 @@ class Command(BaseCommand):
             TargetPopulation.objects.get_or_create(kind=TargetPopulation.KIND_YEAR, population=year)
         self.stdout.write("Uploaded Target Populations!")
 
-    def get_degrees(self):
+    def get_degrees(self) -> list[str]:
         return ["BACHELORS", "MASTERS", "PHD", "PROFESSIONAL"]
 
-    def get_years(self, years):
+    def get_years(self, years: str | None) -> list[int]:
         # creates new class year in August in preparation for upcoming school year
         if years is None:
             return (

@@ -240,12 +240,7 @@ class Availability(APIView):
             user: Any = request.user
             return Response(
                 GSRBooker.get_availability(
-                    lid,
-                    gid,
-                    start,
-                    end,
-                    user,
-                    user.booking_groups.filter(name="Penn Labs").first(),
+                    lid, gid, start, end, user, user.booking_groups.filter(name="Penn Labs").first()
                 )
             )
         except APIError as e:

@@ -5,9 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("penndata", "0010_auto_20240228_0150"),
-    ]
+    dependencies = [("penndata", "0010_auto_20240228_0150")]
 
     operations = [
         migrations.AlterField(
@@ -41,8 +39,6 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="event",
-            name="start",
-            field=models.DateTimeField(blank=True, null=True),
+            model_name="event", name="start", field=models.DateTimeField(blank=True, null=True)
         ),
     ]

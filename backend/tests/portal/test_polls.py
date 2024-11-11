@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from utils.email import get_backend_manager_emails
-from utils.types import DjangoUserModel, DjangoUserType
+from utils.types import DjangoUserModel, UserType
 
 
 def mock_get_user_clubs(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
@@ -38,7 +38,7 @@ class TestUserClubs(TestCase):
 
     def setUp(self) -> None:
         self.client: APIClient = APIClient()
-        self.test_user: DjangoUserType = DjangoUserModel.objects.create_user(
+        self.test_user: UserType = DjangoUserModel.objects.create_user(
             "user", "user@seas.upenn.edu", "user"
         )
         self.client.force_authenticate(user=self.test_user)
@@ -77,7 +77,7 @@ class TestPolls(TestCase):
         degree = TargetPopulation.objects.get(population="BACHELORS").id
 
         self.client: APIClient = APIClient()
-        self.test_user: DjangoUserType = DjangoUserModel.objects.create_user(
+        self.test_user: UserType = DjangoUserModel.objects.create_user(
             "user", "user@seas.upenn.edu", "user"
         )
         self.client.force_authenticate(user=self.test_user)
@@ -128,9 +128,7 @@ class TestPolls(TestCase):
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     def test_update_poll(self) -> None:
-        payload = {
-            "question": "New question",
-        }
+        payload = {"question": "New question"}
         response = self.client.patch(f"/portal/polls/{self.poll_id}/", payload)
         res_json = json.loads(response.content)
         # asserts that the update worked
@@ -286,7 +284,7 @@ class TestPollVotes(TestCase):
         self.target_id = TargetPopulation.objects.get(population="2024").id
 
         self.client: APIClient = APIClient()
-        self.test_user: DjangoUserType = DjangoUserModel.objects.create_user(
+        self.test_user: UserType = DjangoUserModel.objects.create_user(
             "user", "user@seas.upenn.edu", "user"
         )
         self.client.force_authenticate(user=self.test_user)
@@ -354,8 +352,7 @@ class TestPollVotes(TestCase):
         self.assertEqual(1, PollVote.objects.all().count())
         self.assertEqual("1", vote.id_hash)
         self.assertIn(
-            TargetPopulation.objects.get(id=self.target_id),
-            vote.target_populations.all(),
+            TargetPopulation.objects.get(id=self.target_id), vote.target_populations.all()
         )
 
     def test_recent_poll_empty(self) -> None:

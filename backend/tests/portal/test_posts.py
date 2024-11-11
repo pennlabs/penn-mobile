@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 
 from portal.models import Post, TargetPopulation
 from utils.email import get_backend_manager_emails
-from utils.types import DjangoUserModel, DjangoUserType
+from utils.types import DjangoUserModel, UserType
 
 
 def mock_get_user_clubs(*args: Any, **kwargs: Any) -> list[dict]:
@@ -40,7 +40,7 @@ class TestPosts(TestCase):
         call_command("load_target_populations", "--years", "2022, 2023, 2024, 2025")
         self.target_id: int = TargetPopulation.objects.get(population="2024").id
         self.client: APIClient = APIClient()
-        self.test_user: DjangoUserType = DjangoUserModel.objects.create_user(
+        self.test_user: UserType = DjangoUserModel.objects.create_user(
             "user", "user@seas.upenn.edu", "user"
         )
         self.client.force_authenticate(user=self.test_user)
@@ -114,7 +114,7 @@ class TestPosts(TestCase):
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     def test_update_post_admin(self) -> None:
-        admin: DjangoUserType = DjangoUserModel.objects.create_superuser(
+        admin: UserType = DjangoUserModel.objects.create_superuser(
             "admin@upenn.edu", "admin", "admin"
         )
         self.client.force_authenticate(user=admin)
@@ -150,7 +150,7 @@ class TestPosts(TestCase):
             subtitle="Test subtitle 2",
             expire_date=timezone.localtime() + datetime.timedelta(days=1),
         )
-        admin: DjangoUserType = DjangoUserModel.objects.create_superuser(
+        admin: UserType = DjangoUserModel.objects.create_superuser(
             "admin@upenn.edu", "admin", "admin"
         )
         self.client.force_authenticate(user=admin)
@@ -196,7 +196,7 @@ class TestPosts(TestCase):
 
         post = Post.objects.last()
         assert post is not None
-        creator = cast(DjangoUserType, post.creator)
+        creator = cast(UserType, post.creator)
         post.status = Post.STATUS_APPROVED
         post.save()
 

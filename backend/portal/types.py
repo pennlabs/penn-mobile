@@ -1,6 +1,9 @@
-from typing import Any, Dict, List, Set, TypeAlias
+from typing import Any, Dict, List, TypeAlias
+
 from django.db.models import Manager, QuerySet
+
 from portal.models import Poll, PollOption, PollVote, Post, TargetPopulation
+
 
 # QuerySet types
 PollQuerySet: TypeAlias = QuerySet[Poll, Manager[Poll]]

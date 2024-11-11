@@ -5,9 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("portal", "0006_auto_20220112_1529"),
-    ]
+    dependencies = [("portal", "0006_auto_20220112_1529")]
 
     operations = [
         migrations.AddField(
@@ -18,5 +16,5 @@ class Migration(migrations.Migration):
                 default="DRAFT",
                 max_length=30,
             ),
-        ),
+        )
     ]

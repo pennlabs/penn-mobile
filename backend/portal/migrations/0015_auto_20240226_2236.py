@@ -5,24 +5,14 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("portal", "0014_alter_post_post_url"),
-    ]
+    dependencies = [("portal", "0014_alter_post_post_url")]
 
     operations = [
         migrations.AddField(
-            model_name="poll",
-            name="priority",
-            field=models.IntegerField(default=0),
+            model_name="poll", name="priority", field=models.IntegerField(default=0)
         ),
         migrations.AddField(
-            model_name="post",
-            name="priority",
-            field=models.IntegerField(default=0),
+            model_name="post", name="priority", field=models.IntegerField(default=0)
         ),
-        migrations.AlterField(
-            model_name="poll",
-            name="expire_date",
-            field=models.DateTimeField(),
-        ),
+        migrations.AlterField(model_name="poll", name="expire_date", field=models.DateTimeField()),
     ]

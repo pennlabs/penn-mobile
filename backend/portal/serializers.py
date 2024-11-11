@@ -85,22 +85,13 @@ class ContentSerializer(serializers.ModelSerializer):
 class PollSerializer(ContentSerializer):
     class Meta(ContentSerializer.Meta):
         model = Poll
-        fields: tuple[str, ...] = (
-            *ContentSerializer.Meta.fields,
-            "question",
-            "multiselect",
-        )
+        fields: tuple[str, ...] = (*ContentSerializer.Meta.fields, "question", "multiselect")
 
 
 class PollOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollOption
-        fields: tuple[str, ...] = (
-            "id",
-            "poll",
-            "choice",
-            "vote_count",
-        )
+        fields: tuple[str, ...] = ("id", "poll", "choice", "vote_count")
         read_only_fields: tuple[str, ...] = ("id", "vote_count")
 
     def create(self, validated_data: ValidationData) -> PollOption:
@@ -144,16 +135,8 @@ class RetrievePollSerializer(serializers.ModelSerializer):
 class PollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
-        fields: tuple[str, ...] = (
-            "id",
-            "id_hash",
-            "poll_options",
-            "created_date",
-        )
-        read_only_fields: tuple[str, ...] = (
-            "id",
-            "created_date",
-        )
+        fields: tuple[str, ...] = ("id", "id_hash", "poll_options", "created_date")
+        read_only_fields: tuple[str, ...] = ("id", "created_date")
 
     def create(self, validated_data: ValidationData) -> PollVote:
 
@@ -211,10 +194,7 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
         fields: tuple[str, ...] = ("id", "id_hash", "poll", "poll_options", "created_date")
-        read_only_fields: tuple[str, ...] = (
-            "id",
-            "created_date",
-        )
+        read_only_fields: tuple[str, ...] = ("id", "created_date")
 
 
 class PostSerializer(ContentSerializer):

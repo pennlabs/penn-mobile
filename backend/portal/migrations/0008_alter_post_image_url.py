@@ -5,14 +5,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("portal", "0007_post_status"),
-    ]
+    dependencies = [("portal", "0007_post_status")]
 
     operations = [
         migrations.AlterField(
             model_name="post",
             name="image_url",
             field=models.ImageField(blank=True, null=True, upload_to="portal/images"),
-        ),
+        )
     ]

@@ -37,9 +37,7 @@ def create_settings_for_users(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("user", "0006_alter_notificationtoken_user_notificationsetting"),
-    ]
+    dependencies = [("user", "0006_alter_notificationtoken_user_notificationsetting")]
 
     operations = [
         migrations.AlterField(

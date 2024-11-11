@@ -1,8 +1,6 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Optional
 
-from django.contrib.auth import get_user_model
-from django.db.models import QuerySet
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from identity.permissions import B2BPermission
 from rest_framework import generics, viewsets
@@ -19,17 +17,8 @@ from user.serializers import (
     NotificationTokenSerializer,
     UserSerializer,
 )
-
-
-if TYPE_CHECKING:
-    from django.contrib.auth.models import AbstractUser
-
-    UserType = AbstractUser
-else:
-    UserType = Any
-
-User = get_user_model()
-
+from utils.types import DjangoUser, UserType, get_user
+from user.types import NotificationSettingQuerySet, NotificationTokenQuerySet
 
 class UserView(generics.RetrieveUpdateAPIView):
     """
@@ -60,7 +49,7 @@ class NotificationTokenView(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationTokenSerializer
 
-    def get_queryset(self) -> QuerySet[NotificationToken]:
+    def get_queryset(self) -> NotificationTokenQuerySet:
         return NotificationToken.objects.filter(user=self.request.user)
 
 
@@ -80,9 +69,9 @@ class NotificationSettingView(viewsets.ModelViewSet):
     serializer_class = NotificationSettingSerializer
 
     def is_authorized(self, request: Request) -> bool:
-        return request.user and request.user.is_authenticated
+        return request.user is not None and request.user.is_authenticated
 
-    def get_queryset(self) -> QuerySet[NotificationSetting]:
+    def get_queryset(self) -> NotificationSettingQuerySet:
         if self.is_authorized(self.request):
             return NotificationSetting.objects.filter(token__user=self.request.user)
         return NotificationSetting.objects.none()
@@ -99,9 +88,9 @@ class NotificationSettingView(viewsets.ModelViewSet):
 
         pennkey = request.GET.get("pennkey")
         user = (
-            request.user
+            get_user(request)
             if self.is_authorized(request)
-            else get_object_or_404(User, username=pennkey)
+            else get_object_or_404(DjangoUser, username=pennkey)
         )
 
         token = NotificationToken.objects.filter(user=user).first()
@@ -121,13 +110,13 @@ class NotificationAlertView(APIView):
 
     def post(self, request: Request) -> Response:
         users = (
-            [self.request.user.username]
-            if request.user and request.user.is_authenticated
+            [get_user(self.request).username]
+            if get_user(request) and get_user(request).is_authenticated
             else request.data.get("users", list())
         )
         service = request.data.get("service")
-        title = request.data.get("title")
-        body = request.data.get("body")
+        title = request.data.get("title", None)
+        body = request.data.get("body", None)
         delay = max(request.data.get("delay", 0), 0)
         is_dev = request.data.get("is_dev", False)
 
@@ -149,7 +138,7 @@ class ClearCookiesView(APIView):
     Clears all cookies from the browser
     """
 
-    def get(self, request: Request) -> Response:
+    def get(self, request: Request) -> HttpResponse:
         next_url = request.GET.get("next", None)
         response = (
             HttpResponseRedirect(f"/api/accounts/login/?next={next_url}")

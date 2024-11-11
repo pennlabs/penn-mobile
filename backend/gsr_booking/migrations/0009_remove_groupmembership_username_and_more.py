@@ -5,15 +5,10 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("gsr_booking", "0008_auto_20211112_1657"),
-    ]
+    dependencies = [("gsr_booking", "0008_auto_20211112_1657")]
 
     operations = [
-        migrations.RemoveField(
-            model_name="groupmembership",
-            name="username",
-        ),
+        migrations.RemoveField(model_name="groupmembership", name="username"),
         migrations.AddField(
             model_name="groupmembership",
             name="is_wharton",

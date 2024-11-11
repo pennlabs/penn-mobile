@@ -84,12 +84,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
 
     def book_room(self, rid: int, start: str, end: str, user: "UserType") -> dict[str, Any]:
         """Books room if pennkey is valid"""
-        payload = {
-            "start": start,
-            "end": end,
-            "pennkey": user.username,
-            "room": rid,
-        }
+        payload = {"start": start, "end": end, "pennkey": user.username, "room": rid}
         url = f"{WHARTON_URL}{user.username}/student_reserve"
         response = self.request("POST", url, json=payload).json()
         if "error" in response:

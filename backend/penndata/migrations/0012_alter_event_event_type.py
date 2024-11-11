@@ -5,9 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("penndata", "0011_alter_event_event_type_alter_event_start"),
-    ]
+    dependencies = [("penndata", "0011_alter_event_event_type_alter_event_start")]
 
     operations = [
         migrations.AlterField(
@@ -40,5 +38,5 @@ class Migration(migrations.Migration):
                 max_length=63,
                 null=True,
             ),
-        ),
+        )
     ]

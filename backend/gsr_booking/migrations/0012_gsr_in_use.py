@@ -5,14 +5,10 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("gsr_booking", "0011_alter_reservation_group"),
-    ]
+    dependencies = [("gsr_booking", "0011_alter_reservation_group")]
 
     operations = [
         migrations.AddField(
-            model_name="gsr",
-            name="in_use",
-            field=models.BooleanField(default=True),
-        ),
+            model_name="gsr", name="in_use", field=models.BooleanField(default=True)
+        )
     ]

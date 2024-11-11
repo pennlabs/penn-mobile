@@ -15,5 +15,5 @@ class Migration(migrations.Migration):
             model_name="profile",
             name="fitness_preferences",
             field=models.ManyToManyField(blank=True, to="penndata.FitnessRoom"),
-        ),
+        )
     ]

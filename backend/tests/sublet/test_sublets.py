@@ -175,11 +175,7 @@ class TestSublets(TestCase):
         }
         response = self.client.post("/sublet/properties/", payload)
         old_id = json.loads(response.content)["id"]
-        payload = {
-            "title": "Sublet2",
-            "max_price": 999,
-            "min_price": 499,
-        }
+        payload = {"title": "Sublet2", "max_price": 999, "min_price": 499}
         response = self.client.get("/sublet/properties/", payload)
         res_json = json.loads(response.content)
         sublet = res_json[0]
