@@ -1,25 +1,16 @@
 import json
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any
+from typing import Any, Optional
 
 from accounts.ipc import authenticated_request
-from django.contrib.auth import get_user_model
 from rest_framework.exceptions import PermissionDenied
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
+from portal.types import PopulationGroups, PopulationList
+from utils.types import DjangoUserType
 
 
-if TYPE_CHECKING:
-    from django.contrib.auth.models import AbstractUser
-
-    UserType = AbstractUser
-else:
-    UserType = Any
-
-User = get_user_model()
-
-
-def get_user_info(user: "UserType") -> dict[str, Any]:
+def get_user_info(user: DjangoUserType) -> dict[str, Any]:
     """Returns Platform user information"""
     response = authenticated_request(user, "GET", "https://platform.pennlabs.org/accounts/me/")
     if response.status_code == 403:
@@ -27,7 +18,7 @@ def get_user_info(user: "UserType") -> dict[str, Any]:
     return json.loads(response.content)
 
 
-def get_user_clubs(user: "UserType") -> list[dict[str, Any]]:
+def get_user_clubs(user: DjangoUserType) -> list[dict[str, Any]]:
     """Returns list of clubs that user is a member of"""
     response = authenticated_request(user, "GET", "https://pennclubs.com/api/memberships/")
     if response.status_code == 403:
@@ -36,7 +27,7 @@ def get_user_clubs(user: "UserType") -> list[dict[str, Any]]:
     return res_json
 
 
-def get_club_info(user: "UserType", club_code: str) -> dict[str, Any]:
+def get_club_info(user: DjangoUserType, club_code: str) -> dict[str, Any]:
     """Returns club information based on club code"""
     response = authenticated_request(user, "GET", f"https://pennclubs.com/api/clubs/{club_code}/")
     if response.status_code == 403:
@@ -45,12 +36,12 @@ def get_club_info(user: "UserType", club_code: str) -> dict[str, Any]:
     return {"name": res_json["name"], "image": res_json["image_url"], "club_code": club_code}
 
 
-def get_user_populations(user: "UserType") -> list[TargetPopulation]:
+def get_user_populations(user: DjangoUserType) -> PopulationGroups:
     """Returns the target populations that the user belongs to"""
 
     user_info = get_user_info(user)
 
-    year = (
+    year: PopulationList = (
         [
             TargetPopulation.objects.get(
                 kind=TargetPopulation.KIND_YEAR, population=user_info["student"]["graduation_year"]
@@ -60,7 +51,7 @@ def get_user_populations(user: "UserType") -> list[TargetPopulation]:
         else []
     )
 
-    school = (
+    school: PopulationList = (
         [
             TargetPopulation.objects.get(kind=TargetPopulation.KIND_SCHOOL, population=x["name"])
             for x in user_info["student"]["school"]
@@ -69,7 +60,7 @@ def get_user_populations(user: "UserType") -> list[TargetPopulation]:
         else []
     )
 
-    major = (
+    major: PopulationList = (
         [
             TargetPopulation.objects.get(kind=TargetPopulation.KIND_MAJOR, population=x["name"])
             for x in user_info["student"]["major"]
@@ -78,7 +69,7 @@ def get_user_populations(user: "UserType") -> list[TargetPopulation]:
         else []
     )
 
-    degree = (
+    degree: PopulationList = (
         [
             TargetPopulation.objects.get(
                 kind=TargetPopulation.KIND_DEGREE, population=x["degree_type"]
@@ -92,29 +83,30 @@ def get_user_populations(user: "UserType") -> list[TargetPopulation]:
     return [year, school, major, degree]
 
 
-def check_targets(obj: Poll, user: "UserType") -> bool:
+def check_targets(obj: Poll, user: DjangoUserType) -> bool:
     """
     Check if user aligns with target populations of poll or post
     """
 
-    populations = get_user_populations(user)
+    population_groups = get_user_populations(user)
 
-    year = set(obj.target_populations.filter(kind=TargetPopulation.KIND_YEAR))
-    school = set(obj.target_populations.filter(kind=TargetPopulation.KIND_SCHOOL))
-    major = set(obj.target_populations.filter(kind=TargetPopulation.KIND_MAJOR))
-    degree = set(obj.target_populations.filter(kind=TargetPopulation.KIND_DEGREE))
+    year_targets = set(obj.target_populations.filter(kind=TargetPopulation.KIND_YEAR))
+    school_targets = set(obj.target_populations.filter(kind=TargetPopulation.KIND_SCHOOL))
+    major_targets = set(obj.target_populations.filter(kind=TargetPopulation.KIND_MAJOR))
+    degree_targets = set(obj.target_populations.filter(kind=TargetPopulation.KIND_DEGREE))
 
-    return (
-        set(populations[0]).issubset(year)
-        and set(populations[1]).issubset(school)
-        and set(populations[2]).issubset(major)
-        and set(populations[3]).issubset(degree)
+    return all(
+        set(group).issubset(targets)
+        for group, targets in zip(
+            population_groups, [year_targets, school_targets, major_targets, degree_targets]
+        )
     )
 
 
-def get_demographic_breakdown(poll_id: int) -> list[dict[str, Any]]:
+def get_demographic_breakdown(poll_id: Optional[int] = None) -> list[dict[str, Any]]:
     """Collects Poll statistics on school and graduation year demographics"""
-
+    if poll_id is None:
+        raise ValueError("poll_id is required")
     # passing in id is necessary because
     # poll info is already serialized
     poll = Poll.objects.get(id=poll_id)

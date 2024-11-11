@@ -1,8 +1,8 @@
 import datetime
 import json
+from typing import Any
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
@@ -10,27 +10,25 @@ from rest_framework.test import APIClient
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from utils.email import get_backend_manager_emails
+from utils.types import DjangoUserModel, DjangoUserType
 
 
-User = get_user_model()
-
-
-def mock_get_user_clubs(*args, **kwargs):
+def mock_get_user_clubs(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
     with open("tests/portal/get_user_clubs.json") as data:
         return json.load(data)
 
 
-def mock_get_user_info(*args, **kwargs):
+def mock_get_user_info(*args: Any, **kwargs: Any) -> dict[str, Any]:
     with open("tests/portal/get_user_info.json") as data:
         return json.load(data)
 
 
-def mock_get_null_user_info(*args, **kwargs):
+def mock_get_null_user_info(*args: Any, **kwargs: Any) -> dict[str, Any]:
     with open("tests/portal/get_null_user_info.json") as data:
         return json.load(data)
 
 
-def mock_get_club_info(*args, **kwargs):
+def mock_get_club_info(*args: Any, **kwargs: Any) -> dict[str, Any]:
     with open("tests/portal/get_club_info.json") as data:
         return json.load(data)
 
@@ -38,22 +36,28 @@ def mock_get_club_info(*args, **kwargs):
 class TestUserClubs(TestCase):
     """Test User and Club information"""
 
-    def setUp(self):
-        self.client = APIClient()
-        self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
+    def setUp(self) -> None:
+        self.client: APIClient = APIClient()
+        self.test_user: DjangoUserType = DjangoUserModel.objects.create_user(
+            "user", "user@seas.upenn.edu", "user"
+        )
         self.client.force_authenticate(user=self.test_user)
 
     @mock.patch("portal.views.get_user_info", mock_get_user_info)
-    def test_user_info(self):
+    def test_user_info(self) -> None:
         response = self.client.get("/portal/user/")
         res_json = json.loads(response.content)
+        assert isinstance(res_json, dict)
+        assert isinstance(res_json["user"], dict)
         self.assertEqual(12345678, res_json["user"]["pennid"])
 
     @mock.patch("portal.views.get_club_info", mock_get_club_info)
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
-    def test_user_clubs(self):
+    def test_user_clubs(self) -> None:
         response = self.client.get("/portal/clubs/")
         res_json = json.loads(response.content)
+        assert isinstance(res_json, dict)
+        assert isinstance(res_json["clubs"], list)
         self.assertEqual("pennlabs", res_json["clubs"][0]["code"])
 
 
@@ -61,17 +65,21 @@ class TestPolls(TestCase):
     """Tests Create/Update/Retrieve for Polls and Poll Options"""
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
-    def setUp(self):
+    def setUp(self) -> None:
         call_command("load_target_populations", "--years", "2022, 2023, 2024, 2025")
-        self.target_id = TargetPopulation.objects.get(population="2024").id
-        year = TargetPopulation.objects.get(population="2024").id
+        target = TargetPopulation.objects.get(population="2024")
+        self.target_id = target.id
+        year = target.id
         major = TargetPopulation.objects.get(population="Computer Science, BSE").id
         school = TargetPopulation.objects.get(
             population="School of Engineering and Applied Science"
         ).id
         degree = TargetPopulation.objects.get(population="BACHELORS").id
-        self.client = APIClient()
-        self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
+
+        self.client: APIClient = APIClient()
+        self.test_user: DjangoUserType = DjangoUserModel.objects.create_user(
+            "user", "user@seas.upenn.edu", "user"
+        )
         self.client.force_authenticate(user=self.test_user)
         # creates an approved poll to work with
         payload = {
@@ -98,10 +106,10 @@ class TestPolls(TestCase):
             poll.save()
 
         poll_1 = Poll.objects.get(question="How is your day")
-        self.id = poll_1.id
+        self.poll_id = poll_1.id
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
-    def test_create_poll(self):
+    def test_create_poll(self) -> None:
         # creates an unapproved poll
         payload = {
             "club_code": "pennlabs",
@@ -119,19 +127,19 @@ class TestPolls(TestCase):
 
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
-    def test_update_poll(self):
+    def test_update_poll(self) -> None:
         payload = {
             "question": "New question",
         }
-        response = self.client.patch(f"/portal/polls/{self.id}/", payload)
+        response = self.client.patch(f"/portal/polls/{self.poll_id}/", payload)
         res_json = json.loads(response.content)
         # asserts that the update worked
-        self.assertEqual(self.id, res_json["id"])
-        self.assertEqual("New question", Poll.objects.get(id=self.id).question)
+        self.assertEqual(self.poll_id, res_json["id"])
+        self.assertEqual("New question", Poll.objects.get(id=self.poll_id).question)
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.logic.get_user_info", mock_get_user_info)
-    def test_browse(self):
+    def test_browse(self) -> None:
         payload = {
             "club_code": "pennlabs",
             "question": "How is this question? 2",
@@ -148,7 +156,7 @@ class TestPolls(TestCase):
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.logic.get_user_info", mock_get_null_user_info)
-    def test_null_user_info_browse(self):
+    def test_null_user_info_browse(self) -> None:
         # Asserts that a user with empty user info can access all available polls
         response = self.client.post("/portal/polls/browse/", {"id_hash": 1})
         res_json = json.loads(response.content)
@@ -158,38 +166,38 @@ class TestPolls(TestCase):
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.logic.get_user_info", mock_get_user_info)
-    def test_create_option(self):
-        payload_1 = {"poll": self.id, "choice": "yes!"}
-        payload_2 = {"poll": self.id, "choice": "no!"}
+    def test_create_option(self) -> None:
+        payload_1 = {"poll": self.poll_id, "choice": "yes!"}
+        payload_2 = {"poll": self.poll_id, "choice": "no!"}
         self.client.post("/portal/options/", payload_1)
         self.client.post("/portal/options/", payload_2)
         self.assertEqual(2, PollOption.objects.all().count())
         # asserts options were created and were placed to right poll
         for poll_option in PollOption.objects.all():
-            self.assertEqual(Poll.objects.get(id=self.id), poll_option.poll)
+            self.assertEqual(Poll.objects.get(id=self.poll_id), poll_option.poll)
         response = self.client.post("/portal/polls/browse/", {"id_hash": 1})
         res_json = json.loads(response.content)
         self.assertEqual(2, len(res_json[0]["options"]))
 
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
-    def test_update_option(self):
-        payload_1 = {"poll": self.id, "choice": "yes!"}
+    def test_update_option(self) -> None:
+        payload_1 = {"poll": self.poll_id, "choice": "yes!"}
         response = self.client.post("/portal/options/", payload_1)
         res_json = json.loads(response.content)
         self.assertEqual("yes!", PollOption.objects.get(id=res_json["id"]).choice)
-        payload_2 = {"poll": self.id, "choice": "no!"}
+        payload_2 = {"poll": self.poll_id, "choice": "no!"}
         # checks that poll's option was changed
         self.client.patch(f'/portal/options/{res_json["id"]}/', payload_2)
         self.assertEqual("no!", PollOption.objects.get(id=res_json["id"]).choice)
 
-    def test_review_poll(self):
+    def test_review_poll(self) -> None:
         Poll.objects.create(
             club_code="pennlabs",
             question="hello?",
             expire_date=timezone.now() + datetime.timedelta(days=3),
         )
-        admin = User.objects.create_superuser("admin@example.com", "admin", "admin")
+        admin = DjangoUserModel.objects.create_superuser("admin@example.com", "admin", "admin")
         self.client.force_authenticate(user=admin)
         response = self.client.get("/portal/polls/review/")
         res_json = json.loads(response.content)
@@ -200,12 +208,12 @@ class TestPolls(TestCase):
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.logic.get_user_info", mock_get_user_info)
-    def test_more_than_five_options(self):
-        payload_1 = {"poll": self.id, "choice": "1"}
-        payload_2 = {"poll": self.id, "choice": "2"}
-        payload_3 = {"poll": self.id, "choice": "3"}
-        payload_4 = {"poll": self.id, "choice": "4"}
-        payload_5 = {"poll": self.id, "choice": "5"}
+    def test_more_than_five_options(self) -> None:
+        payload_1 = {"poll": self.poll_id, "choice": "1"}
+        payload_2 = {"poll": self.poll_id, "choice": "2"}
+        payload_3 = {"poll": self.poll_id, "choice": "3"}
+        payload_4 = {"poll": self.poll_id, "choice": "4"}
+        payload_5 = {"poll": self.poll_id, "choice": "5"}
         self.client.post("/portal/options/", payload_1)
         self.client.post("/portal/options/", payload_2)
         self.client.post("/portal/options/", payload_3)
@@ -214,17 +222,17 @@ class TestPolls(TestCase):
         self.assertEqual(5, PollOption.objects.all().count())
         # asserts options were created and were placed to right poll
         for poll_option in PollOption.objects.all():
-            self.assertEqual(Poll.objects.get(id=self.id), poll_option.poll)
+            self.assertEqual(Poll.objects.get(id=self.poll_id), poll_option.poll)
         response = self.client.post("/portal/polls/browse/", {"id_hash": 1})
         res_json = json.loads(response.content)
         self.assertEqual(5, len(res_json[0]["options"]))
         # adding more than 5 options to same poll should not be allowed
-        payload_6 = {"poll": self.id, "choice": "6"}
+        payload_6 = {"poll": self.poll_id, "choice": "6"}
         response = self.client.post("/portal/options/", payload_6)
         self.assertEqual(5, PollOption.objects.all().count())
 
-    def test_option_vote_view(self):
-        response = self.client.get(f"/portal/polls/{self.id}/option_view/")
+    def test_option_vote_view(self) -> None:
+        response = self.client.get(f"/portal/polls/{self.poll_id}/option_view/")
         res_json = json.loads(response.content)
         self.assertEqual("pennlabs", res_json["club_code"])
         # test that options key is in response
@@ -233,7 +241,7 @@ class TestPolls(TestCase):
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("utils.email.send_automated_email.delay_on_commit")
-    def test_send_email_on_create(self, mock_send_email):
+    def test_send_email_on_create(self, mock_send_email: mock.Mock) -> None:
         payload = {
             "club_code": "pennlabs",
             "question": "How is this question? 2",
@@ -249,7 +257,7 @@ class TestPolls(TestCase):
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("utils.email.send_automated_email.delay_on_commit")
-    def test_send_email_on_status_change(self, mock_send_email):
+    def test_send_email_on_status_change(self, mock_send_email: mock.Mock) -> None:
         payload = {
             "club_code": "pennlabs",
             "question": "How is this question? 2",
@@ -262,6 +270,7 @@ class TestPolls(TestCase):
         mock_send_email.assert_called_once()
 
         poll = Poll.objects.last()
+        assert poll is not None
         poll.status = Poll.STATUS_REVISION
         poll.save()
 
@@ -272,12 +281,14 @@ class TestPolls(TestCase):
 class TestPollVotes(TestCase):
     """Tests Create/Update Polls and History"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         call_command("load_target_populations", "--years", "2022, 2023, 2024, 2025")
         self.target_id = TargetPopulation.objects.get(population="2024").id
 
-        self.client = APIClient()
-        self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
+        self.client: APIClient = APIClient()
+        self.test_user: DjangoUserType = DjangoUserModel.objects.create_user(
+            "user", "user@seas.upenn.edu", "user"
+        )
         self.client.force_authenticate(user=self.test_user)
 
         # creates 4 polls, each with 3 options
@@ -331,27 +342,30 @@ class TestPollVotes(TestCase):
         PollOption.objects.create(poll=p4, choice="choice 12")
 
     @mock.patch("portal.logic.get_user_info", mock_get_user_info)
-    def test_create_vote(self):
+    def test_create_vote(self) -> None:
         payload_1 = {"id_hash": 1, "poll_options": [self.p1_op1_id]}
         response = self.client.post("/portal/votes/", payload_1)
         res_json = json.loads(response.content)
+        assert isinstance(res_json, dict)
         # tests that voting works
         self.assertIn(self.p1_op1_id, res_json["poll_options"])
+        vote = PollVote.objects.first()
+        assert vote is not None
         self.assertEqual(1, PollVote.objects.all().count())
-        self.assertEqual("1", PollVote.objects.all().first().id_hash)
+        self.assertEqual("1", vote.id_hash)
         self.assertIn(
             TargetPopulation.objects.get(id=self.target_id),
-            PollVote.objects.all().first().target_populations.all(),
+            vote.target_populations.all(),
         )
 
-    def test_recent_poll_empty(self):
+    def test_recent_poll_empty(self) -> None:
         response = self.client.post("/portal/votes/recent/", {"id_hash": 1})
         res_json = json.loads(response.content)
         self.assertIsNone(res_json["created_date"])
         self.assertIsNone(res_json["poll"]["created_date"])
 
     @mock.patch("portal.logic.get_user_info", mock_get_user_info)
-    def test_recent_poll(self):
+    def test_recent_poll(self) -> None:
         # answer poll
         payload_1 = {"id_hash": 1, "poll_options": [self.p1_op1_id]}
         self.client.post("/portal/votes/", payload_1)
@@ -368,7 +382,7 @@ class TestPollVotes(TestCase):
         self.assertEquals(self.p4_id, res_json2["poll"]["id"])
 
     @mock.patch("portal.logic.get_user_info", mock_get_user_info)
-    def test_all_votes(self):
+    def test_all_votes(self) -> None:
         payload_1 = {"id_hash": 1, "poll_options": [self.p1_op1_id]}
         self.client.post("/portal/votes/", payload_1)
         payload_2 = {"id_hash": 1, "poll_options": [self.p4_op1_id]}
@@ -382,7 +396,7 @@ class TestPollVotes(TestCase):
 
     @mock.patch("portal.logic.get_user_info", mock_get_user_info)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
-    def test_demographic_breakdown(self):
+    def test_demographic_breakdown(self) -> None:
         # plugging in votes for breakdown
         payload_1 = {"id_hash": 1, "poll_options": [self.p1_op1_id]}
         self.client.post("/portal/votes/", payload_1)

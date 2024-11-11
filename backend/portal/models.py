@@ -1,3 +1,6 @@
+import datetime
+from typing import Any
+
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Q
@@ -21,8 +24,9 @@ class TargetPopulation(models.Model):
         (KIND_DEGREE, "Degree"),
     )
 
-    kind = models.CharField(max_length=10, choices=KIND_OPTIONS, default=KIND_SCHOOL)
-    population = models.CharField(max_length=255)
+    id: int
+    kind: str = models.CharField(max_length=10, choices=KIND_OPTIONS, default=KIND_SCHOOL)
+    population: str = models.CharField(max_length=255)
 
     def __str__(self):
         return self.population
@@ -41,24 +45,29 @@ class Content(models.Model):
 
     ACTION_REQUIRED_CONDITION = Q(expire_date__gt=timezone.now()) & Q(status=STATUS_DRAFT)
 
-    club_code = models.CharField(max_length=255, blank=True)
-    created_date = models.DateTimeField(default=timezone.now)
-    start_date = models.DateTimeField(default=timezone.now)
-    expire_date = models.DateTimeField()
-    status = models.CharField(max_length=30, choices=STATUS_OPTIONS, default=STATUS_DRAFT)
-    club_comment = models.CharField(max_length=255, null=True, blank=True)
-    admin_comment = models.CharField(max_length=255, null=True, blank=True)
-    target_populations = models.ManyToManyField(TargetPopulation, blank=True)
-    priority = models.IntegerField(default=0)
-    creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    id: int
+    club_code: str = models.CharField(max_length=255, blank=True)
+    created_date: datetime.datetime = models.DateTimeField(default=timezone.now)
+    start_date: datetime.datetime = models.DateTimeField(default=timezone.now)
+    expire_date: datetime.datetime = models.DateTimeField()
+    status: str = models.CharField(max_length=30, choices=STATUS_OPTIONS, default=STATUS_DRAFT)
+    club_comment: str = models.CharField(max_length=255, null=True, blank=True)
+    admin_comment: str = models.CharField(max_length=255, null=True, blank=True)
+    target_populations: models.ManyToManyField = models.ManyToManyField(
+        TargetPopulation, blank=True
+    )
+    priority: int = models.IntegerField(default=0)
+    creator: models.ForeignKey = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     class Meta:
         abstract = True
 
-    def _get_email_subject(self):
+    def _get_email_subject(self) -> str:
         return f"[Portal] {self.__class__._meta.model_name.capitalize()} #{self.id}"
 
-    def _on_create(self):
+    def _on_create(self) -> None:
         send_automated_email.delay_on_commit(
             self._get_email_subject(),
             get_backend_manager_emails(),
@@ -68,7 +77,7 @@ class Content(models.Model):
             ),
         )
 
-    def _on_status_change(self):
+    def _on_status_change(self) -> None:
         if email := getattr(self.creator, "email", None):
             send_automated_email.delay_on_commit(
                 self._get_email_subject(),
@@ -82,7 +91,7 @@ class Content(models.Model):
                 ),
             )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         prev = self.__class__.objects.filter(id=self.id).first()
         super().save(*args, **kwargs)
         if prev is None:
@@ -93,35 +102,39 @@ class Content(models.Model):
 
 
 class Poll(Content):
-    question = models.CharField(max_length=255)
-    multiselect = models.BooleanField(default=False)
+    question: str = models.CharField(max_length=255)
+    multiselect: bool = models.BooleanField(default=False)
 
     def __str__(self):
         return self.question
 
 
 class PollOption(models.Model):
-    poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
-    choice = models.CharField(max_length=255)
-    vote_count = models.IntegerField(default=0)
+    id: int
+    poll: models.ForeignKey = models.ForeignKey(Poll, on_delete=models.CASCADE)
+    choice: str = models.CharField(max_length=255)
+    vote_count: int = models.IntegerField(default=0)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.poll.id} - Option - {self.choice}"
 
 
 class PollVote(models.Model):
-    id_hash = models.CharField(max_length=255, blank=True)
-    poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
-    poll_options = models.ManyToManyField(PollOption)
-    created_date = models.DateTimeField(default=timezone.now)
-    target_populations = models.ManyToManyField(TargetPopulation, blank=True)
+    id: int
+    id_hash: str = models.CharField(max_length=255, blank=True)
+    poll: models.ForeignKey = models.ForeignKey(Poll, on_delete=models.CASCADE)
+    poll_options: models.ManyToManyField = models.ManyToManyField(PollOption)
+    created_date: datetime.datetime = models.DateTimeField(default=timezone.now)
+    target_populations: models.ManyToManyField = models.ManyToManyField(
+        TargetPopulation, blank=True
+    )
 
 
 class Post(Content):
-    title = models.CharField(max_length=255)
-    subtitle = models.CharField(max_length=255)
-    post_url = models.CharField(max_length=255, null=True, blank=True)
-    image = models.ImageField(upload_to="portal/images", null=True, blank=True)
+    title: str = models.CharField(max_length=255)
+    subtitle: str = models.CharField(max_length=255)
+    post_url: str = models.CharField(max_length=255, null=True, blank=True)
+    image: models.ImageField = models.ImageField(upload_to="portal/images", null=True, blank=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title

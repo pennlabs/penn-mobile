@@ -1,11 +1,15 @@
+from typing import List, Union
+
 from django.conf import settings
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import URLPattern, URLResolver, include, path
 from django.views.generic import TemplateView
 from rest_framework.schemas import get_schema_view
 
 
-urlpatterns = [
+URLPatternList = List[Union[URLPattern, URLResolver]]
+
+urlpatterns: URLPatternList = [
     path("gsr/", include("gsr_booking.urls")),
     path("portal/", include("portal.urls")),
     path("admin/", admin.site.urls),
@@ -29,7 +33,7 @@ urlpatterns = [
     path("sublet/", include("sublet.urls")),
 ]
 
-urlpatterns = [
+urlpatterns: URLPatternList = [
     path("api/", include(urlpatterns)),
     path("", include((urlpatterns, "apex"))),
 ]
@@ -37,4 +41,4 @@ urlpatterns = [
 if settings.DEBUG:
     import debug_toolbar
 
-    urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
+    urlpatterns: URLPatternList = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns

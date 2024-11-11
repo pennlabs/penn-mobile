@@ -1,7 +1,6 @@
-from typing import Any, Dict, List, TypeAlias
+from typing import Any, List, Optional
 
-from django.contrib.auth import get_user_model
-from django.db.models import Count, Manager, Q, QuerySet
+from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.utils import timezone
 from rest_framework import generics, viewsets
@@ -36,17 +35,14 @@ from portal.serializers import (
     RetrievePollVoteSerializer,
     TargetPopulationSerializer,
 )
-
-
-PollQuerySet: TypeAlias = QuerySet[Poll, Manager[Poll]]
-PostQuerySet: TypeAlias = QuerySet[Post, Manager[Post]]
-PollVoteQuerySet: TypeAlias = QuerySet[PollVote, Manager[PollVote]]
-ClubData: TypeAlias = List[Dict[str, Any]]
-PollOptionQuerySet: TypeAlias = QuerySet[PollOption, Manager[PollOption]]
-TimeSeriesData: TypeAlias = Dict[str, Any]
-VoteStatistics: TypeAlias = Dict[str, Any]
-
-User = get_user_model()
+from portal.types import (
+    PollOptionQuerySet,
+    PollQuerySet,
+    PollVoteQuerySet,
+    PostQuerySet,
+    VoteStatistics,
+)
+from utils.types import AuthRequest, get_auth_user
 
 
 class UserInfo(APIView):
@@ -54,7 +50,7 @@ class UserInfo(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request: Request) -> Response:
+    def get(self, request: AuthRequest) -> Response:
         return Response({"user": get_user_info(request.user)})
 
 
@@ -63,8 +59,8 @@ class UserClubs(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request: Request) -> Response:
-        club_data: ClubData = [
+    def get(self, request: AuthRequest) -> Response:
+        club_data = [
             get_club_info(request.user, club["club"]["code"])
             for club in get_user_clubs(request.user)
         ]
@@ -104,21 +100,23 @@ class Polls(viewsets.ModelViewSet[Poll]):
 
     def get_queryset(self) -> PollQuerySet:
         # all polls if superuser, polls corresponding to club for regular user
+        user = get_auth_user(self.request)
         return (
             Poll.objects.all()
-            if self.request.user.is_superuser
+            if user.is_superuser
             else Poll.objects.filter(
-                club_code__in=[x["club"]["code"] for x in get_user_clubs(self.request.user)]
+                club_code__in=[x["club"]["code"] for x in get_user_clubs(user)]
             )
         )
 
     @action(detail=False, methods=["post"])
-    def browse(self, request: Request) -> Response:
+    def browse(self, request: AuthRequest) -> Response:
         """Returns list of all possible polls user can answer but has yet to
         For admins, returns list of all polls they have not voted for and have yet to expire
         """
 
         id_hash = request.data["id_hash"]
+        user = get_auth_user(request)
 
         # unvoted polls in draft/approaved mode for superuser
         # unvoted and approved polls within time frame for regular user
@@ -128,7 +126,7 @@ class Polls(viewsets.ModelViewSet[Poll]):
                 Q(status=Poll.STATUS_DRAFT) | Q(status=Poll.STATUS_APPROVED),
                 expire_date__gte=timezone.localtime(),
             )
-            if request.user.is_superuser
+            if user.is_superuser
             else Poll.objects.filter(
                 ~Q(id__in=PollVote.objects.filter(id_hash=id_hash).values_list("poll_id")),
                 status=Poll.STATUS_APPROVED,
@@ -140,9 +138,9 @@ class Polls(viewsets.ModelViewSet[Poll]):
         # list of polls where user doesn't identify with
         # target populations
         bad_polls = []
-        if not request.user.is_superuser:
+        if not user.is_superuser:
             for unfiltered_poll in unfiltered_polls:
-                if not check_targets(unfiltered_poll, request.user):
+                if not check_targets(unfiltered_poll, user):
                     bad_polls.append(unfiltered_poll.id)
 
         # excludes the bad polls
@@ -175,7 +173,7 @@ class Polls(viewsets.ModelViewSet[Poll]):
         )
 
     @action(detail=True, methods=["get"])
-    def option_view(self, request: Request, pk: int = None) -> Response:
+    def option_view(self, request: Request, pk: Optional[int] = None) -> Response:
         """Returns information on specific poll, including options and vote counts"""
         return Response(RetrievePollSerializer(Poll.objects.filter(id=pk).first(), many=False).data)
 
@@ -199,12 +197,13 @@ class PollOptions(viewsets.ModelViewSet[PollOption]):
     def get_queryset(self) -> PollOptionQuerySet:
         # if user is admin, they can update anything
         # if user is not admin, they can only update their own options
+        user = get_auth_user(self.request)
         return (
             PollOption.objects.all()
-            if self.request.user.is_superuser
+            if user.is_superuser
             else PollOption.objects.filter(
                 poll__in=Poll.objects.filter(
-                    club_code__in=[x["club"]["code"] for x in get_user_clubs(self.request.user)]
+                    club_code__in=[x["club"]["code"] for x in get_user_clubs(user)]
                 )
             )
         )
@@ -239,7 +238,8 @@ class PollVotes(viewsets.ModelViewSet[PollVote]):
         return Response(RetrievePollVoteSerializer(poll_votes, many=True).data)
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        record_analytics(Metric.PORTAL_POLL_VOTED, request.user.username)
+        user = get_auth_user(request)
+        record_analytics(Metric.PORTAL_POLL_VOTED, user.username)
         return super().create(request, *args, **kwargs)
 
 
@@ -286,26 +286,28 @@ class Posts(viewsets.ModelViewSet[Post]):
     serializer_class = PostSerializer
 
     def get_queryset(self) -> PostQuerySet:
+        user = get_auth_user(self.request)
         return (
             Post.objects.all()
-            if self.request.user.is_superuser
+            if user.is_superuser
             else Post.objects.filter(
-                club_code__in=[x["club"]["code"] for x in get_user_clubs(self.request.user)]
+                club_code__in=[x["club"]["code"] for x in get_user_clubs(user)]
             )
         )
 
     @action(detail=False, methods=["get"])
-    def browse(self, request: Request) -> Response:
+    def browse(self, request: AuthRequest) -> Response:
         """
         Returns a list of all posts that are targeted at the current user
         For admins, returns list of posts that they have not approved and have yet to expire
         """
+        user = get_auth_user(request)
         unfiltered_posts = (
             Post.objects.filter(
                 Q(status=Post.STATUS_DRAFT) | Q(status=Post.STATUS_APPROVED),
                 expire_date__gte=timezone.localtime(),
             )
-            if request.user.is_superuser
+            if user.is_superuser
             else Post.objects.filter(
                 status=Post.STATUS_APPROVED,
                 start_date__lte=timezone.localtime(),
