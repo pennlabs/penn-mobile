@@ -1,8 +1,12 @@
 from django.contrib import admin
 
-from user.models import NotificationSetting, NotificationToken, Profile
+from user.models import IOSNotificationToken, AndroidNotificationToken, NotificationService, Profile
 
+# custom IOSNotificationToken admin
+class IOSNotificationTokenAdmin(admin.ModelAdmin):
+    list_display = ('token', 'user', 'is_dev')
 
-admin.site.register(NotificationToken)
-admin.site.register(NotificationSetting)
+admin.site.register(IOSNotificationToken, IOSNotificationTokenAdmin)
+admin.site.register(AndroidNotificationToken)
+admin.site.register(NotificationService)
 admin.site.register(Profile)

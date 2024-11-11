@@ -8,13 +8,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from user.models import NotificationSetting, NotificationToken
+from user.models import IOSNotificationToken, AndroidNotificationToken, NotificationService
 from user.notifications import send_push_notifications
 from user.serializers import (
-    NotificationSettingSerializer,
-    NotificationTokenSerializer,
     UserSerializer,
 )
+
+from abc import ABC
 
 
 User = get_user_model()
@@ -40,64 +40,53 @@ class UserView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
-class NotificationTokenView(viewsets.ModelViewSet):
-    """
-    get:
-    Return notification tokens of user.
-    """
-
+class NotificationTokenView(APIView, ABC):
     permission_classes = [IsAuthenticated]
-    serializer_class = NotificationTokenSerializer
+    queryset = None
 
-    def get_queryset(self):
-        return NotificationToken.objects.filter(user=self.request.user)
+    def get_defaults(self):
+        raise NotImplementedError # pragma: no cover
 
+    def post(self, request, token):
+        _, created = self.queryset.update_or_create(token=token, defaults=self.get_defaults())
+        if created:
+            return Response({"detail": "Token created."}, status=201)
+        return Response({"detail": "Token updated."}, status=200)
 
-class NotificationSettingView(viewsets.ModelViewSet):
-    """
-    get:
-    Return notification settings of user.
+    def delete(self, request, token):
+        self.queryset.filter(token=token).delete()
+        return Response({"detail": "Token deleted."}, status=200)
 
-    post:
-    Creates/updates new notification setting of user for a specific service.
+class IOSNotificationTokenView(NotificationTokenView):
+    queryset = IOSNotificationToken.objects.all()
+    def get_defaults(self):
+        is_dev = self.request.data.get("is_dev", "false").lower() == "true"
+        return {"user": self.request.user, "is_dev": is_dev}
 
-    check:
-    Checks if user wants notification for specified serice.
-    """
+class AndroidNotificationTokenView(NotificationTokenView):
+    queryset = AndroidNotificationToken.objects.all()
+    def get_defaults(self):
+        return {"user": self.request.user}
 
-    permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
-    serializer_class = NotificationSettingSerializer
+class NotificationServiceSettingView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    def is_authorized(self, request):
-        return request.user and request.user.is_authenticated
-
-    def get_queryset(self):
-        if self.is_authorized(self.request):
-            return NotificationSetting.objects.filter(token__user=self.request.user)
-        return NotificationSetting.objects.none()
-
-    @action(detail=True, methods=["get"])
-    def check(self, request, pk=None):
-        """
-        Returns whether the user wants notification for specified service.
-        :param pk: service name
-        """
-
-        if pk not in dict(NotificationSetting.SERVICE_OPTIONS):
-            return Response({"detail": "Invalid Parameters."}, status=400)
-
-        pennkey = request.GET.get("pennkey")
-        user = (
-            request.user
-            if self.is_authorized(request)
-            else get_object_or_404(User, username=pennkey)
+    def get(self, request):
+        user = request.user
+        services = NotificationService.objects.all().prefetch_related("enabled_users")
+        return Response(
+            {
+                service.name: service.enabled_users.filter(id=user.id).exists()
+                for service in services
+            }
         )
 
-        token = NotificationToken.objects.filter(user=user).first()
-        if not token:
-            return Response({"service": pk, "enabled": False})
-        setting, _ = NotificationSetting.objects.get_or_create(token=token, service=pk)
-        return Response(NotificationSettingSerializer(setting).data)
+class NotificationServiceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    # TODO: this is becoming a common pattern, consider abstracting
+    def get(self, request):
+        return Response(NotificationService.objects.all().values_list("name", flat=True))
 
 
 class NotificationAlertView(APIView):
@@ -109,27 +98,37 @@ class NotificationAlertView(APIView):
     permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
 
     def post(self, request):
-        users = (
+        usernames = (
             [self.request.user.username]
             if request.user and request.user.is_authenticated
             else request.data.get("users", list())
         )
+
         service = request.data.get("service")
         title = request.data.get("title")
         body = request.data.get("body")
         delay = max(request.data.get("delay", 0), 0)
-        is_dev = request.data.get("is_dev", False)
+        is_dev = request.data.get("is_dev", "false").lower() == "true"
 
         if None in [service, title, body]:
             return Response({"detail": "Missing required parameters."}, status=400)
-        if service not in dict(NotificationSetting.SERVICE_OPTIONS):
-            return Response({"detail": "Invalid service."}, status=400)
 
-        success_users, failed_users = send_push_notifications(
-            users, service, title, body, delay, is_dev
+        if not (service_obj := NotificationService.objects.filter(name=service).first()):
+            return Response({"detail": "Invalid service."}, status=400)
+        
+        users_with_service = service_obj.enabled_users.filter(username__in=usernames)
+
+        tokens = list(IOSNotificationToken.objects.filter(user__in=users_with_service, is_dev=is_dev).values_list(
+            "token", flat=True
+        ))
+
+        send_push_notifications(
+            tokens, service, title, body, delay, is_dev
         )
 
-        return Response({"success_users": success_users, "failed_users": failed_users})
+        users_with_service_usernames = users_with_service.values_list("username", flat=True)
+        users_not_reached_usernames = list(set(usernames) - set(users_with_service_usernames))
+        return Response({"success_users": users_with_service_usernames, "failed_users": users_not_reached_usernames})
 
 
 class ClearCookiesView(APIView):

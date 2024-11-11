@@ -10,7 +10,7 @@ from identity.identity import attest, container, get_platform_jwks
 from rest_framework.test import APIClient
 
 from gsr_booking.models import GSR, GSRBooking, Reservation
-from user.models import NotificationSetting, NotificationToken
+from user.models import NotificationToken, NotificationService
 
 
 User = get_user_model()
@@ -100,6 +100,12 @@ class TestNotificationSetting(TestCase):
     """Tests for CRUD Notification Settings"""
 
     def setUp(self):
+        NotificationService.objects.bulk_create(
+            [
+                NotificationService(name="PENN_MOBILE"),
+                NotificationService(name="OHQ"),
+            ]
+        )
         self.client = APIClient()
         self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client.force_authenticate(user=self.test_user)
@@ -107,11 +113,9 @@ class TestNotificationSetting(TestCase):
 
     def test_get_settings(self):
         # test that settings visible via GET
-        response = self.client.get("/user/notifications/settings/")
+        response = self.client.get("/user/notifications/services/")
         res_json = json.loads(response.content)
-        self.assertEqual(len(NotificationSetting.SERVICE_OPTIONS), len(res_json))
-        for setting in res_json:
-            self.assertFalse(setting["enabled"])
+        self.assertEqual(2, len(res_json))
 
     def test_invalid_settings_update(self):
         NotificationToken.objects.all().delete()

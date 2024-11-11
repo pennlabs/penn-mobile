@@ -23,19 +23,18 @@ from apns2.credentials import TokenCredentials
 from apns2.payload import Payload
 from celery import shared_task
 
-from user.models import NotificationToken
 
 
 # taken from the apns2 method for batch notifications
 Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
-def send_push_notifications(users, service, title, body, delay=0, is_dev=False, is_shadow=False):
+def send_push_notifications(tokens, category, title, body, delay=0, is_dev=False, is_shadow=False):
     """
     Sends push notifications.
 
-    :param users: list of usernames to send notifications to or 'None' if to all
-    :param service: service to send notifications for or 'None' if ignoring settings
+    :param tokens: nonempty list of tokens to send notifications to
+    :param category: category to send notifications for
     :param title: title of notification
     :param body: body of notification
     :param delay: delay in seconds before sending notification
@@ -43,37 +42,16 @@ def send_push_notifications(users, service, title, body, delay=0, is_dev=False, 
     :return: tuple of (list of success usernames, list of failed usernames)
     """
 
-    # collect available usernames & their respective device tokens
-    token_objects = get_tokens(users, service)
-    if not token_objects:
-        return [], users
-    success_users, tokens = zip(*token_objects)
-
     # send notifications
+    if tokens == []:
+        raise ValueError("No tokens to send notifications to.")
+
     if delay:
-        send_delayed_notifications(tokens, title, body, service, is_dev, is_shadow, delay)
+        send_delayed_notifications(tokens, title, body, category, is_dev, is_shadow, delay)
     else:
-        send_immediate_notifications(tokens, title, body, service, is_dev, is_shadow)
-
-    if not users:  # if to all users, can't be any failed pennkeys
-        return success_users, []
-    failed_users = list(set(users) - set(success_users))
-    return success_users, failed_users
+        send_immediate_notifications(tokens, title, body, category, is_dev, is_shadow)
 
 
-def get_tokens(users=None, service=None):
-    """Returns list of token objects (with username & token value) for specified users"""
-
-    token_objs = NotificationToken.objects.select_related("user").filter(
-        kind=NotificationToken.KIND_IOS  # NOTE: until Android implementation
-    )
-    if users:
-        token_objs = token_objs.filter(user__username__in=users)
-    if service:
-        token_objs = token_objs.filter(
-            notificationsetting__service=service, notificationsetting__enabled=True
-        )
-    return token_objs.exclude(token="").values_list("user__username", "token")
 
 
 @shared_task(name="notifications.send_immediate_notifications")
