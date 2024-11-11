@@ -14,4 +14,3 @@ UserOfferQuerySet: TypeAlias = QuerySet[Offer, Manager[Offer]]
 
 # Data structure types
 ValidationData: TypeAlias = Dict[str, Any]
-

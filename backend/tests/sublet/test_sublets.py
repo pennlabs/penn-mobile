@@ -1,40 +1,45 @@
 import json
+from typing import cast
 from unittest.mock import MagicMock
 
-from django.contrib.auth import get_user_model
 from django.core.files.storage import Storage
+from django.forms import ImageField
 from django.test import TestCase
 from rest_framework.test import APIClient
 
 from sublet.models import Amenity, Offer, Sublet, SubletImage
-
-
-User = get_user_model()
+from utils.types import DjangoUserModel, UserType
 
 
 class TestSublets(TestCase):
     """Tests Create/Update/Retrieve/List for sublets"""
 
-    def setUp(self):
-        self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
-        self.client = APIClient()
+    def setUp(self) -> None:
+        self.user: UserType = DjangoUserModel.objects.create_user(
+            "user", "user@seas.upenn.edu", "user"
+        )
+        self.client: APIClient = APIClient()
         self.client.force_authenticate(user=self.user)
-        test_user = User.objects.create_user("user1", "user1@seas.upenn.edu", "user1")
+        test_user: UserType = DjangoUserModel.objects.create_user(
+            "user1", "user1@seas.upenn.edu", "user1"
+        )
         for i in range(1, 6):
             Amenity.objects.create(name=f"Amenity{str(i)}")
         with open("tests/sublet/mock_sublets.json") as data:
-            data = json.load(data)
-            self.test_sublet1 = Sublet.objects.create(subletter=self.user, **data[0])
-            self.test_sublet2 = Sublet.objects.create(subletter=test_user, **data[1])
+            mock_data = json.load(data)
+            self.test_sublet1 = Sublet.objects.create(subletter=self.user, **mock_data[0])
+            self.test_sublet2 = Sublet.objects.create(subletter=test_user, **mock_data[1])
 
         storage_mock = MagicMock(spec=Storage, name="StorageMock")
         storage_mock.generate_filename = lambda filename: filename
         storage_mock.save = MagicMock(side_effect=lambda name, *args, **kwargs: name)
         storage_mock.url = MagicMock(name="url")
         storage_mock.url.return_value = "http://penn-mobile.com/mock-image.png"
-        SubletImage._meta.get_field("image").storage = storage_mock
 
-    def test_create_sublet(self):
+        image_field = cast(ImageField, SubletImage._meta.get_field("image"))
+        image_field.storage = storage_mock  # type: ignore
+
+    def test_create_sublet(self) -> None:
         # Create a new sublet using the serializer
         payload = {
             "title": "Test Sublet1",
@@ -66,13 +71,14 @@ class TestSublets(TestCase):
             "end_date",
             "amenities",
         ]
-        [self.assertEqual(payload[key], res_json[key]) for key in match_keys]
+        for key in match_keys:
+            self.assertEqual(payload[key], res_json[key])
         self.assertIn("id", res_json)
         self.assertEqual(self.user.id, res_json["subletter"])
         self.assertEqual(2, len(res_json["amenities"]))
         self.assertIn("images", res_json)
 
-    def test_create_sublet_with_profanity(self):
+    def test_create_sublet_with_profanity(self) -> None:
         # Payload with profanity in the title and description
         payload_with_profanity = {
             "title": "fuck",
@@ -101,7 +107,7 @@ class TestSublets(TestCase):
             res_json["description"][0], "The description contains inappropriate language."
         )
 
-    def test_update_sublet(self):
+    def test_update_sublet(self) -> None:
         # Create a sublet to be updated
         payload = {
             "title": "Test Sublet2",
@@ -124,12 +130,14 @@ class TestSublets(TestCase):
         response = self.client.patch(f"/sublet/properties/{str(old_id)}/", data)
         res_json = json.loads(response.content)
         self.assertEqual(3, res_json["beds"])
-        self.assertEqual(old_id, Sublet.objects.all().last().id)
-        self.assertEqual("New Title", Sublet.objects.get(id=old_id).title)
+        last_sublet = Sublet.objects.all().last()
+        assert last_sublet is not None
+        self.assertEqual(old_id, last_sublet.id)
+        self.assertEqual("New Title", last_sublet.title)
         self.assertEqual("New Title", res_json["title"])
         self.assertEqual(1, len(res_json["amenities"]))
 
-    def test_browse_sublets(self):
+    def test_browse_sublets(self) -> None:
         response = self.client.get("/sublet/properties/")
         res_json = json.loads(response.content)
         first_length = len(res_json)
@@ -158,7 +166,7 @@ class TestSublets(TestCase):
         self.assertEqual(sublet.beds, 2)
         self.assertEqual(sublet.baths, 1)
 
-    def test_browse_filtered(self):
+    def test_browse_filtered(self) -> None:
         payload = {
             "title": "Test Sublet2",
             "address": "1234 Test Street",
@@ -175,8 +183,12 @@ class TestSublets(TestCase):
         }
         response = self.client.post("/sublet/properties/", payload)
         old_id = json.loads(response.content)["id"]
-        payload = {"title": "Sublet2", "max_price": 999, "min_price": 499}
-        response = self.client.get("/sublet/properties/", payload)
+        filter_payload = {
+            "title": "Sublet2",
+            "max_price": "999",
+            "min_price": "499",
+        }
+        response = self.client.get("/sublet/properties/", filter_payload)
         res_json = json.loads(response.content)
         sublet = res_json[0]
         self.assertEqual(1, len(res_json))
@@ -204,7 +216,7 @@ class TestSublets(TestCase):
         res_json = json.loads(response.content)
         self.assertEqual(old_length, len(res_json))
 
-    def test_browse_sublet(self):
+    def test_browse_sublet(self) -> None:
         # browse single sublet by id
         payload = {
             "title": "Test Sublet2",
@@ -230,29 +242,29 @@ class TestSublets(TestCase):
         self.assertEqual(res_json["baths"], "1.5")
         self.assertEqual(res_json["amenities"], ["Amenity1", "Amenity2"])
 
-    def test_delete_sublet(self):
+    def test_delete_sublet(self) -> None:
         sublets_count = Sublet.objects.all().count()
         self.client.delete(f"/sublet/properties/{str(self.test_sublet1.id)}/")
         self.assertEqual(sublets_count - 1, Sublet.objects.all().count())
         self.assertFalse(Sublet.objects.filter(id=1).exists())
 
-    def test_amenities(self):
+    def test_amenities(self) -> None:
         response = self.client.get("/sublet/amenities/")
         res_json = json.loads(response.content)
         for i in range(1, 6):
             self.assertIn(f"Amenity{i}", res_json)
 
-    def test_create_image(self):
+    def test_create_image(self) -> None:
         with open("tests/sublet/mock_image.jpg", "rb") as image:
             response = self.client.post(
                 f"/sublet/properties/{str(self.test_sublet1.id)}/images/", {"images": image}
             )
             self.assertEqual(response.status_code, 201)
-            images = Sublet.objects.get(id=self.test_sublet1.id).images.all()
+            images = Sublet.objects.get(id=self.test_sublet1.id).images.all()  # type: ignore
             self.assertTrue(images.exists())
             self.assertEqual(self.test_sublet1.id, images.first().sublet.id)
 
-    def test_create_delete_images(self):
+    def test_create_delete_images(self) -> None:
         with open("tests/sublet/mock_image.jpg", "rb") as image:
             with open("tests/sublet/mock_image.jpg", "rb") as image2:
                 response = self.client.post(
@@ -261,7 +273,7 @@ class TestSublets(TestCase):
                     "multipart",
                 )
                 self.assertEqual(response.status_code, 201)
-                images = Sublet.objects.get(id=self.test_sublet1.id).images.all()
+                images = Sublet.objects.get(id=self.test_sublet1.id).images.all()  # type: ignore
                 image_id1 = images.first().id
                 self.assertTrue(images.exists())
                 self.assertEqual(2, images.count())
@@ -275,20 +287,22 @@ class TestSublets(TestCase):
 class TestOffers(TestCase):
     """Tests Create/Delete/List for offers"""
 
-    def setUp(self):
-        self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
-        self.client = APIClient()
+    def setUp(self) -> None:
+        self.user: UserType = DjangoUserModel.objects.create_user(
+            "user", "user@seas.upenn.edu", "user"
+        )
+        self.client: APIClient = APIClient()
         self.client.force_authenticate(user=self.user)
-        self.test_user = User.objects.create_user("user1", "user")
+        self.test_user: UserType = DjangoUserModel.objects.create_user("user1", "user")
         for i in range(1, 6):
             Amenity.objects.create(name=f"Amenity{str(i)}")
         # TODO: Not sure how to add these amenities to the sublets, but not important for now
         with open("tests/sublet/mock_sublets.json") as data:
-            data = json.load(data)
-            self.first_sublet = Sublet.objects.create(subletter=self.user, **data[0])
-            self.second_sublet = Sublet.objects.create(subletter=self.test_user, **data[1])
+            mock_data = json.load(data)
+            self.first_sublet = Sublet.objects.create(subletter=self.user, **mock_data[0])
+            self.second_sublet = Sublet.objects.create(subletter=self.test_user, **mock_data[1])
 
-    def test_create_offer(self):
+    def test_create_offer(self) -> None:
         prop_url = f"/sublet/properties/{str(self.second_sublet.id)}/offers/"
         payload = {
             "email": "offer@seas.upenn.edu",
@@ -313,7 +327,7 @@ class TestOffers(TestCase):
         self.assertIsNotNone(offer.id)
         self.assertIsNotNone(offer.created_date)
 
-    def test_delete_offer(self):
+    def test_delete_offer(self) -> None:
         prop_url1 = f"/sublet/properties/{str(self.first_sublet.id)}/offers/"
         prop_url2 = f"/sublet/properties/{str(self.second_sublet.id)}/offers/"
         payload = {
@@ -330,7 +344,7 @@ class TestOffers(TestCase):
         self.client.delete(prop_url2)
         self.assertFalse(Offer.objects.filter(user=self.user, sublet=self.second_sublet).exists())
 
-    def test_get_offers_property(self):
+    def test_get_offers_property(self) -> None:
         response = self.client.get("/sublet/offers/")
         res_json = json.loads(response.content)
         self.assertEqual(0, len(res_json))
@@ -372,7 +386,7 @@ class TestOffers(TestCase):
         self.assertIsNotNone(offer["id"])
         self.assertIsNotNone(offer["created_date"])
 
-    def test_get_offer_user(self):
+    def test_get_offer_user(self) -> None:
         response = self.client.get("/sublet/offers/")
         res_json = json.loads(response.content)
         self.assertEqual(0, len(res_json))
@@ -416,20 +430,22 @@ class TestOffers(TestCase):
 class TestFavorites(TestCase):
     """Tests Create/Delete/List for favorites"""
 
-    def setUp(self):
-        self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
-        self.client = APIClient()
+    def setUp(self) -> None:
+        self.user: UserType = DjangoUserModel.objects.create_user(
+            "user", "user@seas.upenn.edu", "user"
+        )
+        self.client: APIClient = APIClient()
         self.client.force_authenticate(user=self.user)
-        test_user = User.objects.create_user("user1", "user")
+        test_user: UserType = DjangoUserModel.objects.create_user("user1", "user")
         for i in range(1, 6):
             Amenity.objects.create(name=f"Amenity{str(i)}")
         # TODO: Not sure how to add these amenities to the sublets, but not important for now
         with open("tests/sublet/mock_sublets.json") as data:
-            data = json.load(data)
-            self.first_sublet = Sublet.objects.create(subletter=self.user, **data[0])
-            self.second_sublet = Sublet.objects.create(subletter=test_user, **data[1])
+            mock_data = json.load(data)
+            self.first_sublet = Sublet.objects.create(subletter=self.user, **mock_data[0])
+            self.second_sublet = Sublet.objects.create(subletter=test_user, **mock_data[1])
 
-    def test_create_favorite(self):
+    def test_create_favorite(self) -> None:
         prop_url1 = f"/sublet/properties/{str(self.first_sublet.id)}/favorites/"
         prop_url2 = f"/sublet/properties/{str(self.second_sublet.id)}/favorites/"
         self.client.post(prop_url2)
@@ -440,7 +456,7 @@ class TestFavorites(TestCase):
         self.assertTrue(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
         self.assertEqual(self.client.post(prop_url1).status_code, 406)
 
-    def test_delete_favorite(self):
+    def test_delete_favorite(self) -> None:
         self.client.post(f"/sublet/properties/{str(self.second_sublet.id)}/favorites/")
         self.client.post(f"/sublet/properties/{str(self.first_sublet.id)}/favorites/")
         self.client.delete(f"/sublet/properties/{str(self.first_sublet.id)}/favorites/")
@@ -456,7 +472,7 @@ class TestFavorites(TestCase):
         self.assertFalse(self.user.sublets_favorited.filter(pk=self.second_sublet.id).exists())
         self.assertFalse(self.user.sublets_favorited.filter(pk=self.first_sublet.id).exists())
 
-    def test_get_favorite_user(self):
+    def test_get_favorite_user(self) -> None:
         response = self.client.get("/sublet/favorites/")
         res_json = json.loads(response.content)
         self.assertEqual(len(res_json), 0)

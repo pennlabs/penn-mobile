@@ -12,6 +12,7 @@ class Offer(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=["user", "sublet"], name="unique_offer")]
 
+    id: int
     user: models.ForeignKey = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="offers_made"
     )
@@ -35,6 +36,7 @@ class Amenity(models.Model):
 
 
 class Sublet(models.Model):
+    id: int
     subletter: models.ForeignKey = models.ForeignKey(User, on_delete=models.CASCADE)
     sublettees: models.ManyToManyField = models.ManyToManyField(
         User, through=Offer, related_name="sublets_offered", blank=True
@@ -62,6 +64,7 @@ class Sublet(models.Model):
 
 
 class SubletImage(models.Model):
+    id: int
     sublet: models.ForeignKey = models.ForeignKey(
         Sublet, on_delete=models.CASCADE, related_name="images"
     )

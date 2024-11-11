@@ -6,8 +6,9 @@ from sublet.models import Amenity, Offer, Sublet, SubletImage
 
 class SubletAdmin(admin.ModelAdmin):
     def image_tag(self, instance: Sublet) -> SafeText:
-        # type: ignore[attr-defined]
-        images = ['<img src="%s" height="150" />' for image in instance.images.all()]
+        images = [
+            '<img src="%s" height="150" />' for image in instance.images.all()  # type: ignore
+        ]
         return mark_safe("<br>".join(images))
 
     image_tag.short_description = "Sublet Images"  # type: ignore[attr-defined]
