@@ -66,7 +66,7 @@ class ItemImageURLSerializer(serializers.ModelSerializer):
 # complex item serializer for use in C/U/D + getting info about a singular tag
 class ItemSerializer(serializers.ModelSerializer):
     # amenities = ItemSerializer(many=True, required=False)
-    # images = ItemImageURLSerializer(many=True, required=False)
+    images = ItemImageURLSerializer(many=True, required=False)
 
     tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
@@ -78,6 +78,7 @@ class ItemSerializer(serializers.ModelSerializer):
     favorites = serializers.PrimaryKeyRelatedField(
         many=True, queryset=User.objects.all(), required=False
     )
+    
 
     class Meta:
         model = Item
@@ -86,7 +87,7 @@ class ItemSerializer(serializers.ModelSerializer):
             "created_at",
             "seller",
             "buyer",
-            # "images"
+            "images"
         ]
         fields = [
             "id",
@@ -100,7 +101,7 @@ class ItemSerializer(serializers.ModelSerializer):
             "price",
             "negotiable",
             "expires_at",
-            # "images",
+            "images",
             # images are now created/deleted through a separate endpoint (see urls.py)
             # this serializer isn't used for getting,
             # but gets on tags will include ids/urls for images
@@ -152,35 +153,6 @@ class ItemSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You do not have permission to delete this item.")
 
 
-class ItemSerializerRead(serializers.ModelSerializer):
-    tags = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Tag.objects.all(), required=False
-    )
-    images = ItemImageURLSerializer(many=True, required=False)
-    category = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), required=True
-    )
-    seller = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
-
-    class Meta:
-        model = Item
-        read_only_fields = ["id", "created_at", "seller", "buyer"]
-        fields = [
-            "id",
-            "seller",
-            "tags",
-            "category",
-            "favorites",
-            "title",
-            "description",
-            "external_link",
-            "price",
-            "negotiable",
-            "expires_at",
-            "images",
-        ]
-
-
 # simple tag serializer for use when pulling all serializers/etc
 class ItemSerializerSimple(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
@@ -205,7 +177,17 @@ class ItemSerializerSimple(serializers.ModelSerializer):
             "negotiable",
             "images",
         ]
-        read_only_fields = ["id", "seller"]
+        read_only_fields = [
+            "id",
+            "seller",
+            "tags",
+            "category",
+            "favorites",
+            "title",
+            "price",
+            "negotiable",
+            "images",
+        ]
 
 
 class SubletSerializer(serializers.ModelSerializer):

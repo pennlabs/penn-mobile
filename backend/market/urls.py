@@ -48,7 +48,7 @@ additional_urls = [
     # Image Creation
     path("items/<item_id>/images/", CreateImages.as_view()),
     # Image Deletion
-    path("items/images/<item_id>/", DeleteImage.as_view()),
+    path("items/images/<image_id>/", DeleteImage.as_view()),
 ]
 
 urlpatterns = router.urls + additional_urls

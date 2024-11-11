@@ -22,8 +22,6 @@ from market.serializers import (
     ItemImageSerializer,
     ItemImageURLSerializer,
     ItemSerializer,
-    ItemSerializerRead,
-    ItemSerializerRead,
     ItemSerializerSimple,
     SubletSerializer,
 )
@@ -71,6 +69,42 @@ class UserOffers(generics.ListAPIView):
         return Offer.objects.filter(user=user)
 
 
+def apply_filters(queryset, params, filter_mappings, user=None, is_sublet=False, tag_field="tags__name"):
+    # Build dynamic filters based on filter mappings
+    filters = {}
+    for param, field in filter_mappings.items():
+        if param_value := params.get(param):
+            filters[field] = param_value
+
+    # Handle seller/owner filtering based on user ownership
+
+
+    # Apply basic filters to the queryset
+
+    # Exclude specific categories if provided
+    if not is_sublet:
+        queryset = queryset.exclude(category__name__in=["Sublet"])
+        if params.get("seller", "false").lower() == "true" and user:
+            filters["seller"] = user
+        else:
+            filters["expires_at__gte"] = timezone.now()
+    else :
+        queryset = queryset.filter(item__category__name__in=["Sublet"])
+        if params.get("seller", "false").lower() == "true" and user:
+            filters["item__seller"] = user
+        else:
+            filters["item__expires_at__gte"] = timezone.now()
+
+    queryset = queryset.filter(**filters)
+
+    # Apply tag filtering iteratively if "tags" parameter is provided
+    if tags := params.getlist("tags"):
+        for tag in tags:
+            queryset = queryset.filter(**{tag_field: tag})
+
+    return queryset
+
+
 class Items(viewsets.ModelViewSet):
     """
     list:
@@ -87,187 +121,73 @@ class Items(viewsets.ModelViewSet):
     """
 
     permission_classes = [ItemOwnerPermission | IsSuperUser]
-
-    def get_serializer_class(self):
-        return ItemSerializerRead if self.action == "retrieve" else ItemSerializer
-
-    def get_queryset(self):
-        return Item.objects.prefetch_related('sublet').all()
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)  # Check if the data is valid
-        instance = serializer.save()  # Create the Item
-        instance_serializer = ItemSerializerRead(instance=instance, context={"request": request})
-
-        #record_analytics(Metric.SUBLET_CREATED, request.user.username)
-
-        return Response(instance_serializer.data, status=status.HTTP_201_CREATED)
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        queryset = self.filter_queryset(self.get_queryset())
-        # no clue what this does but I copied it from the DRF source code
-        if queryset._prefetch_related_lookups:
-            # If 'prefetch_related' has been applied to a queryset, we need to
-            # forcibly invalidate the prefetch cache on the instance,
-            # and then re-prefetch related objects
-            instance._prefetched_objects_cache = {}
-            prefetch_related_objects([instance], *queryset._prefetch_related_lookups)
-        return Response(ItemSerializerRead(instance=instance).data)
-
-    # This is currently redundant but will leave for use when implementing image creation
-    # def create(self, request, *args, **kwargs):
-    #     # amenities = request.data.pop("amenities", [])
-    #     new_data = request.data
-    #     amenities = new_data.pop("amenities", [])
-
-    #     # check if valid amenities
-    #     try:
-    #         amenities = [Amenity.objects.get(name=amenity) for amenity in amenities]
-    #     except Amenity.DoesNotExist:
-    #         return Response({"amenities": "Invalid amenity"}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     serializer = self.get_serializer(data=new_data)
-    #     serializer.is_valid(raise_exception=True)
-    #     item = serializer.save()
-    #     item.amenities.set(amenities)
-    #     item.save()
-    # return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if self.request.user == instance.seller or self.request.user.is_superuser:
-            if hasattr(instance, 'sublet'):
-                instance.sublet.delete()
-
-            instance.delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            raise serializers.ValidationError("You do not have permission to delete this item.")
-        
+    serializer_class = ItemSerializer
+    queryset = Item.objects.all()
 
     def list(self, request, *args, **kwargs):
         """Returns a list of Items that match query parameters and user ownership."""
         params = request.query_params
-        category = params.get("category")
-        tags = params.getlist("tags")
-        title = params.get("title")
-        seller = params.get("seller", "false")  # Defaults to False if not specified
-        min_price = params.get("min_price", None)
-        max_price = params.get("max_price", None)
-        negotiable = params.get("negotiable", None)
-
         queryset = self.get_queryset()
 
-        if seller.lower() == "true":
-            queryset = queryset.filter(seller=request.user)
-        else:
-            queryset = queryset.filter(expires_at__gte=timezone.now())
-        queryset = queryset.exclude(category__name="Sublet")
-        if category:
-            queryset = queryset.filter(category__name=category)
-        if title:
-            queryset = queryset.filter(title__icontains=title)
-        if tags:
-            for tag in tags:
-                queryset = queryset.filter(tags__name=tag)
-        if min_price:
-            queryset = queryset.filter(price__gte=min_price)
-        if max_price:
-            queryset = queryset.filter(price__lte=max_price)
-        if negotiable:
-            queryset = queryset.filter(negotiable=negotiable)
+        # Define a dictionary mapping query parameters to filter fields
+        filter_mappings = {
+            "category": "category__name",
+            "title": "title__icontains",
+            "min_price": "price__gte",
+            "max_price": "price__lte",
+            "negotiable": "negotiable",
+        }
 
+        # Apply filters using the helper function
+        queryset = apply_filters(
+            queryset=queryset,
+            params=params,
+            filter_mappings=filter_mappings,
+            user=request.user,
+            is_sublet=True
+        )
 
-        #record_analytics(Metric.SUBLET_BROWSE, request.user.username)
         # Serialize and return the queryset
-        serializer = ItemSerializerSimple(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
  
 
 class Sublets(viewsets.ModelViewSet):
     permission_classes = [SubletOwnerPermission | IsSuperUser]
     serializer_class = SubletSerializer
-
-    def get_queryset(self):
-        return Sublet.objects.filter(item__isnull=False).prefetch_related('item')
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        sublet_instance = serializer.save()
-        response_serializer = self.get_serializer(sublet_instance)
-
-        # record_analytics(Metric.SUBLET_CREATED, request.user.username)
-        
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        queryset = self.filter_queryset(self.get_queryset())
-        if queryset._prefetch_related_lookups:
-            instance._prefetched_objects_cache = {}
-        return Response(self.get_serializer(instance).data, status=status.HTTP_200_OK)
-    
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if request.user == instance.item.seller or request.user.is_superuser:
-            if hasattr(instance, 'item'):
-                instance.item.delete()
-            instance.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            raise serializers.ValidationError("You do not have permission to delete this item.")
+    queryset = Sublet.objects.all()
 
     def list(self, request, *args, **kwargs):
         """Returns a filtered list of Sublets based on query parameters."""
         params = request.query_params
-        queryset = self.get_queryset().filter(
-            item__category__name="Sublet", 
-            item__expires_at__gte=timezone.now() if params.get("seller", "false").lower() != "true" else timezone.now()
+        queryset = self.get_queryset()
+
+        # Define filter mappings
+        filter_mappings = {
+            "title": "item__title__icontains",
+            "min_price": "item__price__gte",
+            "max_price": "item__price__lte",
+            "negotiable": "item__negotiable",
+            "address": "address__icontains",
+            "beds": "beds",
+            "baths": "baths",
+            "start_date_min": "start_date__gte",
+            "start_date_max": "start_date__lte",
+            "end_date_min": "end_date__gte",
+            "end_date_max": "end_date__lte",
+        }
+
+        # Apply filters using the helper function
+        queryset = apply_filters(
+            queryset=queryset,
+            params=params,
+            filter_mappings=filter_mappings,
+            user=request.user,
+            is_sublet=True,
+            tag_field="item__tags__name",
         )
 
-        if params.get("seller", "false").lower() == "true":
-            queryset = queryset.filter(seller=request.user)
-        if title := params.get("title"):
-            queryset = queryset.filter(item__title__icontains=title)
-        if tags := params.getlist("tags"):
-            for tag in tags:
-                queryset = queryset.filter(item__tags__name=tag)
-        if min_price := params.get("min_price"):
-            queryset = queryset.filter(item__price__gte=min_price)
-        if max_price := params.get("max_price"):
-            queryset = queryset.filter(item__price__lte=max_price)
-        if negotiable := params.get("negotiable"):
-            queryset = queryset.filter(item__negotiable=negotiable)
-        if address := params.get("address"):
-            queryset = queryset.filter(address__icontains=address)
-        if beds := params.get("beds"):
-            queryset = queryset.filter(beds=beds)
-        if baths := params.get("baths"):
-            queryset = queryset.filter(baths=baths)
-        if start_date_min := params.get("start_date_min"):
-            queryset = queryset.filter(start_date__gte=start_date_min)
-        if start_date_max := params.get("start_date_max"):
-            queryset = queryset.filter(start_date__lte=start_date_max)
-        if end_date_min := params.get("end_date_min"):
-            queryset = queryset.filter(end_date__gte=end_date_min)
-        if end_date_max := params.get("end_date_max"):
-            queryset = queryset.filter(end_date__lte=end_date_max)
-
-        # record_analytics(Metric.SUBLET_BROWSE, request.user.username)
+        # Serialize and return the queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 

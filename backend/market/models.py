@@ -65,8 +65,13 @@ class Sublet(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
 
+    def delete(self, *args, **kwargs):
+        if self.item:
+            self.item.delete()
+        super().delete(*args, **kwargs)
+
 
 # TODO: Verify that this S2 bucket exists. Check if we need to make it manually or will Django make it for us?
 class ItemImage(models.Model):
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(upload_to="marketplace/images")
