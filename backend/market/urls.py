@@ -2,16 +2,16 @@ from django.urls import path
 from rest_framework import routers
 
 from market.views import (
-    Tags,
     Categories,
     CreateImages,
     DeleteImage,
     Favorites,
-    Offers,
     Items,
+    Offers,
+    Sublets,
+    Tags,
     UserFavorites,
     UserOffers,
-    Sublets,
 )
 
 

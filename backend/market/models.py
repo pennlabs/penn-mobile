@@ -23,10 +23,9 @@ class Offer(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
-    
+
     def __str__(self):
         return self.name
-    
 
 
 class Tag(models.Model):
@@ -38,9 +37,7 @@ class Tag(models.Model):
 
 class Item(models.Model):
     seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name="items_listed")
-    buyers = models.ManyToManyField(
-        User, through=Offer, related_name="items_offered", blank=True
-    )
+    buyers = models.ManyToManyField(User, through=Offer, related_name="items_offered", blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     favorites = models.ManyToManyField(User, related_name="items_favorited", blank=True)
@@ -71,7 +68,8 @@ class Sublet(models.Model):
         super().delete(*args, **kwargs)
 
 
-# TODO: Verify that this S2 bucket exists. Check if we need to make it manually or will Django make it for us?
+# TODO: Verify that this S2 bucket exists.
+# Check if we need to make it manually or will Django make it for us?
 class ItemImage(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(upload_to="marketplace/images")

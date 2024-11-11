@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import mark_safe
 
-from market.models import Tag, Category, Offer, Item, Sublet, ItemImage
+from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 
 
 class ItemAdmin(admin.ModelAdmin):

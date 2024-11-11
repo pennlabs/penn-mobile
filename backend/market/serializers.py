@@ -1,11 +1,13 @@
+from django.contrib.auth import get_user_model
 from phonenumber_field.serializerfields import PhoneNumberField
 from profanity_check import predict
 from rest_framework import serializers
 
-from market.models import Tag, Category, Offer, Item, Sublet, ItemImage
-from django.contrib.auth import get_user_model
+from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
+
 
 User = get_user_model()
+
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -68,27 +70,16 @@ class ItemSerializer(serializers.ModelSerializer):
     # amenities = ItemSerializer(many=True, required=False)
     images = ItemImageURLSerializer(many=True, required=False)
 
-    tags = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Tag.objects.all(), required=False
-    )
-    category = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), required=True
-    )
+    tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all(), required=False)
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=True)
     seller = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
     favorites = serializers.PrimaryKeyRelatedField(
         many=True, queryset=User.objects.all(), required=False
     )
-    
 
     class Meta:
         model = Item
-        read_only_fields = [
-            "id",
-            "created_at",
-            "seller",
-            "buyer",
-            "images"
-        ]
+        read_only_fields = ["id", "created_at", "seller", "buyer", "images"]
         fields = [
             "id",
             "seller",
@@ -155,13 +146,9 @@ class ItemSerializer(serializers.ModelSerializer):
 
 # simple tag serializer for use when pulling all serializers/etc
 class ItemSerializerSimple(serializers.ModelSerializer):
-    tags = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Tag.objects.all(), required=False
-    )
+    tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all(), required=False)
     images = ItemImageURLSerializer(many=True, required=False)
-    category = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), required=True
-    )
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=True)
     seller = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
 
     class Meta:
@@ -192,24 +179,17 @@ class ItemSerializerSimple(serializers.ModelSerializer):
 
 class SubletSerializer(serializers.ModelSerializer):
     item = ItemSerializer(required=True)
+
     class Meta:
         model = Sublet
-        fields = [
-            'id',
-            'item',
-            'address',
-            'beds',
-            'baths',
-            'start_date',
-            'end_date'
-        ]
-        read_only_fields = ['id']
+        fields = ["id", "item", "address", "beds", "baths", "start_date", "end_date"]
+        read_only_fields = ["id"]
 
     def create(self, validated_data):
-        item_data = validated_data.pop('item')
+        item_data = validated_data.pop("item")
         item_serializer = ItemSerializer(data=item_data, context=self.context)
         item_serializer.is_valid(raise_exception=True)
-        item_instance = item_serializer.save(seller=self.context['request'].user)
+        item_instance = item_serializer.save(seller=self.context["request"].user)
         sublet_instance = Sublet.objects.create(item=item_instance, **validated_data)
         return sublet_instance
 
@@ -218,9 +198,9 @@ class SubletSerializer(serializers.ModelSerializer):
             self.context["request"].user == instance.item.seller
             or self.context["request"].user.is_superuser
         ):
-            item_data = validated_data.pop('item', None)
+            item_data = validated_data.pop("item", None)
             if item_data:
-                tags = item_data.pop('tags', None)  # Extract tags if present
+                tags = item_data.pop("tags", None)  # Extract tags if present
                 for attr, value in item_data.items():
                     setattr(instance.item, attr, value)
                 instance.item.save()
@@ -234,14 +214,19 @@ class SubletSerializer(serializers.ModelSerializer):
                 setattr(instance, attr, value)
             instance.save()
             return instance
-        
+
     def destroy(self, instance):
         if (
             self.context["request"].user == instance.item.seller
             or self.context["request"].user.is_superuser
         ):
-            if self.context["request"].user == instance.item.seller or self.context["request"].user.is_superuser:
+            if (
+                self.context["request"].user == instance.item.seller
+                or self.context["request"].user.is_superuser
+            ):
                 instance.item.delete()
                 instance.delete()
             else:
-                raise serializers.ValidationError("You do not have permission to delete this sublet.")
+                raise serializers.ValidationError(
+                    "You do not have permission to delete this sublet."
+                )

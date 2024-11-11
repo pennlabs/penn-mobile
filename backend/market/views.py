@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.db.models import prefetch_related_objects
 from django.utils import timezone
 from rest_framework import exceptions, generics, mixins, status, viewsets
 from rest_framework.generics import get_object_or_404
@@ -7,23 +6,23 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from market.models import Tag, Category, Offer, Item, Sublet, ItemImage
+from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 from market.permissions import (
     IsSuperUser,
-    OfferOwnerPermission,
     ItemImageOwnerPermission,
     ItemOwnerPermission,
+    OfferOwnerPermission,
     SubletOwnerPermission,
 )
 from market.serializers import (
-    TagSerializer,
-    OfferSerializer,
     CategorySerializer,
     ItemImageSerializer,
     ItemImageURLSerializer,
     ItemSerializer,
     ItemSerializerSimple,
+    OfferSerializer,
     SubletSerializer,
+    TagSerializer,
 )
 from pennmobile.analytics import Metric, record_analytics
 
@@ -69,7 +68,9 @@ class UserOffers(generics.ListAPIView):
         return Offer.objects.filter(user=user)
 
 
-def apply_filters(queryset, params, filter_mappings, user=None, is_sublet=False, tag_field="tags__name"):
+def apply_filters(
+    queryset, params, filter_mappings, user=None, is_sublet=False, tag_field="tags__name"
+):
     # Build dynamic filters based on filter mappings
     filters = {}
     for param, field in filter_mappings.items():
@@ -77,7 +78,6 @@ def apply_filters(queryset, params, filter_mappings, user=None, is_sublet=False,
             filters[field] = param_value
 
     # Handle seller/owner filtering based on user ownership
-
 
     # Apply basic filters to the queryset
 
@@ -88,7 +88,7 @@ def apply_filters(queryset, params, filter_mappings, user=None, is_sublet=False,
             filters["seller"] = user
         else:
             filters["expires_at__gte"] = timezone.now()
-    else :
+    else:
         queryset = queryset.filter(item__category__name__in=["Sublet"])
         if params.get("seller", "false").lower() == "true" and user:
             filters["item__seller"] = user
@@ -144,13 +144,13 @@ class Items(viewsets.ModelViewSet):
             params=params,
             filter_mappings=filter_mappings,
             user=request.user,
-            is_sublet=True
+            is_sublet=True,
         )
 
         # Serialize and return the queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
- 
+
 
 class Sublets(viewsets.ModelViewSet):
     permission_classes = [SubletOwnerPermission | IsSuperUser]
@@ -253,7 +253,7 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
         item = get_object_or_404(Item, id=item_id)
         self.get_queryset().add(item)
 
-        #record_analytics(Metric.SUBLET_FAVORITED, request.user.username)
+        # record_analytics(Metric.SUBLET_FAVORITED, request.user.username)
 
         return Response(status=status.HTTP_201_CREATED)
 
@@ -280,9 +280,7 @@ class Offers(viewsets.ModelViewSet):
     serializer_class = OfferSerializer
 
     def get_queryset(self):
-        return Offer.objects.filter(item_id=int(self.kwargs["item_id"])).order_by(
-            "created_date"
-        )
+        return Offer.objects.filter(item_id=int(self.kwargs["item_id"])).order_by("created_date")
 
     def create(self, request, *args, **kwargs):
         data = request.data
@@ -295,7 +293,7 @@ class Offers(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        #record_analytics(Metric.SUBLET_OFFER, request.user.username)
+        # record_analytics(Metric.SUBLET_OFFER, request.user.username)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
