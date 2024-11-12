@@ -9,7 +9,7 @@ from django.utils import timezone
 from identity.identity import attest, container, get_platform_jwks
 from rest_framework.test import APIClient
 
-from gsr_booking.models import GSR, Group, GSRBooking, Reservation
+from gsr_booking.models import GSR, GSRBooking, Reservation
 from user.models import NotificationSetting, NotificationToken
 
 
@@ -350,7 +350,6 @@ class TestSendGSRReminders(TestCase):
             start=g.start,
             end=g.end,
             creator=self.test_user,
-            group=Group.objects.get(owner=self.test_user),
         )
 
         g.reservation = r
