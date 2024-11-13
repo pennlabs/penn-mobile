@@ -16,7 +16,7 @@ from portal.models import Poll, Post
 from utils.types import DjangoUserModel, UserType
 
 
-def fakeFitnessGet(url: str, *args: Any, **kwargs: Any) -> Any:
+def fakeFitnessGet(url: str, *args: Any, **kwargs: Any) -> mock.MagicMock:
     if "docs.google.com/spreadsheets/" in url:
         with open("tests/penndata/fitness_snapshot.html", "rb") as f:
             m = mock.MagicMock(content=f.read())

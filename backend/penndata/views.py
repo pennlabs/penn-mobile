@@ -1,9 +1,10 @@
 import datetime
 from datetime import timedelta
-from typing import Any, Optional, Sequence, cast
+from typing import Any, Optional, Sequence, TypeAlias, cast
 
 import requests
 from bs4 import BeautifulSoup
+from django.db.models import Manager, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from requests.exceptions import ConnectionError
@@ -28,8 +29,12 @@ from penndata.serializers import (
     FitnessRoomSerializer,
     HomePageOrderSerializer,
 )
-from penndata.types import CalendarEventList, EventList, HomePageOrderList, ValidatedData
 from utils.types import get_user
+
+
+CalendarEventList: TypeAlias = QuerySet[CalendarEvent, Manager[CalendarEvent]]
+EventList: TypeAlias = QuerySet[Event, Manager[Event]]
+HomePageOrderList: TypeAlias = QuerySet[HomePageOrder, Manager[HomePageOrder]]
 
 
 class News(APIView):
@@ -156,7 +161,7 @@ class HomePage(APIView):
 
     class Cell:
         def __init__(
-            self, myType: str, myInfo: Optional[ValidatedData] = None, myWeight: int = 0
+            self, myType: str, myInfo: Optional[dict[str, Any]] = None, myWeight: int = 0
         ) -> None:
             self.type = myType
             self.info = myInfo

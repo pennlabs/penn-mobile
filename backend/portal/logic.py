@@ -6,11 +6,10 @@ from accounts.ipc import authenticated_request
 from rest_framework.exceptions import PermissionDenied
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
-from portal.types import PopulationGroups, PopulationList
-from utils.types import DjangoUserType
+from utils.types import UserType
 
 
-def get_user_info(user: DjangoUserType) -> dict[str, Any]:
+def get_user_info(user: UserType) -> dict[str, Any]:
     """Returns Platform user information"""
     response = authenticated_request(user, "GET", "https://platform.pennlabs.org/accounts/me/")
     if response.status_code == 403:
@@ -18,7 +17,7 @@ def get_user_info(user: DjangoUserType) -> dict[str, Any]:
     return json.loads(response.content)
 
 
-def get_user_clubs(user: DjangoUserType) -> list[dict[str, Any]]:
+def get_user_clubs(user: UserType) -> list[dict[str, Any]]:
     """Returns list of clubs that user is a member of"""
     response = authenticated_request(user, "GET", "https://pennclubs.com/api/memberships/")
     if response.status_code == 403:
@@ -27,7 +26,7 @@ def get_user_clubs(user: DjangoUserType) -> list[dict[str, Any]]:
     return res_json
 
 
-def get_club_info(user: DjangoUserType, club_code: str) -> dict[str, Any]:
+def get_club_info(user: UserType, club_code: str) -> dict[str, Any]:
     """Returns club information based on club code"""
     response = authenticated_request(user, "GET", f"https://pennclubs.com/api/clubs/{club_code}/")
     if response.status_code == 403:
@@ -36,12 +35,12 @@ def get_club_info(user: DjangoUserType, club_code: str) -> dict[str, Any]:
     return {"name": res_json["name"], "image": res_json["image_url"], "club_code": club_code}
 
 
-def get_user_populations(user: DjangoUserType) -> PopulationGroups:
+def get_user_populations(user: UserType) -> list[list[TargetPopulation]]:
     """Returns the target populations that the user belongs to"""
 
     user_info = get_user_info(user)
 
-    year: PopulationList = (
+    year: list[TargetPopulation] = (
         [
             TargetPopulation.objects.get(
                 kind=TargetPopulation.KIND_YEAR, population=user_info["student"]["graduation_year"]
@@ -51,7 +50,7 @@ def get_user_populations(user: DjangoUserType) -> PopulationGroups:
         else []
     )
 
-    school: PopulationList = (
+    school: list[TargetPopulation] = (
         [
             TargetPopulation.objects.get(kind=TargetPopulation.KIND_SCHOOL, population=x["name"])
             for x in user_info["student"]["school"]
@@ -60,7 +59,7 @@ def get_user_populations(user: DjangoUserType) -> PopulationGroups:
         else []
     )
 
-    major: PopulationList = (
+    major: list[TargetPopulation] = (
         [
             TargetPopulation.objects.get(kind=TargetPopulation.KIND_MAJOR, population=x["name"])
             for x in user_info["student"]["major"]
@@ -69,7 +68,7 @@ def get_user_populations(user: DjangoUserType) -> PopulationGroups:
         else []
     )
 
-    degree: PopulationList = (
+    degree: list[TargetPopulation] = (
         [
             TargetPopulation.objects.get(
                 kind=TargetPopulation.KIND_DEGREE, population=x["degree_type"]
@@ -83,7 +82,7 @@ def get_user_populations(user: DjangoUserType) -> PopulationGroups:
     return [year, school, major, degree]
 
 
-def check_targets(obj: Poll, user: DjangoUserType) -> bool:
+def check_targets(obj: Poll, user: UserType) -> bool:
     """
     Check if user aligns with target populations of poll or post
     """

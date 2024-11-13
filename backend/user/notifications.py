@@ -1,7 +1,7 @@
 import collections
 import os
 import sys
-from typing import Optional
+from typing import Optional, Tuple
 
 
 # Monkey Patch for apn2 errors, referenced from:
@@ -23,13 +23,15 @@ from apns2.client import APNsClient
 from apns2.credentials import TokenCredentials
 from apns2.payload import Payload
 from celery import shared_task
+from django.db.models import Manager, QuerySet
 
 from user.models import NotificationToken
-from user.types import NotificationResult, NotificationTokenQuerySet, TokenPair
 
 
 # taken from the apns2 method for batch notifications
 Notification = collections.namedtuple("Notification", ["token", "payload"])
+TokenPair = Tuple[str, str]  # (username, token)
+NotificationResult = Tuple[list[str], list[str]]  # (success_users, failed_users)
 
 
 def send_push_notifications(
@@ -78,7 +80,9 @@ def send_push_notifications(
 def get_tokens(users: Optional[list[str]] = None, service: Optional[str] = None) -> list[TokenPair]:
     """Returns list of token objects (with username & token value) for specified users"""
 
-    token_objs: NotificationTokenQuerySet = NotificationToken.objects.select_related("user").filter(
+    token_objs: QuerySet[
+        NotificationToken, Manager[NotificationToken]
+    ] = NotificationToken.objects.select_related("user").filter(
         kind=NotificationToken.KIND_IOS  # NOTE: until Android implementation
     )
     if users:

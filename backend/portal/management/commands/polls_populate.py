@@ -7,13 +7,13 @@ from django.utils import timezone
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from user.models import Profile
-from utils.types import DjangoUserModel, DjangoUserType
+from utils.types import DjangoUserModel, UserType
 
 
 class Command(BaseCommand):
     def _create_user(
         self, username: str, email: str, password: str, graduation_date: datetime.date
-    ) -> DjangoUserType:
+    ) -> UserType:
         """Helper to create a user with profile"""
         if not DjangoUserModel.objects.filter(username=username).exists():
             user = DjangoUserModel.objects.create_user(username, email, password)

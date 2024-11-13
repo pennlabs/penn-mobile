@@ -1,5 +1,6 @@
 from typing import Optional
 
+from django.db.models import Manager, QuerySet
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from identity.permissions import B2BPermission
@@ -17,7 +18,6 @@ from user.serializers import (
     NotificationTokenSerializer,
     UserSerializer,
 )
-from user.types import NotificationSettingQuerySet, NotificationTokenQuerySet
 from utils.types import DjangoUser, UserType, get_user
 
 
@@ -50,7 +50,7 @@ class NotificationTokenView(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationTokenSerializer
 
-    def get_queryset(self) -> NotificationTokenQuerySet:
+    def get_queryset(self) -> QuerySet[NotificationToken, Manager[NotificationToken]]:
         return NotificationToken.objects.filter(user=self.request.user)
 
 
@@ -72,7 +72,7 @@ class NotificationSettingView(viewsets.ModelViewSet):
     def is_authorized(self, request: Request) -> bool:
         return request.user is not None and request.user.is_authenticated
 
-    def get_queryset(self) -> NotificationSettingQuerySet:
+    def get_queryset(self) -> QuerySet[NotificationSetting, Manager[NotificationSetting]]:
         if self.is_authorized(self.request):
             return NotificationSetting.objects.filter(token__user=self.request.user)
         return NotificationSetting.objects.none()

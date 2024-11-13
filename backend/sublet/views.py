@@ -1,6 +1,6 @@
-from typing import Any, Type, cast
+from typing import Any, Type, TypeAlias, cast
 
-from django.db.models import QuerySet, prefetch_related_objects
+from django.db.models import Manager, QuerySet, prefetch_related_objects
 from django.http import QueryDict
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -29,8 +29,14 @@ from sublet.serializers import (
     SubletSerializerRead,
     SubletSerializerSimple,
 )
-from sublet.types import ImageList, OfferQuerySet, SubletQuerySet, UserOfferQuerySet
 from utils.types import get_user
+
+
+SubletQuerySet: TypeAlias = QuerySet[Sublet, Manager[Sublet]]
+OfferQuerySet: TypeAlias = QuerySet[Offer, Manager[Offer]]
+AmenityQuerySet: TypeAlias = QuerySet[Amenity, Manager[Amenity]]
+ImageList: TypeAlias = QuerySet[SubletImage, Manager[SubletImage]]
+UserOfferQuerySet: TypeAlias = QuerySet[Offer, Manager[Offer]]
 
 
 class Amenities(generics.ListAPIView):

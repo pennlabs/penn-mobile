@@ -1,6 +1,6 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, TypeAlias
 
-from django.db.models import Count, Q
+from django.db.models import Count, Manager, Q, QuerySet
 from django.db.models.functions import Trunc
 from django.utils import timezone
 from rest_framework import generics, viewsets
@@ -35,14 +35,13 @@ from portal.serializers import (
     RetrievePollVoteSerializer,
     TargetPopulationSerializer,
 )
-from portal.types import (
-    PollOptionQuerySet,
-    PollQuerySet,
-    PollVoteQuerySet,
-    PostQuerySet,
-    VoteStatistics,
-)
 from utils.types import AuthRequest, get_auth_user
+
+
+PollQuerySet: TypeAlias = QuerySet[Poll, Manager[Poll]]
+PostQuerySet: TypeAlias = QuerySet[Post, Manager[Post]]
+PollVoteQuerySet: TypeAlias = QuerySet[PollVote, Manager[PollVote]]
+PollOptionQuerySet: TypeAlias = QuerySet[PollOption, Manager[PollOption]]
 
 
 class UserInfo(APIView):
@@ -257,7 +256,7 @@ class PollVoteStatistics(APIView):
             .order_by("date")
         )
 
-        statistics: VoteStatistics = {
+        statistics: dict[str, Any] = {
             "time_series": time_series,
             "poll_statistics": get_demographic_breakdown(poll_id),
         }

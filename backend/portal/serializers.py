@@ -6,7 +6,6 @@ from rest_framework import serializers
 
 from portal.logic import check_targets, get_user_clubs, get_user_populations
 from portal.models import Content, Poll, PollOption, PollVote, Post, TargetPopulation
-from portal.types import ClubCode, ValidationData
 
 
 class TargetPopulationSerializer(serializers.ModelSerializer):
@@ -32,7 +31,7 @@ class ContentSerializer(serializers.ModelSerializer):
         read_only_fields: tuple[str, ...] = ("id", "created_date")
         abstract = True
 
-    def _auto_add_target_population(self, validated_data: ValidationData) -> None:
+    def _auto_add_target_population(self, validated_data: dict[str, Any]) -> None:
         # auto add all target populations of a kind if not specified
         if target_populations := validated_data.get("target_populations"):
             auto_add_kind = [
@@ -46,8 +45,8 @@ class ContentSerializer(serializers.ModelSerializer):
         else:
             validated_data["target_populations"] = list(TargetPopulation.objects.all())
 
-    def create(self, validated_data: ValidationData) -> Poll:
-        club_code: ClubCode = validated_data["club_code"]
+    def create(self, validated_data: dict[str, Any]) -> Poll:
+        club_code: str = validated_data["club_code"]
         user = self.context["request"].user
         # ensures user is part of club
         if not any([x["club"]["code"] == club_code for x in get_user_clubs(user)]):
@@ -72,7 +71,7 @@ class ContentSerializer(serializers.ModelSerializer):
 
         return super().create(validated_data)
 
-    def update(self, instance: Content, validated_data: ValidationData) -> Content:
+    def update(self, instance: Content, validated_data: dict[str, Any]) -> Content:
         # if Content is updated, then approve should be false
         if not self.context["request"].user.is_superuser:
             validated_data["status"] = Content.STATUS_DRAFT
@@ -94,7 +93,7 @@ class PollOptionSerializer(serializers.ModelSerializer):
         fields: tuple[str, ...] = ("id", "poll", "choice", "vote_count")
         read_only_fields: tuple[str, ...] = ("id", "vote_count")
 
-    def create(self, validated_data: ValidationData) -> PollOption:
+    def create(self, validated_data: dict[str, Any]) -> PollOption:
         poll_options_count = PollOption.objects.filter(poll=validated_data["poll"]).count()
         if poll_options_count >= 5:
             raise serializers.ValidationError(
@@ -102,7 +101,7 @@ class PollOptionSerializer(serializers.ModelSerializer):
             )
         return super().create(validated_data)
 
-    def update(self, instance: PollOption, validated_data: ValidationData) -> PollOption:
+    def update(self, instance: PollOption, validated_data: dict[str, Any]) -> PollOption:
         # if Poll Option is updated, then corresponding Poll approval should be false
         poll = cast(Poll, instance.poll)
         poll.status = Poll.STATUS_DRAFT
@@ -138,7 +137,7 @@ class PollVoteSerializer(serializers.ModelSerializer):
         fields: tuple[str, ...] = ("id", "id_hash", "poll_options", "created_date")
         read_only_fields: tuple[str, ...] = ("id", "created_date")
 
-    def create(self, validated_data: ValidationData) -> PollVote:
+    def create(self, validated_data: dict[str, Any]) -> PollVote:
 
         options = validated_data["poll_options"]
         id_hash = validated_data["id_hash"]
