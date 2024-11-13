@@ -2,7 +2,7 @@ from typing import Any, Optional, Protocol, Type, TypeAlias, TypeVar, cast, runt
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
-from django.db.models import QuerySet
+from django.db.models import Manager, QuerySet
 from rest_framework.request import Request
 
 
@@ -23,9 +23,9 @@ class UserManager(Protocol):
 
     def get(self, **kwargs: Any) -> "UserType": ...
 
-    def filter(self, **kwargs: Any) -> QuerySet["UserType"]: ...
+    def filter(self, **kwargs: Any) -> QuerySet["UserType", Manager["UserType"]]: ...
 
-    def all(self) -> QuerySet["UserType"]: ...
+    def all(self) -> QuerySet["UserType", Manager["UserType"]]: ...
 
 
 @runtime_checkable
@@ -60,7 +60,7 @@ DjangoUserModel: Type[DjangoUserType] = cast(Type[DjangoUserType], get_user_mode
 
 # Type for authenticated Django user requests
 class AuthRequest(Request):
-    user: DjangoUserType
+    user: UserType
 
 
 def get_auth_user(request: Request) -> DjangoUserType:

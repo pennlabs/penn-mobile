@@ -4,7 +4,7 @@ from laundry.models import LaundryRoom, LaundrySnapshot
 
 
 class LaundrySnapshotTestCase(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         # populates database with LaundryRooms
         LaundryRoom.objects.get_or_create(
             hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
@@ -23,15 +23,15 @@ class LaundrySnapshotTestCase(TestCase):
             room=self.laundry_room, available_washers=10, available_dryers=10
         )
 
-    def test_str(self):
+    def test_str(self) -> None:
         self.assertEqual(
             str(self.snapshot),
-            f"Hall No. {self.snapshot.room.hall_id} | {self.snapshot.date.date()}",
+            f"Hall No. {self.snapshot.room.hall_id} | {self.snapshot.date.date()}",  # ignore: type
         )
 
 
 class LaundryRoomTestCase(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         # populates database with LaundryRooms
         LaundryRoom.objects.get_or_create(
             hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
@@ -47,5 +47,5 @@ class LaundryRoomTestCase(TestCase):
         )
         self.room = LaundryRoom.objects.create(hall_id=1, name="test hall", location="location")
 
-    def test_str(self):
+    def test_str(self) -> None:
         self.assertEqual(str(self.room), f"Hall No. {self.room.hall_id} | {self.room.name}")

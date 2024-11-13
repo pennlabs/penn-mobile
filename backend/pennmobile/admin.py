@@ -1,20 +1,21 @@
 # CUSTOM ADMIN SETTUP FOR PENN MOBILE
-from typing import Any, Dict, Optional, Type, TypeAlias
+from typing import Any, Dict, Optional, Type, TypeAlias, TypeVar
 
 from django.contrib import admin, messages
 from django.contrib.admin.apps import AdminConfig
-from django.db.models import Model
 from django.http import HttpRequest
 from django.urls import reverse
 from django.utils.html import format_html
 
+from portal.models import Poll, Post
 
-ModelType: TypeAlias = Type[Model]
+
+ContentType = TypeVar("ContentType", Poll, Post)
 AdminContext: TypeAlias = Dict[str, Any]
 MessageText: TypeAlias = str
 
 
-def add_post_poll_message(request: HttpRequest, model: ModelType) -> None:
+def add_post_poll_message(request: HttpRequest, model: Type[ContentType]) -> None:
     if (count := model.objects.filter(model.ACTION_REQUIRED_CONDITION).count()) > 0:
         link = reverse(f"admin:{model._meta.app_label}_{model._meta.model_name}_changelist")
         messages.info(
@@ -43,4 +44,5 @@ class PennMobileAdminConfig(AdminConfig):
     default_site = "pennmobile.admin.CustomAdminSite"
 
 
-admin.AdminSite = CustomAdminSite  # anything else that overrides default admin should override ours
+# anything else that overrides default admin should override ours
+admin.site = CustomAdminSite()

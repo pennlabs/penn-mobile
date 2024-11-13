@@ -13,7 +13,7 @@ ALL_URL = f"{settings.LAUNDRY_URL}/?location="
 
 @mock.patch("requests.get", fakeLaundryGet)
 class TestAllStatus(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         LaundryRoom.objects.get_or_create(
             hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
         )
@@ -27,7 +27,7 @@ class TestAllStatus(TestCase):
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
         )
 
-    def test_all_status(self):
+    def test_all_status(self) -> None:
 
         data = all_status()
 
@@ -56,7 +56,7 @@ class TestAllStatus(TestCase):
 
 @mock.patch("requests.get", fakeLaundryGet)
 class TestHallStatus(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         LaundryRoom.objects.get_or_create(
             hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
         )
@@ -70,7 +70,7 @@ class TestHallStatus(TestCase):
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
         )
 
-    def test_all_status(self):
+    def test_all_status(self) -> None:
 
         for room in LaundryRoom.objects.all():
 
@@ -88,7 +88,7 @@ class TestHallStatus(TestCase):
 
 @mock.patch("requests.get", fakeLaundryGet)
 class TestSaveData(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         LaundryRoom.objects.get_or_create(
             hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
         )
@@ -102,7 +102,7 @@ class TestSaveData(TestCase):
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
         )
 
-    def test_save_data(self):
+    def test_save_data(self) -> None:
 
         self.assertEqual(LaundrySnapshot.objects.all().count(), 0)
 

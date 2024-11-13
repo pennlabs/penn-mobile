@@ -33,7 +33,7 @@ urlpatterns: URLPatternList = [
     path("sublet/", include("sublet.urls")),
 ]
 
-urlpatterns: URLPatternList = [
+urlpatterns: URLPatternList = [  # type: ignore[no-redef]
     path("api/", include(urlpatterns)),
     path("", include((urlpatterns, "apex"))),
 ]
@@ -41,4 +41,6 @@ urlpatterns: URLPatternList = [
 if settings.DEBUG:
     import debug_toolbar
 
-    urlpatterns: URLPatternList = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
+    urlpatterns: URLPatternList = [  # type: ignore[no-redef]
+        path("__debug__/", include(debug_toolbar.urls))
+    ] + urlpatterns
