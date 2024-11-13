@@ -2,7 +2,7 @@ import datetime
 from typing import Any, Optional
 from urllib.parse import urljoin
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from selenium import webdriver
@@ -55,60 +55,24 @@ class Command(BaseCommand):
                 "p", class_="tease__meta--sm", string=lambda x: "Through" in str(x)
             )
 
-            if start_date_str == "02/29" or start_date_str == "2/29":
-                # If it's February 29th
-                start_date = datetime.datetime.strptime("02/28", "%m/%d").replace(year=current_year)
-                if start_date.month < current_month:
-                    # If scraped month is before current month, increment year
-                    start_date = start_date.replace(year=current_year + 1)
-                start_date = start_date + datetime.timedelta(days=1)
-            else:
-                start_date = datetime.datetime.strptime(start_date_str, "%m/%d").replace(
-                    year=current_year
-                )
-                if start_date.month < current_month:
-                    # If scraped month is before current month, increment year
-                    start_date = start_date.replace(year=current_year + 1)
-            print(start_date_str)
-            if ALL_DAY in start_time_str.lower():
-                start_time = datetime.time(0, 0)
-            else:
-                start_time = datetime.datetime.strptime(start_time_str, "%I:%M%p").time()
-            start_date = datetime.datetime.combine(start_date, start_time)
+            start_date = self._parse_start_date(start_date_str, current_month, current_year)
+            start_time = self._parse_start_time(start_time_str)
+            start_datetime = datetime.datetime.combine(start_date, start_time)
 
-            if start_date > now + datetime.timedelta(days=31):
+            if start_datetime > now + datetime.timedelta(days=31):
                 continue
 
             event_url = urljoin(PENN_TODAY_WEBSITE, article.find("a", class_="tease__link")["href"])
-
-            end_time = self.get_end_time(event_url)
-            if end_time is not None:
-                if end_date_elem:  # end date and end time
-                    end_date_str = end_date_elem.text.strip().split(" ")[-1]
-                    end_date = datetime.datetime.strptime(end_date_str, "%m/%d/%Y")
-                    end_time = datetime.datetime.strptime(end_time, "%I:%M %p").time()
-                    end_date = datetime.datetime.combine(end_date, end_time)
-                else:  # no end date but end time
-                    end_time = datetime.datetime.strptime(end_time, "%I:%M %p").time()
-                    end_date = datetime.datetime.combine(start_date, end_time)
-            else:
-                end_of_day = datetime.time(23, 59, 59)
-                if end_date_elem:  # end date but no end time
-                    end_date_str = end_date_elem.text.strip().split(" ")[-1]
-                    end_date = datetime.datetime.combine(
-                        datetime.datetime.strptime(end_date_str, "%m/%d/%Y"), end_of_day
-                    )
-
-                else:  # no end date or end time
-                    end_date = datetime.datetime.combine(start_date, end_of_day)
+            end_time_str = self.get_end_time(event_url)
+            end_datetime = self._calculate_end_datetime(end_time_str, end_date_elem, start_datetime)
 
             Event.objects.update_or_create(
                 name=name,
                 defaults={
                     "event_type": Event.TYPE_PENN_TODAY,
                     "image_url": None,
-                    "start": timezone.make_aware(start_date),
-                    "end": timezone.make_aware(end_date),
+                    "start": timezone.make_aware(start_datetime),
+                    "end": timezone.make_aware(end_datetime),
                     "location": location,
                     "website": event_url,
                     "description": description,
@@ -118,7 +82,7 @@ class Command(BaseCommand):
 
         self.stdout.write("Uploaded Penn Today Events!")
 
-    def connect_and_parse_html(self, event_url: str, condition: EC) -> Optional[str]:
+    def connect_and_parse_html(self, event_url: str, condition: EC) -> Optional[BeautifulSoup]:
         try:
             options = Options()
             options.add_argument("--headless")
@@ -143,9 +107,14 @@ class Command(BaseCommand):
             event_url, EC.presence_of_element_located((By.CLASS_NAME, "event__topper-content"))
         )
 
-        end_time_range_str = (
-            end_time_soup.find("p", class_="event__meta event__time").text.strip().replace(".", "")
-        )
+        if not end_time_soup:
+            return None
+
+        time_element = end_time_soup.find("p", class_="event__meta event__time")
+        if not time_element:
+            return None
+
+        end_time_range_str = time_element.text.strip().replace(".", "")
 
         if (
             not end_time_range_str
@@ -155,3 +124,45 @@ class Command(BaseCommand):
             return None  # No end time if the event is all day
 
         return times[1]
+
+    def _parse_start_date(
+        self, date_str: str, current_month: int, current_year: int
+    ) -> datetime.date:
+        if date_str in ("02/29", "2/29"):
+            start_date = datetime.datetime.strptime("02/28", "%m/%d").replace(year=current_year)
+            if start_date.month < current_month:
+                start_date = start_date.replace(year=current_year + 1)
+            return (start_date + datetime.timedelta(days=1)).date()
+
+        start_date = datetime.datetime.strptime(date_str, "%m/%d").replace(year=current_year)
+        if start_date.month < current_month:
+            start_date = start_date.replace(year=current_year + 1)
+        return start_date.date()
+
+    def _parse_start_time(self, time_str: str) -> datetime.time:
+        if ALL_DAY in time_str.lower():
+            return datetime.time(0, 0)
+        return datetime.datetime.strptime(time_str, "%I:%M%p").time()
+
+    def _calculate_end_datetime(
+        self,
+        end_time_str: Optional[str],
+        end_date_elem: Optional[Tag],
+        start_datetime: datetime.datetime,
+    ) -> datetime.datetime:
+        end_of_day = datetime.time(23, 59, 59)
+
+        if end_time_str:
+            end_time = datetime.datetime.strptime(end_time_str, "%I:%M %p").time()
+            if end_date_elem:
+                end_date_str = end_date_elem.text.strip().split(" ")[-1]
+                end_date = datetime.datetime.strptime(end_date_str, "%m/%d/%Y").date()
+                return datetime.datetime.combine(end_date, end_time)
+            return datetime.datetime.combine(start_datetime.date(), end_time)
+
+        if end_date_elem:
+            end_date_str = end_date_elem.text.strip().split(" ")[-1]
+            end_date = datetime.datetime.strptime(end_date_str, "%m/%d/%Y").date()
+            return datetime.datetime.combine(end_date, end_of_day)
+
+        return datetime.datetime.combine(start_datetime.date(), end_of_day)

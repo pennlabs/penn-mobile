@@ -48,6 +48,8 @@ webdriver-manager = "*"
 pre-commit = "*"
 alt-profanity-check = "*"
 inflection = "*"
+types-redis = "*"
+types-pytz = "*"
 
 [requires]
 python_version = "3.11"

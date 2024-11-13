@@ -1,8 +1,9 @@
 import calendar
 import datetime
+from typing import Any, cast
 
 from django.core.cache import cache
-from django.db.models import Q, QuerySet
+from django.db.models import Manager, Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from requests.exceptions import HTTPError
@@ -16,6 +17,7 @@ from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundryRoomSerializer
 from pennmobile.analytics import Metric, record_analytics
 from utils.cache import Cache
+from utils.types import get_user
 
 
 class Ids(APIView):
@@ -46,7 +48,7 @@ class MultipleHallInfo(APIView):
 
     def get(self, request: Request, hall_ids: str) -> Response:
         halls = [int(x) for x in hall_ids.split(",")]
-        output = {"rooms": []}
+        output: dict[str, Any] = {"rooms": []}
 
         for hall_id in halls:
             hall_data = hall_status(get_object_or_404(LaundryRoom, hall_id=hall_id))
@@ -54,7 +56,7 @@ class MultipleHallInfo(APIView):
             hall_data["usage_data"] = HallUsage.compute_usage(hall_id)
             output["rooms"].append(hall_data)
 
-        record_analytics(Metric.LAUNDRY_VIEWED, request.user.username)
+        record_analytics(Metric.LAUNDRY_VIEWED, get_user(request).username)
 
         return Response(output)
 
@@ -64,10 +66,16 @@ class HallUsage(APIView):
     GET: returns usage data for dryers and washers of a particular hall
     """
 
+    @staticmethod
     def safe_division(a: int | None, b: int | None) -> float | None:
-        return round(a / float(b), 3) if b > 0 else 0
+        if a is None or b is None or b <= 0:
+            return 0.0
+        return round(a / float(b), 3)
 
-    def get_snapshot_info(hall_id: int) -> tuple[LaundryRoom, QuerySet[LaundrySnapshot]]:
+    @staticmethod
+    def get_snapshot_info(
+        hall_id: int,
+    ) -> tuple[LaundryRoom, QuerySet[LaundrySnapshot, Manager[LaundrySnapshot]]]:
         # filters for LaundrySnapshots within timeframe
         room = get_object_or_404(LaundryRoom, hall_id=hall_id)
 
@@ -84,7 +92,8 @@ class HallUsage(APIView):
         snapshots = LaundrySnapshot.objects.filter(filter).order_by("-date")
         return (room, snapshots)
 
-    def compute_usage(hall_id: int) -> Response:
+    @staticmethod
+    def compute_usage(hall_id: int) -> dict[str, Any] | Response:
         try:
             (room, snapshots) = HallUsage.get_snapshot_info(hall_id)
         except ValueError:
@@ -97,7 +106,8 @@ class HallUsage(APIView):
         min_date = timezone.localtime()
         max_date = timezone.localtime() - datetime.timedelta(days=30)
 
-        for snapshot in snapshots:
+        for snapshot_obj in snapshots.iterator():
+            snapshot = cast(LaundrySnapshot, snapshot_obj)
             date = snapshot.date.astimezone()
             min_date = min(min_date, date)
             max_date = max(max_date, date)
@@ -152,18 +162,20 @@ class Preferences(APIView):
     key = "laundry_preferences:{user_id}"
 
     def get(self, request: Request) -> Response:
-        key = self.key.format(user_id=request.user.id)
+        user = get_user(request)
+        key = self.key.format(user_id=user.id)
         cached_preferences = cache.get(key)
         if cached_preferences is None:
-            preferences = request.user.profile.laundry_preferences.all()
+            preferences = user.profile.laundry_preferences.all()
             cached_preferences = preferences.values_list("hall_id", flat=True)
             cache.set(key, cached_preferences, Cache.MONTH)
 
         return Response({"rooms": cached_preferences})
 
     def post(self, request: Request) -> Response:
-        key = self.key.format(user_id=request.user.id)
-        profile = request.user.profile
+        user = get_user(request)
+        key = self.key.format(user_id=user.id)
+        profile = user.profile
         preferences = profile.laundry_preferences
         if "rooms" not in request.data:
             return Response({"success": False, "error": "No rooms provided"}, status=400)

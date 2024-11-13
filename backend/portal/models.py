@@ -2,7 +2,7 @@ from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import BooleanField, CharField, DateTimeField, ImageField, IntegerField, Q
+from django.db.models import Q
 from django.utils import timezone
 
 from utils.email import get_backend_manager_emails, send_automated_email
@@ -24,8 +24,10 @@ class TargetPopulation(models.Model):
     )
 
     id: int
-    kind: CharField = models.CharField(max_length=10, choices=KIND_OPTIONS, default=KIND_SCHOOL)
-    population: CharField = models.CharField(max_length=255)
+    kind: models.CharField = models.CharField(
+        max_length=10, choices=KIND_OPTIONS, default=KIND_SCHOOL
+    )
+    population: models.CharField = models.CharField(max_length=255)
 
     def __str__(self) -> str:
         return self.population
@@ -45,19 +47,19 @@ class Content(models.Model):
     ACTION_REQUIRED_CONDITION = Q(expire_date__gt=timezone.now()) & Q(status=STATUS_DRAFT)
 
     id: int
-    club_code: CharField = models.CharField(max_length=255, blank=True)
-    created_date: DateTimeField = models.DateTimeField(default=timezone.now)
-    start_date: DateTimeField = models.DateTimeField(default=timezone.now)
-    expire_date: DateTimeField = models.DateTimeField()
-    status: CharField = models.CharField(
+    club_code: models.CharField = models.CharField(max_length=255, blank=True)
+    created_date: models.DateTimeField = models.DateTimeField(default=timezone.now)
+    start_date: models.DateTimeField = models.DateTimeField(default=timezone.now)
+    expire_date: models.DateTimeField = models.DateTimeField()
+    status: models.CharField = models.CharField(
         max_length=30, choices=STATUS_OPTIONS, default=STATUS_DRAFT
     )
-    club_comment: CharField = models.CharField(max_length=255, null=True, blank=True)
-    admin_comment: CharField = models.CharField(max_length=255, null=True, blank=True)
+    club_comment: models.CharField = models.CharField(max_length=255, null=True, blank=True)
+    admin_comment: models.CharField = models.CharField(max_length=255, null=True, blank=True)
     target_populations: models.ManyToManyField = models.ManyToManyField(
         TargetPopulation, blank=True
     )
-    priority: IntegerField = models.IntegerField(default=0)
+    priority: models.IntegerField = models.IntegerField(default=0)
     creator: models.ForeignKey = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -108,8 +110,8 @@ class Content(models.Model):
 
 
 class Poll(Content):
-    question: CharField = models.CharField(max_length=255)
-    multiselect: BooleanField = models.BooleanField(default=False)
+    question: models.CharField = models.CharField(max_length=255)
+    multiselect: models.BooleanField = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.question
@@ -118,8 +120,8 @@ class Poll(Content):
 class PollOption(models.Model):
     id: int
     poll: models.ForeignKey = models.ForeignKey(Poll, on_delete=models.CASCADE)
-    choice: CharField = models.CharField(max_length=255)
-    vote_count: IntegerField = models.IntegerField(default=0)
+    choice: models.CharField = models.CharField(max_length=255)
+    vote_count: models.IntegerField = models.IntegerField(default=0)
 
     def __str__(self) -> str:
         return f"{self.poll.id} - Option - {self.choice}"
@@ -127,20 +129,20 @@ class PollOption(models.Model):
 
 class PollVote(models.Model):
     id: int
-    id_hash: CharField = models.CharField(max_length=255, blank=True)
+    id_hash: models.CharField = models.CharField(max_length=255, blank=True)
     poll: models.ForeignKey = models.ForeignKey(Poll, on_delete=models.CASCADE)
     poll_options: models.ManyToManyField = models.ManyToManyField(PollOption)
-    created_date: DateTimeField = models.DateTimeField(default=timezone.now)
+    created_date: models.DateTimeField = models.DateTimeField(default=timezone.now)
     target_populations: models.ManyToManyField = models.ManyToManyField(
         TargetPopulation, blank=True
     )
 
 
 class Post(Content):
-    title: CharField = models.CharField(max_length=255)
-    subtitle: CharField = models.CharField(max_length=255)
-    post_url: CharField = models.CharField(max_length=255, null=True, blank=True)
-    image: ImageField = models.ImageField(upload_to="portal/images", null=True, blank=True)
+    title: models.CharField = models.CharField(max_length=255)
+    subtitle: models.CharField = models.CharField(max_length=255)
+    post_url: models.CharField = models.CharField(max_length=255, null=True, blank=True)
+    image: models.ImageField = models.ImageField(upload_to="portal/images", null=True, blank=True)
 
     def __str__(self) -> str:
         return self.title

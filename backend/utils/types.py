@@ -12,7 +12,11 @@ DjangoUser = get_user_model()
 
 class UserManager(Protocol):
     def create_user(
-        self, username: str, email: str, password: Optional[str] = None
+        self,
+        username: str,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        **kwargs: Any
     ) -> "UserType": ...
 
     def create_superuser(self, username: str, email: str, password: str) -> "UserType": ...

@@ -1,5 +1,5 @@
 import datetime
-from typing import Any
+from typing import Any, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -14,7 +14,7 @@ def cap_string(s: str) -> str:
     return " ".join([word[0].upper() + word[1:] for word in s.split()])
 
 
-def get_usages() -> tuple[dict[str, dict[str, int | float]], datetime.datetime]:
+def get_usages() -> tuple[Optional[dict[str, dict[str, int | float]]], datetime.datetime]:
 
     # count/capacities default to 0 since spreadsheet number appears blank if no one there
     locations = [
@@ -28,7 +28,9 @@ def get_usages() -> tuple[dict[str, dict[str, int | float]], datetime.datetime]:
         "Pool-Shallow",
         "Pool-Deep",
     ]
-    usages = {location: {"count": 0, "capacity": 0} for location in locations}
+    usages: dict[str, dict[str, int | float]] = {
+        location: {"count": 0, "capacity": 0} for location in locations
+    }
 
     date = timezone.localtime()  # default if can't get date from spreadsheet
 
@@ -42,12 +44,12 @@ def get_usages() -> tuple[dict[str, dict[str, int | float]], datetime.datetime]:
             )
         )
     except ConnectionError:
-        return None
+        return None, date
 
     html = resp.content.decode("utf8")
     soup = BeautifulSoup(html, "html5lib")
     if not (embedded_spreadsheet := soup.find("tbody")):
-        return None
+        return None, date
 
     table_rows = embedded_spreadsheet.findChildren("tr")
     for i, row in enumerate(table_rows):
@@ -75,6 +77,10 @@ class Command(BaseCommand):
         # prevent double creating FitnessSnapshots
         if FitnessSnapshot.objects.filter(date=date).exists():
             self.stdout.write("FitnessSnapshots already exist for this date!")
+            return
+
+        if not usage_by_location:
+            self.stdout.write("Failed to get usages from spreadsheet!")
             return
 
         FitnessSnapshot.objects.bulk_create(

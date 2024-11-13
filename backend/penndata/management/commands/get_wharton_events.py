@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import Any
+from typing import Any, Optional
 
 import pytz
 import requests
@@ -36,8 +36,12 @@ class Command(BaseCommand):
             match = re.match(r"(\w+\s+\d+) \| (\d{1,2}:\d{2} [AP]M) - (\d{1,2}:\d{2} [AP]M)", info)
             if match:
                 _, start_time, end_time = match.groups()
-                start_time_obj = datetime.datetime.strptime(start_time, "%I:%M %p")
-                end_time_obj = datetime.datetime.strptime(end_time, "%I:%M %p")
+                start_time_obj: Optional[datetime.datetime] = datetime.datetime.strptime(
+                    start_time, "%I:%M %p"
+                )
+                end_time_obj: Optional[datetime.datetime] = datetime.datetime.strptime(
+                    end_time, "%I:%M %p"
+                )
             else:
                 # event has start and end times on different dates
                 match = re.match(

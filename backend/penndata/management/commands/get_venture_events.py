@@ -77,7 +77,7 @@ class Command(BaseCommand):
                     )
 
             # events are ordered from future to past, so break once we find a past event
-            if event_start_datetime < now.replace(tzinfo=None):
+            if event_start_datetime and event_start_datetime < now.replace(tzinfo=None):
                 break
 
             if title := event.find("div", class_="PromoSearchResultEvent-title"):

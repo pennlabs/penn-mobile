@@ -2,7 +2,6 @@ from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import BooleanField, CharField, ForeignKey, ManyToManyField, OneToOneField
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -20,9 +19,9 @@ class NotificationToken(models.Model):
     KIND_ANDROID = "ANDROID"
     KIND_OPTIONS = ((KIND_IOS, "iOS"), (KIND_ANDROID, "Android"))
 
-    user: OneToOneField = models.OneToOneField(User, on_delete=models.CASCADE)
-    kind: CharField = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_IOS)
-    token: CharField = models.CharField(max_length=255)
+    user: models.OneToOneField = models.OneToOneField(User, on_delete=models.CASCADE)
+    kind: models.CharField = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_IOS)
+    token: models.CharField = models.CharField(max_length=255)
 
 
 class NotificationSetting(models.Model):
@@ -53,18 +52,18 @@ class NotificationSetting(models.Model):
         (SERVICE_LAUNDRY, "Laundry"),
     )
 
-    token: ForeignKey = models.ForeignKey(NotificationToken, on_delete=models.CASCADE)
-    service: CharField = models.CharField(
+    token: models.ForeignKey = models.ForeignKey(NotificationToken, on_delete=models.CASCADE)
+    service: models.CharField = models.CharField(
         max_length=30, choices=SERVICE_OPTIONS, default=SERVICE_PENN_MOBILE
     )
-    enabled: BooleanField = models.BooleanField(default=True)
+    enabled: models.BooleanField = models.BooleanField(default=True)
 
 
 class Profile(models.Model):
-    user: OneToOneField = models.OneToOneField(User, on_delete=models.CASCADE)
-    laundry_preferences: ManyToManyField = models.ManyToManyField(LaundryRoom, blank=True)
-    fitness_preferences: ManyToManyField = models.ManyToManyField(FitnessRoom, blank=True)
-    dining_preferences: ManyToManyField = models.ManyToManyField("dining.Venue", blank=True)
+    user: models.OneToOneField = models.OneToOneField(User, on_delete=models.CASCADE)
+    laundry_preferences: models.ManyToManyField = models.ManyToManyField(LaundryRoom, blank=True)
+    fitness_preferences: models.ManyToManyField = models.ManyToManyField(FitnessRoom, blank=True)
+    dining_preferences: models.ManyToManyField = models.ManyToManyField("dining.Venue", blank=True)
 
     def __str__(self) -> str:
         return str(self.user.username)

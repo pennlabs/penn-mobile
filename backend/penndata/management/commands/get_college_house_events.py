@@ -51,7 +51,7 @@ class Command(BaseCommand):
             resp = requests.get(event_url)
         except ConnectionError:
             print("Error:", ConnectionError)
-            return None
+            return None, None, None, None, None
         soup = BeautifulSoup(resp.text, "html.parser")
 
         location = (

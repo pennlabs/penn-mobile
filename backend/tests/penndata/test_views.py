@@ -1,8 +1,8 @@
 import datetime
 import json
+from typing import Any
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
@@ -13,9 +13,10 @@ from dining.models import Venue
 from laundry.models import LaundryRoom
 from penndata.models import AnalyticsEvent, Event, FitnessRoom, FitnessSnapshot
 from portal.models import Poll, Post
+from utils.types import DjangoUserModel, UserType
 
 
-def fakeFitnessGet(url, *args, **kwargs):
+def fakeFitnessGet(url: str, *args: Any, **kwargs: Any) -> Any:
     if "docs.google.com/spreadsheets/" in url:
         with open("tests/penndata/fitness_snapshot.html", "rb") as f:
             m = mock.MagicMock(content=f.read())
@@ -24,11 +25,8 @@ def fakeFitnessGet(url, *args, **kwargs):
         raise NotImplementedError
 
 
-User = get_user_model()
-
-
 class TestNews(TestCase):
-    def test_response(self):
+    def test_response(self) -> None:
         response = self.client.get(reverse("news"))
         res_json = json.loads(response.content)
         self.assertEqual(len(res_json), 6)
@@ -40,10 +38,10 @@ class TestNews(TestCase):
 
 
 class TestCalender(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         call_command("get_calendar")
 
-    def test_response(self):
+    def test_response(self) -> None:
         response = self.client.get(reverse("calendar"))
         res_json = json.loads(response.content)
 
@@ -54,8 +52,8 @@ class TestCalender(TestCase):
 
 
 class TestEvent(TestCase):
-    def setUp(self):
-        self.client = APIClient()
+    def setUp(self) -> None:
+        self.client: APIClient = APIClient()
         self.event1 = Event.objects.create(
             event_type="type1",
             name="Event 1",
@@ -75,7 +73,7 @@ class TestEvent(TestCase):
             website="https://pennlabs.org/",
         )
 
-    def test_get_all_events(self):
+    def test_get_all_events(self) -> None:
         """Test GET request to retrieve all events (no type)"""
         url = reverse("events")
         response = self.client.get(url)
@@ -83,7 +81,7 @@ class TestEvent(TestCase):
         res_json = json.loads(response.content)
         self.assertEqual(len(events), len(res_json))
 
-    def test_get_events_by_type(self):
+    def test_get_events_by_type(self) -> None:
         """Test GET request to retrieve events by type"""
         url = reverse("events-type", kwargs={"type": "type1"})
         response = self.client.get(url)
@@ -95,13 +93,13 @@ class TestEvent(TestCase):
 
 
 class TestHomePage(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         call_command("load_venues")
         call_command("load_laundry_rooms")
-        self.client = APIClient()
-        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+        self.client: APIClient = APIClient()
+        self.test_user: UserType = DjangoUserModel.objects.create_user("user", "user@a.com", "user")
 
-    def test_first_response(self):
+    def test_first_response(self) -> None:
         self.client.force_authenticate(user=self.test_user)
         response = self.client.get(reverse("homepage"))
         res_json = json.loads(response.content)["cells"]
@@ -138,10 +136,10 @@ class TestHomePage(TestCase):
 
 
 class TestGetRecentFitness(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         call_command("load_fitness_rooms")
-        self.client = APIClient()
-        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+        self.client: APIClient = APIClient()
+        self.test_user: UserType = DjangoUserModel.objects.create_user("user", "user@a.com", "user")
         self.client.force_authenticate(user=self.test_user)
 
         self.fitness_room = FitnessRoom.objects.first()
@@ -156,13 +154,14 @@ class TestGetRecentFitness(TestCase):
             room=self.fitness_room, date=self.new_time, count=self.new_count
         )
 
-    def test_get_recent(self):
+    def test_get_recent(self) -> None:
         response = self.client.get(reverse("fitness"))
         res_json = json.loads(response.content)
         for room_obj in res_json:
             room_obj.pop("open")
             room_obj.pop("close")
 
+        assert self.fitness_room is not None
         expected = [
             {
                 "id": room.id,
@@ -196,10 +195,10 @@ class TestGetRecentFitness(TestCase):
 
 @mock.patch("requests.get", fakeFitnessGet)
 class TestGetFitnessSnapshot(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         call_command("load_fitness_rooms")
 
-    def test_get_fitness_snapshot(self):
+    def test_get_fitness_snapshot(self) -> None:
         self.assertEqual(FitnessSnapshot.objects.all().count(), 0)
 
         call_command("get_fitness_snapshot")
@@ -219,7 +218,7 @@ class TestGetFitnessSnapshot(TestCase):
 
 
 class TestFitnessUsage(TestCase):
-    def load_snapshots_1(self, date):
+    def load_snapshots_1(self, date: datetime.datetime) -> None:
         # 6:00, 0
         FitnessSnapshot.objects.create(
             room=self.room, date=date + datetime.timedelta(hours=6), count=0, capacity=0.0
@@ -254,7 +253,7 @@ class TestFitnessUsage(TestCase):
             capacity=0.0,
         )
 
-    def load_snapshots_2(self, date):
+    def load_snapshots_2(self, date: datetime.datetime) -> None:
         # 7:30, 3
         FitnessSnapshot.objects.create(
             room=self.room,
@@ -270,12 +269,12 @@ class TestFitnessUsage(TestCase):
             capacity=93.0,
         )
 
-    def setUp(self):
-        self.client = APIClient()
+    def setUp(self) -> None:
+        self.client: APIClient = APIClient()
         self.date = timezone.make_aware(datetime.datetime(2023, 1, 19, 0, 0, 0))
         self.room = FitnessRoom.objects.create(name="test")
 
-    def test_get_fitness_usage_1(self):
+    def test_get_fitness_usage_1(self) -> None:
         self.load_snapshots_1(self.date)
         response = self.client.get(
             reverse("fitness-usage", args=[self.room.id]),
@@ -319,7 +318,7 @@ class TestFitnessUsage(TestCase):
 
         self.assertEqual(res_json, expected)
 
-    def test_get_fitness_usage_2(self):
+    def test_get_fitness_usage_2(self) -> None:
         self.load_snapshots_2(self.date)
         response = self.client.get(
             reverse("fitness-usage", args=[self.room.id]),
@@ -362,14 +361,14 @@ class TestFitnessUsage(TestCase):
 
         self.assertEqual(res_json, expected)
 
-    def test_get_usage_2_samples_week(self):
+    def test_get_usage_2_samples_week(self) -> None:
         self.load_snapshots_1(self.date)
         self.load_snapshots_2(self.date - datetime.timedelta(days=7))
         response = self.client.get(
             reverse("fitness-usage", args=[self.room.id]),
             {
                 "date": (self.date).strftime("%Y-%m-%d"),
-                "num_samples": 2,
+                "num_samples": "2",
                 "group_by": "week",
                 "field": "capacity",
             },
@@ -438,12 +437,12 @@ class TestFitnessUsage(TestCase):
 
         self.assertEqual(res_json, expected)
 
-    def test_get_usage_2_samples_day(self):
+    def test_get_usage_2_samples_day(self) -> None:
         self.load_snapshots_2(self.date)
         self.load_snapshots_1(self.date - datetime.timedelta(days=1))
         response = self.client.get(
             reverse("fitness-usage", args=[self.room.id]),
-            {"date": (self.date).strftime("%Y-%m-%d"), "num_samples": 2},
+            {"date": (self.date).strftime("%Y-%m-%d"), "num_samples": "2"},
         )
         res_json = json.loads(response.content)
 
@@ -510,7 +509,7 @@ class TestFitnessUsage(TestCase):
 
         self.assertEqual(res_json, expected)
 
-    def test_day_closed(self):
+    def test_day_closed(self) -> None:
         self.load_snapshots_1(self.date - datetime.timedelta(days=1))
         response = self.client.get(
             reverse("fitness-usage", args=[self.room.id]),
@@ -565,7 +564,7 @@ class TestFitnessUsage(TestCase):
         }
         self.assertEqual(res_json, expected)
 
-    def test_get_fitness_usage_error(self):
+    def test_get_fitness_usage_error(self) -> None:
         response = self.client.get(reverse("fitness-usage", args=[self.room.id + 1]))
         self.assertEqual(response.status_code, 404)
 
@@ -576,25 +575,25 @@ class TestFitnessUsage(TestCase):
 
 @mock.patch("requests.get", fakeFitnessGet)
 class FitnessPreferencesTestCase(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         FitnessRoom.objects.get_or_create(id=0, name="1st Floor Fitness")
         FitnessRoom.objects.get_or_create(id=1, name="MPR")
         FitnessRoom.objects.get_or_create(id=2, name="Pool-Deep")
         FitnessRoom.objects.get_or_create(id=3, name="4th Floor Fitness")
-        self.client = APIClient()
-        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+        self.client: APIClient = APIClient()
+        self.test_user: UserType = DjangoUserModel.objects.create_user("user", "user@a.com", "user")
         self.fitness_room = FitnessRoom.objects.get(id=0, name="1st Floor Fitness")
         self.other_fitness_room = FitnessRoom.objects.get(id=1, name="MPR")
         self.test_user.profile.fitness_preferences.add(self.fitness_room)
 
-    def test_get(self):
+    def test_get(self) -> None:
         self.client.force_authenticate(user=self.test_user)
         response = self.client.get(reverse("fitness-preferences"))
         res_json = json.loads(response.content)
 
         self.assertIn(self.fitness_room.id, res_json["rooms"])
 
-    def test_post(self):
+    def test_post(self) -> None:
         self.client.force_authenticate(user=self.test_user)
         self.client.post(reverse("fitness-preferences"), {"rooms": [self.other_fitness_room.id]})
 
@@ -605,12 +604,12 @@ class FitnessPreferencesTestCase(TestCase):
 
 
 class TestAnalytics(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+    def setUp(self) -> None:
+        self.client: APIClient = APIClient()
+        self.test_user: UserType = DjangoUserModel.objects.create_user("user", "user@a.com", "user")
         self.client.force_authenticate(user=self.test_user)
 
-    def test_create_regular_analytics(self):
+    def test_create_regular_analytics(self) -> None:
         payload = {
             "cell_type": "dining",
             "index": 0,
@@ -624,7 +623,7 @@ class TestAnalytics(TestCase):
         self.assertIsNone(res_json["post"])
         self.assertIsNone(res_json["poll"])
 
-    def test_create_poll_analytics(self):
+    def test_create_poll_analytics(self) -> None:
         poll = Poll.objects.create(
             club_code="pennlabs",
             question="hello?",
@@ -645,7 +644,7 @@ class TestAnalytics(TestCase):
         self.assertIsNone(res_json["post"])
         self.assertTrue(res_json["is_interaction"])
 
-    def test_create_post_analytics(self):
+    def test_create_post_analytics(self) -> None:
         post = Post.objects.create(
             club_code="notpennlabs",
             title="Test title 2",
@@ -667,7 +666,7 @@ class TestAnalytics(TestCase):
         self.assertIsNotNone(res_json["post"])
         self.assertFalse(res_json["is_interaction"])
 
-    def test_fail_post_poll_analytics(self):
+    def test_fail_post_poll_analytics(self) -> None:
         poll = Poll.objects.create(
             club_code="pennlabs",
             question="hello?",
@@ -693,12 +692,12 @@ class TestAnalytics(TestCase):
 
 
 class TestUniqueCounterView(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.test_user = User.objects.create_user("user", "user@a.com", "user")
+    def setUp(self) -> None:
+        self.client: APIClient = APIClient()
+        self.test_user: UserType = DjangoUserModel.objects.create_user("user", "user@a.com", "user")
         self.client.force_authenticate(user=self.test_user)
 
-    def test_get_unique_counter(self):
+    def test_get_unique_counter(self) -> None:
         post = Post.objects.create(
             club_code="pennlabs",
             title="Test title",
@@ -728,6 +727,6 @@ class TestUniqueCounterView(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 0)
 
-    def test_get_unique_counter_no_id(self):
+    def test_get_unique_counter_no_id(self) -> None:
         response = self.client.get(reverse("eventcounter"))
         self.assertEqual(response.status_code, 400)

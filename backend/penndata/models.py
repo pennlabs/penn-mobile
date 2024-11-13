@@ -51,65 +51,66 @@ class Event(models.Model):
         (TYPE_STOUFFER_COLLEGE_HOUSE, "Stouffer College House"),
     )
 
-    event_type = models.CharField(
+    event_type: models.CharField = models.CharField(
         max_length=63, choices=TYPE_CHOICES, default=None, null=True, blank=True
     )
-    name = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True)
-    image_url = models.URLField(null=True, blank=True)
-    start = models.DateTimeField(null=True, blank=True)
-    end = models.DateTimeField(null=True, blank=True)
-    location = models.CharField(max_length=255, null=True, blank=True)
-    email = models.CharField(max_length=255, null=True, blank=True)
-    website = models.URLField(max_length=255, null=True, blank=True)
+    name: models.CharField = models.CharField(max_length=255)
+    description: models.TextField = models.TextField(null=True, blank=True)
+    image_url: models.URLField = models.URLField(null=True, blank=True)
+    start: models.DateTimeField = models.DateTimeField(null=True, blank=True)
+    end: models.DateTimeField = models.DateTimeField(null=True, blank=True)
+    location: models.CharField = models.CharField(max_length=255, null=True, blank=True)
+    email: models.CharField = models.CharField(max_length=255, null=True, blank=True)
+    website: models.URLField = models.URLField(max_length=255, null=True, blank=True)
 
 
 class HomePageOrder(models.Model):
-    cell = models.CharField(max_length=255)
-    rank = models.IntegerField()
+    cell: models.CharField = models.CharField(max_length=255)
+    rank: models.IntegerField = models.IntegerField()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.cell
 
 
 class FitnessRoom(models.Model):
-    name = models.CharField(max_length=255)
-    image_url = models.URLField()
+    id: int
+    name: models.CharField = models.CharField(max_length=255)
+    image_url: models.URLField = models.URLField()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.name)
 
 
 class FitnessSnapshot(models.Model):
-    room = models.ForeignKey(FitnessRoom, on_delete=models.CASCADE, null=True)
-    date = models.DateTimeField(default=timezone.now)
-    count = models.IntegerField()
-    capacity = models.FloatField(null=True)
+    room: models.ForeignKey = models.ForeignKey(FitnessRoom, on_delete=models.CASCADE, null=True)
+    date: models.DateTimeField = models.DateTimeField(default=timezone.now)
+    count: models.IntegerField = models.IntegerField()
+    capacity: models.FloatField = models.FloatField(null=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Room Name: {self.room.name} | {self.date.date()}"
 
 
 class AnalyticsEvent(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(default=timezone.now)
-    cell_type = models.CharField(max_length=255)
-    index = models.IntegerField(default=0)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
-    poll = models.ForeignKey(Poll, on_delete=models.CASCADE, null=True)
-    is_interaction = models.BooleanField(default=False)
-    data = models.CharField(max_length=255, null=True)
+    user: models.ForeignKey = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at: models.DateTimeField = models.DateTimeField(default=timezone.now)
+    cell_type: models.CharField = models.CharField(max_length=255)
+    index: models.IntegerField = models.IntegerField(default=0)
+    post: models.ForeignKey = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
+    poll: models.ForeignKey = models.ForeignKey(Poll, on_delete=models.CASCADE, null=True)
+    is_interaction: models.BooleanField = models.BooleanField(default=False)
+    data: models.CharField = models.CharField(max_length=255, null=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.cell_type}-{self.user.username}"
 
 
 class CalendarEvent(models.Model):
-    event = models.CharField(max_length=255)
-    date = models.CharField(max_length=50, null=True, blank=True)
+    event: models.CharField = models.CharField(max_length=255)
+    date: models.CharField = models.CharField(max_length=50, null=True, blank=True)
     # NOTE: This is bad practice, though is necessary for the time being
     # since frontends use the string date field
-    date_obj = models.DateTimeField(null=True, blank=True)
+    date_obj: models.DateTimeField = models.DateTimeField(null=True, blank=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.date}-{self.event}"
