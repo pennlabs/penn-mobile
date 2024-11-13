@@ -68,7 +68,7 @@ class AbstractBookingWrapper(ABC):
 
     @abstractmethod
     def get_availability(
-        self, lid: int, start: str | None, end: str | None, user: UserType
+        self, lid: str | int, start: str | None, end: str | None, user: UserType
     ) -> list[RoomInfo]:
         raise NotImplementedError  # pragma: no cover
 
@@ -111,7 +111,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
         return response
 
     def get_availability(
-        self, lid: int, start: str | None, end: str | None, user: UserType
+        self, lid: str | int, start: str | None, end: str | None, user: UserType
     ) -> list[RoomInfo]:
         """Returns a list of rooms and their availabilities"""
         current_time = timezone.localtime()
@@ -275,7 +275,7 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
         return response
 
     def get_availability(
-        self, gid: int, start: str | None, end: str | None, user: UserType
+        self, gid: str | int, start: str | None, end: str | None, user: UserType
     ) -> list[RoomInfo]:
         """Returns a list of rooms and their availabilities"""
 
@@ -536,9 +536,6 @@ class BookingHandler:
     ) -> AvailabilityResponse:
         gsr = get_object_or_404(GSR, gid=gid)
 
-        lid_int = int(lid) if isinstance(lid, str) else lid
-        gid_int = int(gid) if isinstance(gid, str) else gid
-
         # select a random user from the group if booking wharton gsr
         if gsr.kind == GSR.KIND_WHARTON and group is not None:
             wharton_members = group.memberships.filter(is_wharton=True)
@@ -547,9 +544,9 @@ class BookingHandler:
             user = wharton_members[randint(0, n - 1)].user
 
         rooms = (
-            self.WBW.get_availability(lid_int, start, end, user)
+            self.WBW.get_availability(lid, start, end, user)
             if gsr.kind == GSR.KIND_WHARTON
-            else self.LBW.get_availability(gid_int, start, end, user)
+            else self.LBW.get_availability(gid, start, end, user)
         )
         return {"name": gsr.name, "gid": gsr.gid, "rooms": rooms}
 

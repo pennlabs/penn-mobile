@@ -8,9 +8,6 @@ from django.utils import timezone
 from utils.email import get_backend_manager_emails, send_automated_email
 
 
-User = get_user_model()
-
-
 class TargetPopulation(models.Model):
     KIND_SCHOOL = "SCHOOL"
     KIND_YEAR = "YEAR"
@@ -61,7 +58,7 @@ class Content(models.Model):
     )
     priority: models.IntegerField = models.IntegerField(default=0)
     creator: models.ForeignKey = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True
+        get_user_model(), on_delete=models.SET_NULL, null=True, blank=True
     )
 
     class Meta:

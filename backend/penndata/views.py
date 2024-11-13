@@ -263,30 +263,27 @@ class FitnessRoomView(generics.ListAPIView):
 
 
 class FitnessUsage(APIView):
-    def safe_add(self, a: Optional[float], b: Optional[float]) -> Optional[float]:
+    def safe_add(self, a: Optional[float] = None, b: Optional[float] = None) -> Optional[float]:
         return None if a is None and b is None else (a or 0) + (b or 0)
 
     def linear_interpolate(
         self,
-        before_val: Optional[int],
-        after_val: Optional[int],
+        before_val: int | float,
+        after_val: int | float,
         before_date: datetime.datetime,
         current_date: datetime.datetime,
         after_date: datetime.datetime,
-    ) -> Optional[int]:
-        if before_val is None or after_val is None:
-            return None
-
-        delta = (after_date - before_date).total_seconds()
-        if delta == 0:
-            return before_val
-
-        ratio = (current_date - before_date).total_seconds() / delta
-        return int(before_val + (after_val - before_val) * ratio)
+    ) -> int | float:
+        return (
+            before_val
+            + (after_val - before_val)
+            * (current_date - before_date).total_seconds()
+            / (after_date - before_date).total_seconds()
+        )
 
     def get_usage_on_date(
         self, room: FitnessRoom, date: datetime.date, field: str
-    ) -> Sequence[Optional[int]]:
+    ) -> Sequence[Optional[int | float]]:
         """
         Returns the number of people in the fitness center on a given date per hour
         """
@@ -301,7 +298,7 @@ class FitnessUsage(APIView):
         snapshots = FitnessSnapshot.objects.filter(room=room, date__date=date)
 
         # For usage, None represents no data
-        usage: list[Optional[int]] = [0] * 24
+        usage: list[Optional[float]] = [0] * 24
         for hour in range(open, close + 1):
             # consider the :30 mark of each hour
             hour_date = timezone.make_aware(datetime.datetime.combine(date, datetime.time(hour)))
@@ -310,8 +307,8 @@ class FitnessUsage(APIView):
             before = snapshots.filter(date__lte=hour_date).order_by("-date").first()
             after = snapshots.filter(date__gte=hour_date).order_by("date").first()
 
-            before_date, before_val = getattr(before, "date", None), getattr(before, field, None)
-            after_date, after_val = getattr(after, "date", None), getattr(after, field, None)
+            before_date, before_val = getattr(before, "date", None), getattr(before, field, 0)
+            after_date, after_val = getattr(after, "date", None), getattr(after, field, 0)
 
             # This condition should only activate during morning times
             if before is None:
@@ -347,15 +344,15 @@ class FitnessUsage(APIView):
                         cast(datetime.datetime, after_date),
                     )
                     if before_date != after_date
-                    else after_val
+                    else (after_val)
                 )
         if all(amt == 0 for amt in usage):  # location probably closed - don't count in aggregate
             return [None] * 24
-        return cast(Sequence[Optional[int]], usage)
+        return cast(Sequence[Optional[int | float]], usage)
 
     def get_usage(
         self, room: FitnessRoom, date: datetime.date, num_samples: int, group_by: str, field: str
-    ) -> tuple[list[Optional[float]], datetime.date, datetime.date]:
+    ) -> tuple[list[Optional[int | float]], datetime.date, datetime.date]:
         unit = 1 if group_by == "day" else 7  # skip by 1 or 7 days
         usage_aggs: list[tuple[Optional[float], int]] = [
             (None, 0)
@@ -408,17 +405,13 @@ class FitnessUsage(APIView):
         usage_per_hour, min_date, max_date = self.get_usage(
             room, date, num_samples, group_by, field
         )
-        usage_dict: dict[str, Optional[float]] = {}
-        for i, amt in enumerate(usage_per_hour):
-            if amt is not None:
-                usage_dict[str(i)] = amt
 
         return Response(
             {
                 "room_name": room.name,
                 "start_date": min_date,
                 "end_date": max_date,
-                "usage": usage_dict,
+                "usage": {i: amt for i, amt in enumerate(usage_per_hour)},
             }
         )
 

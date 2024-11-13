@@ -1,23 +1,31 @@
 # CUSTOM ADMIN SETTUP FOR PENN MOBILE
-from typing import Any, Dict, Optional, Type, TypeAlias, TypeVar
+from typing import Any, Dict, Optional, Type, TypeAlias, cast
 
 from django.contrib import admin, messages
 from django.contrib.admin.apps import AdminConfig
+from django.db.models import Model
 from django.http import HttpRequest
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.html import format_html
 
-from portal.models import Poll, Post
 
-
-ContentType = TypeVar("ContentType", Poll, Post)
 AdminContext: TypeAlias = Dict[str, Any]
 MessageText: TypeAlias = str
 
 
-def add_post_poll_message(request: HttpRequest, model: Type[ContentType]) -> None:
-    if (count := model.objects.filter(model.ACTION_REQUIRED_CONDITION).count()) > 0:
+def add_post_poll_message(request: HttpRequest, model: Type[Model]) -> None:
+    from portal.models import Poll, Post
+
+    model_obj: Poll | Post
+    if model == Poll:
+        model_obj = cast(Poll, model)
+    elif model == Post:
+        model_obj = cast(Post, model)
+    else:
+        raise ValueError(f"Invalid model: {model}")
+
+    if (count := model_obj.objects.filter(model_obj.ACTION_REQUIRED_CONDITION).count()) > 0:
         link = reverse(f"admin:{model._meta.app_label}_{model._meta.model_name}_changelist")
         messages.info(
             request,
