@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from typing import Any
+from typing import Any, Optional
 
 import requests
 from django.core.management.base import BaseCommand
@@ -42,7 +42,7 @@ class Command(BaseCommand):
     def get_degrees(self) -> list[str]:
         return ["BACHELORS", "MASTERS", "PHD", "PROFESSIONAL"]
 
-    def get_years(self, years: str | None) -> list[int]:
+    def get_years(self, years: Optional[str] = None) -> list[int]:
         # creates new class year in August in preparation for upcoming school year
         if years is None:
             return (

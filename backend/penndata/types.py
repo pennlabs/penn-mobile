@@ -1,6 +1,7 @@
 from typing import Any, TypeAlias
 
 from django.db.models import Manager, QuerySet
+
 from penndata.models import CalendarEvent, Event, HomePageOrder
 
 

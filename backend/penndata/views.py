@@ -156,7 +156,7 @@ class HomePage(APIView):
 
     class Cell:
         def __init__(
-            self, myType: str, myInfo: ValidatedData | None = None, myWeight: int = 0
+            self, myType: str, myInfo: Optional[ValidatedData] = None, myWeight: int = 0
         ) -> None:
             self.type = myType
             self.info = myInfo

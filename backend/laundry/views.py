@@ -1,6 +1,6 @@
 import calendar
 import datetime
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 from django.core.cache import cache
 from django.db.models import Manager, Q, QuerySet
@@ -67,7 +67,7 @@ class HallUsage(APIView):
     """
 
     @staticmethod
-    def safe_division(a: int | None, b: int | None) -> float | None:
+    def safe_division(a: Optional[int] = None, b: Optional[int] = None) -> float | None:
         if a is None or b is None or b <= 0:
             return 0.0
         return round(a / float(b), 3)

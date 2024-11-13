@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from typing import Any
 
 from django.core.management.base import BaseCommand
@@ -9,7 +10,7 @@ from gsr_booking.models import Group, GSRBooking
 class Command(BaseCommand):
     help = "Provides usage stats for a given user."
 
-    def add_arguments(self, parser) -> None:
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("pennkey", type=str, help="Pennkey of user to check")
 
     def handle(self, *args: Any, **kwargs: Any) -> None:
