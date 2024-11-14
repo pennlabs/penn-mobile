@@ -260,9 +260,11 @@ class TestSublets(TestCase):
                 f"/sublet/properties/{str(self.test_sublet1.id)}/images/", {"images": image}
             )
             self.assertEqual(response.status_code, 201)
-            images = Sublet.objects.get(id=self.test_sublet1.id).images.all()  # type: ignore
+            images = Sublet.objects.get(id=self.test_sublet1.id).images.all()
             self.assertTrue(images.exists())
-            self.assertEqual(self.test_sublet1.id, images.first().sublet.id)
+            first_image = images.first()
+            assert first_image is not None
+            self.assertEqual(self.test_sublet1.id, first_image.sublet.id)
 
     def test_create_delete_images(self) -> None:
         with open("tests/sublet/mock_image.jpg", "rb") as image:
@@ -273,11 +275,13 @@ class TestSublets(TestCase):
                     "multipart",
                 )
                 self.assertEqual(response.status_code, 201)
-                images = Sublet.objects.get(id=self.test_sublet1.id).images.all()  # type: ignore
-                image_id1 = images.first().id
+                images = Sublet.objects.get(id=self.test_sublet1.id).images.all()
+                first_image = images.first()
+                assert first_image is not None
+                image_id1 = first_image.id
                 self.assertTrue(images.exists())
                 self.assertEqual(2, images.count())
-                self.assertEqual(self.test_sublet1.id, images.first().sublet.id)
+                self.assertEqual(self.test_sublet1.id, first_image.sublet.id)
                 response = self.client.delete(f"/sublet/properties/images/{image_id1}/")
                 self.assertEqual(response.status_code, 204)
                 self.assertFalse(SubletImage.objects.filter(id=image_id1).exists())

@@ -31,4 +31,6 @@ repos:
           --warn-redundant-casts,
           --no-implicit-optional,
           --strict-optional,
+          --warn-unused-ignores,
+          --disallow-incomplete-defs,
         ]

@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import QuerySet
 from phonenumber_field.modelfields import PhoneNumberField
 
 
@@ -58,6 +59,8 @@ class Sublet(models.Model):
     expires_at: models.DateTimeField = models.DateTimeField()
     start_date: models.DateField = models.DateField()
     end_date: models.DateField = models.DateField()
+
+    images: QuerySet
 
     def __str__(self) -> str:
         return f"{self.title} by {self.subletter}"

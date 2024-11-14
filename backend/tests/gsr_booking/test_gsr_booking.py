@@ -18,7 +18,7 @@ class UserViewTestCase(TestCase):
 
         self.group = Group.objects.create(owner=self.user1, name="g1", color="blue")
         self.group.members.add(self.user1)
-        memship = self.group.memberships.all()[0]  # type: ignore
+        memship = self.group.memberships.all()[0]
         memship.accepted = True
         memship.save()
         self.client: APIClient = APIClient()
