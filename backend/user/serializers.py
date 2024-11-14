@@ -1,4 +1,4 @@
-from typing import Any, TypeAlias
+from typing import Any
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
@@ -6,15 +6,12 @@ from rest_framework import serializers
 from user.models import NotificationSetting, NotificationToken, Profile
 
 
-ValidatedData: TypeAlias = dict[str, Any]
-
-
 class NotificationTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationToken
         fields = ("id", "kind", "token")
 
-    def create(self, validated_data: ValidatedData) -> NotificationToken:
+    def create(self, validated_data: dict[str, Any]) -> NotificationToken:
         validated_data["user"] = self.context["request"].user
         token_obj = NotificationToken.objects.filter(user=validated_data["user"]).first()
         if token_obj:
@@ -27,7 +24,7 @@ class NotificationSettingSerializer(serializers.ModelSerializer):
         model = NotificationSetting
         fields = ("id", "service", "enabled")
 
-    def create(self, validated_data: ValidatedData) -> NotificationSetting:
+    def create(self, validated_data: dict[str, Any]) -> NotificationSetting:
         validated_data["token"] = NotificationToken.objects.get(user=self.context["request"].user)
         setting = NotificationSetting.objects.filter(
             token=validated_data["token"], service=validated_data["service"]
@@ -37,7 +34,7 @@ class NotificationSettingSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(
-        self, instance: NotificationSetting, validated_data: ValidatedData
+        self, instance: NotificationSetting, validated_data: dict[str, Any]
     ) -> NotificationSetting:
         if instance.service != validated_data["service"]:
             raise serializers.ValidationError(detail={"detail": "Cannot change setting service."})

@@ -1,5 +1,5 @@
 # CUSTOM ADMIN SETTUP FOR PENN MOBILE
-from typing import Any, Dict, Optional, Type, TypeAlias, cast
+from typing import Any, Optional, Type, cast
 
 from django.contrib import admin, messages
 from django.contrib.admin.apps import AdminConfig
@@ -8,10 +8,6 @@ from django.http import HttpRequest
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.html import format_html
-
-
-AdminContext: TypeAlias = Dict[str, Any]
-MessageText: TypeAlias = str
 
 
 def add_post_poll_message(request: HttpRequest, model: Type[Model]) -> None:
@@ -41,7 +37,7 @@ class CustomAdminSite(admin.AdminSite):
     site_header = "Penn Mobile Backend Admin"
 
     def index(
-        self, request: HttpRequest, extra_context: Optional[AdminContext] = None
+        self, request: HttpRequest, extra_context: Optional[dict[str, Any]] = None
     ) -> TemplateResponse:
         from portal.models import Poll, Post
 

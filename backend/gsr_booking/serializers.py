@@ -1,4 +1,4 @@
-from typing import Any, TypeAlias
+from typing import Any
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
@@ -6,7 +6,6 @@ from rest_framework import serializers
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 
 
-ValidatedData: TypeAlias = dict[str, Any]
 User = get_user_model()
 
 
@@ -19,7 +18,7 @@ class GroupRoomBookingRequestSerializer(serializers.Serializer):
 
     is_wharton = serializers.SerializerMethodField()
 
-    def get_is_wharton(self, obj: ValidatedData) -> bool:
+    def get_is_wharton(self, obj: dict[str, Any]) -> bool:
         return obj["lid"] == 1
 
 
@@ -46,7 +45,7 @@ class GroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = ["owner", "memberships", "name", "color", "id"]
 
-    def create(self, validated_data: ValidatedData) -> Group:
+    def create(self, validated_data: dict[str, Any]) -> Group:
         request = self.context.get("request", None)
         if request is None:
             return super().create(validated_data)
@@ -61,7 +60,7 @@ class GroupField(serializers.RelatedField):
     def to_representation(self, value: Group) -> dict[str, Any]:
         return {"name": value.name, "id": value.id, "color": value.color}
 
-    def to_internal_value(self, data: ValidatedData) -> None:
+    def to_internal_value(self, data: dict[str, Any]) -> None:
         return None  # TODO: If you want to update based on BookingField, implement this.
 
 
