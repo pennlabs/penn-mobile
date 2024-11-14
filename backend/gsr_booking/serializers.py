@@ -4,7 +4,6 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
-from utils.types import UserType
 
 
 ValidatedData: TypeAlias = dict[str, Any]
@@ -24,14 +23,7 @@ class GroupRoomBookingRequestSerializer(serializers.Serializer):
         return obj["lid"] == 1
 
 
-class MiniUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["username", "first_name", "last_name"]
-
-
 class GroupMembershipSerializer(serializers.ModelSerializer):
-    user = MiniUserSerializer(read_only=True)
     group: serializers.SlugRelatedField = serializers.SlugRelatedField(
         slug_field="name", queryset=Group.objects.all()
     )
@@ -41,7 +33,7 @@ class GroupMembershipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupMembership
-        fields = ["user", "group", "type", "pennkey_allow", "notifications", "id", "color"]
+        fields = ["group", "type", "pennkey_allow", "notifications", "id", "color"]
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -71,29 +63,6 @@ class GroupField(serializers.RelatedField):
 
     def to_internal_value(self, data: ValidatedData) -> None:
         return None  # TODO: If you want to update based on BookingField, implement this.
-
-
-class UserSerializer(serializers.ModelSerializer):
-    booking_groups = serializers.SerializerMethodField()
-
-    def get_booking_groups(self, obj: UserType) -> list[dict[str, Any]]:
-        result = []
-        for membership in GroupMembership.objects.filter(accepted=True, user=obj):
-            result.append(
-                {
-                    "name": membership.group.name,
-                    "id": membership.group.id,
-                    "color": membership.group.color,
-                    "pennkey_allow": membership.pennkey_allow,
-                    "notifications": membership.notifications,
-                }
-            )
-
-        return result
-
-    class Meta:
-        model = User
-        fields = ["username", "booking_groups"]
 
 
 class GSRSerializer(serializers.ModelSerializer):

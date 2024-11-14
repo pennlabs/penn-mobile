@@ -5,7 +5,6 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from gsr_booking.models import Group
 from laundry.models import LaundryRoom
 from penndata.models import FitnessRoom
 from utils.types import UserType
@@ -78,7 +77,6 @@ def create_or_update_user_profile(
     object exists for that User, it will create one
     """
     Profile.objects.get_or_create(user=instance)
-    Group.objects.get_or_create(owner=instance, name="Me", color="#14f7d1")
 
     # notifications
     token, _ = NotificationToken.objects.get_or_create(user=instance)

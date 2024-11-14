@@ -1,6 +1,5 @@
 from typing import Optional
 
-from django.contrib.auth import get_user_model
 from django.db.models import Manager, Prefetch, Q, QuerySet
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
@@ -14,68 +13,32 @@ from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import GSRBooker, WhartonGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
-from gsr_booking.serializers import (
-    GroupMembershipSerializer,
-    GroupSerializer,
-    GSRSerializer,
-    UserSerializer,
-)
+from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, GSRSerializer
 from pennmobile.analytics import Metric, record_analytics
 from utils.errors import APIError
-from utils.types import UserType, get_user
+from utils.types import get_user
 
 
-User = get_user_model()
-
-
-# TODO: user model doesn't have a `booking_groups` attribute, so placing Any type for now
-class UserViewSet(viewsets.ReadOnlyModelViewSet[UserType]):
-    """
-    Can specify `me` instead of the `username` to retrieve details on the current user.
-    """
-
-    queryset = User.objects.all().prefetch_related(
-        Prefetch("booking_groups", Group.objects.filter(memberships__accepted=True))
-    )
+class MyMembershipViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
-    serializer_class = UserSerializer
-    lookup_field = "username"
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["username", "first_name", "last_name"]
+    serializer_class = GroupMembershipSerializer
 
-    def get_object(self) -> UserType:
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        param = self.kwargs[lookup_url_kwarg]
-        if param == "me":
-            return get_user(self.request)
-        return super().get_object()
+    def get_queryset(self) -> QuerySet[GroupMembership, Manager[GroupMembership]]:
+        return GroupMembership.objects.filter(user=self.request.user, accepted=True)
 
-    def get_queryset(self) -> QuerySet[UserType, Manager[UserType]]:
-        if not self.request.user.is_authenticated:
-            return User.objects.none()
-
-        user = get_user(self.request)
-        queryset = User.objects.all()
-        queryset = queryset.prefetch_related(
-            Prefetch(
-                "memberships",
-                GroupMembership.objects.filter(group__in=user.booking_groups.all(), accepted=True),
-            )
-        )
-        return queryset
-
-    @action(detail=True, methods=["get"])
-    def invites(self, request: Request, username: Optional[str] = None) -> Response:
+    @action(detail=False, methods=["get"])
+    def invites(self, request: Request) -> Response:
         """
         Retrieve all invites for a given user.
         """
 
-        user = get_object_or_404(User, username=username)
         request_user = get_user(self.request)
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(
-                    user=user, accepted=False, group__in=request_user.booking_groups.all()
+                    user=get_user(request),
+                    accepted=False,
+                    group__in=request_user.booking_groups.all(),
                 ),
                 many=True,
             ).data
