@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, TypeAlias
+from typing import Any, List, Optional
 
 from django.db.models import Count, Manager, Q, QuerySet
 from django.db.models.functions import Trunc
@@ -36,12 +36,6 @@ from portal.serializers import (
     TargetPopulationSerializer,
 )
 from utils.types import AuthRequest, get_auth_user
-
-
-PollQuerySet: TypeAlias = QuerySet[Poll, Manager[Poll]]
-PostQuerySet: TypeAlias = QuerySet[Post, Manager[Post]]
-PollVoteQuerySet: TypeAlias = QuerySet[PollVote, Manager[PollVote]]
-PollOptionQuerySet: TypeAlias = QuerySet[PollOption, Manager[PollOption]]
 
 
 class UserInfo(APIView):
@@ -97,7 +91,7 @@ class Polls(viewsets.ModelViewSet[Poll]):
     permission_classes = [PollOwnerPermission | IsSuperUser]
     serializer_class = PollSerializer
 
-    def get_queryset(self) -> PollQuerySet:
+    def get_queryset(self) -> QuerySet[Poll, Manager[Poll]]:
         # all polls if superuser, polls corresponding to club for regular user
         user = get_auth_user(self.request)
         return (
@@ -193,7 +187,7 @@ class PollOptions(viewsets.ModelViewSet[PollOption]):
     permission_classes = [OptionOwnerPermission | IsSuperUser]
     serializer_class = PollOptionSerializer
 
-    def get_queryset(self) -> PollOptionQuerySet:
+    def get_queryset(self) -> QuerySet[PollOption, Manager[PollOption]]:
         # if user is admin, they can update anything
         # if user is not admin, they can only update their own options
         user = get_auth_user(self.request)
@@ -217,7 +211,7 @@ class PollVotes(viewsets.ModelViewSet[PollVote]):
     permission_classes = [PollOwnerPermission | IsSuperUser]
     serializer_class = PollVoteSerializer
 
-    def get_queryset(self) -> PollVoteQuerySet:
+    def get_queryset(self) -> QuerySet[PollVote, Manager[PollVote]]:
         return PollVote.objects.none()
 
     @action(detail=False, methods=["post"])
@@ -284,7 +278,7 @@ class Posts(viewsets.ModelViewSet[Post]):
     permission_classes = [PostOwnerPermission | IsSuperUser]
     serializer_class = PostSerializer
 
-    def get_queryset(self) -> PostQuerySet:
+    def get_queryset(self) -> QuerySet[Post, Manager[Post]]:
         user = get_auth_user(self.request)
         return (
             Post.objects.all()

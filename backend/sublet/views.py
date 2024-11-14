@@ -1,4 +1,4 @@
-from typing import Any, Type, TypeAlias, cast
+from typing import Any, Type, cast
 
 from django.db.models import Manager, QuerySet, prefetch_related_objects
 from django.http import QueryDict
@@ -32,13 +32,6 @@ from sublet.serializers import (
 from utils.types import get_user
 
 
-SubletQuerySet: TypeAlias = QuerySet[Sublet, Manager[Sublet]]
-OfferQuerySet: TypeAlias = QuerySet[Offer, Manager[Offer]]
-AmenityQuerySet: TypeAlias = QuerySet[Amenity, Manager[Amenity]]
-ImageList: TypeAlias = QuerySet[SubletImage, Manager[SubletImage]]
-UserOfferQuerySet: TypeAlias = QuerySet[Offer, Manager[Offer]]
-
-
 class Amenities(generics.ListAPIView):
     serializer_class = AmenitySerializer
     queryset = Amenity.objects.all()
@@ -52,7 +45,7 @@ class UserFavorites(generics.ListAPIView):
     serializer_class = SubletSerializerSimple
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self) -> SubletQuerySet:
+    def get_queryset(self) -> QuerySet[Sublet, Manager[Sublet]]:
         return get_user(self.request).sublets_favorited
 
 
@@ -60,7 +53,7 @@ class UserOffers(generics.ListAPIView):
     serializer_class = OfferSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self) -> UserOfferQuerySet:
+    def get_queryset(self) -> QuerySet[Offer, Manager[Offer]]:
         return Offer.objects.filter(user=get_user(self.request))
 
 
@@ -84,7 +77,7 @@ class Properties(viewsets.ModelViewSet):
     def get_serializer_class(self) -> Type[BaseModelSerializer]:
         return SubletSerializerRead if self.action == "retrieve" else SubletSerializer
 
-    def get_queryset(self) -> SubletQuerySet:
+    def get_queryset(self) -> QuerySet[Sublet, Manager[Sublet]]:
         return Sublet.objects.all()
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
@@ -137,7 +130,7 @@ class Properties(viewsets.ModelViewSet):
         """Returns a list of Sublets that match query parameters and user ownership."""
         # Get query parameters from request (e.g., amenities, user_owned)
         params = request.query_params
-        queryset: SubletQuerySet = self.get_queryset()
+        queryset: QuerySet[Sublet, Manager[Sublet]] = self.get_queryset()
 
         if params.get("subletter", "false").lower() == "true":
             queryset = queryset.filter(subletter=get_user(request))
@@ -198,7 +191,9 @@ class CreateImages(generics.CreateAPIView):
     permission_classes = [SubletImageOwnerPermission | IsSuperUser]
     parser_classes = (MultiPartParser, FormParser)
 
-    def get_queryset(self, *args: Any, **kwargs: Any) -> ImageList:
+    def get_queryset(
+        self, *args: Any, **kwargs: Any
+    ) -> QuerySet[SubletImage, Manager[SubletImage]]:
         sublet = get_object_or_404(Sublet, id=int(self.kwargs["sublet_id"]))
         return SubletImage.objects.filter(sublet=sublet)
 
@@ -241,7 +236,7 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
     http_method_names = ["post", "delete"]
     permission_classes = [IsAuthenticated | IsSuperUser]
 
-    def get_queryset(self) -> SubletQuerySet:
+    def get_queryset(self) -> QuerySet[Sublet, Manager[Sublet]]:
         user = get_user(self.request)
         return user.sublets_favorited
 
@@ -279,7 +274,7 @@ class Offers(viewsets.ModelViewSet):
     permission_classes = [OfferOwnerPermission | IsSuperUser]
     serializer_class = OfferSerializer
 
-    def get_queryset(self) -> OfferQuerySet:
+    def get_queryset(self) -> QuerySet[Offer, Manager[Offer]]:
         return Offer.objects.filter(sublet_id=int(self.kwargs["sublet_id"])).order_by(
             "created_date"
         )

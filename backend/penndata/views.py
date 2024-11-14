@@ -1,6 +1,6 @@
 import datetime
 from datetime import timedelta
-from typing import Any, Optional, Sequence, TypeAlias, cast
+from typing import Any, Optional, Sequence, cast
 
 import requests
 from bs4 import BeautifulSoup
@@ -30,11 +30,6 @@ from penndata.serializers import (
     HomePageOrderSerializer,
 )
 from utils.types import get_user
-
-
-CalendarEventList: TypeAlias = QuerySet[CalendarEvent, Manager[CalendarEvent]]
-EventList: TypeAlias = QuerySet[Event, Manager[Event]]
-HomePageOrderList: TypeAlias = QuerySet[HomePageOrder, Manager[HomePageOrder]]
 
 
 class News(APIView):
@@ -104,7 +99,7 @@ class Calendar(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = CalendarEventSerializer
 
-    def get_queryset(self) -> CalendarEventList:
+    def get_queryset(self) -> QuerySet[CalendarEvent, Manager[CalendarEvent]]:
         return CalendarEvent.objects.filter(
             date_obj__gte=timezone.localtime(),
             date_obj__lte=timezone.localtime() + timedelta(days=30),
@@ -120,7 +115,7 @@ class Events(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = EventSerializer
 
-    def get_queryset(self) -> EventList:
+    def get_queryset(self) -> QuerySet[Event, Manager[Event]]:
         queryset = Event.objects.all()
 
         event_type = self.kwargs.get("type")
@@ -148,7 +143,7 @@ class HomePageOrdering(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = HomePageOrderSerializer
 
-    def get_queryset(self) -> HomePageOrderList:
+    def get_queryset(self) -> QuerySet[HomePageOrder, Manager[HomePageOrder]]:
         return HomePageOrder.objects.all()
 
 
