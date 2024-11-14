@@ -1,12 +1,13 @@
-from datetime import datetime
 from typing import Any, Optional, cast
 
 from phonenumber_field.serializerfields import PhoneNumberField
 from profanity_check import predict
 from rest_framework import serializers
+from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.request import Request
 
 from sublet.models import Amenity, Offer, Sublet, SubletImage
+from utils.types import get_auth_user
 
 
 class BaseModelSerializer(serializers.ModelSerializer):
@@ -15,7 +16,7 @@ class BaseModelSerializer(serializers.ModelSerializer):
 
 
 class AmenitySerializer(BaseModelSerializer):
-    name: str = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
 
     class Meta:
         model = Amenity
@@ -23,10 +24,10 @@ class AmenitySerializer(BaseModelSerializer):
 
 
 class OfferSerializer(BaseModelSerializer):
-    phone_number: str = PhoneNumberField()
-    email: Optional[str] = serializers.EmailField(allow_null=True)
-    message: str = serializers.CharField(max_length=255)
-    created_date: datetime = serializers.DateTimeField(read_only=True)
+    phone_number = PhoneNumberField()
+    email = serializers.EmailField(allow_null=True)
+    message = serializers.CharField(max_length=255)
+    created_date = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Offer
@@ -51,7 +52,7 @@ class SubletImageSerializer(BaseModelSerializer):
 class SubletImageURLSerializer(BaseModelSerializer):
     image_url = serializers.SerializerMethodField("get_image_url")
 
-    def get_image_url(self, obj) -> Optional[str]:
+    def get_image_url(self, obj: SubletImage) -> Optional[str]:
         if not obj.image:
             return None
 
@@ -71,7 +72,7 @@ class SubletImageURLSerializer(BaseModelSerializer):
 class SubletSerializer(BaseModelSerializer):
     # amenities = AmenitySerializer(many=True, required=False)
     # images = SubletImageURLSerializer(many=True, required=False)
-    amenities: list[Amenity] = serializers.PrimaryKeyRelatedField(
+    amenities: PrimaryKeyRelatedField = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Amenity.objects.all(), required=False
     )
 
@@ -126,7 +127,7 @@ class SubletSerializer(BaseModelSerializer):
     # delete_images is a list of image ids to delete
     def update(self, instance: Sublet, validated_data: dict[str, Any]) -> Sublet:
         # Check if the user is the subletter before allowing the update
-        user = self.get_request().user
+        user = get_auth_user(self.get_request())
         if user == instance.subletter or user.is_superuser:
             instance = super().update(instance, validated_data)
             instance.save()
@@ -135,7 +136,7 @@ class SubletSerializer(BaseModelSerializer):
 
     def destroy(self, instance: Sublet) -> None:
         # Check if the user is the subletter before allowing the delete
-        user = self.get_request().user
+        user = get_auth_user(self.get_request())
         if user == instance.subletter or user.is_superuser:
             instance.delete()
         else:
@@ -143,10 +144,10 @@ class SubletSerializer(BaseModelSerializer):
 
 
 class SubletSerializerRead(BaseModelSerializer):
-    amenities: list[Amenity] = serializers.PrimaryKeyRelatedField(
+    amenities: PrimaryKeyRelatedField = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Amenity.objects.all(), required=False
     )
-    images: list[SubletImage] = SubletImageURLSerializer(many=True, required=False)
+    images = SubletImageURLSerializer(many=True, required=False)
 
     class Meta:
         model = Sublet
@@ -178,10 +179,10 @@ class SubletSerializerRead(BaseModelSerializer):
 
 # simple sublet serializer for use when pulling all serializers/etc
 class SubletSerializerSimple(BaseModelSerializer):
-    amenities: list[Amenity] = serializers.PrimaryKeyRelatedField(
+    amenities: PrimaryKeyRelatedField = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Amenity.objects.all(), required=False
     )
-    images: list[SubletImage] = SubletImageURLSerializer(many=True, required=False)
+    images = SubletImageURLSerializer(many=True, required=False)
 
     class Meta:
         model = Sublet

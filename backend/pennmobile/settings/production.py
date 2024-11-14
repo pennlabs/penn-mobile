@@ -17,7 +17,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 ALLOWED_HOSTS = DOMAINS
 
 # Make sure SECRET_KEY is set to a secret in production
-SECRET_KEY = os.environ.get("SECRET_KEY", None)
+SECRET_KEY = os.environ.get("SECRET_KEY", "")
 
 # Sentry settings
 SENTRY_URL = os.environ.get("SENTRY_URL", "")

@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import redis
 from django.conf import settings
@@ -30,7 +31,7 @@ def clear_cache() -> int:
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **options) -> None:
+    def handle(self, *args: Any, **options: Any) -> None:
         root_logger = logging.getLogger("")
         root_logger.setLevel(logging.DEBUG)
 

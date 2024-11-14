@@ -30,15 +30,10 @@ def create_reservation_for_booking(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("gsr_booking", "0007_delete_gsrbookingcredentials"),
-    ]
+    dependencies = [("gsr_booking", "0007_delete_gsrbookingcredentials")]
 
     operations = [
-        migrations.RemoveField(
-            model_name="reservation",
-            name="gsr",
-        ),
+        migrations.RemoveField(model_name="reservation", name="gsr"),
         migrations.AddField(
             model_name="gsrbooking",
             name="reservation",
@@ -47,12 +42,8 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AddField(
-            model_name="reservation",
-            name="is_cancelled",
-            field=models.BooleanField(default=False),
+            model_name="reservation", name="is_cancelled", field=models.BooleanField(default=False)
         ),
-        migrations.DeleteModel(
-            name="UserSearchIndex",
-        ),
+        migrations.DeleteModel(name="UserSearchIndex"),
         migrations.RunPython(create_reservation_for_booking),
     ]

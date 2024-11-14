@@ -1,7 +1,7 @@
 import datetime
 
 from django.core.cache import cache
-from django.db.models import Count, QuerySet
+from django.db.models import Count, Manager, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
@@ -15,6 +15,7 @@ from dining.api_wrapper import APIError, DiningAPIWrapper
 from dining.models import DiningMenu, Venue
 from dining.serializers import DiningMenuSerializer
 from utils.cache import Cache
+from utils.types import get_user
 
 
 d = DiningAPIWrapper()
@@ -40,7 +41,7 @@ class Menus(generics.ListAPIView):
 
     serializer_class = DiningMenuSerializer
 
-    def get_queryset(self) -> QuerySet[DiningMenu]:
+    def get_queryset(self) -> QuerySet[DiningMenu, Manager[DiningMenu]]:
         # TODO: We only have data for the next week, so we should 404
         # if date_param is out of bounds
         if date_param := self.kwargs.get("date"):
@@ -63,18 +64,19 @@ class Preferences(APIView):
     key = "dining_preferences:{user_id}"
 
     def get(self, request: Request) -> Response:
-        key = self.key.format(user_id=request.user.id)
+        key = self.key.format(user_id=get_user(request).id)
         cached_preferences = cache.get(key)
         if cached_preferences is None:
-            preferences = request.user.profile.dining_preferences
+            preferences = get_user(request).profile.dining_preferences
             # aggregates venues and puts it in form {"venue_id": x, "count": x}
             cached_preferences = preferences.values("venue_id").annotate(count=Count("venue_id"))
             cache.set(key, cached_preferences, Cache.MONTH)
         return Response({"preferences": cached_preferences})
 
     def post(self, request: Request) -> Response:
-        key = self.key.format(user_id=request.user.id)
-        profile = request.user.profile
+        user = get_user(request)
+        key = self.key.format(user_id=user.id)
+        profile = user.profile
         preferences = profile.dining_preferences
 
         venue_ids = set(request.data["venues"])

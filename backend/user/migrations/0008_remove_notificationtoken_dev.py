@@ -5,13 +5,6 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("user", "0007_alter_notificationsetting_service"),
-    ]
+    dependencies = [("user", "0007_alter_notificationsetting_service")]
 
-    operations = [
-        migrations.RemoveField(
-            model_name="notificationtoken",
-            name="dev",
-        ),
-    ]
+    operations = [migrations.RemoveField(model_name="notificationtoken", name="dev")]

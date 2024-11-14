@@ -1,14 +1,11 @@
-from typing import Any, Dict, TypeAlias
+from typing import Any, ClassVar, Type, cast
 
+from django.db.models import Model
 from django.http.request import QueryDict
 from rest_framework import serializers
 
 from portal.logic import check_targets, get_user_clubs, get_user_populations
 from portal.models import Content, Poll, PollOption, PollVote, Post, TargetPopulation
-
-
-ClubCode: TypeAlias = str
-ValidationData: TypeAlias = Dict[str, Any]
 
 
 class TargetPopulationSerializer(serializers.ModelSerializer):
@@ -19,7 +16,8 @@ class TargetPopulationSerializer(serializers.ModelSerializer):
 
 class ContentSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = (
+        model: ClassVar[Type[Model]]
+        fields: tuple[str, ...] = (
             "id",
             "club_code",
             "created_date",
@@ -30,10 +28,10 @@ class ContentSerializer(serializers.ModelSerializer):
             "status",
             "target_populations",
         )
-        read_only_fields = ("id", "created_date")
+        read_only_fields: tuple[str, ...] = ("id", "created_date")
         abstract = True
 
-    def _auto_add_target_population(self, validated_data: ValidationData) -> None:
+    def _auto_add_target_population(self, validated_data: dict[str, Any]) -> None:
         # auto add all target populations of a kind if not specified
         if target_populations := validated_data.get("target_populations"):
             auto_add_kind = [
@@ -47,15 +45,19 @@ class ContentSerializer(serializers.ModelSerializer):
         else:
             validated_data["target_populations"] = list(TargetPopulation.objects.all())
 
-    def create(self, validated_data: ValidationData) -> Poll:
-        club_code: ClubCode = validated_data["club_code"]
+    def create(self, validated_data: dict[str, Any]) -> Poll:
+        club_code: str = validated_data["club_code"]
         user = self.context["request"].user
         # ensures user is part of club
         if not any([x["club"]["code"] == club_code for x in get_user_clubs(user)]):
+            model_name = (
+                self.Meta.model._meta.model_name.capitalize()
+                if self.Meta.model._meta.model_name is not None
+                else "content"
+            )
             raise serializers.ValidationError(
                 detail={
-                    "detail": "You do not have access to create a "
-                    + f"{self.Meta.model._meta.model_name.capitalize()} under this club."
+                    "detail": f"You do not have access to create a {model_name} under this club."
                 }
             )
 
@@ -69,7 +71,7 @@ class ContentSerializer(serializers.ModelSerializer):
 
         return super().create(validated_data)
 
-    def update(self, instance: Content, validated_data: ValidationData) -> Content:
+    def update(self, instance: Content, validated_data: dict[str, Any]) -> Content:
         # if Content is updated, then approve should be false
         if not self.context["request"].user.is_superuser:
             validated_data["status"] = Content.STATUS_DRAFT
@@ -82,25 +84,16 @@ class ContentSerializer(serializers.ModelSerializer):
 class PollSerializer(ContentSerializer):
     class Meta(ContentSerializer.Meta):
         model = Poll
-        fields = (
-            *ContentSerializer.Meta.fields,
-            "question",
-            "multiselect",
-        )
+        fields: tuple[str, ...] = (*ContentSerializer.Meta.fields, "question", "multiselect")
 
 
 class PollOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollOption
-        fields = (
-            "id",
-            "poll",
-            "choice",
-            "vote_count",
-        )
-        read_only_fields = ("id", "vote_count")
+        fields: tuple[str, ...] = ("id", "poll", "choice", "vote_count")
+        read_only_fields: tuple[str, ...] = ("id", "vote_count")
 
-    def create(self, validated_data: ValidationData) -> PollOption:
+    def create(self, validated_data: dict[str, Any]) -> PollOption:
         poll_options_count = PollOption.objects.filter(poll=validated_data["poll"]).count()
         if poll_options_count >= 5:
             raise serializers.ValidationError(
@@ -108,10 +101,11 @@ class PollOptionSerializer(serializers.ModelSerializer):
             )
         return super().create(validated_data)
 
-    def update(self, instance, validated_data):
+    def update(self, instance: PollOption, validated_data: dict[str, Any]) -> PollOption:
         # if Poll Option is updated, then corresponding Poll approval should be false
-        instance.poll.status = Poll.STATUS_DRAFT
-        instance.poll.save()
+        poll = cast(Poll, instance.poll)
+        poll.status = Poll.STATUS_DRAFT
+        poll.save()
         return super().update(instance, validated_data)
 
 
@@ -122,7 +116,7 @@ class RetrievePollSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Poll
-        fields = (
+        fields: tuple[str, ...] = (
             "id",
             "club_code",
             "question",
@@ -140,13 +134,10 @@ class RetrievePollSerializer(serializers.ModelSerializer):
 class PollVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PollVote
-        fields = ("id", "id_hash", "poll_options", "created_date")
-        read_only_fields = (
-            "id",
-            "created_date",
-        )
+        fields: tuple[str, ...] = ("id", "id_hash", "poll_options", "created_date")
+        read_only_fields: tuple[str, ...] = ("id", "created_date")
 
-    def create(self, validated_data: ValidationData) -> PollVote:
+    def create(self, validated_data: dict[str, Any]) -> PollVote:
 
         options = validated_data["poll_options"]
         id_hash = validated_data["id_hash"]
@@ -201,11 +192,8 @@ class RetrievePollVoteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PollVote
-        fields = ("id", "id_hash", "poll", "poll_options", "created_date")
-        read_only_fields = (
-            "id",
-            "created_date",
-        )
+        fields: tuple[str, ...] = ("id", "id_hash", "poll", "poll_options", "created_date")
+        read_only_fields: tuple[str, ...] = ("id", "created_date")
 
 
 class PostSerializer(ContentSerializer):
@@ -229,7 +217,7 @@ class PostSerializer(ContentSerializer):
 
     class Meta(ContentSerializer.Meta):
         model = Post
-        fields = (
+        fields: tuple[str, ...] = (
             *ContentSerializer.Meta.fields,
             "title",
             "subtitle",
@@ -240,12 +228,13 @@ class PostSerializer(ContentSerializer):
 
     def is_valid(self, *args: Any, **kwargs: Any) -> bool:
         if isinstance(self.initial_data, QueryDict):
-            self.initial_data = self.initial_data.dict()
-            self.initial_data["target_populations"] = list(
-                (
-                    map(int, self.initial_data["target_populations"].split(","))
-                    if "target_populations" in self.initial_data
+            data = self.initial_data.dict()
+            target_populations = data.get("target_populations", "")
+            if isinstance(target_populations, str):
+                data["target_populations"] = (
+                    list(map(int, target_populations.split(",")))
+                    if target_populations.strip()
                     else []
-                ),
-            )
+                )
+            self.initial_data = data
         return super().is_valid(*args, **kwargs)

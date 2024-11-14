@@ -5,9 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("penndata", "0007_fitnessroom_image_url"),
-    ]
+    dependencies = [("penndata", "0007_fitnessroom_image_url")]
 
     operations = [
         migrations.CreateModel(
@@ -23,5 +21,5 @@ class Migration(migrations.Migration):
                 ("date", models.CharField(blank=True, max_length=50, null=True)),
                 ("date_obj", models.DateTimeField(blank=True, null=True)),
             ],
-        ),
+        )
     ]

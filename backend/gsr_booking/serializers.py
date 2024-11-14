@@ -1,17 +1,10 @@
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import Any, TypeAlias
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 
-
-if TYPE_CHECKING:
-    from django.contrib.auth.models import AbstractUser
-
-    UserType = AbstractUser
-else:
-    UserType = Any
 
 ValidatedData: TypeAlias = dict[str, Any]
 User = get_user_model()
@@ -30,32 +23,21 @@ class GroupRoomBookingRequestSerializer(serializers.Serializer):
         return obj["lid"] == 1
 
 
-class MiniUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["username", "first_name", "last_name"]
-
-
 class GroupMembershipSerializer(serializers.ModelSerializer):
-    user = MiniUserSerializer(read_only=True)
-    group = serializers.SlugRelatedField(slug_field="name", queryset=Group.objects.all())
-    color = serializers.SlugRelatedField(slug_field="color", read_only=True, source="group")
+    group: serializers.SlugRelatedField = serializers.SlugRelatedField(
+        slug_field="name", queryset=Group.objects.all()
+    )
+    color: serializers.SlugRelatedField = serializers.SlugRelatedField(
+        slug_field="color", read_only=True, source="group"
+    )
 
     class Meta:
         model = GroupMembership
-        fields = [
-            "user",
-            "group",
-            "type",
-            "pennkey_allow",
-            "notifications",
-            "id",
-            "color",
-        ]
+        fields = ["group", "type", "pennkey_allow", "notifications", "id", "color"]
 
 
 class GroupSerializer(serializers.ModelSerializer):
-    owner = serializers.SlugRelatedField(
+    owner: serializers.SlugRelatedField = serializers.SlugRelatedField(
         slug_field="username", queryset=User.objects.all(), required=False
     )
     memberships = GroupMembershipSerializer(many=True, read_only=True)
@@ -81,29 +63,6 @@ class GroupField(serializers.RelatedField):
 
     def to_internal_value(self, data: ValidatedData) -> None:
         return None  # TODO: If you want to update based on BookingField, implement this.
-
-
-class UserSerializer(serializers.ModelSerializer):
-    booking_groups = serializers.SerializerMethodField()
-
-    def get_booking_groups(self, obj: "UserType") -> list[dict[str, Any]]:
-        result = []
-        for membership in GroupMembership.objects.filter(accepted=True, user=obj):
-            result.append(
-                {
-                    "name": membership.group.name,
-                    "id": membership.group.id,
-                    "color": membership.group.color,
-                    "pennkey_allow": membership.pennkey_allow,
-                    "notifications": membership.notifications,
-                }
-            )
-
-        return result
-
-    class Meta:
-        model = User
-        fields = ["username", "booking_groups"]
 
 
 class GSRSerializer(serializers.ModelSerializer):

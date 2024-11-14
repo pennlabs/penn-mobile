@@ -2,7 +2,7 @@ import datetime
 from abc import ABC, abstractmethod
 from enum import Enum
 from random import randint
-from typing import TYPE_CHECKING, Any
+from typing import Any, Optional, TypedDict, cast
 
 import requests
 from bs4 import BeautifulSoup
@@ -17,14 +17,8 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
 from utils.errors import APIError
+from utils.types import UserType
 
-
-if TYPE_CHECKING:
-    from django.contrib.auth.models import AbstractUser
-
-    UserType = AbstractUser
-else:
-    UserType = Any
 
 User = get_user_model()
 
@@ -46,23 +40,40 @@ class CreditType(Enum):
     ARB = "ARB"
 
 
+class AvailabilityTime(TypedDict):
+    start_time: str
+    end_time: str
+
+
+class RoomInfo(TypedDict):
+    room_name: str
+    id: int
+    availability: list[AvailabilityTime]
+
+
+class AvailabilityResponse(TypedDict):
+    name: str
+    gid: int
+    rooms: list[RoomInfo]
+
+
 class AbstractBookingWrapper(ABC):
     @abstractmethod
-    def book_room(self, rid: int, start: str, end: str, user: "UserType") -> dict[str, Any]:
+    def book_room(self, rid: int, start: str, end: str, user: UserType) -> dict[str, Any]:
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
-    def cancel_room(self, booking_id: str, user: "UserType") -> dict[str, Any]:
+    def cancel_room(self, booking_id: str, user: UserType) -> dict[str, Any]:
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def get_availability(
-        self, lid: int, start: str | None, end: str | None, user: "UserType"
-    ) -> list[dict[str, Any]]:
+        self, lid: str | int, start: str | None, end: str | None, user: UserType
+    ) -> list[RoomInfo]:
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
-    def get_reservations(self, user: "UserType") -> list[dict[str, Any]]:
+    def get_reservations(self, user: UserType) -> list[dict[str, Any]]:
         raise NotImplementedError  # pragma: no cover
 
 
@@ -82,21 +93,16 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
 
         return response
 
-    def book_room(self, rid: int, start: str, end: str, user: "UserType") -> dict[str, Any]:
+    def book_room(self, rid: int, start: str, end: str, user: UserType) -> dict[str, Any]:
         """Books room if pennkey is valid"""
-        payload = {
-            "start": start,
-            "end": end,
-            "pennkey": user.username,
-            "room": rid,
-        }
+        payload = {"start": start, "end": end, "pennkey": user.username, "room": rid}
         url = f"{WHARTON_URL}{user.username}/student_reserve"
         response = self.request("POST", url, json=payload).json()
         if "error" in response:
             raise APIError("Wharton: " + response["error"])
         return response
 
-    def cancel_room(self, booking_id: str, user: "UserType") -> dict[str, Any]:
+    def cancel_room(self, booking_id: str, user: UserType) -> dict[str, Any]:
         """Cancels reservation given booking id"""
         url = f"{WHARTON_URL}{user.username}/reservations/{booking_id}/cancel"
         response = self.request("DELETE", url).json()
@@ -105,8 +111,8 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
         return response
 
     def get_availability(
-        self, lid: int, start: str | None, end: str | None, user: "UserType"
-    ) -> list[dict[str, Any]]:
+        self, lid: str | int, start: str | None, end: str | None, user: UserType
+    ) -> list[RoomInfo]:
         """Returns a list of rooms and their availabilities"""
         current_time = timezone.localtime()
         search_date = (
@@ -144,7 +150,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
                 room["availability"] = valid_slots
         return rooms
 
-    def get_reservations(self, user: "UserType") -> list[dict[str, Any]]:
+    def get_reservations(self, user: UserType) -> list[dict[str, Any]]:
         url = f"{WHARTON_URL}{user.username}/reservations"
         bookings = self.request("GET", url).json()["bookings"]
 
@@ -162,7 +168,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
             if datetime.datetime.strptime(booking["end"], "%Y-%m-%dT%H:%M:%S%z") >= now
         ]
 
-    def is_wharton(self, user: "UserType") -> bool | None:
+    def is_wharton(self, user: UserType) -> bool | None:
         url = f"{WHARTON_URL}{user.username}/privileges"
         try:
             response = self.request("GET", url)
@@ -175,7 +181,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
 
 
 class LibCalBookingWrapper(AbstractBookingWrapper):
-    def __init__(self):
+    def __init__(self) -> None:
         self.token = None
         self.expiration = timezone.localtime()
 
@@ -213,7 +219,7 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
         except (ConnectTimeout, ReadTimeout, ConnectionError):
             raise APIError("LibCal: Connection timeout")
 
-    def book_room(self, rid: int, start: str, end: str, user: "UserType") -> dict[str, Any]:
+    def book_room(self, rid: int, start: str, end: str, user: UserType) -> dict[str, Any]:
         """
         Books room if pennkey is valid
 
@@ -258,10 +264,10 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
             raise APIError("LibCal: " + res_json["error"])
         return res_json
 
-    def get_reservations(self, user: "UserType") -> list[dict[str, Any]]:
-        pass
+    def get_reservations(self, user: UserType) -> list[dict[str, Any]]:
+        return []
 
-    def cancel_room(self, booking_id: str, user: "UserType") -> dict[str, Any]:
+    def cancel_room(self, booking_id: str, user: UserType) -> dict[str, Any]:
         """Cancels room"""
         response = self.request("POST", f"{API_URL}/1.1/space/cancel/{booking_id}").json()
         if "error" in response[0]:
@@ -269,8 +275,8 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
         return response
 
     def get_availability(
-        self, gid: int, start: str | None, end: str | None, user: "UserType"
-    ) -> list[dict[str, Any]]:
+        self, gid: str | int, start: str | None, end: str | None, user: UserType
+    ) -> list[RoomInfo]:
         """Returns a list of rooms and their availabilities"""
 
         # adjusts url based on start and end times
@@ -295,7 +301,7 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
         if response.status_code != 200:
             raise APIError(f"GSR Reserve: Error {response.status_code} when reserving data")
 
-        rooms = [
+        rooms: list[dict[str, Any]] = [
             {"room_name": room["name"], "id": room["id"], "availability": room["availability"]}
             for room in response.json()
             if room["id"] not in ROOM_BLACKLIST
@@ -313,7 +319,7 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
                 or datetime.datetime.strptime(time["from"][:-6], "%Y-%m-%dT%H:%M:%S")
                 >= start_datetime
             ]
-        return rooms
+        return cast(list[RoomInfo], rooms)
 
     def get_affiliation(self, email: str) -> str:
         """Gets school from email"""
@@ -328,13 +334,15 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
 
 
 class BookingHandler:
-    def __init__(self, WBW=None, LBW=None):
+    def __init__(
+        self,
+        WBW: Optional[AbstractBookingWrapper] = None,
+        LBW: Optional[AbstractBookingWrapper] = None,
+    ) -> None:
         self.WBW = WBW or WhartonBookingWrapper()
         self.LBW = LBW or LibCalBookingWrapper()
 
-    def format_members(
-        self, members: QuerySet[GroupMembership]
-    ) -> list[tuple["UserType", datetime.timedelta]]:
+    def format_members(self, members: QuerySet) -> list[tuple[UserType, datetime.timedelta]]:
         PREFIX = "user__"
         return [
             (
@@ -348,7 +356,7 @@ class BookingHandler:
 
     def get_wharton_members(
         self, group: Group, gsr_id: int
-    ) -> list[tuple["UserType", datetime.timedelta]]:
+    ) -> list[tuple[UserType, datetime.timedelta]]:
         now = timezone.localtime()
         ninty_min = datetime.timedelta(minutes=90)
         zero_min = datetime.timedelta(minutes=0)
@@ -359,15 +367,18 @@ class BookingHandler:
             .values("user")
             .annotate(
                 credits=ninty_min
-                - Coalesce(
-                    Sum(
-                        F("user__gsrbooking__end") - F("user__gsrbooking__start"),
-                        filter=Q(user__gsrbooking__gsr__gid=gsr_id)
-                        & Q(user__gsrbooking__is_cancelled=False)
-                        & Q(user__gsrbooking__end__gte=now),
+                - cast(
+                    datetime.timedelta,
+                    Coalesce(
+                        Sum(
+                            F("user__gsrbooking__end") - F("user__gsrbooking__start"),
+                            filter=Q(user__gsrbooking__gsr__gid=gsr_id)
+                            & Q(user__gsrbooking__is_cancelled=False)
+                            & Q(user__gsrbooking__end__gte=now),
+                        ),
+                        zero_min,
                     ),
-                    zero_min,
-                )
+                ),
             )
             .filter(Q(credits__gt=zero_min))
             .values("user__id", "user__username", "credits")
@@ -375,7 +386,7 @@ class BookingHandler:
         )
         return self.format_members(ret)
 
-    def get_libcal_members(self, group: Group) -> list[tuple["UserType", datetime.timedelta]]:
+    def get_libcal_members(self, group: Group) -> list[tuple[UserType, datetime.timedelta]]:
         day_start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + datetime.timedelta(days=1)
         two_hours = datetime.timedelta(hours=2)
@@ -387,15 +398,18 @@ class BookingHandler:
             .values("user")
             .annotate(
                 credits=two_hours
-                - Coalesce(
-                    Sum(
-                        F("user__gsrbooking__end") - F("user__gsrbooking__start"),
-                        filter=Q(user__gsrbooking__gsr__kind=GSR.KIND_LIBCAL)
-                        & Q(user__gsrbooking__is_cancelled=False)
-                        & Q(user__gsrbooking__start__gte=day_start)
-                        & Q(user__gsrbooking__end__lte=day_end),
+                - cast(
+                    datetime.timedelta,
+                    Coalesce(
+                        Sum(
+                            F("user__gsrbooking__end") - F("user__gsrbooking__start"),
+                            filter=Q(user__gsrbooking__gsr__kind=GSR.KIND_LIBCAL)
+                            & Q(user__gsrbooking__is_cancelled=False)
+                            & Q(user__gsrbooking__start__gte=day_start)
+                            & Q(user__gsrbooking__end__lte=day_end),
+                        ),
+                        zero_min,
                     ),
-                    zero_min,
                 )
             )
             .filter(Q(credits__gt=zero_min))
@@ -418,14 +432,14 @@ class BookingHandler:
         room_name: str,
         start: str,
         end: str,
-        user: "UserType",
-        group: Group | None = None,
+        user: UserType,
+        group: Optional[Group] = None,
     ) -> Reservation:
         # NOTE when booking with a group, we are only querying our db for existing bookings,
         # so users in a group who book through wharton may screw up the query
         gsr = get_object_or_404(GSR, gid=gid)
-        start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
-        end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
+        start_dt = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
+        end_dt = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
 
         book_func = self.WBW.book_room if gsr.kind == GSR.KIND_WHARTON else self.LBW.book_room
         members = (
@@ -442,15 +456,17 @@ class BookingHandler:
             [time_available for _, time_available in members], datetime.timedelta(minutes=0)
         )
 
-        if (end - start) >= total_time_available:
+        if (end_dt - start_dt) >= total_time_available:
             raise APIError("Error: Not enough credits")
 
-        reservation = Reservation.objects.create(start=start, end=end, creator=user, group=group)
+        reservation = Reservation.objects.create(
+            start=start_dt, end=end_dt, creator=user, group=group
+        )
 
-        curr_start = start
+        curr_start = start_dt
         try:
             for curr_user, time_available in members:
-                curr_end = curr_start + min(time_available, end - curr_start)
+                curr_end = curr_start + min(time_available, end_dt - curr_start)
 
                 booking_id = book_func(
                     rid,
@@ -470,17 +486,17 @@ class BookingHandler:
                 booking.reservation = reservation
                 booking.save()
 
-                if (curr_start := curr_end) >= end:
+                if (curr_start := curr_end) >= end_dt:
                     break
         except APIError as e:
             raise APIError(
-                f"{str(e)}. Was only able to book {start.strftime('%H:%M')}"
+                f"{str(e)}. Was only able to book {start_dt.strftime('%H:%M')}"
                 f" - {curr_start.strftime('%H:%M')}"
             )
 
         return reservation
 
-    def cancel_room(self, booking_id: str, user: "UserType") -> None:
+    def cancel_room(self, booking_id: str, user: UserType) -> None | APIError:
         if (
             gsr_booking := GSRBooking.objects.filter(booking_id=booking_id)
             .prefetch_related(Prefetch("reservation__gsrbooking_set"), Prefetch("gsr"))
@@ -504,20 +520,20 @@ class BookingHandler:
             for service in [self.WBW, self.LBW]:
                 try:
                     service.cancel_room(booking_id, user)
-                    return
+                    return None
                 except APIError:
-                    pass
-            raise APIError("Error: Unknown booking id")
+                    raise APIError("Error: Unknown booking id")
+        return None
 
     def get_availability(
         self,
-        lid: int,
-        gid: int,
+        lid: str | int,
+        gid: str | int,
         start: str | None,
         end: str | None,
-        user: "UserType",
-        group: Group | None = None,
-    ) -> list[dict[str, Any]]:
+        user: UserType,
+        group: Optional[Group] = None,
+    ) -> AvailabilityResponse:
         gsr = get_object_or_404(GSR, gid=gid)
 
         # select a random user from the group if booking wharton gsr
@@ -535,7 +551,7 @@ class BookingHandler:
         return {"name": gsr.name, "gid": gsr.gid, "rooms": rooms}
 
     def get_reservations(
-        self, user: "UserType", group: Group | None = None
+        self, user: UserType, group: Optional[Group] = None
     ) -> list[dict[str, Any]]:
         q = Q(user=user) | Q(reservation__creator=user) if group else Q(user=user)
         bookings = GSRBooking.objects.filter(
@@ -543,16 +559,16 @@ class BookingHandler:
         ).prefetch_related(Prefetch("reservation"))
 
         if group:
-            ret = []
+            ret: list[dict[str, Any]] = []
             for booking in bookings:
-                data = GSRBookingSerializer(booking).data
+                data = cast(dict[str, Any], GSRBookingSerializer(booking).data)
                 if booking.reservation.creator == user:
                     data["room_name"] = f"[Me] {data['room_name']}"
                 else:
                     data["room_name"] = f"[{group.name}] {data['room_name']}"
                 ret.append(data)
         else:
-            ret = GSRBookingSerializer(bookings, many=True).data
+            ret = cast(list[dict[str, Any]], GSRBookingSerializer(bookings, many=True).data)
 
         # deal with bookings made directly through wharton (not us)
         try:

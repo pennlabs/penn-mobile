@@ -29,5 +29,5 @@ class Migration(migrations.Migration):
                 ("website", models.URLField(max_length=255, null=True)),
                 ("facebook", models.URLField(max_length=255, null=True)),
             ],
-        ),
+        )
     ]

@@ -1,7 +1,9 @@
 import csv
 from io import StringIO
+from typing import Any
 from unittest import mock
 
+import requests
 from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase
@@ -9,7 +11,7 @@ from django.test import TestCase
 from laundry.models import LaundryRoom, LaundrySnapshot
 
 
-def fakeLaundryGet(url, *args, **kwargs):
+def fakeLaundryGet(url: str, *args: Any, **kwargs: Any) -> requests.models.Response:
     if settings.LAUNDRY_URL in url:
         with open("tests/laundry/laundry_snapshot.html", "rb") as f:
             m = mock.MagicMock(content=f.read())
@@ -20,7 +22,7 @@ def fakeLaundryGet(url, *args, **kwargs):
 
 @mock.patch("requests.get", fakeLaundryGet)
 class TestGetSnapshot(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         # populates database with LaundryRooms
         LaundryRoom.objects.get_or_create(
             hall_id=0, name="Bishop White", location="Quad", total_washers=9, total_dryers=9
@@ -35,7 +37,7 @@ class TestGetSnapshot(TestCase):
             hall_id=3, name="Craig", location="Quad", total_washers=3, total_dryers=3
         )
 
-    def test_db_populate(self):
+    def test_db_populate(self) -> None:
         out = StringIO()
         call_command("get_snapshot", stdout=out)
 
@@ -48,7 +50,7 @@ class TestGetSnapshot(TestCase):
 
 @mock.patch("requests.get", fakeLaundryGet)
 class TestLaundryRoomMigration(TestCase):
-    def test_db_populate(self):
+    def test_db_populate(self) -> None:
         out = StringIO()
         call_command("load_laundry_rooms", stdout=out)
 

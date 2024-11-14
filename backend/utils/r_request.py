@@ -60,7 +60,7 @@ class RRequest:
         verify: Optional[bool] = None,
         cert: Optional[str] = None,
         json: Optional[dict] = None,
-    ):
+    ) -> Response:
         response = self.__default_response()
 
         for _ in range(self.num_retries):
@@ -93,7 +93,7 @@ class RRequest:
             return response
 
         if not response.content:
-            response.content = "RRequest: Default Error"
+            response._content = b"RRequest: Default Error"
 
         return response
 

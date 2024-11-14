@@ -1,7 +1,7 @@
-from typing import Any, TypeAlias
+from typing import Any, Type, TypeAlias, cast
 
-from django.contrib.auth import get_user_model
 from django.db.models import Manager, QuerySet, prefetch_related_objects
+from django.http import QueryDict
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import exceptions, generics, mixins, status, viewsets
@@ -21,6 +21,7 @@ from sublet.permissions import (
 )
 from sublet.serializers import (
     AmenitySerializer,
+    BaseModelSerializer,
     OfferSerializer,
     SubletImageSerializer,
     SubletImageURLSerializer,
@@ -28,15 +29,14 @@ from sublet.serializers import (
     SubletSerializerRead,
     SubletSerializerSimple,
 )
+from utils.types import get_user
 
 
 SubletQuerySet: TypeAlias = QuerySet[Sublet, Manager[Sublet]]
 OfferQuerySet: TypeAlias = QuerySet[Offer, Manager[Offer]]
+AmenityQuerySet: TypeAlias = QuerySet[Amenity, Manager[Amenity]]
 ImageList: TypeAlias = QuerySet[SubletImage, Manager[SubletImage]]
-FavoriteQuerySet: TypeAlias = QuerySet[Sublet, Manager[Sublet]]
 UserOfferQuerySet: TypeAlias = QuerySet[Offer, Manager[Offer]]
-
-User = get_user_model()
 
 
 class Amenities(generics.ListAPIView):
@@ -52,9 +52,8 @@ class UserFavorites(generics.ListAPIView):
     serializer_class = SubletSerializerSimple
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self) -> FavoriteQuerySet:
-        user = self.request.user
-        return user.sublets_favorited
+    def get_queryset(self) -> SubletQuerySet:
+        return get_user(self.request).sublets_favorited
 
 
 class UserOffers(generics.ListAPIView):
@@ -62,8 +61,7 @@ class UserOffers(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self) -> UserOfferQuerySet:
-        user = self.request.user
-        return Offer.objects.filter(user=user)
+        return Offer.objects.filter(user=get_user(self.request))
 
 
 class Properties(viewsets.ModelViewSet):
@@ -83,7 +81,7 @@ class Properties(viewsets.ModelViewSet):
 
     permission_classes = [SubletOwnerPermission | IsSuperUser]
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Type[BaseModelSerializer]:
         return SubletSerializerRead if self.action == "retrieve" else SubletSerializer
 
     def get_queryset(self) -> SubletQuerySet:
@@ -95,7 +93,7 @@ class Properties(viewsets.ModelViewSet):
         instance = serializer.save()  # Create the Sublet
         instance_serializer = SubletSerializerRead(instance=instance, context={"request": request})
 
-        record_analytics(Metric.SUBLET_CREATED, request.user.username)
+        record_analytics(Metric.SUBLET_CREATED, get_user(request).username)
 
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -108,7 +106,7 @@ class Properties(viewsets.ModelViewSet):
 
         queryset = self.filter_queryset(self.get_queryset())
         # no clue what this does but I copied it from the DRF source code
-        if queryset._prefetch_related_lookups:
+        if hasattr(queryset, "_prefetch_related_lookups"):
             # If 'prefetch_related' has been applied to a queryset, we need to
             # forcibly invalidate the prefetch cache on the instance,
             # and then re-prefetch related objects
@@ -142,7 +140,7 @@ class Properties(viewsets.ModelViewSet):
         queryset: SubletQuerySet = self.get_queryset()
 
         if params.get("subletter", "false").lower() == "true":
-            queryset = queryset.filter(subletter=request.user)
+            queryset = queryset.filter(subletter=get_user(request))
         else:
             queryset = queryset.filter(expires_at__gte=timezone.now())
 
@@ -188,7 +186,7 @@ class Properties(viewsets.ModelViewSet):
             for amenity in amenities:
                 queryset = queryset.filter(amenities__name=amenity)
 
-        record_analytics(Metric.SUBLET_BROWSE, request.user.username)
+        record_analytics(Metric.SUBLET_BROWSE, get_user(request).username)
 
         serializer = SubletSerializerSimple(queryset, many=True)
         return Response(serializer.data)
@@ -198,10 +196,7 @@ class CreateImages(generics.CreateAPIView):
     serializer_class = SubletImageSerializer
     http_method_names = ["post"]
     permission_classes = [SubletImageOwnerPermission | IsSuperUser]
-    parser_classes = (
-        MultiPartParser,
-        FormParser,
-    )
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_queryset(self, *args: Any, **kwargs: Any) -> ImageList:
         sublet = get_object_or_404(Sublet, id=int(self.kwargs["sublet_id"]))
@@ -209,7 +204,8 @@ class CreateImages(generics.CreateAPIView):
 
     # takes an image multipart form data and creates a new image object
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        images = request.data.getlist("images")
+        data = cast(QueryDict, request.data)
+        images = data.getlist("images")
         sublet_id = int(self.kwargs["sublet_id"])
         self.get_queryset()  # check if sublet exists
         img_serializers = []
@@ -218,8 +214,10 @@ class CreateImages(generics.CreateAPIView):
             img_serializer.is_valid(raise_exception=True)
             img_serializers.append(img_serializer)
         instances = [img_serializer.save() for img_serializer in img_serializers]
-        data = [SubletImageURLSerializer(instance=instance).data for instance in instances]
-        return Response(data, status=status.HTTP_201_CREATED)
+        serialized_data = [
+            SubletImageURLSerializer(instance=instance).data for instance in instances
+        ]
+        return Response(serialized_data, status=status.HTTP_201_CREATED)
 
 
 class DeleteImage(generics.DestroyAPIView):
@@ -231,7 +229,7 @@ class DeleteImage(generics.DestroyAPIView):
     def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         queryset = self.get_queryset()
         filter = {"id": self.kwargs["image_id"]}
-        obj = get_object_or_404(queryset, **filter)
+        obj: SubletImage = get_object_or_404(queryset, **filter)
         # checking permissions here is kind of redundant
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
@@ -243,8 +241,8 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
     http_method_names = ["post", "delete"]
     permission_classes = [IsAuthenticated | IsSuperUser]
 
-    def get_queryset(self) -> FavoriteQuerySet:
-        user = self.request.user
+    def get_queryset(self) -> SubletQuerySet:
+        user = get_user(self.request)
         return user.sublets_favorited
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
@@ -253,16 +251,16 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
         if queryset.filter(id=sublet_id).exists():
             raise exceptions.NotAcceptable("Favorite already exists")
         sublet = get_object_or_404(Sublet, id=sublet_id)
-        self.get_queryset().add(sublet)
+        get_user(self.request).sublets_favorited.add(sublet)
 
-        record_analytics(Metric.SUBLET_FAVORITED, request.user.username)
+        record_analytics(Metric.SUBLET_FAVORITED, get_user(request).username)
 
         return Response(status=status.HTTP_201_CREATED)
 
     def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        queryset = self.get_queryset()
-        sublet = get_object_or_404(queryset, pk=int(self.kwargs["sublet_id"]))
-        self.get_queryset().remove(sublet)
+        queryset = cast(QuerySet, self.get_queryset())
+        sublet: Sublet = get_object_or_404(queryset, pk=int(self.kwargs["sublet_id"]))
+        get_user(self.request).sublets_favorited.remove(sublet)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -288,22 +286,23 @@ class Offers(viewsets.ModelViewSet):
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         data = request.data
-        request.POST._mutable = True
-        if self.get_queryset().filter(user=self.request.user).exists():
+        if isinstance(data, QueryDict):
+            data._mutable = True
+        if self.get_queryset().filter(user=get_user(self.request)).exists():
             raise exceptions.NotAcceptable("Offer already exists")
         data["sublet"] = int(self.kwargs["sublet_id"])
-        data["user"] = self.request.user.id
+        data["user"] = get_user(self.request).id
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        record_analytics(Metric.SUBLET_OFFER, request.user.username)
+        record_analytics(Metric.SUBLET_OFFER, get_user(request).username)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         queryset = self.get_queryset()
-        filter = {"user": self.request.user.id, "sublet": int(self.kwargs["sublet_id"])}
+        filter = {"user": get_user(self.request).id, "sublet": int(self.kwargs["sublet_id"])}
         obj: Offer = get_object_or_404(queryset, **filter)
         # checking permissions here is kind of redundant
         self.check_object_permissions(self.request, obj)

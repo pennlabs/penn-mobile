@@ -1,6 +1,6 @@
 import datetime
 from datetime import timedelta
-from typing import Any, TypeAlias
+from typing import Any, Optional, Sequence, TypeAlias, cast
 
 import requests
 from bs4 import BeautifulSoup
@@ -29,9 +29,9 @@ from penndata.serializers import (
     FitnessRoomSerializer,
     HomePageOrderSerializer,
 )
+from utils.types import get_user
 
 
-ValidatedData: TypeAlias = dict[str, Any]
 CalendarEventList: TypeAlias = QuerySet[CalendarEvent, Manager[CalendarEvent]]
 EventList: TypeAlias = QuerySet[Event, Manager[Event]]
 HomePageOrderList: TypeAlias = QuerySet[HomePageOrder, Manager[HomePageOrder]]
@@ -43,7 +43,7 @@ class News(APIView):
     """
 
     def get_article(self) -> dict[str, Any] | None:
-        article = {"source": "The Daily Pennsylvanian"}
+        article: dict[str, Any] = {"source": "The Daily Pennsylvanian"}
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 "
@@ -161,7 +161,7 @@ class HomePage(APIView):
 
     class Cell:
         def __init__(
-            self, myType: str, myInfo: ValidatedData | None = None, myWeight: int = 0
+            self, myType: str, myInfo: Optional[dict[str, Any]] = None, myWeight: int = 0
         ) -> None:
             self.type = myType
             self.info = myInfo
@@ -174,7 +174,7 @@ class HomePage(APIView):
 
         # NOTE: accept arguments: ?version=
 
-        profile = request.user.profile
+        profile = get_user(request).profile
 
         # TODO: add user's GSR reservations to Response
         # TODO: add user's courses to Response
@@ -216,7 +216,7 @@ class HomePage(APIView):
         # cells.append(self.Cell("calendar", {"calendar": Calendar.get_calendar(self)}, 40))
 
         # adds front page article of DP
-        cells.append(self.Cell("news", {"article": News.get_article(self)}, 50))
+        cells.append(self.Cell("news", {"article": News().get_article()}, 50))
 
         # sorts by cell weight
         cells.sort(key=lambda x: x.weight, reverse=True)
@@ -243,7 +243,7 @@ class FitnessRoomView(generics.ListAPIView):
     }
 
     def get(self, request: Request) -> Response:
-        response = super().get(self, request)
+        response = super().get(request)
         # also add last_updated and open/close times to each room in response
         for room in response.data:
             ss = FitnessSnapshot.objects.filter(room__id=room["id"]).order_by("-date").first()
@@ -263,17 +263,17 @@ class FitnessRoomView(generics.ListAPIView):
 
 
 class FitnessUsage(APIView):
-    def safe_add(self, a: int | None, b: int | None) -> int | None:
+    def safe_add(self, a: Optional[float] = None, b: Optional[float] = None) -> Optional[float]:
         return None if a is None and b is None else (a or 0) + (b or 0)
 
     def linear_interpolate(
         self,
-        before_val: int | None,
-        after_val: int | None,
+        before_val: int | float,
+        after_val: int | float,
         before_date: datetime.datetime,
         current_date: datetime.datetime,
         after_date: datetime.datetime,
-    ) -> int | None:
+    ) -> int | float:
         return (
             before_val
             + (after_val - before_val)
@@ -283,7 +283,7 @@ class FitnessUsage(APIView):
 
     def get_usage_on_date(
         self, room: FitnessRoom, date: datetime.date, field: str
-    ) -> list[int | None]:
+    ) -> Sequence[Optional[int | float]]:
         """
         Returns the number of people in the fitness center on a given date per hour
         """
@@ -298,7 +298,7 @@ class FitnessUsage(APIView):
         snapshots = FitnessSnapshot.objects.filter(room=room, date__date=date)
 
         # For usage, None represents no data
-        usage = [0] * 24
+        usage: list[Optional[float]] = [0] * 24
         for hour in range(open, close + 1):
             # consider the :30 mark of each hour
             hour_date = timezone.make_aware(datetime.datetime.combine(date, datetime.time(hour)))
@@ -307,8 +307,8 @@ class FitnessUsage(APIView):
             before = snapshots.filter(date__lte=hour_date).order_by("-date").first()
             after = snapshots.filter(date__gte=hour_date).order_by("date").first()
 
-            before_date, before_val = getattr(before, "date", None), getattr(before, field, None)
-            after_date, after_val = getattr(after, "date", None), getattr(after, field, None)
+            before_date, before_val = getattr(before, "date", None), getattr(before, field, 0)
+            after_date, after_val = getattr(after, "date", None), getattr(after, field, 0)
 
             # This condition should only activate during morning times
             if before is None:
@@ -322,7 +322,7 @@ class FitnessUsage(APIView):
                 if date == timezone.localtime().date():
                     # Set value to None if the last retrieved data was
                     # over 2 hours old to avoid extrapolation
-                    if hour_date - datetime.timedelta(hours=1) > before_date:
+                    if before_date and hour_date - datetime.timedelta(hours=1) > before_date:
                         for i in range(hour, 24):
                             usage[i] = None
                         break
@@ -334,21 +334,29 @@ class FitnessUsage(APIView):
                         + datetime.timedelta(minutes=30),
                         0,
                     )
-
-            usage[hour] = (
-                self.linear_interpolate(before_val, after_val, before_date, hour_date, after_date)
-                if before_date != after_date
-                else after_val
-            )
+            if before_date and after_date:
+                usage[hour] = (
+                    self.linear_interpolate(
+                        before_val,
+                        after_val,
+                        cast(datetime.datetime, before_date),
+                        hour_date,
+                        cast(datetime.datetime, after_date),
+                    )
+                    if before_date != after_date
+                    else (after_val)
+                )
         if all(amt == 0 for amt in usage):  # location probably closed - don't count in aggregate
             return [None] * 24
-        return usage
+        return cast(Sequence[Optional[int | float]], usage)
 
     def get_usage(
         self, room: FitnessRoom, date: datetime.date, num_samples: int, group_by: str, field: str
-    ) -> tuple[list[int | None], datetime.date, datetime.date]:
+    ) -> tuple[list[Optional[int | float]], datetime.date, datetime.date]:
         unit = 1 if group_by == "day" else 7  # skip by 1 or 7 days
-        usage_aggs = [(None, 0)] * 24  # (sum, count) for each hour
+        usage_aggs: list[tuple[Optional[float], int]] = [
+            (None, 0)
+        ] * 24  # (sum, count) for each hour
         min_date = timezone.localtime().date()
         max_date = date - datetime.timedelta(days=unit * (num_samples - 1))
 
@@ -361,10 +369,10 @@ class FitnessUsage(APIView):
                 for (sum, count), val in zip(usage_aggs, usage)
             ]
             # update min and max date if any data was logged
-            if any(usage):
+            if any(u is not None for u in usage):
                 min_date = min(min_date, curr)
                 max_date = max(max_date, curr)
-        ret = [(sum / count) if count else None for (sum, count) in usage_aggs]
+        ret = [(sum / count if count and sum is not None else None) for (sum, count) in usage_aggs]
         return ret, min_date, max_date
 
     def get(self, request: Request, room_id: int) -> Response:
@@ -397,6 +405,7 @@ class FitnessUsage(APIView):
         usage_per_hour, min_date, max_date = self.get_usage(
             room, date, num_samples, group_by, field
         )
+
         return Response(
             {
                 "room_name": room.name,
@@ -419,7 +428,7 @@ class FitnessPreferences(APIView):
 
     def get(self, request: Request) -> Response:
 
-        preferences = request.user.profile.fitness_preferences.all()
+        preferences = get_user(request).profile.fitness_preferences.all()
 
         # returns all ids in a person's preferences
         return Response({"rooms": preferences.values_list("id", flat=True)})
@@ -429,7 +438,7 @@ class FitnessPreferences(APIView):
         if "rooms" not in request.data:
             return Response({"success": False, "error": "No rooms provided"})
 
-        profile = request.user.profile
+        profile = get_user(request).profile
 
         ids = request.data["rooms"]
 
@@ -454,14 +463,14 @@ class UniqueCounterView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request: Request) -> Response:
-        query = dict()
+        query: dict[str, Any] = {}
         if "post_id" in request.query_params:
             query["post__id"] = request.query_params["post_id"]
         if "poll_id" in request.query_params:
             query["poll__id"] = request.query_params["poll_id"]
         if len(query) != 1:
             return Response({"detail": "require 1 id out of post_id or poll_id"}, status=400)
-        query["is_interaction"] = (
-            request.query_params.get("is_interaction", "false").lower() == "true"
+        query["is_interaction"] = bool(
+            str(request.query_params.get("is_interaction", "false")).lower() == "true"
         )
         return Response({"count": AnalyticsEvent.objects.filter(**query).count()})

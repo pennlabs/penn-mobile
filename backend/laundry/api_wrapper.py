@@ -48,7 +48,7 @@ def parse_a_hall(hall_link: str) -> dict[str, Any]:
     washers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
     dryers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
 
-    detailed = []
+    detailed: list[dict[str, Any]] = []
 
     try:
         page = requests.get(

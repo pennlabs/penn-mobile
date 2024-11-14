@@ -6,15 +6,10 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("dining", "0005_diningitem_allergens_diningitem_nutrition_info_and_more"),
-    ]
+    dependencies = [("dining", "0005_diningitem_allergens_diningitem_nutrition_info_and_more")]
 
     operations = [
-        migrations.RemoveField(
-            model_name="diningmenu",
-            name="stations",
-        ),
+        migrations.RemoveField(model_name="diningmenu", name="stations"),
         migrations.AlterField(
             model_name="diningitem",
             name="allergens",

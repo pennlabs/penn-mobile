@@ -5,9 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("penndata", "0001_initial"),
-    ]
+    dependencies = [("penndata", "0001_initial")]
 
     operations = [
         migrations.CreateModel(
@@ -22,5 +20,5 @@ class Migration(migrations.Migration):
                 ("cell", models.CharField(max_length=255)),
                 ("rank", models.IntegerField()),
             ],
-        ),
+        )
     ]

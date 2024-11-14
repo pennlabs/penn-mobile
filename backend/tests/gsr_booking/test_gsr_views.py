@@ -1,56 +1,56 @@
 import json
+from typing import Any
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
 from gsr_booking.models import GSR, Group, GSRBooking
+from utils.types import DjangoUserModel, UserType
 
 
-User = get_user_model()
-
-
-def is_wharton_false(*args):
+def is_wharton_false(*args: Any) -> bool:
     return False
 
 
-def is_wharton_true(*args):
+def is_wharton_true(*args: Any) -> bool:
     return True
 
 
-def libcal_availability(*args):
+def libcal_availability(*args: Any) -> list[dict]:
     with open("tests/gsr_booking/views_libcal_availability.json") as data:
         return json.load(data)
 
 
-def wharton_availability(*args):
+def wharton_availability(*args: Any) -> list[dict]:
     with open("tests/gsr_booking/views_wharton_availability.json") as data:
         return json.load(data)
 
 
-def book_cancel_room(*args):
+def book_cancel_room(*args: Any) -> None:
     pass
 
 
-def reservations(*args):
+def reservations(*args: Any) -> list[dict]:
     with open("tests/gsr_booking/views_reservations.json") as data:
         return json.load(data)
 
 
 class TestGSRs(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         call_command("load_gsrs")
-        self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
-        self.client = APIClient()
+        self.user: UserType = DjangoUserModel.objects.create_user(
+            "user", "user@seas.upenn.edu", "user"
+        )
+        self.client: APIClient = APIClient()
         self.client.force_authenticate(user=self.user)
 
-        test_user = User.objects.create_user("user1", "user")
+        test_user = DjangoUserModel.objects.create_user("user1", "user")
         Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
-    def test_get_location(self):
+    def test_get_location(self) -> None:
         response = self.client.get(reverse("locations"))
         res_json = json.loads(response.content)
         for entry in res_json:
@@ -63,16 +63,18 @@ class TestGSRs(TestCase):
 
 
 class TestGSRFunctions(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         call_command("load_gsrs")
-        self.user = User.objects.create_user("user", "user@sas.upenn.edu", "user")
-        self.client = APIClient()
+        self.user: UserType = DjangoUserModel.objects.create_user(
+            "user", "user@sas.upenn.edu", "user"
+        )
+        self.client: APIClient = APIClient()
         self.client.force_authenticate(user=self.user)
 
-        test_user = User.objects.create_user("user1", "user")
+        test_user = DjangoUserModel.objects.create_user("user1", "user")
         Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
-    def test_recent(self):
+    def test_recent(self) -> None:
         gsrs = list(GSR.objects.all())
         GSRBooking.objects.create(user=self.user, room_id=1, room_name="Room 1", gsr=gsrs[0])
         GSRBooking.objects.create(user=self.user, room_id=3, room_name="Room 3", gsr=gsrs[0])
@@ -93,21 +95,21 @@ class TestGSRFunctions(TestCase):
         self.assertNotEqual(res_json[0]["id"], res_json[1]["id"])
 
     @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.is_wharton", is_wharton_false)
-    def test_get_wharton_false(self):
+    def test_get_wharton_false(self) -> None:
         response = self.client.get(reverse("is-wharton"))
         res_json = json.loads(response.content)
         self.assertEqual(1, len(res_json))
         self.assertFalse(res_json["is_wharton"])
 
     @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.is_wharton", is_wharton_true)
-    def test_get_wharton_true(self):
+    def test_get_wharton_true(self) -> None:
         response = self.client.get(reverse("is-wharton"))
         res_json = json.loads(response.content)
         self.assertEqual(1, len(res_json))
         self.assertTrue(res_json["is_wharton"])
 
     @mock.patch("gsr_booking.api_wrapper.BookingHandler.get_availability", libcal_availability)
-    def test_availability_libcal(self):
+    def test_availability_libcal(self) -> None:
         response = self.client.get(reverse("availability", args=["1086", "1889"]))
         res_json = json.loads(response.content)
         self.assertEqual(3, len(res_json))
@@ -121,7 +123,7 @@ class TestGSRFunctions(TestCase):
             self.assertIn("availability", room)
 
     @mock.patch("gsr_booking.api_wrapper.BookingHandler.get_availability", wharton_availability)
-    def test_availability_wharton(self):
+    def test_availability_wharton(self) -> None:
         response = self.client.get(reverse("availability", args=["JMHH", "1"]))
         res_json = json.loads(response.content)
         self.assertEqual(3, len(res_json))
@@ -135,7 +137,7 @@ class TestGSRFunctions(TestCase):
             self.assertIn("availability", room)
 
     @mock.patch("gsr_booking.api_wrapper.BookingHandler.book_room", book_cancel_room)
-    def test_book_libcal(self):
+    def test_book_libcal(self) -> None:
         payload = {
             "start_time": "2021-11-21T18:30:00-05:00",
             "end_time": "2021-11-21T19:00:00-05:00",
@@ -151,7 +153,7 @@ class TestGSRFunctions(TestCase):
         self.assertEqual("success", res_json["detail"])
 
     @mock.patch("gsr_booking.api_wrapper.BookingHandler.book_room", book_cancel_room)
-    def test_book_wharton(self):
+    def test_book_wharton(self) -> None:
         payload = {
             "start_time": "2021-11-21T18:30:00-05:00",
             "end_time": "2021-11-21T19:00:00-05:00",
@@ -167,7 +169,7 @@ class TestGSRFunctions(TestCase):
         self.assertEqual("success", res_json["detail"])
 
     @mock.patch("gsr_booking.api_wrapper.BookingHandler.cancel_room", book_cancel_room)
-    def test_cancel_room(self):
+    def test_cancel_room(self) -> None:
         payload = {"booking_id": "booking id"}
         response = self.client.post(
             reverse("cancel"), json.dumps(payload), content_type="application/json"
@@ -177,7 +179,7 @@ class TestGSRFunctions(TestCase):
         self.assertEqual("success", res_json["detail"])
 
     @mock.patch("gsr_booking.api_wrapper.BookingHandler.get_reservations", reservations)
-    def test_reservations(self):
+    def test_reservations(self) -> None:
         response = self.client.get(reverse("reservations"))
         res_json = json.loads(response.content)
         self.assertEqual(6, len(res_json))

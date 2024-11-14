@@ -65,6 +65,8 @@ class DiningAPIWrapper:
         for key, value in venues.items():
             # Cleaning up json response
             venue = Venue.objects.filter(venue_id=key).first()
+            if venue is None:
+                continue
             value["name"] = venue.name
             value["image"] = venue.image_url if venue else None
 

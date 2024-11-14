@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from datetime import datetime
 from typing import Any
 
@@ -28,7 +29,7 @@ class Command(BaseCommand):
     Note: --start/--end and --current are mutually exclusive
     """
 
-    def add_arguments(self, parser) -> None:
+    def add_arguments(self, parser: ArgumentParser) -> None:
         # optional flags
         parser.add_argument("--group", type=str, default=None)
         parser.add_argument("--start", type=str, default=None)

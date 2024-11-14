@@ -1,51 +1,57 @@
+from typing import Any
+
 from django.contrib import admin
-from django.utils.html import escape, mark_safe
+from django.db.models import QuerySet
+from django.utils.html import escape
+from django.utils.safestring import SafeString, mark_safe
 
 from portal.models import Content, Poll, PollOption, PollVote, Post, TargetPopulation
 
 
 class ContentAdmin(admin.ModelAdmin):
     @admin.action(description="Set status to Approved")
-    def action_approved(modeladmin, request, queryset):
+    def action_approved(modeladmin: Any, request: Any, queryset: QuerySet) -> None:
         queryset.update(status=Content.STATUS_APPROVED)
 
     @admin.action(description="Set status to Draft")
-    def action_draft(modeladmin, request, queryset):
+    def action_draft(modeladmin: Any, request: Any, queryset: QuerySet) -> None:
         queryset.update(status=Content.STATUS_DRAFT)
 
     @admin.action(description="Set status to Revision")
-    def action_revision(modeladmin, request, queryset):
+    def action_revision(modeladmin: Any, request: Any, queryset: QuerySet) -> None:
         queryset.update(status=Content.STATUS_REVISION)
 
     actions = [action_approved, action_draft, action_revision]
 
-    def get_queryset(self, request):
+    def get_queryset(self, request: Any) -> QuerySet:
         queryset = super().get_queryset(request)
         return queryset.annotate(ar=Content.ACTION_REQUIRED_CONDITION).order_by(
             "-ar", "-created_date"
         )
 
-    def ar(self, obj):
-        return obj.ar
+    # Using any for the ar property since it comes from a queryset annotation
+    def ar(self, obj: Any) -> bool:
+        return bool(obj.ar)
 
-    ar.boolean = True
+    ar.boolean = True  # type: ignore[attr-defined]
 
 
 class PostAdmin(ContentAdmin):
-    def image_tag(instance, height):
+    @staticmethod
+    def image_tag(instance: Post, height: int) -> SafeString:
         return mark_safe(
             f'<img src="%s" height="{height}" />' % escape(instance.image and instance.image.url)
         )
 
-    def small_image(self, instance):
+    def small_image(self, instance: Post) -> SafeString:
         return PostAdmin.image_tag(instance, 100)
 
-    small_image.short_description = "Post Image"
+    small_image.short_description = "Post Image"  # type: ignore[attr-defined]
 
-    def large_image(self, instance):
+    def large_image(self, instance: Post) -> SafeString:
         return PostAdmin.image_tag(instance, 300)
 
-    large_image.short_description = "Post Image"
+    large_image.short_description = "Post Image"  # type: ignore[attr-defined]
 
     readonly_fields = ("large_image",)
     list_display = (
