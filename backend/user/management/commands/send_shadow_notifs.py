@@ -1,4 +1,6 @@
 import json
+from argparse import ArgumentParser
+from typing import Any
 
 from django.core.management.base import BaseCommand
 
@@ -23,7 +25,7 @@ class Command(BaseCommand):
     <>
     """
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("send_to_all", type=str, help="whether to send to all")
         parser.add_argument("message", type=str, help="JSON-formatted message to send")
 
@@ -32,7 +34,7 @@ class Command(BaseCommand):
         parser.add_argument("--delay", type=int, default=0)
         parser.add_argument("--is_dev", type=str, default="no")
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         send_to_all = kwargs["send_to_all"].lower() == "yes"
         message = json.loads(kwargs["message"])
         names = kwargs["users"]

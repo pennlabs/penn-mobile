@@ -9,9 +9,7 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-        ("user", "0002_profile_laundry_preferences"),
-    ]
+    dependencies = [("user", "0002_profile_laundry_preferences")]
 
     operations = [
         migrations.CreateModel(

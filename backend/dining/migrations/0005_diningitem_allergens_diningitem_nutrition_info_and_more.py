@@ -6,9 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("dining", "0004_remove_diningtransaction_profile_and_more"),
-    ]
+    dependencies = [("dining", "0004_remove_diningtransaction_profile_and_more")]
 
     operations = [
         migrations.AddField(

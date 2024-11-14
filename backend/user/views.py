@@ -1,10 +1,13 @@
-from django.contrib.auth import get_user_model
-from django.http import HttpResponseRedirect
+from typing import Optional
+
+from django.db.models import Manager, QuerySet
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from identity.permissions import B2BPermission
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -15,9 +18,7 @@ from user.serializers import (
     NotificationTokenSerializer,
     UserSerializer,
 )
-
-
-User = get_user_model()
+from utils.types import DjangoUser, UserType, get_user
 
 
 class UserView(generics.RetrieveUpdateAPIView):
@@ -36,7 +37,7 @@ class UserView(generics.RetrieveUpdateAPIView):
 
     serializer_class = UserSerializer
 
-    def get_object(self):
+    def get_object(self) -> "UserType":
         return self.request.user
 
 
@@ -49,7 +50,7 @@ class NotificationTokenView(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationTokenSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[NotificationToken, Manager[NotificationToken]]:
         return NotificationToken.objects.filter(user=self.request.user)
 
 
@@ -68,16 +69,16 @@ class NotificationSettingView(viewsets.ModelViewSet):
     permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
     serializer_class = NotificationSettingSerializer
 
-    def is_authorized(self, request):
-        return request.user and request.user.is_authenticated
+    def is_authorized(self, request: Request) -> bool:
+        return request.user is not None and request.user.is_authenticated
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[NotificationSetting, Manager[NotificationSetting]]:
         if self.is_authorized(self.request):
             return NotificationSetting.objects.filter(token__user=self.request.user)
         return NotificationSetting.objects.none()
 
     @action(detail=True, methods=["get"])
-    def check(self, request, pk=None):
+    def check(self, request: Request, pk: Optional[str] = None) -> Response:
         """
         Returns whether the user wants notification for specified service.
         :param pk: service name
@@ -88,9 +89,9 @@ class NotificationSettingView(viewsets.ModelViewSet):
 
         pennkey = request.GET.get("pennkey")
         user = (
-            request.user
+            get_user(request)
             if self.is_authorized(request)
-            else get_object_or_404(User, username=pennkey)
+            else get_object_or_404(DjangoUser, username=pennkey)
         )
 
         token = NotificationToken.objects.filter(user=user).first()
@@ -108,15 +109,15 @@ class NotificationAlertView(APIView):
 
     permission_classes = [B2BPermission("urn:pennlabs:*") | IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         users = (
-            [self.request.user.username]
-            if request.user and request.user.is_authenticated
+            [get_user(self.request).username]
+            if get_user(request) and get_user(request).is_authenticated
             else request.data.get("users", list())
         )
         service = request.data.get("service")
-        title = request.data.get("title")
-        body = request.data.get("body")
+        title = request.data.get("title", None)
+        body = request.data.get("body", None)
         delay = max(request.data.get("delay", 0), 0)
         is_dev = request.data.get("is_dev", False)
 
@@ -138,7 +139,7 @@ class ClearCookiesView(APIView):
     Clears all cookies from the browser
     """
 
-    def get(self, request):
+    def get(self, request: Request) -> HttpResponse:
         next_url = request.GET.get("next", None)
         response = (
             HttpResponseRedirect(f"/api/accounts/login/?next={next_url}")

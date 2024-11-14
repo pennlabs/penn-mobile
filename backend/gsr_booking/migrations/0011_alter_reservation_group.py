@@ -6,9 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("gsr_booking", "0010_remove_gsrbooking_reminder_sent_and_more"),
-    ]
+    dependencies = [("gsr_booking", "0010_remove_gsrbooking_reminder_sent_and_more")]
 
     operations = [
         migrations.AlterField(
@@ -20,5 +18,5 @@ class Migration(migrations.Migration):
                 on_delete=django.db.models.deletion.CASCADE,
                 to="gsr_booking.group",
             ),
-        ),
+        )
     ]

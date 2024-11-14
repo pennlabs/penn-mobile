@@ -5,9 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("penndata", "0006_fitnesssnapshot_capacity"),
-    ]
+    dependencies = [("penndata", "0006_fitnesssnapshot_capacity")]
 
     operations = [
         migrations.AddField(
@@ -15,5 +13,5 @@ class Migration(migrations.Migration):
             name="image_url",
             field=models.URLField(default=""),
             preserve_default=False,
-        ),
+        )
     ]

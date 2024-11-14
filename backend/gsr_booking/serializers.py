@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
@@ -16,28 +18,25 @@ class GroupRoomBookingRequestSerializer(serializers.Serializer):
 
     is_wharton = serializers.SerializerMethodField()
 
-    def get_is_wharton(self, obj):
+    def get_is_wharton(self, obj: dict[str, Any]) -> bool:
         return obj["lid"] == 1
 
 
 class GroupMembershipSerializer(serializers.ModelSerializer):
-    group = serializers.SlugRelatedField(slug_field="name", queryset=Group.objects.all())
-    color = serializers.SlugRelatedField(slug_field="color", read_only=True, source="group")
+    group: serializers.SlugRelatedField = serializers.SlugRelatedField(
+        slug_field="name", queryset=Group.objects.all()
+    )
+    color: serializers.SlugRelatedField = serializers.SlugRelatedField(
+        slug_field="color", read_only=True, source="group"
+    )
 
     class Meta:
         model = GroupMembership
-        fields = [
-            "group",
-            "type",
-            "pennkey_allow",
-            "notifications",
-            "id",
-            "color",
-        ]
+        fields = ["group", "type", "pennkey_allow", "notifications", "id", "color"]
 
 
 class GroupSerializer(serializers.ModelSerializer):
-    owner = serializers.SlugRelatedField(
+    owner: serializers.SlugRelatedField = serializers.SlugRelatedField(
         slug_field="username", queryset=User.objects.all(), required=False
     )
     memberships = GroupMembershipSerializer(many=True, read_only=True)
@@ -46,7 +45,7 @@ class GroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = ["owner", "memberships", "name", "color", "id"]
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str, Any]) -> Group:
         request = self.context.get("request", None)
         if request is None:
             return super().create(validated_data)
@@ -58,10 +57,10 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class GroupField(serializers.RelatedField):
-    def to_representation(self, value):
+    def to_representation(self, value: Group) -> dict[str, Any]:
         return {"name": value.name, "id": value.id, "color": value.color}
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: dict[str, Any]) -> None:
         return None  # TODO: If you want to update based on BookingField, implement this.
 
 

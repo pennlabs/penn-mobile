@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 import pandas as pd
 from django.contrib.auth import get_user_model
@@ -12,7 +13,7 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
 
         analytics_objects = []
 

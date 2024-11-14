@@ -1,8 +1,8 @@
 import datetime
 import json
+from typing import Any, cast
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
@@ -10,26 +10,24 @@ from rest_framework.test import APIClient
 
 from portal.models import Post, TargetPopulation
 from utils.email import get_backend_manager_emails
+from utils.types import DjangoUserModel, UserType
 
 
-User = get_user_model()
-
-
-def mock_get_user_clubs(*args, **kwargs):
+def mock_get_user_clubs(*args: Any, **kwargs: Any) -> list[dict]:
     with open("tests/portal/get_user_clubs.json") as data:
         return json.load(data)
 
 
-def mock_get_no_clubs(*args, **kwargs):
+def mock_get_no_clubs(*args: Any, **kwargs: Any) -> list[dict]:
     return []
 
 
-def mock_get_user_info(*args, **kwargs):
+def mock_get_user_info(*args: Any, **kwargs: Any) -> list[dict]:
     with open("tests/portal/get_user_info.json") as data:
         return json.load(data)
 
 
-def mock_get_club_info(*args, **kwargs):
+def mock_get_club_info(*args: Any, **kwargs: Any) -> list[dict]:
     with open("tests/portal/get_club_info.json") as data:
         return json.load(data)
 
@@ -38,11 +36,13 @@ class TestPosts(TestCase):
     """Tests Created/Update/Retrieve for Posts"""
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
-    def setUp(self):
+    def setUp(self) -> None:
         call_command("load_target_populations", "--years", "2022, 2023, 2024, 2025")
-        self.target_id = TargetPopulation.objects.get(population="2024").id
-        self.client = APIClient()
-        self.test_user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
+        self.target_id: int = TargetPopulation.objects.get(population="2024").id
+        self.client: APIClient = APIClient()
+        self.test_user: UserType = DjangoUserModel.objects.create_user(
+            "user", "user@seas.upenn.edu", "user"
+        )
         self.client.force_authenticate(user=self.test_user)
 
         payload = {
@@ -57,12 +57,13 @@ class TestPosts(TestCase):
         }
         self.client.post("/portal/posts/", payload)
         post_1 = Post.objects.all().first()
+        assert post_1 is not None
         post_1.status = Post.STATUS_APPROVED
         post_1.save()
-        self.id = post_1.id
+        self.post_id = post_1.id
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
-    def test_create_post(self):
+    def test_create_post(self) -> None:
         # Creates an unapproved post
         payload = {
             "club_code": "pennlabs",
@@ -81,7 +82,7 @@ class TestPosts(TestCase):
         self.assertEqual(None, Post.objects.get(id=res_json["id"]).admin_comment)
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_no_clubs)
-    def test_fail_post(self):
+    def test_fail_post(self) -> None:
         # Creates an unapproved post
         payload = {
             "club_code": "pennlabs",
@@ -101,29 +102,31 @@ class TestPosts(TestCase):
 
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
-    def test_update_post(self):
+    def test_update_post(self) -> None:
         payload = {"title": "New Test Title 3"}
-        response = self.client.patch(f"/portal/posts/{self.id}/", payload)
+        response = self.client.patch(f"/portal/posts/{self.post_id}/", payload)
         res_json = json.loads(response.content)
-        self.assertEqual(self.id, res_json["id"])
-        self.assertEqual("New Test Title 3", Post.objects.get(id=self.id).title)
+        self.assertEqual(self.post_id, res_json["id"])
+        self.assertEqual("New Test Title 3", Post.objects.get(id=self.post_id).title)
         # since the user is not an admin, approved should be set to false after update
         self.assertEqual(Post.STATUS_DRAFT, res_json["status"])
 
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
-    def test_update_post_admin(self):
-        admin = User.objects.create_superuser("admin@upenn.edu", "admin", "admin")
+    def test_update_post_admin(self) -> None:
+        admin: UserType = DjangoUserModel.objects.create_superuser(
+            "admin@upenn.edu", "admin", "admin"
+        )
         self.client.force_authenticate(user=admin)
         payload = {"title": "New Test Title 3"}
-        response = self.client.patch(f"/portal/posts/{self.id}/", payload)
+        response = self.client.patch(f"/portal/posts/{self.post_id}/", payload)
         res_json = json.loads(response.content)
-        self.assertEqual(self.id, res_json["id"])
+        self.assertEqual(self.post_id, res_json["id"])
         self.assertEqual(Post.STATUS_APPROVED, res_json["status"])
 
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.logic.get_user_info", mock_get_user_info)
-    def test_browse(self):
+    def test_browse(self) -> None:
         payload = {
             "club_code": "pennlabs",
             "title": "Test Title 2",
@@ -139,7 +142,7 @@ class TestPosts(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertEqual(2, Post.objects.all().count())
 
-    def test_review_post_no_admin_comment(self):
+    def test_review_post_no_admin_comment(self) -> None:
         # No admin comment
         Post.objects.create(
             club_code="notpennlabs",
@@ -147,7 +150,9 @@ class TestPosts(TestCase):
             subtitle="Test subtitle 2",
             expire_date=timezone.localtime() + datetime.timedelta(days=1),
         )
-        admin = User.objects.create_superuser("admin@upenn.edu", "admin", "admin")
+        admin: UserType = DjangoUserModel.objects.create_superuser(
+            "admin@upenn.edu", "admin", "admin"
+        )
         self.client.force_authenticate(user=admin)
         response = self.client.get("/portal/posts/review/")
         res_json = json.loads(response.content)
@@ -158,7 +163,7 @@ class TestPosts(TestCase):
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("utils.email.send_automated_email.delay_on_commit")
-    def test_send_email_on_create(self, mock_send_email):
+    def test_send_email_on_create(self, mock_send_email: mock.Mock) -> None:
         payload = {
             "club_code": "pennlabs",
             "title": "Test Title 2",
@@ -175,7 +180,7 @@ class TestPosts(TestCase):
     @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
     @mock.patch("utils.email.send_automated_email.delay_on_commit")
-    def test_send_email_on_status_change(self, mock_send_email):
+    def test_send_email_on_status_change(self, mock_send_email: mock.Mock) -> None:
         payload = {
             "club_code": "pennlabs",
             "title": "Test Title 2",
@@ -190,8 +195,10 @@ class TestPosts(TestCase):
         mock_send_email.assert_called_once()
 
         post = Post.objects.last()
+        assert post is not None
+        creator = cast(UserType, post.creator)
         post.status = Post.STATUS_APPROVED
         post.save()
 
         self.assertEqual(mock_send_email.call_count, 2)
-        self.assertEqual(mock_send_email.call_args[0][1], [post.creator.email])
+        self.assertEqual(mock_send_email.call_args[0][1], [creator.email])

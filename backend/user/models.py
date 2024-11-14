@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models.signals import post_save
@@ -5,6 +7,7 @@ from django.dispatch import receiver
 
 from laundry.models import LaundryRoom
 from penndata.models import FitnessRoom
+from utils.types import UserType
 
 
 User = get_user_model()
@@ -15,9 +18,9 @@ class NotificationToken(models.Model):
     KIND_ANDROID = "ANDROID"
     KIND_OPTIONS = ((KIND_IOS, "iOS"), (KIND_ANDROID, "Android"))
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    kind = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_IOS)
-    token = models.CharField(max_length=255)
+    user: models.OneToOneField = models.OneToOneField(User, on_delete=models.CASCADE)
+    kind: models.CharField = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_IOS)
+    token: models.CharField = models.CharField(max_length=255)
 
 
 class NotificationSetting(models.Model):
@@ -48,23 +51,27 @@ class NotificationSetting(models.Model):
         (SERVICE_LAUNDRY, "Laundry"),
     )
 
-    token = models.ForeignKey(NotificationToken, on_delete=models.CASCADE)
-    service = models.CharField(max_length=30, choices=SERVICE_OPTIONS, default=SERVICE_PENN_MOBILE)
-    enabled = models.BooleanField(default=True)
+    token: models.ForeignKey = models.ForeignKey(NotificationToken, on_delete=models.CASCADE)
+    service: models.CharField = models.CharField(
+        max_length=30, choices=SERVICE_OPTIONS, default=SERVICE_PENN_MOBILE
+    )
+    enabled: models.BooleanField = models.BooleanField(default=True)
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    laundry_preferences = models.ManyToManyField(LaundryRoom, blank=True)
-    fitness_preferences = models.ManyToManyField(FitnessRoom, blank=True)
-    dining_preferences = models.ManyToManyField("dining.Venue", blank=True)
+    user: models.OneToOneField = models.OneToOneField(User, on_delete=models.CASCADE)
+    laundry_preferences: models.ManyToManyField = models.ManyToManyField(LaundryRoom, blank=True)
+    fitness_preferences: models.ManyToManyField = models.ManyToManyField(FitnessRoom, blank=True)
+    dining_preferences: models.ManyToManyField = models.ManyToManyField("dining.Venue", blank=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.user.username)
 
 
 @receiver(post_save, sender=User)
-def create_or_update_user_profile(sender, instance, created, **kwargs):
+def create_or_update_user_profile(
+    sender: UserType, instance: UserType, created: bool, **kwargs: Any
+) -> None:
     """
     This post_save hook triggers automatically when a User object is saved, and if no Profile
     object exists for that User, it will create one

@@ -1,4 +1,5 @@
 import datetime
+from typing import Any, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -8,7 +9,7 @@ from django.utils import timezone
 from penndata.models import Event
 
 
-EVENT_TYPE_MAP = [
+EVENT_TYPE_MAP: list[tuple[str, str]] = [
     ("https://rodin.house.upenn.edu/calendar", Event.TYPE_RODIN_COLLEGE_HOUSE),
     ("https://harnwell.house.upenn.edu/calendar", Event.TYPE_HARNWELL_COLLEGE_HOUSE),
     ("https://harrison.house.upenn.edu/calendar", Event.TYPE_HARRISON_COLLEGE_HOUSE),
@@ -27,7 +28,7 @@ EVENT_TYPE_MAP = [
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         for site, event_type in EVENT_TYPE_MAP:
             self.scrape_calendar_page(f"{site}", event_type)
         now = timezone.localtime()
@@ -39,12 +40,18 @@ class Command(BaseCommand):
 
         self.stdout.write("Uploaded College House Events!")
 
-    def scrape_details(self, event_url):
+    def scrape_details(self, event_url: str) -> tuple[
+        Optional[str],
+        Optional[datetime.datetime],
+        Optional[datetime.datetime],
+        Optional[str],
+        Optional[str],
+    ]:
         try:
             resp = requests.get(event_url)
         except ConnectionError:
             print("Error:", ConnectionError)
-            return None
+            return None, None, None, None, None
         soup = BeautifulSoup(resp.text, "html.parser")
 
         location = (
@@ -84,7 +91,7 @@ class Command(BaseCommand):
         )
         return location, start_time, end_time, description, image_url
 
-    def scrape_calendar_page(self, calendar_url, event_type):
+    def scrape_calendar_page(self, calendar_url: str, event_type: str) -> None:
         try:
             resp = requests.get(calendar_url)
         except ConnectionError:

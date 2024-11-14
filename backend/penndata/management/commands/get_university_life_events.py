@@ -1,3 +1,6 @@
+import datetime
+from typing import Any
+
 import requests
 from bs4 import BeautifulSoup
 from dateutil import parser
@@ -12,10 +15,10 @@ UNIVERSITY_LIFE_URL = "https://ulife.vpul.upenn.edu/calendar/"
 
 class Command(BaseCommand):
 
-    def to_datetime(self, date_str):
+    def to_datetime(self, date_str: str) -> datetime.datetime:
         return timezone.make_aware(parser.parse(date_str))
 
-    def parse_event_section(self, event_section):
+    def parse_event_section(self, event_section: Any) -> None:
         date_str = event_section.find(class_="heading").find("h2").get("id")
 
         events = event_section.find(class_="info").find_all("a", attrs={"attr-event-id": True})
@@ -53,7 +56,7 @@ class Command(BaseCommand):
                 email=None,
             )
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
 
         response = requests.get(UNIVERSITY_LIFE_URL)
 

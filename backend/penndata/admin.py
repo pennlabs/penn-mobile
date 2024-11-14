@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.utils.html import escape, mark_safe
+from django.utils.html import escape
+from django.utils.safestring import SafeText, mark_safe
 
 from penndata.models import (
     AnalyticsEvent,
@@ -12,10 +13,10 @@ from penndata.models import (
 
 
 class FitnessRoomAdmin(admin.ModelAdmin):
-    def image_tag(self, instance):
+    def image_tag(self, instance: FitnessRoom) -> SafeText:
         return mark_safe('<img src="%s" height="300" />' % escape(instance.image_url))
 
-    image_tag.short_description = "Fitness Room Image"
+    image_tag.short_description = "Fitness Room Image"  # type: ignore[attr-defined]
     readonly_fields = ("image_tag",)
 
 

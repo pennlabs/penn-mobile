@@ -1,4 +1,5 @@
 import datetime
+from typing import Any
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -13,7 +14,7 @@ class Command(BaseCommand):
     the next 7 days, including the original date.
     """
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         d = DiningAPIWrapper()
         d.load_menu(timezone.now().date() + datetime.timedelta(days=6))
         self.stdout.write("Loaded new Dining Menu!")

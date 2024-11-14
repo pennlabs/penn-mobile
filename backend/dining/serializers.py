@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from rest_framework import serializers
 
@@ -18,7 +19,7 @@ class DiningItemSerializer(serializers.ModelSerializer):
         model = DiningItem
         fields = "__all__"
 
-    def get_nutrition_info(self, obj):
+    def get_nutrition_info(self, obj: DiningItem) -> dict[str, Any]:
         try:
             return json.loads(obj.nutrition_info)
         except json.JSONDecodeError:

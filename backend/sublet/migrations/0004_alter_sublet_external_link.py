@@ -5,14 +5,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("sublet", "0003_alter_sublet_baths"),
-    ]
+    dependencies = [("sublet", "0003_alter_sublet_baths")]
 
     operations = [
         migrations.AlterField(
             model_name="sublet",
             name="external_link",
             field=models.URLField(blank=True, max_length=255, null=True),
-        ),
+        )
     ]

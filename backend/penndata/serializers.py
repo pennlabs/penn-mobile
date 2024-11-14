@@ -1,3 +1,5 @@
+from typing import Any
+
 from rest_framework import serializers
 
 from penndata.models import (
@@ -58,7 +60,7 @@ class AnalyticsEventSerializer(serializers.ModelSerializer):
         model = AnalyticsEvent
         fields = ("created_at", "cell_type", "index", "post", "poll", "is_interaction")
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str, Any]) -> AnalyticsEvent:
         validated_data["user"] = self.context["request"].user
         if validated_data["poll"] and validated_data["post"]:
             raise serializers.ValidationError(

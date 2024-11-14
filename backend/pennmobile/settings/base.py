@@ -89,7 +89,7 @@ WSGI_APPLICATION = "pennmobile.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 DATABASES = {
-    "default": dj_database_url.config(default="sqlite:///" + os.path.join(BASE_DIR, "db.sqlite3")),
+    "default": dj_database_url.config(default="sqlite:///" + os.path.join(BASE_DIR, "db.sqlite3"))
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
@@ -148,7 +148,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
         "accounts.authentication.PlatformAuthentication",
-    ],
+    ]
 }
 
 # Redis for Celery & Caching

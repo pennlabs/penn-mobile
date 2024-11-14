@@ -1,3 +1,5 @@
+from typing import Any
+
 import requests
 from bs4 import BeautifulSoup
 from django.conf import settings
@@ -10,7 +12,7 @@ from laundry.models import LaundryRoom, LaundrySnapshot
 HALL_URL = f"{settings.LAUNDRY_URL}/?location="
 
 
-def update_machine_object(cols, machine_object):
+def update_machine_object(cols: list[Any], machine_object: dict[str, Any]) -> dict[str, Any]:
     """
     Updates Machine status and time remaining
     """
@@ -38,7 +40,7 @@ def update_machine_object(cols, machine_object):
     return machine_object
 
 
-def parse_a_hall(hall_link):
+def parse_a_hall(hall_link: str) -> dict[str, Any]:
     """
     Return names, hall numbers, and the washers/dryers available for a certain hall_id
     """
@@ -46,7 +48,7 @@ def parse_a_hall(hall_link):
     washers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
     dryers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
 
-    detailed = []
+    detailed: list[dict[str, Any]] = []
 
     try:
         page = requests.get(
@@ -87,7 +89,7 @@ def parse_a_hall(hall_link):
     return {"washers": washers, "dryers": dryers, "details": detailed}
 
 
-def check_is_working():
+def check_is_working() -> bool:
     """
     Returns True if the wash alert web interface seems to be working properly, or False otherwise.
     """
@@ -114,7 +116,7 @@ def check_is_working():
         return False
 
 
-def all_status():
+def all_status() -> dict[str, dict[str, Any]]:
     """
     Return names, hall numbers, and the washers/dryers available for all rooms in the system
     """
@@ -124,7 +126,7 @@ def all_status():
     }
 
 
-def hall_status(room):
+def hall_status(room: LaundryRoom) -> dict[str, Any]:
     """
     Return the status of each specific washer/dryer in a particular hall_id
     """
@@ -134,7 +136,7 @@ def hall_status(room):
     return {"machines": machines, "hall_name": room.name, "location": room.location}
 
 
-def save_data():
+def save_data() -> None:
     """
     Retrieves current laundry info and saves it into the database.
     """

@@ -5,14 +5,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("sublet", "0002_auto_20240209_1649"),
-    ]
+    dependencies = [("sublet", "0002_auto_20240209_1649")]
 
     operations = [
         migrations.AlterField(
             model_name="sublet",
             name="baths",
             field=models.DecimalField(blank=True, decimal_places=1, max_digits=3, null=True),
-        ),
+        )
     ]

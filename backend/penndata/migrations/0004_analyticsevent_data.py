@@ -5,14 +5,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("penndata", "0003_analyticsevent"),
-    ]
+    dependencies = [("penndata", "0003_analyticsevent")]
 
     operations = [
         migrations.AddField(
             model_name="analyticsevent",
             name="data",
             field=models.CharField(max_length=255, null=True),
-        ),
+        )
     ]

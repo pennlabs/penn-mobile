@@ -6,14 +6,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("laundry", "0001_initial"),
-    ]
+    dependencies = [("laundry", "0001_initial")]
 
     operations = [
         migrations.AlterField(
             model_name="laundrysnapshot",
             name="date",
             field=models.DateTimeField(default=django.utils.timezone.now),
-        ),
+        )
     ]

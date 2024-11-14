@@ -1,68 +1,73 @@
-from django.contrib.auth import get_user_model
-from django.db.models import Prefetch, Q
+from typing import Optional
+
+from django.db.models import Manager, Prefetch, Q, QuerySet
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
+from gsr_booking.api_wrapper import GSRBooker, WhartonGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, GSRSerializer
 from pennmobile.analytics import Metric, record_analytics
-
-
-User = get_user_model()
+from utils.errors import APIError
+from utils.types import get_user
 
 
 class MyMembershipViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = GroupMembershipSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[GroupMembership, Manager[GroupMembership]]:
         return GroupMembership.objects.filter(user=self.request.user, accepted=True)
 
     @action(detail=False, methods=["get"])
-    def invites(self, request):
+    def invites(self, request: Request) -> Response:
         """
         Retrieve all invites for a given user.
         """
+
+        request_user = get_user(self.request)
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(
-                    user=request.user,
+                    user=get_user(request),
                     accepted=False,
-                    group__in=self.request.user.booking_groups.all(),
+                    group__in=request_user.booking_groups.all(),
                 ),
                 many=True,
             ).data
         )
 
 
-class GroupMembershipViewSet(viewsets.ModelViewSet):
+class GroupMembershipViewSet(viewsets.ModelViewSet[GroupMembership]):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["user", "group"]
     permission_classes = [IsAuthenticated]
     queryset = GroupMembership.objects.all()
     serializer_class = GroupMembershipSerializer
 
-    def get_queryset(self):
-        if not self.request.user.is_authenticated or not hasattr(self.request.user, "memberships"):
+    def get_queryset(self) -> QuerySet[GroupMembership, Manager[GroupMembership]]:
+        user = get_user(self.request)
+        if not user.is_authenticated:
             return GroupMembership.objects.none()
+
         return GroupMembership.objects.filter(
-            Q(id__in=self.request.user.memberships.all())
+            Q(id__in=user.memberships.all())
             | Q(
                 group__in=Group.objects.filter(
-                    memberships__in=GroupMembership.objects.filter(user=self.request.user, type="A")
+                    memberships__in=GroupMembership.objects.filter(user=user, type="A")
                 )
             )
         )
 
     @action(detail=False, methods=["post"])
-    def invite(self, request):
+    def invite(self, request: Request) -> Response | HttpResponseForbidden:
         """
         Invite a user to a group.
         """
@@ -70,15 +75,18 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         group = get_object_or_404(Group, pk=group_id)
 
         # don't invite when user already in group
-        if group.has_member(request.user):
+        if group.has_member(get_user(request)):
             return HttpResponseForbidden()
 
         return Response({"message": "invite(s) sent."})
 
     @action(detail=True, methods=["post"])
-    def accept(self, request, pk=None):
+    def accept(
+        self, request: Request, pk: Optional[int] = None
+    ) -> Response | HttpResponseForbidden:
         membership = get_object_or_404(GroupMembership, pk=pk, accepted=False)
-        if membership.user is None or membership.user != request.user:
+        user = get_user(request)
+        if membership.user is None or membership.user != user:
             return HttpResponseForbidden()
 
         if not membership.is_invite:
@@ -95,9 +103,11 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         )
 
     @action(detail=True, methods=["post"])
-    def decline(self, request, pk=None):
+    def decline(
+        self, request: Request, pk: Optional[int] = None
+    ) -> Response | HttpResponseForbidden:
         membership = get_object_or_404(GroupMembership, pk=pk, accepted=False)
-        if membership.user is None or membership.user != request.user:
+        if membership.user is None or membership.user != get_user(request):
             return HttpResponseForbidden()
         if not membership.is_invite:
             return Response({"message": "cannot decline an invite that has been accepted."}, 400)
@@ -111,40 +121,41 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         return Response(resp)
 
 
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(viewsets.ModelViewSet[Group]):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        if not self.request.user.is_authenticated:
+    def get_queryset(self) -> QuerySet[Group, Manager[Group]]:
+        user = get_user(self.request)
+        if not user.is_authenticated:
             return Group.objects.none()
         return (
             super()
             .get_queryset()
-            .filter(members=self.request.user)
+            .filter(members=user)
             .prefetch_related(
                 Prefetch("memberships", GroupMembership.objects.filter(accepted=True))
             )
         )
 
 
-class Locations(generics.ListAPIView):
+class Locations(generics.ListAPIView[GSR]):
     """Lists all available locations to book from"""
 
     serializer_class = GSRSerializer
     queryset = GSR.objects.all()
 
 
-class RecentGSRs(generics.ListAPIView):
+class RecentGSRs(generics.ListAPIView[GSR]):
     """Lists 2 most recent GSR rooms for Home page"""
 
     serializer_class = GSRSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[GSR, Manager[GSR]]:
         return GSR.objects.filter(
-            id__in=GSRBooking.objects.filter(user=self.request.user, is_cancelled=False)
+            id__in=GSRBooking.objects.filter(user=get_user(self.request), is_cancelled=False)
             .distinct()
             .order_by("-end")[:2]
             .values_list("gsr", flat=True)
@@ -155,11 +166,12 @@ class CheckWharton(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
+        user = get_user(request)
         return Response(
             {
-                "is_wharton": request.user.booking_groups.filter(name="Penn Labs").exists()
-                or WhartonGSRBooker.is_wharton(request.user)
+                "is_wharton": user.booking_groups.filter(name="Penn Labs").exists()
+                or WhartonGSRBooker.is_wharton(user)
             }
         )
 
@@ -175,20 +187,21 @@ class Availability(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, lid, gid):
+    def get(self, request: Request, lid: int, gid: str) -> Response:
 
-        start = request.GET.get("start")
-        end = request.GET.get("end")
+        start = request.GET.get("start", None)
+        end = request.GET.get("end", None)
 
         try:
+            user = get_user(request)
             return Response(
                 GSRBooker.get_availability(
                     lid,
                     gid,
                     start,
                     end,
-                    request.user,
-                    request.user.booking_groups.filter(name="Penn Labs").first(),
+                    user,
+                    user.booking_groups.filter(name="Penn Labs").first(),
                 )
             )
         except APIError as e:
@@ -200,12 +213,13 @@ class BookRoom(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         start = request.data["start_time"]
         end = request.data["end_time"]
         gid = request.data["gid"]
         room_id = request.data["id"]
         room_name = request.data["room_name"]
+        user = get_user(request)
 
         try:
             GSRBooker.book_room(
@@ -214,11 +228,11 @@ class BookRoom(APIView):
                 room_name,
                 start,
                 end,
-                request.user,
-                request.user.booking_groups.filter(name="Penn Labs").first(),
+                user,
+                user.booking_groups.filter(name="Penn Labs").first(),
             )
 
-            record_analytics(Metric.GSR_BOOK, request.user.username)
+            record_analytics(Metric.GSR_BOOK, user.username)
 
             return Response({"detail": "success"})
         except APIError as e:
@@ -232,11 +246,11 @@ class CancelRoom(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         booking_id = request.data["booking_id"]
-
+        user = get_user(request)
         try:
-            GSRBooker.cancel_room(booking_id, request.user)
+            GSRBooker.cancel_room(booking_id, user)
             return Response({"detail": "success"})
         except APIError as e:
             return Response({"error": str(e)}, status=400)
@@ -249,9 +263,8 @@ class ReservationsView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
+        user = get_user(request)
         return Response(
-            GSRBooker.get_reservations(
-                request.user, request.user.booking_groups.filter(name="Penn Labs").first()
-            )
+            GSRBooker.get_reservations(user, user.booking_groups.filter(name="Penn Labs").first())
         )

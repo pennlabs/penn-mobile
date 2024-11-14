@@ -1,6 +1,11 @@
+from typing import Any
+
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import QuerySet
 from django.utils import timezone
+
+from utils.types import UserType
 
 
 User = get_user_model()
@@ -9,75 +14,86 @@ User = get_user_model()
 class GroupMembership(models.Model):
     # INVARIANT: either user or username should always be set. if user is not None, then the
     # username should the be username of the associated user.
-    user = models.ForeignKey(
+    user: models.ForeignKey = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="memberships", blank=True, null=True
     )
 
-    group = models.ForeignKey("Group", on_delete=models.CASCADE, related_name="memberships")
+    group: models.ForeignKey = models.ForeignKey(
+        "Group", on_delete=models.CASCADE, related_name="memberships"
+    )
+    group_id: int
 
     # When accepted is False, this is a request, otherwise this is an active membership.
-    accepted = models.BooleanField(default=False)
+    accepted: models.BooleanField = models.BooleanField(default=False)
 
     ADMIN = "A"
     MEMBER = "M"
-    type = models.CharField(max_length=10, choices=[(ADMIN, "Admin"), (MEMBER, "Member")])
+    type: models.CharField = models.CharField(
+        max_length=10, choices=[(ADMIN, "Admin"), (MEMBER, "Member")]
+    )
 
-    pennkey_allow = models.BooleanField(default=False)
+    pennkey_allow: models.BooleanField = models.BooleanField(default=False)
 
-    notifications = models.BooleanField(default=True)
+    notifications: models.BooleanField = models.BooleanField(default=True)
 
-    is_wharton = models.BooleanField(blank=True, null=True, default=None)
+    is_wharton: models.BooleanField = models.BooleanField(blank=True, null=True, default=None)
 
     @property
-    def is_invite(self):
+    def is_invite(self) -> bool:
         return not self.accepted
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user}<->{self.group}"
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         # determines whether user is wharton or not
         if self.is_wharton is None:
             self.is_wharton = self.check_wharton()
         super().save(*args, **kwargs)
 
-    def check_wharton(self):
-        return WhartonGSRBooker.is_wharton(self.user)
+    def check_wharton(self) -> bool:
+        if check := WhartonGSRBooker.is_wharton(self.user):
+            return check
+        return False
 
     class Meta:
         verbose_name = "Group Membership"
 
 
 class Group(models.Model):
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    members = models.ManyToManyField(User, through=GroupMembership, related_name="booking_groups")
+    id: int
+    owner: models.ForeignKey = models.ForeignKey(User, on_delete=models.CASCADE)
+    members: models.ManyToManyField = models.ManyToManyField(
+        User, through=GroupMembership, related_name="booking_groups"
+    )
+    memberships: QuerySet
 
-    name = models.CharField(max_length=255)
-    color = models.CharField(max_length=255)
+    name: models.CharField = models.CharField(max_length=255)
+    color: models.CharField = models.CharField(max_length=255)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    updated_at: models.DateTimeField = models.DateTimeField(auto_now=True)
 
     ADMIN = "A"
     MEMBER = "M"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}-{self.pk}"
 
-    def has_member(self, user):
+    def has_member(self, user: UserType) -> bool:
         memberships = GroupMembership.objects.filter(group=self, user=user)
         return memberships.all().exists()
 
-    def has_admin(self, user):
+    def has_admin(self, user: UserType) -> bool:
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
         return memberships.all().filter(type="A").filter(user=user).exists()
 
-    def get_pennkey_active_members(self):
+    def get_pennkey_active_members(self) -> list[UserType]:
         memberships = GroupMembership.objects.filter(group=self, accepted=True)
         pennkey_active_members_list = memberships.all().filter(pennkey_allow=True).all()
         return [member for member in pennkey_active_members_list]
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         super().save(*args, **kwargs)
         GroupMembership.objects.get_or_create(
             group=self, user=self.owner, type=GroupMembership.ADMIN, accepted=True
@@ -85,7 +101,7 @@ class Group(models.Model):
 
 
 class GSRManager(models.Manager):
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         return super().get_queryset().filter(in_use=True)
 
 
@@ -95,43 +111,53 @@ class GSR(models.Model):
     KIND_LIBCAL = "LIBCAL"
     KIND_OPTIONS = ((KIND_WHARTON, "Wharton"), (KIND_LIBCAL, "Libcal"))
 
-    kind = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_LIBCAL)
-    lid = models.CharField(max_length=255)
-    gid = models.IntegerField(null=True)
-    name = models.CharField(max_length=255)
-    image_url = models.URLField()
+    kind: models.CharField = models.CharField(
+        max_length=7, choices=KIND_OPTIONS, default=KIND_LIBCAL
+    )
+    id: int
+    lid: models.CharField = models.CharField(max_length=255)
+    gid: models.IntegerField = models.IntegerField(null=True)
+    name: models.CharField = models.CharField(max_length=255)
+    image_url: models.URLField = models.URLField()
 
-    in_use = models.BooleanField(default=True)
+    in_use: models.BooleanField = models.BooleanField(default=True)
 
     objects = GSRManager()
-    all_objects = models.Manager()  # for admin page
+    all_objects: models.Manager = models.Manager()  # for admin page
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}: {self.lid}-{self.gid}"
 
 
 class Reservation(models.Model):
-    start = models.DateTimeField(default=timezone.now)
-    end = models.DateTimeField(default=timezone.now)
-    creator = models.ForeignKey(User, on_delete=models.CASCADE)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True)
-    is_cancelled = models.BooleanField(default=False)
-    reminder_sent = models.BooleanField(default=False)
+    id: int
+    start: models.DateTimeField = models.DateTimeField(default=timezone.now)
+    end: models.DateTimeField = models.DateTimeField(default=timezone.now)
+    creator: models.ForeignKey = models.ForeignKey(User, on_delete=models.CASCADE)
+    group: models.ForeignKey = models.ForeignKey(
+        Group, on_delete=models.CASCADE, null=True, blank=True
+    )
+    is_cancelled: models.BooleanField = models.BooleanField(default=False)
+    reminder_sent: models.BooleanField = models.BooleanField(default=False)
+
+    gsrbooking_set: QuerySet
 
 
 class GSRBooking(models.Model):
     # TODO: change to non-null after reservations are created for current bookings
-    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, null=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-    booking_id = models.CharField(max_length=255, null=True, blank=True)
-    gsr = models.ForeignKey(GSR, on_delete=models.CASCADE)
-    room_id = models.IntegerField()
-    room_name = models.CharField(max_length=255)
-    start = models.DateTimeField(default=timezone.now)
-    end = models.DateTimeField(default=timezone.now)
-    is_cancelled = models.BooleanField(default=False)
+    reservation: models.ForeignKey = models.ForeignKey(
+        Reservation, on_delete=models.CASCADE, null=True
+    )
+    user: models.ForeignKey = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    booking_id: models.CharField = models.CharField(max_length=255, null=True, blank=True)
+    gsr: models.ForeignKey = models.ForeignKey(GSR, on_delete=models.CASCADE)
+    room_id: models.IntegerField = models.IntegerField()
+    room_name: models.CharField = models.CharField(max_length=255)
+    start: models.DateTimeField = models.DateTimeField(default=timezone.now)
+    end: models.DateTimeField = models.DateTimeField(default=timezone.now)
+    is_cancelled: models.BooleanField = models.BooleanField(default=False)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user} - {self.gsr.name} - {self.start} - {self.end}"
 
 

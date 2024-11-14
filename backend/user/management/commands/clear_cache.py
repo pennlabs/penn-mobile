@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import redis
 from django.conf import settings
@@ -10,7 +11,7 @@ from django.core.management import BaseCommand
 # https://github.com/pennlabs/penn-courses/blob/master/backend/review/management/commands/clearcache.py
 
 
-def clear_cache():
+def clear_cache() -> int:
     # If we are not using redis as the cache backend, then we can delete everything from the cache.
     if (
         settings.CACHES is None
@@ -30,9 +31,9 @@ def clear_cache():
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         root_logger = logging.getLogger("")
         root_logger.setLevel(logging.DEBUG)
 
         del_count = clear_cache()
-        print(f"{del_count if del_count >=0 else 'all'} cache entries removed.")
+        print(f"{del_count if del_count >= 0 else 'all'} cache entries removed.")

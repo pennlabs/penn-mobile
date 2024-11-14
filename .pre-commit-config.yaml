@@ -3,9 +3,34 @@ repos:
     rev: v1.1-mobile-backend
     hooks:
       - id: black
-        args: [-l100]
+        args: [-l100, --config, backend/pyproject.toml]
       - id: isort
         args: []
       - id: flake8
         args: [--config, backend/setup.cfg]
       - id: detect-private-key
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-requests
+          - types-python-dateutil
+          - django-stubs
+          - djangorestframework-stubs
+          - types-PyYAML
+          - types-redis
+          - types-pytz
+        files: ^backend/
+        exclude: ^backend/.*/migrations/.*$
+        args: [
+          --ignore-missing-imports,
+          --disallow-untyped-defs,
+          --check-untyped-defs,
+          --warn-redundant-casts,
+          --no-implicit-optional,
+          --strict-optional,
+          --warn-unused-ignores,
+          --disallow-incomplete-defs,
+        ]

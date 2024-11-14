@@ -1,19 +1,29 @@
 import datetime
+from typing import Any
 
-from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from portal.models import Poll, PollOption, PollVote, TargetPopulation
 from user.models import Profile
-
-
-User = get_user_model()
+from utils.types import DjangoUserModel, UserType
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def _create_user(
+        self, username: str, email: str, password: str, graduation_date: datetime.date
+    ) -> UserType:
+        """Helper to create a user with profile"""
+        if not DjangoUserModel.objects.filter(username=username).exists():
+            user = DjangoUserModel.objects.create_user(username, email, password)
+            profile = Profile.objects.get(user=user)
+            setattr(profile, "expected_graduation", graduation_date)
+            profile.save()
+            return user
+        return DjangoUserModel.objects.get(username=username)
+
+    def handle(self, *args: Any, **kwargs: Any) -> None:
 
         # Define graduation years
         df_2022 = datetime.date(2022, 5, 15)
@@ -22,55 +32,12 @@ class Command(BaseCommand):
         df_2025 = datetime.date(2025, 5, 17)
 
         # Create users and set graduation years
-        if not User.objects.filter(username="user1").first():
-            user1 = User.objects.create_user("user1", "user@seas.upenn.edu", "user")
-            user1_profile = Profile.objects.get(user=user1)
-            user1_profile.expected_graduation = df_2022
-            user1_profile.save()
-        else:
-            user1 = User.objects.get(username="user1")
-
-        if not User.objects.filter(username="user2").first():
-            user2 = User.objects.create_user("user2", "user2@seas.upenn.edu", "user2")
-            user2_profile = Profile.objects.get(user=user2)
-            user2_profile.expected_graduation = df_2023
-            user2_profile.save()
-        else:
-            user2 = User.objects.get(username="user2")
-
-        if not User.objects.filter(username="user3").first():
-            user3 = User.objects.create_user("user3", "user3@seas.upenn.edu", "user3")
-            user3_profile = Profile.objects.get(user=user3)
-            user3_profile.expected_graduation = df_2024
-            user3_profile.save()
-        else:
-            user3 = User.objects.get(username="user3")
-
-        if not User.objects.filter(username="user_cas").first():
-            user_cas = User.objects.create_user("user_cas", "user@sas.upenn.edu", "user_cas")
-            user_cas_profile = Profile.objects.get(user=user_cas)
-            user_cas_profile.expected_graduation = df_2025
-            user_cas_profile.save()
-        else:
-            user_cas = User.objects.get(username="user_cas")
-
-        if not User.objects.filter(username="user_wh").first():
-            user_wh = User.objects.create_user("user_wh", "user@wharton.upenn.edu", "user_wh")
-            user_wh_profile = Profile.objects.get(user=user_wh)
-            user_wh_profile.expected_graduation = df_2024
-            user_wh_profile.save()
-        else:
-            user_wh = User.objects.get(username="user_wh")
-
-        if not User.objects.filter(username="user_nursing").first():
-            user_nursing = User.objects.create_user(
-                "user_nursing", "user@nursing.upenn.edu", "user_nursing"
-            )
-            user_nursing_profile = Profile.objects.get(user=user_nursing)
-            user_nursing_profile.expected_graduation = df_2023
-            user_nursing_profile.save()
-        else:
-            user_nursing = User.objects.get(username="user_nursing")
+        self._create_user("user1", "user@seas.upenn.edu", "user", df_2022)
+        self._create_user("user2", "user2@seas.upenn.edu", "user2", df_2023)
+        self._create_user("user3", "user3@seas.upenn.edu", "user3", df_2024)
+        self._create_user("user_cas", "user@sas.upenn.edu", "user_cas", df_2025)
+        self._create_user("user_wh", "user@wharton.upenn.edu", "user_wh", df_2024)
+        self._create_user("user_nursing", "user@nursing.upenn.edu", "user_nursing", df_2023)
 
         # Create target populations
         call_command("load_target_populations", "--years", "2022, 2023, 2024, 2025")

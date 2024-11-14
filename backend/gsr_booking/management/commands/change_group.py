@@ -1,3 +1,6 @@
+from argparse import ArgumentParser
+from typing import Any
+
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db.models import Q
@@ -13,12 +16,12 @@ class Command(BaseCommand):
     Adds/remove users to a group.
     """
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("usernames", type=str, help="list of pennkeys")
         parser.add_argument("group", type=str, help="group name")
         parser.add_argument("mode", type=str, help="mode of operation (add/remove/reset)")
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         usernames = kwargs["usernames"].split(",")
         group = kwargs["group"]
         mode = kwargs["mode"].lower()

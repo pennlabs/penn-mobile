@@ -1,4 +1,5 @@
 import csv
+from typing import Any
 
 from django.core.management.base import BaseCommand
 
@@ -6,7 +7,7 @@ from laundry.models import LaundryRoom
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
 
         with open("laundry/data/laundry_data.csv") as data:
             reader = csv.reader(data)

@@ -1,10 +1,14 @@
-from django.contrib.auth import get_user_model
-from django.db.models import prefetch_related_objects
+from typing import Any, Type, cast
+
+from django.db.models import Manager, QuerySet, prefetch_related_objects
+from django.http import QueryDict
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from rest_framework import exceptions, generics, mixins, status, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from pennmobile.analytics import Metric, record_analytics
@@ -17,6 +21,7 @@ from sublet.permissions import (
 )
 from sublet.serializers import (
     AmenitySerializer,
+    BaseModelSerializer,
     OfferSerializer,
     SubletImageSerializer,
     SubletImageURLSerializer,
@@ -24,37 +29,32 @@ from sublet.serializers import (
     SubletSerializerRead,
     SubletSerializerSimple,
 )
-
-
-User = get_user_model()
+from utils.types import get_user
 
 
 class Amenities(generics.ListAPIView):
     serializer_class = AmenitySerializer
     queryset = Amenity.objects.all()
 
-    def get(self, request, *args, **kwargs):
-        temp = super().get(self, request, *args, **kwargs).data
-        response_data = [a["name"] for a in temp]
-        return Response(response_data)
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        temp = super().get(request, *args, **kwargs).data
+        return Response([a["name"] for a in temp])
 
 
 class UserFavorites(generics.ListAPIView):
     serializer_class = SubletSerializerSimple
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        user = self.request.user
-        return user.sublets_favorited
+    def get_queryset(self) -> QuerySet[Sublet, Manager[Sublet]]:
+        return get_user(self.request).sublets_favorited
 
 
 class UserOffers(generics.ListAPIView):
     serializer_class = OfferSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        user = self.request.user
-        return Offer.objects.filter(user=user)
+    def get_queryset(self) -> QuerySet[Offer, Manager[Offer]]:
+        return Offer.objects.filter(user=get_user(self.request))
 
 
 class Properties(viewsets.ModelViewSet):
@@ -74,23 +74,23 @@ class Properties(viewsets.ModelViewSet):
 
     permission_classes = [SubletOwnerPermission | IsSuperUser]
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Type[BaseModelSerializer]:
         return SubletSerializerRead if self.action == "retrieve" else SubletSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Sublet, Manager[Sublet]]:
         return Sublet.objects.all()
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)  # Check if the data is valid
         instance = serializer.save()  # Create the Sublet
         instance_serializer = SubletSerializerRead(instance=instance, context={"request": request})
 
-        record_analytics(Metric.SUBLET_CREATED, request.user.username)
+        record_analytics(Metric.SUBLET_CREATED, get_user(request).username)
 
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED)
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -99,7 +99,7 @@ class Properties(viewsets.ModelViewSet):
 
         queryset = self.filter_queryset(self.get_queryset())
         # no clue what this does but I copied it from the DRF source code
-        if queryset._prefetch_related_lookups:
+        if hasattr(queryset, "_prefetch_related_lookups"):
             # If 'prefetch_related' has been applied to a queryset, we need to
             # forcibly invalidate the prefetch cache on the instance,
             # and then re-prefetch related objects
@@ -126,61 +126,61 @@ class Properties(viewsets.ModelViewSet):
     #     sublet.save()
     # return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Returns a list of Sublets that match query parameters and user ownership."""
         # Get query parameters from request (e.g., amenities, user_owned)
         params = request.query_params
-        amenities = params.getlist("amenities")
-        title = params.get("title")
-        address = params.get("address")
-        subletter = params.get("subletter", "false")  # Defaults to False if not specified
-        starts_before = params.get("starts_before", None)
-        starts_after = params.get("starts_after", None)
-        ends_before = params.get("ends_before", None)
-        ends_after = params.get("ends_after", None)
-        min_price = params.get("min_price", None)
-        max_price = params.get("max_price", None)
-        negotiable = params.get("negotiable", None)
-        beds = params.get("beds", None)
-        baths = params.get("baths", None)
+        queryset: QuerySet[Sublet, Manager[Sublet]] = self.get_queryset()
 
-        queryset = self.get_queryset()
-
-        # Apply filters based on query parameters
-
-        if subletter.lower() == "true":
-            queryset = queryset.filter(subletter=request.user)
+        if params.get("subletter", "false").lower() == "true":
+            queryset = queryset.filter(subletter=get_user(request))
         else:
             queryset = queryset.filter(expires_at__gte=timezone.now())
-        if title:
-            queryset = queryset.filter(title__icontains=title)
-        if address:
-            queryset = queryset.filter(address__icontains=address)
-        if amenities:
+
+        date_filters = {}
+        if end_before := params.get("ends_before"):
+            if parsed_date := parse_date(end_before):
+                date_filters["end_date__lte"] = parsed_date
+        if end_after := params.get("ends_after"):
+            if parsed_date := parse_date(end_after):
+                date_filters["end_date__gte"] = parsed_date
+        if starts_before := params.get("starts_before"):
+            if parsed_date := parse_date(starts_before):
+                date_filters["start_date__lte"] = parsed_date
+        if starts_after := params.get("starts_after"):
+            if parsed_date := parse_date(starts_after):
+                date_filters["start_date__gte"] = parsed_date
+
+        numeric_filters = {}
+        if min_price := params.get("min_price"):
+            try:
+                numeric_filters["price__gte"] = int(min_price)
+            except ValueError:
+                pass
+        if max_price := params.get("max_price"):
+            try:
+                numeric_filters["price__lte"] = int(max_price)
+            except ValueError:
+                pass
+
+        basic_filters = {
+            "title__icontains": params.get("title"),
+            "address__icontains": params.get("address"),
+            "beds": params.get("beds"),
+            "baths": params.get("baths"),
+            "negotiable": params.get("negotiable"),
+        }
+
+        all_filters = {**basic_filters, **date_filters, **numeric_filters}
+        active_filters = {k: v for k, v in all_filters.items() if v is not None}
+        queryset = queryset.filter(**active_filters)
+
+        if amenities := params.getlist("amenities"):
             for amenity in amenities:
                 queryset = queryset.filter(amenities__name=amenity)
-        if starts_before:
-            queryset = queryset.filter(start_date__lt=starts_before)
-        if starts_after:
-            queryset = queryset.filter(start_date__gt=starts_after)
-        if ends_before:
-            queryset = queryset.filter(end_date__lt=ends_before)
-        if ends_after:
-            queryset = queryset.filter(end_date__gt=ends_after)
-        if min_price:
-            queryset = queryset.filter(price__gte=min_price)
-        if max_price:
-            queryset = queryset.filter(price__lte=max_price)
-        if negotiable:
-            queryset = queryset.filter(negotiable=negotiable)
-        if beds:
-            queryset = queryset.filter(beds=beds)
-        if baths:
-            queryset = queryset.filter(baths=baths)
 
-        record_analytics(Metric.SUBLET_BROWSE, request.user.username)
+        record_analytics(Metric.SUBLET_BROWSE, get_user(request).username)
 
-        # Serialize and return the queryset
         serializer = SubletSerializerSimple(queryset, many=True)
         return Response(serializer.data)
 
@@ -189,18 +189,18 @@ class CreateImages(generics.CreateAPIView):
     serializer_class = SubletImageSerializer
     http_method_names = ["post"]
     permission_classes = [SubletImageOwnerPermission | IsSuperUser]
-    parser_classes = (
-        MultiPartParser,
-        FormParser,
-    )
+    parser_classes = (MultiPartParser, FormParser)
 
-    def get_queryset(self, *args, **kwargs):
+    def get_queryset(
+        self, *args: Any, **kwargs: Any
+    ) -> QuerySet[SubletImage, Manager[SubletImage]]:
         sublet = get_object_or_404(Sublet, id=int(self.kwargs["sublet_id"]))
         return SubletImage.objects.filter(sublet=sublet)
 
     # takes an image multipart form data and creates a new image object
-    def post(self, request, *args, **kwargs):
-        images = request.data.getlist("images")
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        data = cast(QueryDict, request.data)
+        images = data.getlist("images")
         sublet_id = int(self.kwargs["sublet_id"])
         self.get_queryset()  # check if sublet exists
         img_serializers = []
@@ -209,8 +209,10 @@ class CreateImages(generics.CreateAPIView):
             img_serializer.is_valid(raise_exception=True)
             img_serializers.append(img_serializer)
         instances = [img_serializer.save() for img_serializer in img_serializers]
-        data = [SubletImageURLSerializer(instance=instance).data for instance in instances]
-        return Response(data, status=status.HTTP_201_CREATED)
+        serialized_data = [
+            SubletImageURLSerializer(instance=instance).data for instance in instances
+        ]
+        return Response(serialized_data, status=status.HTTP_201_CREATED)
 
 
 class DeleteImage(generics.DestroyAPIView):
@@ -219,10 +221,10 @@ class DeleteImage(generics.DestroyAPIView):
     permission_classes = [SubletImageOwnerPermission | IsSuperUser]
     queryset = SubletImage.objects.all()
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         queryset = self.get_queryset()
         filter = {"id": self.kwargs["image_id"]}
-        obj = get_object_or_404(queryset, **filter)
+        obj: SubletImage = get_object_or_404(queryset, **filter)
         # checking permissions here is kind of redundant
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
@@ -234,26 +236,26 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
     http_method_names = ["post", "delete"]
     permission_classes = [IsAuthenticated | IsSuperUser]
 
-    def get_queryset(self):
-        user = self.request.user
+    def get_queryset(self) -> QuerySet[Sublet, Manager[Sublet]]:
+        user = get_user(self.request)
         return user.sublets_favorited
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         sublet_id = int(self.kwargs["sublet_id"])
         queryset = self.get_queryset()
         if queryset.filter(id=sublet_id).exists():
             raise exceptions.NotAcceptable("Favorite already exists")
         sublet = get_object_or_404(Sublet, id=sublet_id)
-        self.get_queryset().add(sublet)
+        get_user(self.request).sublets_favorited.add(sublet)
 
-        record_analytics(Metric.SUBLET_FAVORITED, request.user.username)
+        record_analytics(Metric.SUBLET_FAVORITED, get_user(request).username)
 
         return Response(status=status.HTTP_201_CREATED)
 
-    def destroy(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        sublet = get_object_or_404(queryset, pk=int(self.kwargs["sublet_id"]))
-        self.get_queryset().remove(sublet)
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        queryset = cast(QuerySet, self.get_queryset())
+        sublet: Sublet = get_object_or_404(queryset, pk=int(self.kwargs["sublet_id"]))
+        get_user(self.request).sublets_favorited.remove(sublet)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -272,35 +274,37 @@ class Offers(viewsets.ModelViewSet):
     permission_classes = [OfferOwnerPermission | IsSuperUser]
     serializer_class = OfferSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Offer, Manager[Offer]]:
         return Offer.objects.filter(sublet_id=int(self.kwargs["sublet_id"])).order_by(
             "created_date"
         )
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         data = request.data
-        request.POST._mutable = True
-        if self.get_queryset().filter(user=self.request.user).exists():
+        if isinstance(data, QueryDict):
+            data._mutable = True
+        if self.get_queryset().filter(user=get_user(self.request)).exists():
             raise exceptions.NotAcceptable("Offer already exists")
         data["sublet"] = int(self.kwargs["sublet_id"])
-        data["user"] = self.request.user.id
+        data["user"] = get_user(self.request).id
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        record_analytics(Metric.SUBLET_OFFER, request.user.username)
+        record_analytics(Metric.SUBLET_OFFER, get_user(request).username)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         queryset = self.get_queryset()
-        filter = {"user": self.request.user.id, "sublet": int(self.kwargs["sublet_id"])}
-        obj = get_object_or_404(queryset, **filter)
+        filter = {"user": get_user(self.request).id, "sublet": int(self.kwargs["sublet_id"])}
+        obj: Offer = get_object_or_404(queryset, **filter)
         # checking permissions here is kind of redundant
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def list(self, request, *args, **kwargs):
-        self.check_object_permissions(request, Sublet.objects.get(pk=int(self.kwargs["sublet_id"])))
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        sublet = get_object_or_404(Sublet, pk=int(self.kwargs["sublet_id"]))
+        self.check_object_permissions(request, sublet)
         return super().list(request, *args, **kwargs)

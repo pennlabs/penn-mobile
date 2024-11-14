@@ -1,6 +1,7 @@
 import datetime
 import html
 import json
+from typing import Any
 
 import requests
 from django.core.management.base import BaseCommand
@@ -12,7 +13,7 @@ ENGINEERING_EVENTS_WEBSITE = "https://events.seas.upenn.edu/calendar/list/"
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         try:
             resp = requests.get(ENGINEERING_EVENTS_WEBSITE)
         except ConnectionError:
