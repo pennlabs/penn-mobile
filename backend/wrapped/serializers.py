@@ -1,66 +1,29 @@
 from rest_framework import serializers
-from .models import Page, IndividualStat, GlobalStat, IndividualStatPageField, GlobalStatPageField, Semester, User
 
-class IndividualStatSerializer(serializers.ModelSerializer):
-    key = serializers.SlugRelatedField(
-        slug_field='key',  
-        read_only=True
-    )
-    class Meta:
-        model = IndividualStat
-        fields = ['key', 'value', 'semester']
+from wrapped.models import GlobalStatPageField, IndividualStatPageField, Page, Semester
 
 
-class GlobalStatSerializer(serializers.ModelSerializer):
-    key = serializers.SlugRelatedField(
-        slug_field='key', 
-        read_only=True
-    )
-    class Meta:
-        model = GlobalStat
-        fields = ['key', 'value', 'semester']
-
-
-class IndividualStatPageFieldSerializer(serializers.ModelSerializer):
-    individual_stat_value = serializers.SerializerMethodField()
+class PageFieldSerializer(serializers.ModelSerializer):
+    stat_value = serializers.SerializerMethodField()
 
     class Meta:
+        abstract = True
+        fields = ["text_field_name", "stat_value"]
+
+    def get_stat_value(self, obj):
+        user = self.context.get("user")
+        semester = self.context.get("semester")
+        return obj.get_value(user, semester)
+
+
+class IndividualStatPageFieldSerializer(PageFieldSerializer):
+    class Meta(PageFieldSerializer.Meta):
         model = IndividualStatPageField
-        fields = ['text_field_name', 'individual_stat_value']
-
-    def get_individual_stat_value(self, obj):
-        user = self.context.get('user')
-        semester = self.context.get('semester')
-
-        try:
-            individual_stat = IndividualStat.objects.filter(
-                user=user,
-                key=obj.individual_stat_key,
-                semester=semester
-            ).first()
-            return individual_stat.value
-        except IndividualStat.DoesNotExist:
-            return None
 
 
-class GlobalStatThroughSerializer(serializers.ModelSerializer):
-    global_stat_value = serializers.SerializerMethodField()
-
-    class Meta:
+class GlobalStatPageFieldSerializer(PageFieldSerializer):
+    class Meta(PageFieldSerializer.Meta):
         model = GlobalStatPageField
-        fields = ['text_field_name', 'global_stat_value']
-
-    def get_global_stat_value(self, obj):
-        semester = self.context.get('semester')
-        try:
-            global_stat = GlobalStat.objects.filter(
-                key=obj.global_stat_key.key,
-                semester=semester
-            ).first()
-            return global_stat.value
-        except GlobalStat.DoesNotExist:
-            return None
-
 
 
 class PageSerializer(serializers.ModelSerializer):
@@ -69,26 +32,27 @@ class PageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Page
-        fields = ['name', 'template_path', 'combined_stats', 'duration']
+        fields = ["name", "template_path", "combined_stats", "duration"]
 
     def get_combined_stats(self, obj):
-        user = self.context.get('user')
-        semester = self.context.get('semester')
-        combined_stats = {}
+        if not (semester := self.context.get("semester", obj)):
+            return {}
+        user = self.context.get("user")
+        individual_stat_fields = IndividualStatPageFieldSerializer(
+            obj.individualstatpagefield_set.all(),
+            context={"semester": semester, "user": user},
+            many=True,
+        ).data
 
-        for entry in obj.individualstatpagefield_set.all():
-            individual_stat_serializer = IndividualStatPageFieldSerializer(
-                entry, context={'user': user, 'semester': semester}
-            )
-            combined_stats[entry.text_field_name] = individual_stat_serializer.data.get('individual_stat_value')
+        global_stat_fields = GlobalStatPageFieldSerializer(
+            obj.globalstatpagefield_set.all(),
+            context={"semester": semester, "user": user},
+            many=True,
+        ).data
 
-        for entry in obj.globalstatpagefield_set.all():
-            global_stat_serializer = GlobalStatThroughSerializer(
-                entry, context={'semester': semester}
-            )
-            combined_stats[entry.text_field_name] = global_stat_serializer.data.get('global_stat_value')
+        field_list = individual_stat_fields + global_stat_fields
 
-        return combined_stats
+        return {field["text_field_name"]: field["stat_value"] for field in field_list}
 
 
 class SemesterSerializer(serializers.ModelSerializer):
@@ -96,9 +60,10 @@ class SemesterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Semester
-        fields = ['semester', 'pages']
+        fields = ["semester", "pages"]
 
     def get_pages(self, obj):
-        user = self.context.get('user')
-        return PageSerializer(obj.pages.all(), many=True, context={'user': user, 'semester': obj}).data
-    
+        user = self.context.get("user")
+        return PageSerializer(
+            obj.pages.all(), many=True, context={"semester": obj, "user": user}
+        ).data
