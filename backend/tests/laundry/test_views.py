@@ -8,13 +8,13 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from laundry.models import LaundryRoom, LaundrySnapshot
-from tests.laundry.test_commands import fakeLaundryGet
+from tests.laundry.test_commands import mock_laundry_get
 
 
 User = get_user_model()
 
 
-@mock.patch("requests.get", fakeLaundryGet)
+@mock.patch("requests.get", mock_laundry_get)
 class HallIdViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -42,7 +42,7 @@ class HallIdViewTestCase(TestCase):
             )
 
 
-@mock.patch("requests.get", fakeLaundryGet)
+@mock.patch("requests.get", mock_laundry_get)
 class HallInfoViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -74,7 +74,7 @@ class HallInfoViewTestCase(TestCase):
         self.assertEqual(404, response.status_code)
 
 
-@mock.patch("requests.get", fakeLaundryGet)
+@mock.patch("requests.get", mock_laundry_get)
 class MultipleHallInfoViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -116,7 +116,7 @@ class MultipleHallInfoViewTestCase(TestCase):
         self.assertEqual(404, response.status_code)
 
 
-@mock.patch("requests.get", fakeLaundryGet)
+@mock.patch("requests.get", mock_laundry_get)
 class HallUsageViewTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(
@@ -148,7 +148,7 @@ class HallUsageViewTestCase(TestCase):
         self.assertEqual(self.snapshot.available_dryers, res_json["dryer_data"][str(hour)])
 
 
-@mock.patch("requests.get", fakeLaundryGet)
+@mock.patch("requests.get", mock_laundry_get)
 class PreferencesTestCase(TestCase):
     def setUp(self):
         LaundryRoom.objects.get_or_create(

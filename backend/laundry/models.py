@@ -3,7 +3,7 @@ from django.utils import timezone
 
 
 class LaundryRoom(models.Model):
-    room_id = models.IntegerField(default=0)
+    room_id = models.IntegerField(default=0, primary_key=True)
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
     location_id = models.IntegerField(default=0)

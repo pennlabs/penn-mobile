@@ -6,6 +6,13 @@ from django.core.management.base import BaseCommand
 from requests.exceptions import HTTPError
 
 
+def write_file(laundry_rooms):
+    with open("laundry/data/laundry_data.csv", "w") as f:
+        writer = csv.DictWriter(f, laundry_rooms[0].keys())
+        writer.writeheader()
+        writer.writerows(laundry_rooms)
+
+
 class Command(BaseCommand):
     help = "Update laundry rooms csv from server"
 
@@ -65,15 +72,4 @@ class Command(BaseCommand):
             room["count_washers"] = count_washers
             room["count_dryers"] = count_dryers
 
-        # write to csv
-        keys = [
-            "room_id",
-            "room_name",
-            "room_description",
-            "room_location",
-            "count_washers",
-            "count_dryers",
-        ]
-        with open("laundry/data/laundry_data.csv", "w") as f:
-            writer = csv.DictWriter(f, keys)
-            writer.writerows(laundry_rooms)
+        write_file(laundry_rooms)
