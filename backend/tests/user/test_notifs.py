@@ -33,6 +33,7 @@ class MockAPNsClient:
         del notifications, topic
         pass
 
+
 def mock_client(is_dev):
     return MockAPNsClient()
 
@@ -83,6 +84,7 @@ class TestNotificationService(TransactionTestCase):
 
     def setUp(self):
         from pennmobile.celery import app
+
         app.conf.task_always_eager = True
         NotificationService.objects.bulk_create(
             [
@@ -157,7 +159,6 @@ class TestNotificationAlert(TestCase):
         initialize_b2b()
 
     @mock.patch("user.notifications.IOSNotificationWrapper.get_client", mock_client)
-    
     def test_failed_notif(self):
         # missing title
         payload = {"body": ":D", "service": "PENN_MOBILE"}
