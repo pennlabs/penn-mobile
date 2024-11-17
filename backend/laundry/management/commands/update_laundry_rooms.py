@@ -45,14 +45,7 @@ class Command(BaseCommand):
             if room_request_json is None:
                 return
             # count washers and dryers
-            count_washers = 0
-            count_dryers = 0
-            for machine in room_request_json:
-                if machine["isWasher"]:
-                    count_washers += 1
-                if machine["isDryer"]:
-                    count_dryers += 1
-            room["count_washers"] = count_washers
-            room["count_dryers"] = count_dryers
+            room["count_washers"] = len([machine for machine in room_request_json if machine["isWasher"]])
+            room["count_dryers"] = len([machine for machine in room_request_json if machine["isDryer"]])
 
         write_file(laundry_rooms)
