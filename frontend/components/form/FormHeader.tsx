@@ -35,13 +35,14 @@ const FormHeader = ({ createMode, state, prevOptionIds }: iFormHeaderProps) => {
     const form_data = new FormData()
     if (isPost(state)) {
       Object.entries(state).forEach(([key, value]) => {
+        if (value === null) return
         if (key === 'start_date' || key === 'expire_date') {
           const val = (value as Date)?.toISOString()
           form_data.append(key, val)
-        } else if (key !== 'image') {
-          form_data.append(key, value?.toString())
-        } else {
+        } else if (key === 'image') {
           form_data.append(key, value)
+        } else {
+          form_data.append(key, value?.toString())
         }
       })
     }

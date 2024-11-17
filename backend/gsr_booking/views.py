@@ -11,66 +11,31 @@ from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
-from gsr_booking.serializers import (
-    GroupMembershipSerializer,
-    GroupSerializer,
-    GSRSerializer,
-    UserSerializer,
-)
+from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, GSRSerializer
 from pennmobile.analytics import Metric, record_analytics
 
 
 User = get_user_model()
 
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    Can specify `me` instead of the `username` to retrieve details on the current user.
-    """
-
-    queryset = User.objects.all().prefetch_related(
-        Prefetch("booking_groups", Group.objects.filter(memberships__accepted=True))
-    )
+class MyMembershipViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
-    serializer_class = UserSerializer
-    lookup_field = "username"
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["username", "first_name", "last_name"]
-
-    def get_object(self):
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        param = self.kwargs[lookup_url_kwarg]
-        if param == "me":
-            return self.request.user
-        else:
-            return super().get_object()
+    serializer_class = GroupMembershipSerializer
 
     def get_queryset(self):
-        if not self.request.user.is_authenticated:
-            return User.objects.none()
+        return GroupMembership.objects.filter(user=self.request.user, accepted=True)
 
-        queryset = User.objects.all()
-        queryset = queryset.prefetch_related(
-            Prefetch(
-                "memberships",
-                GroupMembership.objects.filter(
-                    group__in=self.request.user.booking_groups.all(), accepted=True
-                ),
-            )
-        )
-        return queryset
-
-    @action(detail=True, methods=["get"])
-    def invites(self, request, username=None):
+    @action(detail=False, methods=["get"])
+    def invites(self, request):
         """
         Retrieve all invites for a given user.
         """
-
-        user = get_object_or_404(User, username=username)
         return Response(
             GroupMembershipSerializer(
                 GroupMembership.objects.filter(
-                    user=user, accepted=False, group__in=self.request.user.booking_groups.all()
+                    user=request.user,
+                    accepted=False,
+                    group__in=self.request.user.booking_groups.all(),
                 ),
                 many=True,
             ).data

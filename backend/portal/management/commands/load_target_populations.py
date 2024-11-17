@@ -43,7 +43,7 @@ class Command(BaseCommand):
         # creates new class year in August in preparation for upcoming school year
         if years is None:
             return (
-                [+x for x in range(4)]
+                [timezone.localtime().year + x for x in range(4)]
                 if timezone.localtime().month < 8
                 else [timezone.localtime().year + x for x in range(1, 5)]
             )

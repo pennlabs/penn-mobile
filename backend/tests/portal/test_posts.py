@@ -9,6 +9,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from portal.models import Post, TargetPopulation
+from utils.email import get_backend_manager_emails
 
 
 User = get_user_model()
@@ -94,7 +95,9 @@ class TestPosts(TestCase):
         response = self.client.post("/portal/posts/", payload)
         res_json = json.loads(response.content)
         # should not create post under pennlabs if not aprt of pennlabs
-        self.assertEqual("You do not access to create a Poll under this club.", res_json["detail"])
+        self.assertEqual(
+            "You do not have access to create a Post under this club.", res_json["detail"]
+        )
 
     @mock.patch("portal.views.get_user_clubs", mock_get_user_clubs)
     @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
@@ -151,3 +154,44 @@ class TestPosts(TestCase):
         self.assertEqual(1, len(res_json))
         self.assertEqual("notpennlabs", res_json[0]["club_code"])
         self.assertEqual(2, Post.objects.all().count())
+
+    @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("utils.email.send_automated_email.delay_on_commit")
+    def test_send_email_on_create(self, mock_send_email):
+        payload = {
+            "club_code": "pennlabs",
+            "title": "Test Title 2",
+            "subtitle": "Test Subtitle 2",
+            "target_populations": [self.target_id],
+            "expire_date": timezone.localtime() + datetime.timedelta(days=1),
+            "created_at": timezone.localtime(),
+            "admin_comment": "comment 2",
+        }
+        self.client.post("/portal/posts/", payload)
+        mock_send_email.assert_called_once()
+        self.assertEqual(mock_send_email.call_args[0][1], get_backend_manager_emails())
+
+    @mock.patch("portal.serializers.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("portal.permissions.get_user_clubs", mock_get_user_clubs)
+    @mock.patch("utils.email.send_automated_email.delay_on_commit")
+    def test_send_email_on_status_change(self, mock_send_email):
+        payload = {
+            "club_code": "pennlabs",
+            "title": "Test Title 2",
+            "subtitle": "Test Subtitle 2",
+            "target_populations": [self.target_id],
+            "expire_date": timezone.localtime() + datetime.timedelta(days=1),
+            "created_at": timezone.localtime(),
+            "admin_comment": "comment 2",
+        }
+        self.client.force_authenticate(user=self.test_user)
+        self.client.post("/portal/posts/", payload)
+        mock_send_email.assert_called_once()
+
+        post = Post.objects.last()
+        post.status = Post.STATUS_APPROVED
+        post.save()
+
+        self.assertEqual(mock_send_email.call_count, 2)
+        self.assertEqual(mock_send_email.call_args[0][1], [post.creator.email])

@@ -28,7 +28,10 @@ Final Steps:
 - `pipenv run python manage.py migrate`
 - `pipenv run python manage.py runserver 8000`
 
-Setting up precommit:
+Making git blame [correct](https://github.com/pennlabs/penn-mobile/pull/287) (_optional_):
+- `git config blame.ignoreRevsFile .git-blame-ignore-revs`
+
+Setting up precommit (_optional_):
 - `pipenv run pre-commit install`
 
 ## Creating Users
