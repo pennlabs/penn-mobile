@@ -82,9 +82,6 @@ class TestNotificationService(TransactionTestCase):
     """Tests for CRUD Notification Settings"""
 
     def setUp(self):
-        from pennmobile.celery import app
-
-        app.conf.task_always_eager = True
         NotificationService.objects.bulk_create(
             [
                 NotificationService(name="PENN_MOBILE"),
