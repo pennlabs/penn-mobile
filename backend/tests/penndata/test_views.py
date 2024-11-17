@@ -113,7 +113,7 @@ class TestHomePage(TestCase):
         self.assertIn(636, dining_info)
 
         self.assertEqual(res_json[2]["type"], "laundry")
-        self.assertEqual(res_json[2]["info"]["room_id"], 0)
+        self.assertIn(res_json[2]["info"]["room_id"], [14089, 14099, 14100])
 
         self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=747))
         self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=1733))

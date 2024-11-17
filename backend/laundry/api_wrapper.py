@@ -71,24 +71,18 @@ def parse_a_room(room_request_link):
     request_json = get_validated(room_request_link)
     if request_json is None:
         return {"washers": washers, "dryers": dryers, "details": detailed}
-
-    [
-        update_machine_object(machine, washers) if machine["isWasher"] else None
-        for machine in request_json
-    ]
-    [
-        update_machine_object(machine, dryers) if machine["isDryer"] else None
-        for machine in request_json
-    ]
-    [
-        detailed.append(
-            {
-                "id": machine["id"],
-                "type": "washer" if machine["isWasher"] else "dryer",
-                "status": machine["currentStatus"]["statusId"],
-                "time_remaining": machine["currentStatus"]["remainingSeconds"],
-            }
-        )
+    for machine in request_json:
+        if machine["isWasher"]:
+            update_machine_object(machine, washers)
+        elif machine["isDryer"]:
+            update_machine_object(machine, dryers)
+    detailed = [
+        {
+            "id": machine["id"],
+            "type": "washer" if machine["isWasher"] else "dryer",
+            "status": machine["currentStatus"]["statusId"],
+            "time_remaining": machine["currentStatus"]["remainingSeconds"],
+        }
         for machine in request_json
         if machine["isWasher"] or machine["isDryer"]
     ]
@@ -102,9 +96,7 @@ def check_is_working():
     """
 
     all_rooms_request = get_validated(f"{settings.LAUNDRY_URL}/geoBoundaries/5610?raw=true")
-    if all_rooms_request is None:
-        return False
-    return True
+    return all_rooms_request is not None
 
 
 def all_status():
