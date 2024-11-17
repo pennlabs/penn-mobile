@@ -39,7 +39,7 @@ def update_machine_object(machine, machine_type_data):
         time_remaining = machine["currentStatus"]["remainingSeconds"]
         machine_type_data["running"] += 1
         try:
-            machine_type_data["time_remaining"].append(int(time_remaining))
+            machine_type_data["time_remaining"].append(int(time_remaining) // 60)
         except ValueError:
             pass
     elif status in ["AVAILABLE", "COMPLETE"]:
@@ -81,7 +81,11 @@ def parse_a_room(room_request_link):
             "id": machine["id"],
             "type": "washer" if machine["isWasher"] else "dryer",
             "status": machine["currentStatus"]["statusId"],
-            "time_remaining": machine["currentStatus"]["remainingSeconds"],
+            "time_remaining": (
+                int(machine["currentStatus"]["remainingSeconds"]) // 60
+                if machine["currentStatus"]["statusId"] == "IN_USE"
+                else 0
+            ),
         }
         for machine in request_json
         if machine["isWasher"] or machine["isDryer"]
