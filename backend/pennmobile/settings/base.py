@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "accounts.apps.AccountsConfig",
     "identity.apps.IdentityConfig",
     "analytics.apps.AnalyticsConfig",
+    "wrapped.apps.WrappedConfig",
     "django_filters",
     "debug_toolbar",
     "gsr_booking",

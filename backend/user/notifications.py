@@ -19,23 +19,20 @@ if sys.version_info.major >= 3 and sys.version_info.minor >= 10:
     collections.MutableMapping = abc.MutableMapping
 
 from apns2.client import APNsClient
-from apns2.credentials import TokenCredentials
 from apns2.payload import Payload
 from celery import shared_task
-
-from user.models import NotificationToken
 
 
 # taken from the apns2 method for batch notifications
 Notification = collections.namedtuple("Notification", ["token", "payload"])
 
 
-def send_push_notifications(users, service, title, body, delay=0, is_dev=False, is_shadow=False):
+def send_push_notifications(tokens, category, title, body, delay=0, is_dev=False, is_shadow=False):
     """
     Sends push notifications.
 
-    :param users: list of usernames to send notifications to or 'None' if to all
-    :param service: service to send notifications for or 'None' if ignoring settings
+    :param tokens: nonempty list of tokens to send notifications to
+    :param category: category to send notifications for
     :param title: title of notification
     :param body: body of notification
     :param delay: delay in seconds before sending notification
@@ -43,37 +40,15 @@ def send_push_notifications(users, service, title, body, delay=0, is_dev=False, 
     :return: tuple of (list of success usernames, list of failed usernames)
     """
 
-    # collect available usernames & their respective device tokens
-    token_objects = get_tokens(users, service)
-    if not token_objects:
-        return [], users
-    success_users, tokens = zip(*token_objects)
-
     # send notifications
+    if tokens == []:
+        raise ValueError("No tokens to send notifications to.")
+    params = (tokens, title, body, category, is_dev, is_shadow)
+
     if delay:
-        send_delayed_notifications(tokens, title, body, service, is_dev, is_shadow, delay)
+        send_delayed_notifications(*params, delay=delay)
     else:
-        send_immediate_notifications(tokens, title, body, service, is_dev, is_shadow)
-
-    if not users:  # if to all users, can't be any failed pennkeys
-        return success_users, []
-    failed_users = list(set(users) - set(success_users))
-    return success_users, failed_users
-
-
-def get_tokens(users=None, service=None):
-    """Returns list of token objects (with username & token value) for specified users"""
-
-    token_objs = NotificationToken.objects.select_related("user").filter(
-        kind=NotificationToken.KIND_IOS  # NOTE: until Android implementation
-    )
-    if users:
-        token_objs = token_objs.filter(user__username__in=users)
-    if service:
-        token_objs = token_objs.filter(
-            notificationsetting__service=service, notificationsetting__enabled=True
-        )
-    return token_objs.exclude(token="").values_list("user__username", "token")
+        send_immediate_notifications(*params)
 
 
 @shared_task(name="notifications.send_immediate_notifications")
@@ -103,21 +78,21 @@ def send_delayed_notifications(tokens, title, body, category, is_dev, is_shadow,
     )
 
 
-def get_auth_key_path():
-    return os.environ.get(
-        "IOS_KEY_PATH",  # for dev purposes
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ios_key.p8"),
+def get_auth_key_path(is_dev):
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        f"apns-{'dev' if is_dev else 'prod'}.pem",
     )
 
 
 def get_client(is_dev):
     """Creates and returns APNsClient based on iOS credentials"""
 
-    auth_key_path = get_auth_key_path()
-    auth_key_id = "2VX9TC37TB"
-    team_id = "VU59R57FGM"
-    token_credentials = TokenCredentials(
-        auth_key_path=auth_key_path, auth_key_id=auth_key_id, team_id=team_id
-    )
-    client = APNsClient(credentials=token_credentials, use_sandbox=is_dev)
+    # auth_key_path = get_auth_key_path()
+    # auth_key_id = "2VX9TC37TB"
+    # team_id = "VU59R57FGM"
+    # token_credentials = TokenCredentials(
+    #     auth_key_path=auth_key_path, auth_key_id=auth_key_id, team_id=team_id
+    # )
+    client = APNsClient(credentials=get_auth_key_path(is_dev), use_sandbox=is_dev)
     return client
