@@ -48,6 +48,7 @@ webdriver-manager = "*"
 pre-commit = "*"
 alt-profanity-check = "*"
 inflection = "*"
+firebase-admin = "*"
 
 [requires]
 python_version = "3.11"

@@ -10,7 +10,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from user.models import AndroidNotificationToken, IOSNotificationToken, NotificationService
-from user.notifications import send_push_notifications
+from user.notifications import (
+    android_send_notification,
+    ios_send_dev_notification,
+    ios_send_notification,
+)
 from user.serializers import UserSerializer
 
 
@@ -131,7 +135,6 @@ class NotificationAlertView(APIView):
         title = request.data.get("title")
         body = request.data.get("body")
         delay = max(request.data.get("delay", 0), 0)
-        is_dev = request.data.get("is_dev", False)
 
         if None in [service, title, body]:
             return Response({"detail": "Missing required parameters."}, status=400)
@@ -141,14 +144,19 @@ class NotificationAlertView(APIView):
 
         users_with_service = service_obj.enabled_users.filter(username__in=usernames)
 
-        tokens = list(
-            IOSNotificationToken.objects.filter(
-                user__in=users_with_service, is_dev=is_dev
-            ).values_list("token", flat=True)
+        ios_tokens = IOSNotificationToken.objects.filter(user__in=users_with_service, is_dev=False)
+        ios_dev_tokens = IOSNotificationToken.objects.filter(
+            user__in=users_with_service, is_dev=True
         )
+        android_tokens = AndroidNotificationToken.objects.filter(user__in=users_with_service)
 
-        if tokens:
-            send_push_notifications(tokens, service, title, body, delay, is_dev)
+        for tokens, send in [
+            (ios_tokens, ios_send_notification),
+            (ios_dev_tokens, ios_send_dev_notification),
+            (android_tokens, android_send_notification),
+        ]:
+            if tokens_list := list(tokens.values_list("token", flat=True)):
+                send.apply_async(args=(tokens_list, title, body), countdown=delay)
 
         users_with_service_usernames = users_with_service.values_list("username", flat=True)
         users_not_reached_usernames = list(set(usernames) - set(users_with_service_usernames))
