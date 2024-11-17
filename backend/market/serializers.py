@@ -13,13 +13,14 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = "__all__"
+        read_only_fields = [field.name for field in model._meta.fields]
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ["name"]
-        read_only_fields = ["name"]
+        fields = "__all__"
+        read_only_fields = [field.name for field in model._meta.fields]
 
 
 class OfferSerializer(serializers.ModelSerializer):
@@ -41,12 +42,12 @@ class ItemImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ItemImage
-        fields = ["item", "image"]
+        fields = "__all__"
 
 
 # Browse images
 class ItemImageURLSerializer(serializers.ModelSerializer):
-    image_url = serializers.SerializerMethodField("get_image_url")
+    image_url = serializers.SerializerMethodField()
 
     def get_image_url(self, obj):
         image = obj.image
@@ -62,27 +63,18 @@ class ItemImageURLSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ItemImage
-        fields = ["id", "image_url"]
+        fields = "__all__"
+        read_only_fields = [field.name for field in model._meta.fields]
 
 
 # complex item serializer for use in C/U/D + getting info about a singular tag
 class ItemSerializer(serializers.ModelSerializer):
-    # amenities = ItemSerializer(many=True, required=False)
-    images = ItemImageURLSerializer(many=True, required=False)
-
-    tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all(), required=False)
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=True)
-    seller = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
-    favorites = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=User.objects.all(), required=False
-    )
-
     class Meta:
         model = Item
-        read_only_fields = ["id", "created_at", "seller", "buyer", "images"]
         fields = [
             "id",
             "seller",
+            "buyers",
             "tags",
             "category",
             "favorites",
@@ -93,10 +85,8 @@ class ItemSerializer(serializers.ModelSerializer):
             "negotiable",
             "expires_at",
             "images",
-            # images are now created/deleted through a separate endpoint (see urls.py)
-            # this serializer isn't used for getting,
-            # but gets on tags will include ids/urls for images
         ]
+        read_only_fields = ["id", "created_at", "seller", "buyers", "images"]
 
     def validate_title(self, value):
         if self.contains_profanity(value):
@@ -113,11 +103,7 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["seller"] = self.context["request"].user
-        category_name = validated_data.pop("category")
-        category_instance = Category.objects.get(name=category_name)
-        validated_data["category"] = category_instance
         instance = super().create(validated_data)
-        instance.save()
         return instance
 
     # delete_images is a list of image ids to delete
@@ -128,7 +114,6 @@ class ItemSerializer(serializers.ModelSerializer):
             or self.context["request"].user.is_superuser
         ):
             instance = super().update(instance, validated_data)
-            instance.save()
             return instance
         else:
             raise serializers.ValidationError("You do not have permission to update this item.")
@@ -144,13 +129,8 @@ class ItemSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You do not have permission to delete this item.")
 
 
-# simple tag serializer for use when pulling all serializers/etc
-class ItemSerializerSimple(serializers.ModelSerializer):
-    tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all(), required=False)
-    images = ItemImageURLSerializer(many=True, required=False)
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=True)
-    seller = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
-
+# Read-only serializer for use when pulling all items/etc
+class ItemSerializerRead(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = [
@@ -164,17 +144,7 @@ class ItemSerializerSimple(serializers.ModelSerializer):
             "negotiable",
             "images",
         ]
-        read_only_fields = [
-            "id",
-            "seller",
-            "tags",
-            "category",
-            "favorites",
-            "title",
-            "price",
-            "negotiable",
-            "images",
-        ]
+        read_only_fields = fields
 
 
 class SubletSerializer(serializers.ModelSerializer):
@@ -186,12 +156,11 @@ class SubletSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
     def create(self, validated_data):
-        item_data = validated_data.pop("item")
-        item_serializer = ItemSerializer(data=item_data, context=self.context)
+        item_serializer = ItemSerializer(data=validated_data.pop("item"), context=self.context)
         item_serializer.is_valid(raise_exception=True)
-        item_instance = item_serializer.save(seller=self.context["request"].user)
-        sublet_instance = Sublet.objects.create(item=item_instance, **validated_data)
-        return sublet_instance
+        validated_data["item"] = item_serializer.save()
+        instance = super().create(validated_data)
+        return instance
 
     def update(self, instance, validated_data):
         if (

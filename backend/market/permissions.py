@@ -63,6 +63,6 @@ class OfferOwnerPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             # Check if the user owns the item when getting list
-            return obj.seller == request.user
+            return obj.item.seller == request.user
         # This is redundant, here for safety
         return obj.user == request.user

@@ -5,6 +5,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 from market.permissions import (
@@ -19,7 +20,7 @@ from market.serializers import (
     ItemImageSerializer,
     ItemImageURLSerializer,
     ItemSerializer,
-    ItemSerializerSimple,
+    ItemSerializerRead,
     OfferSerializer,
     SubletSerializer,
     TagSerializer,
@@ -30,28 +31,22 @@ from pennmobile.analytics import Metric, record_analytics
 User = get_user_model()
 
 
-class Tags(generics.ListAPIView):
-    serializer_class = TagSerializer
-    queryset = Tag.objects.all()
+class Tags(APIView):
 
-    def get(self, request, *args, **kwargs):
-        temp = super().get(self, request, *args, **kwargs).data
-        response_data = [a["name"] for a in temp]
+    def get(self, request, format=None):
+        response_data = Tag.objects.values_list("name", flat=True)
         return Response(response_data)
 
 
-class Categories(generics.ListAPIView):
-    serializer_class = CategorySerializer
-    queryset = Category.objects.all()
+class Categories(APIView):
 
-    def get(self, request, *args, **kwargs):
-        temp = super().get(self, request, *args, **kwargs).data
-        response_data = [a["name"] for a in temp]
+    def get(self, request, format=None):
+        response_data = Category.objects.values_list("name", flat=True)
         return Response(response_data)
 
 
 class UserFavorites(generics.ListAPIView):
-    serializer_class = ItemSerializerSimple
+    serializer_class = ItemSerializerRead
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -69,7 +64,7 @@ class UserOffers(generics.ListAPIView):
 
 
 def apply_filters(
-    queryset, params, filter_mappings, user=None, is_sublet=False, tag_field="tags__name"
+    queryset, params, filter_mappings, user=None, is_sublet=False
 ):
     # Build dynamic filters based on filter mappings
     filters = {}
@@ -77,30 +72,29 @@ def apply_filters(
         if param_value := params.get(param):
             filters[field] = param_value
 
-    # Handle seller/owner filtering based on user ownership
-
     # Apply basic filters to the queryset
+    queryset = queryset.filter(**filters)
 
-    # Exclude specific categories if provided
+    # Handle seller/owner filtering based on user ownership
     if not is_sublet:
         queryset = queryset.exclude(category__name__in=["Sublet"])
         if params.get("seller", "false").lower() == "true" and user:
             filters["seller"] = user
         else:
             filters["expires_at__gte"] = timezone.now()
+        for tag in params.getlist("tags"):
+            queryset = queryset.filter(**{"tags__name": tag})
     else:
         queryset = queryset.filter(item__category__name__in=["Sublet"])
         if params.get("seller", "false").lower() == "true" and user:
             filters["item__seller"] = user
         else:
             filters["item__expires_at__gte"] = timezone.now()
-
-    queryset = queryset.filter(**filters)
+        for tag in params.getlist("tags"):
+            queryset = queryset.filter(**{"item__tags__name": tag})
 
     # Apply tag filtering iteratively if "tags" parameter is provided
-    if tags := params.getlist("tags"):
-        for tag in tags:
-            queryset = queryset.filter(**{tag_field: tag})
+    
 
     return queryset
 
@@ -124,6 +118,9 @@ class Items(viewsets.ModelViewSet):
     serializer_class = ItemSerializer
     queryset = Item.objects.all()
 
+    def get_serializer_class(self):
+        return ItemSerializerRead if self.action == "list" or self.action == "retrieve" else ItemSerializer
+
     def list(self, request, *args, **kwargs):
         """Returns a list of Items that match query parameters and user ownership."""
         params = request.query_params
@@ -144,7 +141,7 @@ class Items(viewsets.ModelViewSet):
             params=params,
             filter_mappings=filter_mappings,
             user=request.user,
-            is_sublet=True,
+            is_sublet=False,
         )
 
         # Serialize and return the queryset
@@ -184,14 +181,13 @@ class Sublets(viewsets.ModelViewSet):
             filter_mappings=filter_mappings,
             user=request.user,
             is_sublet=True,
-            tag_field="item__tags__name",
         )
 
         # Serialize and return the queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-
+# This doesn't use CreateAPIView's functionality since we overrode the create method
 class CreateImages(generics.CreateAPIView):
     serializer_class = ItemImageSerializer
     http_method_names = ["post"]
@@ -210,11 +206,9 @@ class CreateImages(generics.CreateAPIView):
         images = request.data.getlist("images")
         item_id = int(self.kwargs["item_id"])
         self.get_queryset()  # check if item exists
-        img_serializers = []
-        for img in images:
-            img_serializer = self.get_serializer(data={"item": item_id, "image": img})
+        img_serializers = [self.get_serializer(data={"item": item_id, "image": img}) for img in images]
+        for img_serializer in img_serializers:
             img_serializer.is_valid(raise_exception=True)
-            img_serializers.append(img_serializer)
         instances = [img_serializer.save() for img_serializer in img_serializers]
         data = [ItemImageURLSerializer(instance=instance).data for instance in instances]
         return Response(data, status=status.HTTP_201_CREATED)
