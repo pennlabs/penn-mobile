@@ -155,7 +155,7 @@ class TestNotificationAlert(TestCase):
 
         initialize_b2b()
 
-    @mock.patch("user.notifications.get_client", mock_client)
+    @mock.patch("user.notifications.IOSNotificationWrapper.get_client", mock_client)
     def test_failed_notif(self):
         # missing title
         payload = {"body": ":D", "service": "PENN_MOBILE"}
@@ -171,7 +171,7 @@ class TestNotificationAlert(TestCase):
         response = self.client.post("/user/notifications/alerts/", payload)
         self.assertEqual(response.status_code, 400)
 
-    @mock.patch("user.notifications.get_client", mock_client)
+    @mock.patch("user.notifications.IOSNotificationWrapper.get_client", mock_client)
     def test_single_notif(self):
         # test notif fail when setting is false
         payload = {"title": "Test", "body": ":D", "service": "OHQ"}
