@@ -174,10 +174,11 @@ class HomePage(APIView):
 
         cells = []
 
-        # adds laundry preference to home, defaults to Bishop if no preference
+        # adds laundry preference to home, defaults to 0 if no preference
+        # TODO: This defaults to a nonexistent room, not sure if that's problematic
         laundry_preference = profile.laundry_preferences.first()
         if laundry_preference:
-            cells.append(self.Cell("laundry", {"room_id": laundry_preference.hall_id}, 5))
+            cells.append(self.Cell("laundry", {"room_id": laundry_preference.room_id}, 5))
         else:
             cells.append(self.Cell("laundry", {"room_id": 0}, 5))
 

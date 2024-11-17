@@ -119,9 +119,9 @@ class TestHomePage(TestCase):
         self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=1733))
         self.test_user.profile.dining_preferences.add(Venue.objects.get(venue_id=638))
 
-        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=3))
-        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=4))
-        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(hall_id=5))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(room_id=14089))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(room_id=14099))
+        self.test_user.profile.laundry_preferences.add(LaundryRoom.objects.get(room_id=14100))
 
         new_response = self.client.get(reverse("homepage"))
         new_res_json = json.loads(new_response.content)["cells"]
@@ -132,7 +132,7 @@ class TestHomePage(TestCase):
         self.assertIn(1733, new_dining_info)
         self.assertIn(638, new_dining_info)
 
-        self.assertEqual(new_res_json[2]["info"]["room_id"], 3)
+        self.assertEqual(new_res_json[2]["info"]["room_id"], 14089)
 
         self.assertEqual(new_res_json[1]["type"], "news")
 
