@@ -3,6 +3,29 @@ from django.contrib import admin
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 
 
+class GroupMembershipInline(admin.TabularInline):
+    model = GroupMembership
+    extra = 0
+
+    readonly_fields = ["name"]
+
+    def name(self, obj):
+        return obj.user.get_full_name()
+
+    def get_fields(self, request, obj=None):
+        fields = super().get_fields(request, obj)
+        to_remove = ["user", "name"]
+        return ["name"] + [f for f in fields if f not in to_remove]
+
+
+class GroupAdmin(admin.ModelAdmin):
+    search_fields = ["name__icontains"]
+    list_display = ["name"]
+    ordering = ["name"]
+
+    inlines = [GroupMembershipInline]
+
+
 class GroupMembershipAdmin(admin.ModelAdmin):
     search_fields = ["user__username__icontains", "group__name__icontains"]
 
@@ -16,7 +39,7 @@ class GSRAdmin(admin.ModelAdmin):
     ordering = ["-in_use"]
 
 
-admin.site.register(Group)
+admin.site.register(Group, GroupAdmin)
 admin.site.register(GroupMembership, GroupMembershipAdmin)
 admin.site.register(GSR, GSRAdmin)
 admin.site.register(GSRBooking)

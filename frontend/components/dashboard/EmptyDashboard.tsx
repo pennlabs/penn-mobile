@@ -27,10 +27,10 @@ const EmptyDashboard = ({ page }: { page: PageType }) => {
             Looks like you&apos;re new here.
             <br />
             <br />
-            Penn Mobile Portal allows organizations to connect and engage with
-            students on the Penn Mobile app. Make posts for recruiting, events,
-            or campaigns and watch in real time as users see and interact with
-            your content.
+            Penn Portal allows organizations to connect and engage with students
+            on the Penn Mobile app. Make posts for recruiting, events, or
+            campaigns and watch in real time as users see and interact with your
+            content.
           </Text>
           <Text>
             Ready to get started?

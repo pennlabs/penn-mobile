@@ -10,16 +10,16 @@ from gsr_booking.views import (
     GroupMembershipViewSet,
     GroupViewSet,
     Locations,
+    MyMembershipViewSet,
     RecentGSRs,
     ReservationsView,
-    UserViewSet,
 )
 from utils.cache import Cache
 
 
 router = routers.DefaultRouter()
 
-router.register(r"users", UserViewSet)
+router.register(r"mymemberships", MyMembershipViewSet, "mymemberships")
 router.register(r"membership", GroupMembershipViewSet)
 router.register(r"groups", GroupViewSet)
 
