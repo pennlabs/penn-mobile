@@ -11,6 +11,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from laundry.models import LaundryRoom
 from penndata.models import (
     AnalyticsEvent,
     CalendarEvent,
@@ -174,12 +175,15 @@ class HomePage(APIView):
 
         cells = []
 
-        # adds laundry preference to home, defaults to Bishop if no preference
+        # adds laundry preference to home, defaults to 0 if no preference
+        # TODO: This defaults to the first room, change potentially
         laundry_preference = profile.laundry_preferences.first()
         if laundry_preference:
-            cells.append(self.Cell("laundry", {"room_id": laundry_preference.hall_id}, 5))
+            cells.append(self.Cell("laundry", {"room_id": laundry_preference.room_id}, 5))
         else:
-            cells.append(self.Cell("laundry", {"room_id": 0}, 5))
+            cells.append(
+                self.Cell("laundry", {"room_id": list(LaundryRoom.objects.all())[0].room_id}, 5)
+            )
 
         # adds dining preference to home with high priority, defaults to 1920's, Hill, NCH
         dining_preferences = [

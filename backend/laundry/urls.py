@@ -6,10 +6,10 @@ from utils.cache import Cache
 
 
 urlpatterns = [
-    path("hall/<hall_id>/", cache_page(Cache.MINUTE)(HallInfo.as_view()), name="hall-info"),
-    path("usage/<hall_id>/", cache_page(Cache.MINUTE)(HallUsage.as_view()), name="hall-usage"),
+    path("hall/<room_id>/", cache_page(Cache.MINUTE)(HallInfo.as_view()), name="hall-info"),
+    path("usage/<room_id>/", cache_page(Cache.MINUTE)(HallUsage.as_view()), name="hall-usage"),
     path(
-        "rooms/<hall_ids>",
+        "rooms/<room_ids>",
         cache_page(Cache.MINUTE)(MultipleHallInfo.as_view()),
         name="multiple-hall-info",
     ),
