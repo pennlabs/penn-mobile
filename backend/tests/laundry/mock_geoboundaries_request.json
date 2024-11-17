@@ -186,11 +186,11 @@
                             "signupBonusExpirationDate": null,
                             "maxRedemptions": null,
                             "ordinalValue": 1
-                        },
+                        }
                     ],
                     "ordinalValue": 4,
                     "isRetail": false
-                },
+                }
             ],
             "ordinalValue": 0,
             "isRetail": false

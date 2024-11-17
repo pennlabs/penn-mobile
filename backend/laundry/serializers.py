@@ -4,6 +4,9 @@ from laundry.models import LaundryRoom
 
 
 class LaundryRoomSerializer(serializers.ModelSerializer):
+    # tech debt but we're rewriting at some point and this maintains frontend-compatibility
+    hall_id = serializers.IntegerField(source="room_id")
+
     class Meta:
         model = LaundryRoom
-        fields = ("name", "room_id", "location")
+        fields = ("name", "hall_id", "location")

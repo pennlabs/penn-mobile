@@ -1,5 +1,5 @@
-'''
 import csv
+import json
 from io import StringIO
 from unittest import mock
 
@@ -16,17 +16,15 @@ def mock_laundry_get(url, *args, **kwargs):
     if "/".join(split[0:3]) == settings.LAUNDRY_URL:
         if split[3] == "rooms":
             with open(f"tests/laundry/mock_rooms_request_{split[4]}.json", "rb") as f:
-                m = mock.MagicMock(content=f.read())
-                return m
+                return json.load(f)
         elif split[3] == "geoBoundaries":
             with open("tests/laundry/mock_geoboundaries_request.json", "rb") as f:
-                m = mock.MagicMock(content=f.read())
-                return m
+                return json.load(f)
         else:
             raise NotImplementedError
 
 
-@mock.patch("requests.get", mock_laundry_get)
+@mock.patch("laundry.api_wrapper.get_validated", mock_laundry_get)
 class TestGetSnapshot(TestCase):
     def setUp(self):
         # populates database with LaundryRooms
@@ -68,7 +66,7 @@ class TestGetSnapshot(TestCase):
         self.assertEqual(LaundrySnapshot.objects.all().count(), 3)
 
 
-@mock.patch("requests.get", mock_laundry_get)
+@mock.patch("laundry.api_wrapper.get_validated", mock_laundry_get)
 class TestLaundryRoomMigration(TestCase):
     def test_db_populate(self):
         out = StringIO()
@@ -101,9 +99,10 @@ class TestLaundryRoomMigration(TestCase):
         call_command("load_laundry_rooms")
 
         # asserts that LaundryRooms do not recreate itself
+        self.assertEqual(LaundryRoom.objects.all().count(), num_rooms)
 
 
-@mock.patch("requests.get", mock_laundry_get)
+@mock.patch("laundry.management.commands.update_laundry_rooms.get_validated", mock_laundry_get)
 class TestUpdateLaundryRooms(TestCase):
     @mock.patch("laundry.management.commands.update_laundry_rooms.write_file")
     def test_update_laundry_rooms(self, mock_laundry_write):
@@ -114,20 +113,25 @@ class TestUpdateLaundryRooms(TestCase):
                 "room_name": "English House",
                 "room_description": "English House",
                 "room_location": 14146,
+                "count_washers": 3,
+                "count_dryers": 3,
             },
             {
                 "room_id": 14099,
                 "room_name": "Harnwell 10th Floor",
                 "room_description": "Harnwell College House",
                 "room_location": 14150,
+                "count_washers": 3,
+                "count_dryers": 3,
             },
             {
                 "room_id": 14100,
                 "room_name": "Harnwell 12th Floor",
                 "room_description": "Harnwell College House",
                 "room_location": 14150,
+                "count_washers": 3,
+                "count_dryers": 3,
             },
         ]
         # assert that the mock was called with this
         mock_laundry_write.assert_called_with(expected)
-'''

@@ -10,6 +10,22 @@ def get_room_url(room_id: int):
     return f"{settings.LAUNDRY_URL}/rooms/{room_id}/machines?raw=true"
 
 
+def get_validated(url):
+    """
+    Makes a request to the given URL and returns the JSON response if the request is successful.
+    Uses headers specific to the laundry API and should not be used for other requests.
+    @param url: The URL to make the request to.
+    @return: The JSON response if the request is successful, otherwise None.
+    """
+    try:
+        request = requests.get(url, timeout=60, headers=settings.LAUNDRY_HEADERS)
+        request.raise_for_status()
+        return request.json()
+    except HTTPError as e:
+        print(f"Error: {e}")
+        return None
+
+
 def update_machine_object(machine, machine_type_data):
     """
     Updates Machine status and time remaining
@@ -20,7 +36,7 @@ def update_machine_object(machine, machine_type_data):
     #  TODO: need to update if we identify other codes, especially error
     status = machine["currentStatus"]["statusId"]
     if status == "IN_USE":
-        time_remaining = machine[3].getText().split(" ")[0]
+        time_remaining = machine["currentStatus"]["remainingSeconds"]
         machine_type_data["running"] += 1
         try:
             machine_type_data["time_remaining"].append(int(time_remaining))
@@ -52,13 +68,9 @@ def parse_a_room(room_request_link):
 
     detailed = []
 
-    try:
-        request = requests.get(room_request_link, timeout=60, headers=settings.LAUNDRY_HEADERS)
-        request.raise_for_status()
-    except HTTPError:
+    request_json = get_validated(room_request_link)
+    if request_json is None:
         return {"washers": washers, "dryers": dryers, "details": detailed}
-
-    request_json = request.json()
 
     [
         update_machine_object(machine, washers) if machine["isWasher"] else None
@@ -89,15 +101,8 @@ def check_is_working():
     Returns True if the wash alert web interface seems to be working properly, or False otherwise.
     """
 
-    try:
-        all_rooms_request = requests.get(
-            f"{settings.LAUNDRY_URL}/geoBoundaries/5610?raw=true",
-            timeout=60,
-            headers=settings.LAUNDRY_HEADERS,
-        )
-        all_rooms_request.raise_for_status()
-
-    except HTTPError:
+    all_rooms_request = get_validated(f"{settings.LAUNDRY_URL}/geoBoundaries/5610?raw=true")
+    if all_rooms_request is None:
         return False
     return True
 

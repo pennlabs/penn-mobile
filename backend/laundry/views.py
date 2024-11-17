@@ -135,8 +135,8 @@ class HallUsage(APIView):
 
         return content
 
-    def get(self, request, hall_id):
-        return Response(HallUsage.compute_usage(hall_id))
+    def get(self, request, room_id):
+        return Response(HallUsage.compute_usage(room_id))
 
 
 class Preferences(APIView):
@@ -155,9 +155,9 @@ class Preferences(APIView):
         cached_preferences = cache.get(key)
         if cached_preferences is None:
             preferences = request.user.profile.laundry_preferences.all()
-            cached_preferences = preferences.values_list("hall_id", flat=True)
+            cached_preferences = preferences.values_list("room_id", flat=True)
             # get all laundries with one of these
-            valid_rooms = LaundryRoom.objects.filter(room_id__in=cached_preferences, new=True)
+            valid_rooms = LaundryRoom.objects.filter(room_id__in=cached_preferences)
             cached_preferences = valid_rooms.values_list("room_id", flat=True)
             cache.set(key, cached_preferences, Cache.MONTH)
 
@@ -169,12 +169,10 @@ class Preferences(APIView):
         preferences = profile.laundry_preferences
         if "rooms" not in request.data:
             return Response({"success": False, "error": "No rooms provided"}, status=400)
-
         halls = [
-            get_object_or_404(LaundryRoom, room_id=int(hall_id))
-            for hall_id in request.data["rooms"]
+            get_object_or_404(LaundryRoom, room_id=int(room_id))
+            for room_id in request.data["rooms"]
         ]
-
         # clears all previous preferences in many-to-many
         preferences.clear()
         preferences.add(*halls)

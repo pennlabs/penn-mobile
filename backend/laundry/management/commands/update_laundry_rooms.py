@@ -1,9 +1,9 @@
 import csv
 
-import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from requests.exceptions import HTTPError
+
+from laundry.api_wrapper import get_validated
 
 
 def write_file(laundry_rooms):
@@ -18,29 +18,19 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         # Pull initial request with everything
-        try:
-            headers = {
-                "x-api-key": settings.LAUNDRY_X_API_KEY,
-                "alliancels-auth-token": settings.LAUNDRY_ALLIANCELS_API_KEY,
-            }
-            all_rooms_request = requests.get(
-                f"{settings.LAUNDRY_URL}/geoBoundaries/5610?raw=true", timeout=60, headers=headers
-            )
-            all_rooms_request.raise_for_status()
-
-        except HTTPError as e:
-            self.stdout.write(f"Error: {e}")
+        all_rooms_request_json = get_validated(
+            f"{settings.LAUNDRY_URL}/geoBoundaries/5610?raw=true"
+        )
+        if all_rooms_request_json is None:
             return
-
-        all_rooms_request_json = all_rooms_request.json()
         locations = all_rooms_request_json["geoBoundaries"][0]["geoBoundaries"]
 
         laundry_rooms = [
             {
-                "room_id": room["id"],
+                "room_id": int(room["id"]),
                 "room_name": room["roomName"],
                 "room_description": location["description"],
-                "room_location": location["id"],
+                "room_location": int(location["id"]),
             }
             for location in locations
             for room in location["rooms"]
@@ -49,18 +39,11 @@ class Command(BaseCommand):
         # for each room, send a request to find number of washers and dryers
         # TODO: This is really inefficient, but may require change in frontend code to update
         for room in laundry_rooms:
-            try:
-                room_request = requests.get(
-                    f"{settings.LAUNDRY_URL}/rooms/{room['room_id']}/machines?raw=true",
-                    timeout=60,
-                    headers=headers,
-                )
-                room_request.raise_for_status()
-            except HTTPError as e:
-                self.stdout.write(f"Error: {e}")
+            room_request_json = get_validated(
+                f"{settings.LAUNDRY_URL}/rooms/{room['room_id']}/machines?raw=true"
+            )
+            if room_request_json is None:
                 return
-
-            room_request_json = room_request.json()
             # count washers and dryers
             count_washers = 0
             count_dryers = 0
