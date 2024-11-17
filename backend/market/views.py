@@ -6,6 +6,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db.models import Q
 
 from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 from market.permissions import (
@@ -72,8 +73,6 @@ def apply_filters(
         if param_value := params.get(param):
             filters[field] = param_value
 
-    # Apply basic filters to the queryset
-    queryset = queryset.filter(**filters)
 
     # Apply tag filtering iteratively if "tags" parameter is provided
     for tag in params.getlist("tags"):
@@ -92,6 +91,9 @@ def apply_filters(
             filters["item__seller"] = user
         else:
             filters["item__expires_at__gte"] = timezone.now()
+
+    # Apply all filters to the queryset
+    queryset = queryset.filter(**filters)
 
     return queryset
 
@@ -117,29 +119,37 @@ class Items(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         return ItemSerializerRead if self.action == "list" or self.action == "retrieve" else ItemSerializer
-    
-    def list(self, request, *args, **kwargs):
-        """Returns a list of Items that match query parameters and user ownership."""
-        params = request.query_params
-        queryset = self.get_queryset()
 
-        # Define a dictionary mapping query parameters to filter fields
-        filter_mappings = {
+    @staticmethod
+    def get_filter_dict():
+        filter_dict = {
             "category": "category__name",
             "title": "title__icontains",
             "min_price": "price__gte",
             "max_price": "price__lte",
             "negotiable": "negotiable",
         }
+        return filter_dict
 
-        # Apply filters using the helper function
-        queryset = apply_filters(
-            queryset=queryset,
-            params=params,
-            filter_mappings=filter_mappings,
-            user=request.user,
-            is_sublet=False,
-        )
+    def list(self, request, *args, **kwargs):
+        """Returns a list of Items that match query parameters and user ownership."""
+        queryset = self.get_queryset()
+
+        filter_dict = self.get_filter_dict()
+
+        for param, field in filter_dict.items():
+            if param_value := request.query_params.get(param):
+                queryset = queryset.filter(**{field: param_value})
+
+        for tag in request.query_params.getlist("tags"):
+            queryset = queryset.filter(tags__name=tag)
+
+        queryset = queryset.exclude(category__name__in=["Sublet"])
+
+        if request.query_params.get("seller", "false").lower() == "true":
+            queryset = queryset.filter(seller=request.user)
+        else:
+            queryset = queryset.filter(expires_at__gte=timezone.now())
 
         # Serialize and return the queryset
         serializer = self.get_serializer(queryset, many=True)
@@ -151,17 +161,13 @@ class Sublets(viewsets.ModelViewSet):
     serializer_class = SubletSerializer
     queryset = Sublet.objects.all()
 
-    def list(self, request, *args, **kwargs):
-        """Returns a filtered list of Sublets based on query parameters."""
-        params = request.query_params
-        queryset = self.get_queryset()
-
-        # Define filter mappings
-        filter_mappings = {
-            "title": "item__title__icontains",
-            "min_price": "item__price__gte",
-            "max_price": "item__price__lte",
-            "negotiable": "item__negotiable",
+    @staticmethod
+    def get_filter_dict():
+        item_filter_dict = Items.get_filter_dict()
+        for key, value in item_filter_dict.items():
+            item_filter_dict[key] = "item__" + value
+        filter_dict = {
+            **item_filter_dict,
             "address": "address__icontains",
             "beds": "beds",
             "baths": "baths",
@@ -170,16 +176,28 @@ class Sublets(viewsets.ModelViewSet):
             "end_date_min": "end_date__gte",
             "end_date_max": "end_date__lte",
         }
+        del filter_dict["category"]
+        return filter_dict
 
-        # Apply filters using the helper function
-        queryset = apply_filters(
-            queryset=queryset,
-            params=params,
-            filter_mappings=filter_mappings,
-            user=request.user,
-            is_sublet=True,
-            tag_field="item__tags__name",
-        )
+    def list(self, request, *args, **kwargs):
+        """Returns a filtered list of Sublets based on query parameters."""
+        queryset = self.get_queryset()
+
+        filter_dict = self.get_filter_dict()
+
+        for param, field in filter_dict.items():
+            if param_value := request.query_params.get(param):
+                queryset = queryset.filter(**{field: param_value})
+
+        for tag in request.query_params.getlist("tags"):
+            queryset = queryset.filter(item__tags__name=tag)
+
+        queryset = queryset.filter(item__category__name__in=["Sublet"])
+
+        if request.query_params.get("seller", "false").lower() == "true":
+            queryset = queryset.filter(item__seller=request.user)
+        else:
+            queryset = queryset.filter(item__expires_at__gte=timezone.now())
 
         # Serialize and return the queryset
         serializer = self.get_serializer(queryset, many=True)
