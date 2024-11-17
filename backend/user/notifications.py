@@ -43,11 +43,12 @@ def send_push_notifications(tokens, category, title, body, delay=0, is_dev=False
     # send notifications
     if tokens == []:
         raise ValueError("No tokens to send notifications to.")
+    params = (tokens, title, body, category, is_dev, is_shadow)
 
     if delay:
-        send_delayed_notifications(tokens, title, body, category, is_dev, is_shadow, delay)
+        send_delayed_notifications(*params, delay=delay)
     else:
-        send_immediate_notifications(tokens, title, body, category, is_dev, is_shadow)
+        send_immediate_notifications(*params)
 
 
 @shared_task(name="notifications.send_immediate_notifications")
