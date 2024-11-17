@@ -1,20 +1,17 @@
+from abc import ABC
+
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
 from identity.permissions import B2BPermission
-from rest_framework import generics, viewsets
-from rest_framework.decorators import action
+from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from user.models import IOSNotificationToken, AndroidNotificationToken, NotificationService
+from user.models import AndroidNotificationToken, IOSNotificationToken, NotificationService
 from user.notifications import send_push_notifications
-from user.serializers import (
-    UserSerializer,
-)
-
-from abc import ABC
+from user.serializers import UserSerializer
 
 
 User = get_user_model()
@@ -45,28 +42,33 @@ class NotificationTokenView(APIView, ABC):
     queryset = None
 
     def get_defaults(self):
-        raise NotImplementedError # pragma: no cover
+        raise NotImplementedError  # pragma: no cover
 
     def post(self, request, token):
         _, created = self.queryset.update_or_create(token=token, defaults=self.get_defaults())
         if created:
             return Response({"detail": "Token created."}, status=201)
-        return Response({"detail": "Token updated."}, status=200)
+        return Response({"detail": "Token updated."})
 
     def delete(self, request, token):
         self.queryset.filter(token=token).delete()
-        return Response({"detail": "Token deleted."}, status=200)
+        return Response({"detail": "Token deleted."})
+
 
 class IOSNotificationTokenView(NotificationTokenView):
     queryset = IOSNotificationToken.objects.all()
+
     def get_defaults(self):
-        is_dev = self.request.data.get("is_dev", "false").lower() == "true"
+        is_dev = self.request.data.get("is_dev", False)
         return {"user": self.request.user, "is_dev": is_dev}
+
 
 class AndroidNotificationTokenView(NotificationTokenView):
     queryset = AndroidNotificationToken.objects.all()
+
     def get_defaults(self):
         return {"user": self.request.user}
+
 
 class NotificationServiceSettingView(APIView):
     permission_classes = [IsAuthenticated]
@@ -80,6 +82,27 @@ class NotificationServiceSettingView(APIView):
                 for service in services
             }
         )
+
+    def put(self, request):
+        user = request.user
+        settings = request.data
+        if not isinstance(settings, dict) or not all(
+            isinstance(value, bool) for value in settings.values()
+        ):
+            return Response({"detail": "Invalid request"}, status=400)
+
+        try:
+            with transaction.atomic():
+                user.notificationservice_set.add(
+                    *[service for service, enabled in settings.items() if enabled]
+                )
+                user.notificationservice_set.remove(
+                    *[service for service, enabled in settings.items() if not enabled]
+                )
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+        return Response({"detail": "Settings updated."})
+
 
 class NotificationServiceView(APIView):
     permission_classes = [IsAuthenticated]
@@ -108,27 +131,33 @@ class NotificationAlertView(APIView):
         title = request.data.get("title")
         body = request.data.get("body")
         delay = max(request.data.get("delay", 0), 0)
-        is_dev = request.data.get("is_dev", "false").lower() == "true"
+        is_dev = request.data.get("is_dev", False)
 
         if None in [service, title, body]:
             return Response({"detail": "Missing required parameters."}, status=400)
 
         if not (service_obj := NotificationService.objects.filter(name=service).first()):
             return Response({"detail": "Invalid service."}, status=400)
-        
+
         users_with_service = service_obj.enabled_users.filter(username__in=usernames)
 
-        tokens = list(IOSNotificationToken.objects.filter(user__in=users_with_service, is_dev=is_dev).values_list(
-            "token", flat=True
-        ))
-
-        send_push_notifications(
-            tokens, service, title, body, delay, is_dev
+        tokens = list(
+            IOSNotificationToken.objects.filter(
+                user__in=users_with_service, is_dev=is_dev
+            ).values_list("token", flat=True)
         )
+
+        if tokens:
+            send_push_notifications(tokens, service, title, body, delay, is_dev)
 
         users_with_service_usernames = users_with_service.values_list("username", flat=True)
         users_not_reached_usernames = list(set(usernames) - set(users_with_service_usernames))
-        return Response({"success_users": users_with_service_usernames, "failed_users": users_not_reached_usernames})
+        return Response(
+            {
+                "success_users": users_with_service_usernames,
+                "failed_users": users_not_reached_usernames,
+            }
+        )
 
 
 class ClearCookiesView(APIView):

@@ -82,13 +82,13 @@ export class MyChart extends PennLabsChart {
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
 
-    new CronJob(this, 'send-gsr-reminders', {
-      schedule: "20,50 * * * *",
-      image: backendImage,
-      secret,
-      cmd: ["python", "manage.py", "send_gsr_reminders"],
-      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
-    });
+    // new CronJob(this, 'send-gsr-reminders', {
+    //   schedule: "20,50 * * * *",
+    //   image: backendImage,
+    //   secret,
+    //   cmd: ["python", "manage.py", "send_gsr_reminders"],
+    //   env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    // });
 
     new CronJob(this, 'get-fitness-snapshot', {
       schedule: cronTime.every(3).hours(),

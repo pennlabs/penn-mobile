@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from user.models import Profile
 
+
 # class NotificationSettingSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = NotificationSetting
