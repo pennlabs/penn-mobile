@@ -64,7 +64,7 @@ class UserOffers(generics.ListAPIView):
 
 
 def apply_filters(
-    queryset, params, filter_mappings, user=None, is_sublet=False
+    queryset, params, filter_mappings, user=None, is_sublet=False, tag_field="tags__name"
 ):
     # Build dynamic filters based on filter mappings
     filters = {}
@@ -75,6 +75,10 @@ def apply_filters(
     # Apply basic filters to the queryset
     queryset = queryset.filter(**filters)
 
+    # Apply tag filtering iteratively if "tags" parameter is provided
+    for tag in params.getlist("tags"):
+        queryset = queryset.filter(**{tag_field: tag})
+
     # Handle seller/owner filtering based on user ownership
     if not is_sublet:
         queryset = queryset.exclude(category__name__in=["Sublet"])
@@ -82,19 +86,12 @@ def apply_filters(
             filters["seller"] = user
         else:
             filters["expires_at__gte"] = timezone.now()
-        for tag in params.getlist("tags"):
-            queryset = queryset.filter(**{"tags__name": tag})
     else:
         queryset = queryset.filter(item__category__name__in=["Sublet"])
         if params.get("seller", "false").lower() == "true" and user:
             filters["item__seller"] = user
         else:
             filters["item__expires_at__gte"] = timezone.now()
-        for tag in params.getlist("tags"):
-            queryset = queryset.filter(**{"item__tags__name": tag})
-
-    # Apply tag filtering iteratively if "tags" parameter is provided
-    
 
     return queryset
 
@@ -120,7 +117,7 @@ class Items(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         return ItemSerializerRead if self.action == "list" or self.action == "retrieve" else ItemSerializer
-
+    
     def list(self, request, *args, **kwargs):
         """Returns a list of Items that match query parameters and user ownership."""
         params = request.query_params
@@ -181,13 +178,14 @@ class Sublets(viewsets.ModelViewSet):
             filter_mappings=filter_mappings,
             user=request.user,
             is_sublet=True,
+            tag_field="item__tags__name",
         )
 
         # Serialize and return the queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-# This doesn't use CreateAPIView's functionality since we overrode the create method
+# TODO: This doesn't use CreateAPIView's functionality since we overrode the create method. Think about if there's a better way
 class CreateImages(generics.CreateAPIView):
     serializer_class = ItemImageSerializer
     http_method_names = ["post"]
@@ -230,6 +228,7 @@ class DeleteImage(generics.DestroyAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+#TODO: We don't use the CreateModelMixin or DestroyModelMixin's functionality here. Think about if there's a better way
 class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = ItemSerializer
     http_method_names = ["post", "delete"]
