@@ -42,7 +42,12 @@ class UserView(generics.RetrieveUpdateAPIView):
 
 
 class NotificationTokenView(APIView, ABC):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method == "DELETE":
+            return []
+        return [IsAuthenticated()]
+
     queryset = None
 
     def get_defaults(self):
