@@ -95,6 +95,7 @@ class IOSNotificationWrapper(NotificationWrapper):
             result = super().dict()
             if self.urgent:
                 result["aps"]["interruption-level"] = "time-sensitive"
+            return result
 
     @staticmethod
     def get_client(is_dev):
