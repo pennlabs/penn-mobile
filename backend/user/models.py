@@ -48,4 +48,5 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
     object exists for that User, it will create one
     """
     Profile.objects.get_or_create(user=instance)
-    NotificationService.objects.get(name="COURSES").enabled_users.add(instance)
+    if courses_service := NotificationService.objects.filter(name="COURSES").first():
+        courses_service.enabled_users.add(instance)
