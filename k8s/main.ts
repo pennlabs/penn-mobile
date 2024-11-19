@@ -30,7 +30,7 @@ export class MyChart extends PennLabsChart {
             name: "penn-mobile",
             subPath: "ios-key",
             mountPath: "/app/ios_key.p8",
-          }
+          },
         ],
         env: [
           { name: 'REDIS_URL', value: 'redis://penn-mobile-redis:6379' },
@@ -50,7 +50,15 @@ export class MyChart extends PennLabsChart {
             name: "penn-mobile",
             subPath: "ios-key",
             mountPath: "/app/ios_key.p8",
-          }
+          },
+          {
+            name: 'ios-credentials-prod',
+            mountPath: '/app/notifications/prod',
+          },
+          {
+            name: 'ios-credentials-dev',
+            mountPath: '/app/notifications/dev',
+          },
         ]
       },
       domains: [
