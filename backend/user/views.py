@@ -139,6 +139,7 @@ class NotificationAlertView(APIView):
         title = request.data.get("title")
         body = request.data.get("body")
         delay = max(request.data.get("delay", 0), 0)
+        urgent = request.data.get("urgent", False)
 
         if None in [service, title, body]:
             return Response({"detail": "Missing required parameters."}, status=400)
@@ -160,7 +161,7 @@ class NotificationAlertView(APIView):
             (android_tokens, android_send_notification),
         ]:
             if tokens_list := list(tokens.values_list("token", flat=True)):
-                send.apply_async(args=(tokens_list, title, body), countdown=delay)
+                send.apply_async(args=(tokens_list, title, body, urgent), countdown=delay)
 
         users_with_service_usernames = users_with_service.values_list("username", flat=True)
         users_not_reached_usernames = list(set(usernames) - set(users_with_service_usernames))
