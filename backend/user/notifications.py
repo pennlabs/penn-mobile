@@ -1,5 +1,4 @@
 import collections
-import os
 import sys
 from abc import ABC, abstractmethod
 
@@ -87,7 +86,9 @@ class AndroidNotificationWrapper(NotificationWrapper):
 class IOSNotificationWrapper(NotificationWrapper):
     @staticmethod
     def get_client(is_dev):
-        auth_key_path = f"/app/secrets/notifications/ios{'/dev/apns-dev' if is_dev else '/prod/apns-prod'}.pem"
+        auth_key_path = (
+            f"/app/secrets/notifications/ios{'/dev/apns-dev' if is_dev else '/prod/apns-prod'}.pem"
+        )
         return APNsClient(credentials=auth_key_path, use_sandbox=is_dev)
 
     def __init__(self, is_dev=False):
