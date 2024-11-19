@@ -1,5 +1,4 @@
 import collections
-import os
 import sys
 from abc import ABC, abstractmethod
 
@@ -62,11 +61,8 @@ class NotificationWrapper(ABC):
 class AndroidNotificationWrapper(NotificationWrapper):
     def __init__(self):
         try:
-            server_key = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                "penn-mobile-android-firebase-adminsdk-u9rki-c83fb20713.json",
-            )
-            cred = credentials.Certificate(server_key)
+            auth_key_path = "/app/secrets/notifications/android/fcm.json"
+            cred = credentials.Certificate(auth_key_path)
             firebase_admin.initialize_app(cred)
         except Exception as e:
             print(f"Notifications Error: Failed to initialize Firebase client: {e}")
@@ -90,9 +86,8 @@ class AndroidNotificationWrapper(NotificationWrapper):
 class IOSNotificationWrapper(NotificationWrapper):
     @staticmethod
     def get_client(is_dev):
-        auth_key_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            f"apns-{'dev' if is_dev else 'prod'}.pem",
+        auth_key_path = (
+            f"/app/secrets/notifications/ios{'/dev/apns-dev' if is_dev else '/prod/apns-prod'}.pem"
         )
         return APNsClient(credentials=auth_key_path, use_sandbox=is_dev)
 
