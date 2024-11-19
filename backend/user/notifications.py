@@ -139,7 +139,7 @@ IOSNotificationDevSender = IOSNotificationWrapper(is_dev=True)
 
 @shared_task(name="notifications.ios_send_notification")
 def ios_send_notification(tokens, title, body, urgent):
-    IOSNotificationSender.send_notification(tokens, title, body)
+    IOSNotificationSender.send_notification(tokens, title, body, urgent)
 
 
 @shared_task(name="notifications.ios_send_shadow_notification")
@@ -149,7 +149,7 @@ def ios_send_shadow_notification(tokens, body):
 
 @shared_task(name="notifications.android_send_notification")
 def android_send_notification(tokens, title, body, urgent):
-    AndroidNotificationSender.send_notification(tokens, title, body)
+    AndroidNotificationSender.send_notification(tokens, title, body, urgent)
 
 
 @shared_task(name="notifications.android_send_shadow_notification")
@@ -159,7 +159,7 @@ def android_send_shadow_notification(tokens, body):
 
 @shared_task(name="notifications.ios_send_dev_notification")
 def ios_send_dev_notification(tokens, title, body, urgent):
-    IOSNotificationDevSender.send_notification(tokens, title, body)
+    IOSNotificationDevSender.send_notification(tokens, title, body, urgent)
 
 
 @shared_task(name="notifications.ios_send_dev_shadow_notification")
