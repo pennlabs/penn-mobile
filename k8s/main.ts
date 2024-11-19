@@ -31,6 +31,18 @@ export class MyChart extends PennLabsChart {
             subPath: "ios-key",
             mountPath: "/app/ios_key.p8",
           },
+          {
+            name: 'penn-mobile-apns-prod',
+            mountPath: '/app/secrets/notifications/ios/prod',
+          },
+          {
+            name: 'penn-mobile-apns-dev',
+            mountPath: '/app/secrets/notifications/ios/dev',
+          },
+          {
+            name: 'penn-mobile-fcm',
+            mountPath: '/app/secrets/notifications/android',
+          }
         ],
         env: [
           { name: 'REDIS_URL', value: 'redis://penn-mobile-redis:6379' },
