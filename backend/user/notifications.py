@@ -99,6 +99,8 @@ class IOSNotificationWrapper(NotificationWrapper):
 
     @staticmethod
     def get_client(is_dev):
+        # TODO: We are getting a new client for each request, might be worth
+        # looking into how to keep the client alive.
         auth_key_path = (
             f"/app/secrets/notifications/ios{'/dev/apns-dev' if is_dev else '/prod/apns-prod'}.pem"
         )
@@ -106,7 +108,7 @@ class IOSNotificationWrapper(NotificationWrapper):
 
     def __init__(self, is_dev=False):
         try:
-            self.client = self.get_client(is_dev)
+            self.is_dev = is_dev
             self.topic = "org.pennlabs.PennMobile" + (".dev" if is_dev else "")
         except Exception as e:
             print(f"Notifications Error: Failed to initialize APNs client: {e}")
@@ -126,10 +128,12 @@ class IOSNotificationWrapper(NotificationWrapper):
 
     def send_many_notifications(self, tokens, payload):
         notifications = [Notification(token, payload) for token in tokens]
-        self.client.send_notification_batch(notifications=notifications, topic=self.topic)
+        self.get_client(self.is_dev).send_notification_batch(
+            notifications=notifications, topic=self.topic
+        )
 
     def send_one_notification(self, token, payload):
-        self.client.send_notification(token, payload, self.topic)
+        self.get_client(self.is_dev).send_notification(token, payload, self.topic)
 
 
 IOSNotificationSender = IOSNotificationWrapper()
