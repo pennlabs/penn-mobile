@@ -1,5 +1,4 @@
 import collections
-import os
 import sys
 from abc import ABC, abstractmethod
 
@@ -28,8 +27,8 @@ from celery import shared_task
 
 
 class NotificationWrapper(ABC):
-    def send_notification(self, tokens, title, body):
-        self.send_payload(tokens, self.create_payload(title, body))
+    def send_notification(self, tokens, title, body, urgent):
+        self.send_payload(tokens, self.create_payload(title, body, urgent))
 
     def send_shadow_notification(self, tokens, body):
         self.send_payload(tokens, self.create_shadow_payload(body))
@@ -43,7 +42,7 @@ class NotificationWrapper(ABC):
             self.send_one_notification(tokens[0], payload)
 
     @abstractmethod
-    def create_payload(self, title, body):
+    def create_payload(self, title, body, urgent):
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
@@ -62,16 +61,14 @@ class NotificationWrapper(ABC):
 class AndroidNotificationWrapper(NotificationWrapper):
     def __init__(self):
         try:
-            server_key = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                "penn-mobile-android-firebase-adminsdk-u9rki-c83fb20713.json",
-            )
-            cred = credentials.Certificate(server_key)
+            auth_key_path = "/app/secrets/notifications/android/fcm.json"
+            cred = credentials.Certificate(auth_key_path)
             firebase_admin.initialize_app(cred)
         except Exception as e:
             print(f"Notifications Error: Failed to initialize Firebase client: {e}")
 
-    def create_payload(self, title, body):
+    def create_payload(self, title, body, urgent):
+        # TODO: do something with urgent
         return {"notification": messaging.Notification(title=title, body=body)}
 
     def create_shadow_payload(self, body):
@@ -88,25 +85,42 @@ class AndroidNotificationWrapper(NotificationWrapper):
 
 
 class IOSNotificationWrapper(NotificationWrapper):
+    class CustomPayload(Payload):
+        # Custom payload to support interruption_level
+        def __init__(self, urgent, **kwargs):
+            super().__init__(**kwargs)
+            self.urgent = urgent
+
+        def dict(self):
+            result = super().dict()
+            if self.urgent:
+                result["aps"]["interruption-level"] = "time-sensitive"
+            return result
+
     @staticmethod
     def get_client(is_dev):
-        auth_key_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            f"apns-{'dev' if is_dev else 'prod'}.pem",
+        # TODO: We are getting a new client for each request, might be worth
+        # looking into how to keep the client alive.
+        auth_key_path = (
+            f"/app/secrets/notifications/ios{'/dev/apns-dev' if is_dev else '/prod/apns-prod'}.pem"
         )
         return APNsClient(credentials=auth_key_path, use_sandbox=is_dev)
 
     def __init__(self, is_dev=False):
         try:
-            self.client = self.get_client(is_dev)
+            self.is_dev = is_dev
             self.topic = "org.pennlabs.PennMobile" + (".dev" if is_dev else "")
         except Exception as e:
             print(f"Notifications Error: Failed to initialize APNs client: {e}")
 
-    def create_payload(self, title, body):
+    def create_payload(self, title, body, urgent):
         # TODO: we might want to add category here, but there is no use on iOS side for now
-        return Payload(
-            alert={"title": title, "body": body}, sound="default", badge=0, mutable_content=True
+        return IOSNotificationWrapper.CustomPayload(
+            alert={"title": title, "body": body},
+            sound="default",
+            badge=0,
+            mutable_content=True,
+            urgent=urgent,
         )
 
     def create_shadow_payload(self, body):
@@ -114,10 +128,12 @@ class IOSNotificationWrapper(NotificationWrapper):
 
     def send_many_notifications(self, tokens, payload):
         notifications = [Notification(token, payload) for token in tokens]
-        self.client.send_notification_batch(notifications=notifications, topic=self.topic)
+        self.get_client(self.is_dev).send_notification_batch(
+            notifications=notifications, topic=self.topic
+        )
 
     def send_one_notification(self, token, payload):
-        self.client.send_notification(token, payload, self.topic)
+        self.get_client(self.is_dev).send_notification(token, payload, self.topic)
 
 
 IOSNotificationSender = IOSNotificationWrapper()
@@ -126,8 +142,8 @@ IOSNotificationDevSender = IOSNotificationWrapper(is_dev=True)
 
 
 @shared_task(name="notifications.ios_send_notification")
-def ios_send_notification(tokens, title, body):
-    IOSNotificationSender.send_notification(tokens, title, body)
+def ios_send_notification(tokens, title, body, urgent):
+    IOSNotificationSender.send_notification(tokens, title, body, urgent)
 
 
 @shared_task(name="notifications.ios_send_shadow_notification")
@@ -136,8 +152,8 @@ def ios_send_shadow_notification(tokens, body):
 
 
 @shared_task(name="notifications.android_send_notification")
-def android_send_notification(tokens, title, body):
-    AndroidNotificationSender.send_notification(tokens, title, body)
+def android_send_notification(tokens, title, body, urgent):
+    AndroidNotificationSender.send_notification(tokens, title, body, urgent)
 
 
 @shared_task(name="notifications.android_send_shadow_notification")
@@ -146,8 +162,8 @@ def android_send_shadow_notification(tokens, body):
 
 
 @shared_task(name="notifications.ios_send_dev_notification")
-def ios_send_dev_notification(tokens, title, body):
-    IOSNotificationDevSender.send_notification(tokens, title, body)
+def ios_send_dev_notification(tokens, title, body, urgent):
+    IOSNotificationDevSender.send_notification(tokens, title, body, urgent)
 
 
 @shared_task(name="notifications.ios_send_dev_shadow_notification")

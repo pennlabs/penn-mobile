@@ -42,7 +42,11 @@ class UserView(generics.RetrieveUpdateAPIView):
 
 
 class NotificationTokenView(APIView, ABC):
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method == "DELETE":
+            return []
+        return [IsAuthenticated()]
+
     queryset = None
 
     def get_defaults(self):
@@ -135,6 +139,7 @@ class NotificationAlertView(APIView):
         title = request.data.get("title")
         body = request.data.get("body")
         delay = max(request.data.get("delay", 0), 0)
+        urgent = request.data.get("urgent", False)
 
         if None in [service, title, body]:
             return Response({"detail": "Missing required parameters."}, status=400)
@@ -156,7 +161,9 @@ class NotificationAlertView(APIView):
             (android_tokens, android_send_notification),
         ]:
             if tokens_list := list(tokens.values_list("token", flat=True)):
-                send.apply_async(args=(tokens_list, title, body), countdown=delay)
+                _ = delay
+                send(tokens_list, title, body, urgent)
+                # send.apply_async(args=(tokens_list, title, body, urgent), countdown=delay)
 
         users_with_service_usernames = users_with_service.values_list("username", flat=True)
         users_not_reached_usernames = list(set(usernames) - set(users_with_service_usernames))
