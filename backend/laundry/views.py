@@ -51,7 +51,7 @@ class MultipleHallInfo(APIView):
             room_data = room_status(get_object_or_404(LaundryRoom, room_id=room_id))
             room_data["id"] = room_id
             room_data["usage_data"] = HallUsage.compute_usage(room_id)
-            output["rooms"].append(room_id)
+            output["rooms"].append(room_data)
 
         record_analytics(Metric.LAUNDRY_VIEWED, request.user.username)
 
