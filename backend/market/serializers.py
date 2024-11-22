@@ -15,7 +15,7 @@ class TagSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = [field.name for field in model._meta.fields]
 
-
+# TODO: We could make a Read-Only Serializer in a PennLabs core library. This could inherit from that.
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -77,16 +77,16 @@ class ItemSerializer(serializers.ModelSerializer):
             "buyers",
             "tags",
             "category",
-            "favorites",
             "title",
             "description",
             "external_link",
             "price",
             "negotiable",
+            "created_at",
             "expires_at",
             "images",
         ]
-        read_only_fields = ["id", "created_at", "seller", "buyers", "images"]
+        read_only_fields = ["id", "created_at", "seller", "buyers", "images", "favorites"]
 
     def validate_title(self, value):
         if self.contains_profanity(value):
@@ -103,30 +103,7 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["seller"] = self.context["request"].user
-        instance = super().create(validated_data)
-        return instance
-
-    # delete_images is a list of image ids to delete
-    def update(self, instance, validated_data):
-        # Check if the user is the seller before allowing the update
-        if (
-            self.context["request"].user == instance.seller
-            or self.context["request"].user.is_superuser
-        ):
-            instance = super().update(instance, validated_data)
-            return instance
-        else:
-            raise serializers.ValidationError("You do not have permission to update this item.")
-
-    def destroy(self, instance):
-        # Check if the user is the seller before allowing the delete
-        if (
-            self.context["request"].user == instance.seller
-            or self.context["request"].user.is_superuser
-        ):
-            instance.delete()
-        else:
-            raise serializers.ValidationError("You do not have permission to delete this item.")
+        return super().create(validated_data)
 
 
 # Read-only serializer for use when pulling all items/etc
@@ -152,7 +129,13 @@ class SubletSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Sublet
-        fields = ["id", "item", "address", "beds", "baths", "start_date", "end_date"]
+        fields = ["id", 
+                  "item", 
+                  "address", 
+                  "beds", 
+                  "baths", 
+                  "start_date", 
+                  "end_date"]
         read_only_fields = ["id"]
 
     def create(self, validated_data):
@@ -163,39 +146,18 @@ class SubletSerializer(serializers.ModelSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        if (
-            self.context["request"].user == instance.item.seller
-            or self.context["request"].user.is_superuser
-        ):
-            item_data = validated_data.pop("item", None)
-            if item_data:
-                tags = item_data.pop("tags", None)  # Extract tags if present
-                for attr, value in item_data.items():
-                    setattr(instance.item, attr, value)
-                instance.item.save()
+        if item_data := validated_data.pop("item", None):
+            item_serializer = ItemSerializer(instance=instance.item, data=item_data, context=self.context, partial=True)
+            item_serializer.is_valid(raise_exception=True)
+            validated_data["item"] = item_serializer.save()
 
-                # Update tags if provided
-                if tags is not None:
-                    instance.item.tags.set(tags)  # Use .set() for many-to-many fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
 
-            # Update the remaining Sublet fields
-            for attr, value in validated_data.items():
-                setattr(instance, attr, value)
-            instance.save()
-            return instance
+        return instance
 
     def destroy(self, instance):
-        if (
-            self.context["request"].user == instance.item.seller
-            or self.context["request"].user.is_superuser
-        ):
-            if (
-                self.context["request"].user == instance.item.seller
-                or self.context["request"].user.is_superuser
-            ):
-                instance.item.delete()
-                instance.delete()
-            else:
-                raise serializers.ValidationError(
-                    "You do not have permission to delete this sublet."
-                )
+        # Could check if instance.item is None, but it should never be.
+        instance.item.delete()
+        instance.delete()
