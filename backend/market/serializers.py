@@ -15,7 +15,9 @@ class TagSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = [field.name for field in model._meta.fields]
 
-# TODO: We could make a Read-Only Serializer in a PennLabs core library. This could inherit from that.
+
+# TODO: We could make a Read-Only Serializer in a PennLabs core library.
+# This could inherit from that.
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -129,13 +131,7 @@ class SubletSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Sublet
-        fields = ["id", 
-                  "item", 
-                  "address", 
-                  "beds", 
-                  "baths", 
-                  "start_date", 
-                  "end_date"]
+        fields = ["id", "item", "address", "beds", "baths", "start_date", "end_date"]
         read_only_fields = ["id"]
 
     def create(self, validated_data):
@@ -147,7 +143,9 @@ class SubletSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if item_data := validated_data.pop("item", None):
-            item_serializer = ItemSerializer(instance=instance.item, data=item_data, context=self.context, partial=True)
+            item_serializer = ItemSerializer(
+                instance=instance.item, data=item_data, context=self.context, partial=True
+            )
             item_serializer.is_valid(raise_exception=True)
             validated_data["item"] = item_serializer.save()
 

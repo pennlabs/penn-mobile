@@ -6,7 +6,6 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Q
 
 from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 from market.permissions import (
@@ -17,7 +16,6 @@ from market.permissions import (
     SubletOwnerPermission,
 )
 from market.serializers import (
-    CategorySerializer,
     ItemImageSerializer,
     ItemImageURLSerializer,
     ItemSerializer,
@@ -25,7 +23,6 @@ from market.serializers import (
     OfferSerializer,
     SubletSerializer,
 )
-from pennmobile.analytics import Metric, record_analytics
 
 
 User = get_user_model()
@@ -83,7 +80,11 @@ class Items(viewsets.ModelViewSet):
     queryset = Item.objects.all()
 
     def get_serializer_class(self):
-        return ItemSerializerRead if self.action == "list" or self.action == "retrieve" else ItemSerializer
+        return (
+            ItemSerializerRead
+            if self.action == "list" or self.action == "retrieve"
+            else ItemSerializer
+        )
 
     @staticmethod
     def get_filter_dict():
@@ -168,7 +169,9 @@ class Sublets(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-# TODO: This doesn't use CreateAPIView's functionality since we overrode the create method. Think about if there's a better way
+
+# TODO: This doesn't use CreateAPIView's functionality since we overrode the create method.
+# Think about if there's a better way
 class CreateImages(generics.CreateAPIView):
     serializer_class = ItemImageSerializer
     http_method_names = ["post"]
@@ -187,7 +190,9 @@ class CreateImages(generics.CreateAPIView):
         images = request.data.getlist("images")
         item_id = int(self.kwargs["item_id"])
         self.get_queryset()  # check if item exists
-        img_serializers = [self.get_serializer(data={"item": item_id, "image": img}) for img in images]
+        img_serializers = [
+            self.get_serializer(data={"item": item_id, "image": img}) for img in images
+        ]
         for img_serializer in img_serializers:
             img_serializer.is_valid(raise_exception=True)
         instances = [img_serializer.save() for img_serializer in img_serializers]
@@ -211,7 +216,8 @@ class DeleteImage(generics.DestroyAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-#TODO: We don't use the CreateModelMixin or DestroyModelMixin's functionality here. Think about if there's a better way
+# TODO: We don't use the CreateModelMixin or DestroyModelMixin's functionality here.
+# Think about if there's a better way
 class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = ItemSerializer
     http_method_names = ["post", "delete"]
