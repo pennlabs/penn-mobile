@@ -24,7 +24,6 @@ from market.serializers import (
     ItemSerializerRead,
     OfferSerializer,
     SubletSerializer,
-    TagSerializer,
 )
 from pennmobile.analytics import Metric, record_analytics
 
@@ -62,40 +61,6 @@ class UserOffers(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return Offer.objects.filter(user=user)
-
-
-def apply_filters(
-    queryset, params, filter_mappings, user=None, is_sublet=False, tag_field="tags__name"
-):
-    # Build dynamic filters based on filter mappings
-    filters = {}
-    for param, field in filter_mappings.items():
-        if param_value := params.get(param):
-            filters[field] = param_value
-
-
-    # Apply tag filtering iteratively if "tags" parameter is provided
-    for tag in params.getlist("tags"):
-        queryset = queryset.filter(**{tag_field: tag})
-
-    # Handle seller/owner filtering based on user ownership
-    if not is_sublet:
-        queryset = queryset.exclude(category__name__in=["Sublet"])
-        if params.get("seller", "false").lower() == "true" and user:
-            filters["seller"] = user
-        else:
-            filters["expires_at__gte"] = timezone.now()
-    else:
-        queryset = queryset.filter(item__category__name__in=["Sublet"])
-        if params.get("seller", "false").lower() == "true" and user:
-            filters["item__seller"] = user
-        else:
-            filters["item__expires_at__gte"] = timezone.now()
-
-    # Apply all filters to the queryset
-    queryset = queryset.filter(**filters)
-
-    return queryset
 
 
 class Items(viewsets.ModelViewSet):
