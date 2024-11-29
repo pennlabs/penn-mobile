@@ -1,14 +1,28 @@
+from django.contrib.auth import get_user_model
 from phonenumber_field.serializerfields import PhoneNumberField
 from profanity_check import predict
 from rest_framework import serializers
 
-from market.models import Amenity, Offer, Sublet, SubletImage
+from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 
 
-class AmenitySerializer(serializers.ModelSerializer):
+User = get_user_model()
+
+
+class TagSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Amenity
+        model = Tag
         fields = "__all__"
+        read_only_fields = [field.name for field in model._meta.fields]
+
+
+# TODO: We could make a Read-Only Serializer in a PennLabs core library.
+# This could inherit from that.
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = "__all__"
+        read_only_fields = [field.name for field in model._meta.fields]
 
 
 class OfferSerializer(serializers.ModelSerializer):
@@ -25,17 +39,17 @@ class OfferSerializer(serializers.ModelSerializer):
 
 
 # Create/Update Image Serializer
-class SubletImageSerializer(serializers.ModelSerializer):
+class ItemImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(write_only=True, required=False, allow_null=True)
 
     class Meta:
-        model = SubletImage
-        fields = ["sublet", "image"]
+        model = ItemImage
+        fields = "__all__"
 
 
 # Browse images
-class SubletImageURLSerializer(serializers.ModelSerializer):
-    image_url = serializers.SerializerMethodField("get_image_url")
+class ItemImageURLSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
 
     def get_image_url(self, obj):
         image = obj.image
@@ -50,47 +64,17 @@ class SubletImageURLSerializer(serializers.ModelSerializer):
             return image.url
 
     class Meta:
-        model = SubletImage
-        fields = ["id", "image_url"]
+        model = ItemImage
+        fields = "__all__"
+        read_only_fields = [field.name for field in model._meta.fields]
 
 
-# complex sublet serializer for use in C/U/D + getting info about a singular sublet
-class SubletSerializer(serializers.ModelSerializer):
-    # amenities = AmenitySerializer(many=True, required=False)
-    # images = SubletImageURLSerializer(many=True, required=False)
-    amenities = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Amenity.objects.all(), required=False
-    )
-
+# complex item serializer for use in C/U/D + getting info about a singular item
+class ItemSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Sublet
-        read_only_fields = [
-            "id",
-            "created_at",
-            "subletter",
-            "sublettees",
-            # "images"
-        ]
-        fields = [
-            "id",
-            "subletter",
-            "amenities",
-            "title",
-            "address",
-            "beds",
-            "baths",
-            "description",
-            "external_link",
-            "price",
-            "negotiable",
-            "start_date",
-            "end_date",
-            "expires_at",
-            # "images",
-            # images are now created/deleted through a separate endpoint (see urls.py)
-            # this serializer isn't used for getting,
-            # but gets on sublets will include ids/urls for images
-        ]
+        model = Item
+        fields = "__all__"
+        read_only_fields = ["id", "created_at", "seller", "buyers", "images", "favorites"]
 
     def validate_title(self, value):
         if self.contains_profanity(value):
@@ -106,84 +90,75 @@ class SubletSerializer(serializers.ModelSerializer):
         return predict([text])[0]
 
     def create(self, validated_data):
-        validated_data["subletter"] = self.context["request"].user
+        validated_data["seller"] = self.context["request"].user
+        return super().create(validated_data)
+
+
+# Read-only serializer for use when pulling all items/etc
+class ItemSerializerRead(serializers.ModelSerializer):
+    class Meta:
+        model = Item
+        fields = [
+            "id",
+            "seller",
+            "tags",
+            "category",
+            "favorites",
+            "title",
+            "price",
+            "negotiable",
+            "images",
+        ]
+        read_only_fields = fields
+
+# Read-only serializer for use when pulling all items/etc
+class ItemSerializerSimple(serializers.ModelSerializer):
+    class Meta:
+        model = Item
+        fields = [
+            "id",
+            "seller",
+            "tags",
+            "category",
+            "favorites",
+            "title",
+            "price",
+            "negotiable",
+            "images",
+        ]
+        read_only_fields = fields
+
+
+class SubletSerializer(serializers.ModelSerializer):
+    item = ItemSerializer(required=True)
+
+    class Meta:
+        model = Sublet
+        fields = ["id", "item", "address", "beds", "baths", "start_date", "end_date"]
+        read_only_fields = ["id"]
+
+    def create(self, validated_data):
+        item_serializer = ItemSerializer(data=validated_data.pop("item"), context=self.context)
+        item_serializer.is_valid(raise_exception=True)
+        validated_data["item"] = item_serializer.save()
         instance = super().create(validated_data)
-        instance.save()
         return instance
 
-    # delete_images is a list of image ids to delete
     def update(self, instance, validated_data):
-        # Check if the user is the subletter before allowing the update
-        if (
-            self.context["request"].user == instance.subletter
-            or self.context["request"].user.is_superuser
-        ):
-            instance = super().update(instance, validated_data)
-            instance.save()
-            return instance
-        else:
-            raise serializers.ValidationError("You do not have permission to update this sublet.")
+        if item_data := validated_data.pop("item", None):
+            item_serializer = ItemSerializer(
+                instance=instance.item, data=item_data, context=self.context, partial=True
+            )
+            item_serializer.is_valid(raise_exception=True)
+            validated_data["item"] = item_serializer.save()
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
 
     def destroy(self, instance):
-        # Check if the user is the subletter before allowing the delete
-        if (
-            self.context["request"].user == instance.subletter
-            or self.context["request"].user.is_superuser
-        ):
-            instance.delete()
-        else:
-            raise serializers.ValidationError("You do not have permission to delete this sublet.")
-
-
-class SubletSerializerRead(serializers.ModelSerializer):
-    amenities = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Amenity.objects.all(), required=False
-    )
-    images = SubletImageURLSerializer(many=True, required=False)
-
-    class Meta:
-        model = Sublet
-        read_only_fields = ["id", "created_at", "subletter", "sublettees"]
-        fields = [
-            "id",
-            "subletter",
-            "amenities",
-            "title",
-            "address",
-            "beds",
-            "baths",
-            "description",
-            "external_link",
-            "price",
-            "negotiable",
-            "start_date",
-            "end_date",
-            "expires_at",
-            "images",
-        ]
-
-
-# simple sublet serializer for use when pulling all serializers/etc
-class SubletSerializerSimple(serializers.ModelSerializer):
-    amenities = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Amenity.objects.all(), required=False
-    )
-    images = SubletImageURLSerializer(many=True, required=False)
-
-    class Meta:
-        model = Sublet
-        fields = [
-            "id",
-            "subletter",
-            "amenities",
-            "title",
-            "address",
-            "beds",
-            "baths",
-            "price",
-            "negotiable",
-            "start_date",
-            "end_date",
-            "images",
-        ]
-        read_only_fields = ["id", "subletter"]
+        # Could check if instance.item is None, but it should never be.
+        instance.item.delete()
+        instance.delete()
