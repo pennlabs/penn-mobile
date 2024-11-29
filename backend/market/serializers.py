@@ -69,25 +69,11 @@ class ItemImageURLSerializer(serializers.ModelSerializer):
         read_only_fields = [field.name for field in model._meta.fields]
 
 
-# complex item serializer for use in C/U/D + getting info about a singular tag
+# complex item serializer for use in C/U/D + getting info about a singular item
 class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
-        fields = [
-            "id",
-            "seller",
-            "buyers",
-            "tags",
-            "category",
-            "title",
-            "description",
-            "external_link",
-            "price",
-            "negotiable",
-            "created_at",
-            "expires_at",
-            "images",
-        ]
+        fields = "__all__"
         read_only_fields = ["id", "created_at", "seller", "buyers", "images", "favorites"]
 
     def validate_title(self, value):
@@ -110,6 +96,23 @@ class ItemSerializer(serializers.ModelSerializer):
 
 # Read-only serializer for use when pulling all items/etc
 class ItemSerializerRead(serializers.ModelSerializer):
+    class Meta:
+        model = Item
+        fields = [
+            "id",
+            "seller",
+            "tags",
+            "category",
+            "favorites",
+            "title",
+            "price",
+            "negotiable",
+            "images",
+        ]
+        read_only_fields = fields
+
+# Read-only serializer for use when pulling all items/etc
+class ItemSerializerSimple(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = [
