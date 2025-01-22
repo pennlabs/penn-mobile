@@ -6,6 +6,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.serializers import ValidationError
 
 from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 from market.permissions import (
@@ -19,9 +20,12 @@ from market.serializers import (
     ItemImageSerializer,
     ItemImageURLSerializer,
     ItemSerializer,
-    ItemSerializerRead,
+    ItemSerializerRetrieve,
+    ItemSerializerList,
     OfferSerializer,
     SubletSerializer,
+    SubletSerializerRetrieve,
+    SubletSerializerList,
 )
 
 
@@ -43,14 +47,14 @@ class Categories(APIView):
 
 
 class UserFavorites(generics.ListAPIView):
-    serializer_class = ItemSerializerRead
+    serializer_class = ItemSerializerList
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
         return user.items_favorited
 
-
+# TODO: Can add feature to filter for active offers only
 class UserOffers(generics.ListAPIView):
     serializer_class = OfferSerializer
     permission_classes = [IsAuthenticated]
@@ -80,11 +84,12 @@ class Items(viewsets.ModelViewSet):
     queryset = Item.objects.all()
 
     def get_serializer_class(self):
-        return (
-            ItemSerializerRead
-            if self.action == "list" or self.action == "retrieve"
-            else ItemSerializer
-        )
+        if self.action=="list":
+            return ItemSerializerList
+        elif self.action=="retrieve":
+            return ItemSerializerRetrieve
+        else:
+            return ItemSerializer
 
     @staticmethod
     def get_filter_dict():
@@ -120,12 +125,35 @@ class Items(viewsets.ModelViewSet):
         # Serialize and return the queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 class Sublets(viewsets.ModelViewSet):
     permission_classes = [SubletOwnerPermission | IsSuperUser]
-    serializer_class = SubletSerializer
     queryset = Sublet.objects.all()
+
+    def get_serializer_class(self):
+        if self.action=="list":
+            return SubletSerializerList
+        elif self.action=="retrieve":
+            return SubletSerializerRetrieve
+        else:
+            return SubletSerializer
 
     @staticmethod
     def get_filter_dict():
@@ -135,8 +163,10 @@ class Sublets(viewsets.ModelViewSet):
         filter_dict = {
             **item_filter_dict,
             "address": "address__icontains",
-            "beds": "beds",
-            "baths": "baths",
+            "min_beds": "beds__gte",
+            "max_beds": "beds__lte",
+            "min_baths": "baths__gte",
+            "max_baths": "baths__lte",
             "start_date_min": "start_date__gte",
             "start_date_max": "start_date__lte",
             "end_date_min": "end_date__gte",
@@ -187,16 +217,13 @@ class CreateImages(generics.CreateAPIView):
 
     # takes an image multipart form data and creates a new image object
     def post(self, request, *args, **kwargs):
-        images = request.data.getlist("images")
+        images = request.data.getlist('images', [])
         item_id = int(self.kwargs["item_id"])
-        self.get_queryset()  # check if item exists
-        img_serializers = [
-            self.get_serializer(data={"item": item_id, "image": img}) for img in images
-        ]
-        for img_serializer in img_serializers:
-            img_serializer.is_valid(raise_exception=True)
-        instances = [img_serializer.save() for img_serializer in img_serializers]
-        data = [ItemImageURLSerializer(instance=instance).data for instance in instances]
+        item = get_object_or_404(Item, id=item_id)
+        self.check_object_permissions(request, item)
+        img_serializers = [self.get_serializer(data={"item": item_id, "image": img}) for img in images]
+        instances = [img_serializer.save() for img_serializer in img_serializers if img_serializer.is_valid(raise_exception=True)]
+        data = ItemImageURLSerializer(instances, many=True).data
         return Response(data, status=status.HTTP_201_CREATED)
 
 
@@ -210,7 +237,6 @@ class DeleteImage(generics.DestroyAPIView):
         queryset = self.get_queryset()
         filter = {"id": self.kwargs["image_id"]}
         obj = get_object_or_404(queryset, **filter)
-        # checking permissions here is kind of redundant
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -234,9 +260,6 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
             raise exceptions.NotAcceptable("Favorite already exists")
         item = get_object_or_404(Item, id=item_id)
         self.get_queryset().add(item)
-
-        # record_analytics(Metric.SUBLET_FAVORITED, request.user.username)
-
         return Response(status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
@@ -274,16 +297,12 @@ class Offers(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
-        # record_analytics(Metric.SUBLET_OFFER, request.user.username)
-
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         filter = {"user": self.request.user.id, "item": int(self.kwargs["item_id"])}
         obj = get_object_or_404(queryset, **filter)
-        # checking permissions here is kind of redundant
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)

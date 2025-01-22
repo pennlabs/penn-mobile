@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
+from django.db.models import Q
+from django.core.exceptions import ValidationError
 
 
 User = get_user_model()
@@ -36,6 +38,7 @@ class Tag(models.Model):
 
 
 class Item(models.Model):
+    
     seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name="items_listed")
     buyers = models.ManyToManyField(User, through=Offer, related_name="items_offered", blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
@@ -52,13 +55,28 @@ class Item(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.seller}"
+    
+    def clean(self):
+        # Check that sublet is not null when category is "Sublet"
+        if self.category.name == "Sublet" and not hasattr(self, "sublet"):
+            raise ValidationError({"sublet": "Sublet must not be null when category is 'Sublet'."})
+
+        # Check that sublet is null when category is not "Sublet"
+        if self.category.name != "Sublet" and hasattr(self, "sublet") and self.sublet:
+            raise ValidationError({"sublet": "Sublet must be null when category is not 'Sublet'."})
+        
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Validate the object
+        super().save(*args, **kwargs)
+
+
 
 
 class Sublet(models.Model):
     item = models.OneToOneField(Item, on_delete=models.CASCADE, related_name="sublet")
     address = models.CharField(max_length=255)
-    beds = models.IntegerField()
-    baths = models.IntegerField()
+    beds = models.FloatField()
+    baths = models.FloatField()
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
 

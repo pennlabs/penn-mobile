@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from phonenumber_field.serializerfields import PhoneNumberField
 from profanity_check import predict
 from rest_framework import serializers
+from django.core import exceptions
+from rest_framework.exceptions import ValidationError
 
 from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 
@@ -71,6 +73,7 @@ class ItemImageURLSerializer(serializers.ModelSerializer):
 
 # complex item serializer for use in C/U/D + getting info about a singular item
 class ItemSerializer(serializers.ModelSerializer):
+    images = ItemImageSerializer(many=True, required=False)
     class Meta:
         model = Item
         fields = "__all__"
@@ -90,29 +93,51 @@ class ItemSerializer(serializers.ModelSerializer):
         return predict([text])[0]
 
     def create(self, validated_data):
-        validated_data["seller"] = self.context["request"].user
-        return super().create(validated_data)
+        try:
+            self.validate(validated_data)
+            validated_data["seller"] = self.context["request"].user
+            return super().create(validated_data)
+        except exceptions.ValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
+    
+    def update(self, instance, validated_data):
+        try:
+            return super().update(instance, validated_data)
+        except exceptions.ValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
 
 
-# Read-only serializer for use when pulling all items/etc
-class ItemSerializerRead(serializers.ModelSerializer):
+# Read-only serializer for use when reading a single item
+class ItemSerializerRetrieve(serializers.ModelSerializer):
+    buyer_count = serializers.SerializerMethodField()
+    images = ItemImageURLSerializer(many=True)
+
     class Meta:
         model = Item
         fields = [
             "id",
             "seller",
+            "buyer_count",
             "tags",
             "category",
-            "favorites",
             "title",
+            "description",
             "price",
             "negotiable",
+            "created_at",
+            "expires_at",
             "images",
+            "favorites",
         ]
         read_only_fields = fields
+    
+    def get_buyer_count(self, obj):
+        return obj.buyers.count()
+
 
 # Read-only serializer for use when pulling all items/etc
-class ItemSerializerSimple(serializers.ModelSerializer):
+class ItemSerializerList(serializers.ModelSerializer):
+    images = ItemImageURLSerializer(many=True)
     class Meta:
         model = Item
         fields = [
@@ -120,11 +145,12 @@ class ItemSerializerSimple(serializers.ModelSerializer):
             "seller",
             "tags",
             "category",
-            "favorites",
             "title",
             "price",
             "negotiable",
+            "expires_at",
             "images",
+            "favorites",
         ]
         read_only_fields = fields
 
@@ -134,7 +160,7 @@ class SubletSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Sublet
-        fields = ["id", "item", "address", "beds", "baths", "start_date", "end_date"]
+        fields = "__all__"
         read_only_fields = ["id"]
 
     def create(self, validated_data):
@@ -146,6 +172,7 @@ class SubletSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if item_data := validated_data.pop("item", None):
+            item_data.pop("category", None)
             item_serializer = ItemSerializer(
                 instance=instance.item, data=item_data, context=self.context, partial=True
             )
@@ -162,3 +189,21 @@ class SubletSerializer(serializers.ModelSerializer):
         # Could check if instance.item is None, but it should never be.
         instance.item.delete()
         instance.delete()
+
+
+class SubletSerializerRetrieve(serializers.ModelSerializer):
+    item = ItemSerializerRetrieve(required=True)
+
+    class Meta:
+        model = Sublet
+        fields = "__all__"
+        read_only_fields = [field.name for field in model._meta.fields]
+
+
+class SubletSerializerList(serializers.ModelSerializer):
+    item = ItemSerializerList(required=True)
+
+    class Meta:
+        model = Sublet
+        fields = "__all__"
+        read_only_fields = [field.name for field in model._meta.fields]

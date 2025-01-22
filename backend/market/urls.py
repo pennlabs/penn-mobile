@@ -18,7 +18,7 @@ from market.views import (
 app_name = "market"
 
 router = routers.DefaultRouter()
-router.register(r"items", Items, basename="properties")
+router.register(r"items", Items, basename="items")
 router.register(r"sublets", Sublets, basename="sublets")
 
 additional_urls = [

@@ -49,8 +49,12 @@ class ItemImageOwnerPermission(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         # Check if the user is the owner of the Item.
-        return request.method in permissions.SAFE_METHODS or obj.item.seller == request.user
-
+        print(request.method)
+        print(obj)
+        print(request.user)
+        return request.method in permissions.SAFE_METHODS or (
+            hasattr(obj, 'seller') and obj.seller == request.user) or (
+                hasattr(obj, 'item') and obj.item.seller == request.user)
 
 class OfferOwnerPermission(permissions.BasePermission):
     """
@@ -63,6 +67,6 @@ class OfferOwnerPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             # Check if the user owns the item when getting list
-            return obj.item.seller == request.user
+            return obj.seller == request.user
         # This is redundant, here for safety
         return obj.user == request.user
