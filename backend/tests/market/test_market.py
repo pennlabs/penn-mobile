@@ -1007,3 +1007,33 @@ class TestMarket(TestCase):
         response = self.client.delete("/market/items/1/offers/")
         self.assertEqual(response.status_code, 204)
         self.assertFalse(Offer.objects.filter(id=1).exists())
+
+    def test_create_image(self):
+        with open("tests/market/mock_image.jpg", "rb") as image:
+            response = self.client.post(
+                f"/market/items/1/images/", {"images": image}
+            )
+            self.assertEqual(response.status_code, 201)
+            images = Item.objects.get(id=1).images.all()
+            self.assertTrue(images.exists())
+            self.assertEqual(1, images.first().item.id)
+
+    def test_create_delete_images(self):
+        with open("tests/market/mock_image.jpg", "rb") as image:
+            with open("tests/market/mock_image.jpg", "rb") as image2:
+                response = self.client.post(
+                    f"/market/items/1/images/",
+                    {"images": [image, image2]},
+                    "multipart",
+                )
+                self.assertEqual(response.status_code, 201)
+                images = Item.objects.get(id=1).images.all()
+                image_id1 = images.first().id
+                self.assertTrue(images.exists())
+                self.assertEqual(2, images.count())
+                self.assertEqual(1, images.first().item.id)
+                response = self.client.delete(f"/market/items/images/1/")
+                self.assertEqual(response.status_code, 204)
+                self.assertFalse(ItemImage.objects.filter(id=1).exists())
+                self.assertTrue(ItemImage.objects.filter(id=2).exists())
+                self.assertEqual(1, ItemImage.objects.all().count())
