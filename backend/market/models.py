@@ -12,12 +12,12 @@ class Offer(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=["user", "item"], name="unique_offer_market")]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="offers")
     item = models.ForeignKey("Item", on_delete=models.CASCADE)
     email = models.EmailField(max_length=255, null=True, blank=True)
     phone_number = PhoneNumberField(null=True, blank=True)
     message = models.CharField(max_length=255, blank=True)
-    created_date = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Offer for {self.item} made by {self.user}"
@@ -55,21 +55,9 @@ class Item(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.seller}"
-    
-    def clean(self):
-        # Check that sublet is not null when category is "Sublet"
-        if self.category.name == "Sublet" and not hasattr(self, "sublet"):
-            raise ValidationError({"sublet": "Sublet must not be null when category is 'Sublet'."})
-
-        # Check that sublet is null when category is not "Sublet"
-        if self.category.name != "Sublet" and hasattr(self, "sublet") and self.sublet:
-            raise ValidationError({"sublet": "Sublet must be null when category is not 'Sublet'."})
         
     def save(self, *args, **kwargs):
-        self.full_clean()  # Validate the object
         super().save(*args, **kwargs)
-
-
 
 
 class Sublet(models.Model):

@@ -20,11 +20,11 @@ from market.serializers import (
     ItemImageSerializer,
     ItemImageURLSerializer,
     ItemSerializer,
-    ItemSerializerRetrieve,
+    ItemSerializerPublic,
     ItemSerializerList,
     OfferSerializer,
     SubletSerializer,
-    SubletSerializerRetrieve,
+    SubletSerializerPublic,
     SubletSerializerList,
 )
 
@@ -86,8 +86,8 @@ class Items(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action=="list":
             return ItemSerializerList
-        elif self.action=="retrieve":
-            return ItemSerializerRetrieve
+        elif self.action=="retrieve" and self.get_object().seller != self.request.user:
+            return ItemSerializerPublic
         else:
             return ItemSerializer
 
@@ -128,6 +128,8 @@ class Items(viewsets.ModelViewSet):
     
 
     def create(self, request, *args, **kwargs):
+        if request.data.get("category", None) == "Sublet":
+            return Response("Sublet must be created using /sublets/", status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -150,8 +152,8 @@ class Sublets(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action=="list":
             return SubletSerializerList
-        elif self.action=="retrieve":
-            return SubletSerializerRetrieve
+        elif self.action=="retrieve" and self.get_object().item.seller != self.request.user:
+            return SubletSerializerPublic
         else:
             return SubletSerializer
 
@@ -285,7 +287,10 @@ class Offers(viewsets.ModelViewSet):
     serializer_class = OfferSerializer
 
     def get_queryset(self):
-        return Offer.objects.filter(item_id=int(self.kwargs["item_id"])).order_by("created_date")
+        if Item.objects.filter(pk=int(self.kwargs["item_id"])).exists():
+            return Offer.objects.filter(item_id=int(self.kwargs["item_id"])).order_by("created_at")
+        else:
+            raise exceptions.NotFound("No Item matches the given query")
 
     def create(self, request, *args, **kwargs):
         data = request.data
@@ -301,12 +306,14 @@ class Offers(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        filter = {"user": self.request.user.id, "item": int(self.kwargs["item_id"])}
+        filter = {"user": self.request.user, "item": int(self.kwargs["item_id"])}
         obj = get_object_or_404(queryset, **filter)
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def list(self, request, *args, **kwargs):
+        if not Item.objects.filter(pk=int(self.kwargs["item_id"])).exists():
+            raise exceptions.NotFound("No Item matches the given query")
         self.check_object_permissions(request, Item.objects.get(pk=int(self.kwargs["item_id"])))
         return super().list(request, *args, **kwargs)
