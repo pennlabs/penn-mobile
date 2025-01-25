@@ -52,9 +52,12 @@ class ItemImageOwnerPermission(permissions.BasePermission):
         print(request.method)
         print(obj)
         print(request.user)
-        return request.method in permissions.SAFE_METHODS or (
-            hasattr(obj, 'seller') and obj.seller == request.user) or (
-                hasattr(obj, 'item') and obj.item.seller == request.user)
+        return (
+            request.method in permissions.SAFE_METHODS
+            or (hasattr(obj, "seller") and obj.seller == request.user)
+            or (hasattr(obj, "item") and obj.item.seller == request.user)
+        )
+
 
 class OfferOwnerPermission(permissions.BasePermission):
     """

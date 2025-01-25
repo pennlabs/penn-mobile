@@ -6,7 +6,6 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.serializers import ValidationError
 
 from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 from market.permissions import (
@@ -20,12 +19,12 @@ from market.serializers import (
     ItemImageSerializer,
     ItemImageURLSerializer,
     ItemSerializer,
-    ItemSerializerPublic,
     ItemSerializerList,
+    ItemSerializerPublic,
     OfferSerializer,
     SubletSerializer,
-    SubletSerializerPublic,
     SubletSerializerList,
+    SubletSerializerPublic,
 )
 
 
@@ -53,6 +52,7 @@ class UserFavorites(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return user.items_favorited
+
 
 # TODO: Can add feature to filter for active offers only
 class UserOffers(generics.ListAPIView):
@@ -84,9 +84,9 @@ class Items(viewsets.ModelViewSet):
     queryset = Item.objects.all()
 
     def get_serializer_class(self):
-        if self.action=="list":
+        if self.action == "list":
             return ItemSerializerList
-        elif self.action=="retrieve" and self.get_object().seller != self.request.user:
+        elif self.action == "retrieve" and self.get_object().seller != self.request.user:
             return ItemSerializerPublic
         else:
             return ItemSerializer
@@ -125,18 +125,19 @@ class Items(viewsets.ModelViewSet):
         # Serialize and return the queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-    
 
     def create(self, request, *args, **kwargs):
         if request.data.get("category", None) == "Sublet":
-            return Response("Sublet must be created using /sublets/", status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                "Sublet must be created using /sublets/", status=status.HTTP_400_BAD_REQUEST
+            )
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+        partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -144,15 +145,14 @@ class Items(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-
 class Sublets(viewsets.ModelViewSet):
     permission_classes = [SubletOwnerPermission | IsSuperUser]
     queryset = Sublet.objects.all()
 
     def get_serializer_class(self):
-        if self.action=="list":
+        if self.action == "list":
             return SubletSerializerList
-        elif self.action=="retrieve" and self.get_object().item.seller != self.request.user:
+        elif self.action == "retrieve" and self.get_object().item.seller != self.request.user:
             return SubletSerializerPublic
         else:
             return SubletSerializer
@@ -219,12 +219,18 @@ class CreateImages(generics.CreateAPIView):
 
     # takes an image multipart form data and creates a new image object
     def post(self, request, *args, **kwargs):
-        images = request.data.getlist('images', [])
+        images = request.data.getlist("images", [])
         item_id = int(self.kwargs["item_id"])
         item = get_object_or_404(Item, id=item_id)
         self.check_object_permissions(request, item)
-        img_serializers = [self.get_serializer(data={"item": item_id, "image": img}) for img in images]
-        instances = [img_serializer.save() for img_serializer in img_serializers if img_serializer.is_valid(raise_exception=True)]
+        img_serializers = [
+            self.get_serializer(data={"item": item_id, "image": img}) for img in images
+        ]
+        instances = [
+            img_serializer.save()
+            for img_serializer in img_serializers
+            if img_serializer.is_valid(raise_exception=True)
+        ]
         data = ItemImageURLSerializer(instances, many=True).data
         return Response(data, status=status.HTTP_201_CREATED)
 

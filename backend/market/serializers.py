@@ -1,9 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.core import exceptions
 from phonenumber_field.serializerfields import PhoneNumberField
 from profanity_check import predict
 from rest_framework import serializers
-from django.core import exceptions
-from rest_framework.exceptions import ValidationError
 
 from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 
@@ -79,7 +78,15 @@ class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = "__all__"
-        read_only_fields = ["id", "created_at", "seller", "buyers", "images", "favorites", "sublet_id"]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "seller",
+            "buyers",
+            "images",
+            "favorites",
+            "sublet_id",
+        ]
 
     def validate_title(self, value):
         if self.contains_profanity(value):
@@ -104,14 +111,22 @@ class ItemSerializer(serializers.ModelSerializer):
             return super().create(validated_data)
         except exceptions.ValidationError as e:
             raise serializers.ValidationError(e.message_dict)
-    
+
     def update(self, instance, validated_data):
         try:
-            if instance.category.name == "Sublet" and "category" in validated_data and validated_data.get("category", None).name != "Sublet":
+            if (
+                instance.category.name == "Sublet"
+                and "category" in validated_data
+                and validated_data.get("category", None).name != "Sublet"
+            ):
                 raise serializers.ValidationError("Cannot change category from Sublet")
-            if instance.category.name != "Sublet" and "category" in validated_data and validated_data.get("category", None).name == "Sublet":
+            if (
+                instance.category.name != "Sublet"
+                and "category" in validated_data
+                and validated_data.get("category", None).name == "Sublet"
+            ):
                 raise serializers.ValidationError("Cannot change category to Sublet")
-                
+
             return super().update(instance, validated_data)
         except exceptions.ValidationError as e:
             raise serializers.ValidationError(e.message_dict)
@@ -142,13 +157,13 @@ class ItemSerializerPublic(serializers.ModelSerializer):
             "sublet_id",
         ]
         read_only_fields = fields
-    
+
     def get_buyer_count(self, obj):
         return obj.buyers.count()
-    
+
     def get_sublet_id(self, obj):
         return obj.sublet.pk if hasattr(obj, "sublet") else None
-    
+
     def get_favorite_count(self, obj):
         return obj.favorites.count()
 

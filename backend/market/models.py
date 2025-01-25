@@ -1,8 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
-from django.db.models import Q
-from django.core.exceptions import ValidationError
 
 
 User = get_user_model()
@@ -38,7 +36,7 @@ class Tag(models.Model):
 
 
 class Item(models.Model):
-    
+
     seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name="items_listed")
     buyers = models.ManyToManyField(User, through=Offer, related_name="items_offered", blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
@@ -55,7 +53,7 @@ class Item(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.seller}"
-        
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
