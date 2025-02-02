@@ -49,9 +49,6 @@ class ItemImageOwnerPermission(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         # Check if the user is the owner of the Item.
-        print(request.method)
-        print(obj)
-        print(request.user)
         return (
             request.method in permissions.SAFE_METHODS
             or (hasattr(obj, "seller") and obj.seller == request.user)

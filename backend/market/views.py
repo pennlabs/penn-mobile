@@ -81,7 +81,7 @@ class Items(viewsets.ModelViewSet):
 
     permission_classes = [ItemOwnerPermission | IsSuperUser]
     serializer_class = ItemSerializer
-    queryset = Item.objects.all()
+    queryset = Item.objects.filter(sublet__isnull=True)
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -115,8 +115,6 @@ class Items(viewsets.ModelViewSet):
         for tag in request.query_params.getlist("tags"):
             queryset = queryset.filter(tags__name=tag)
 
-        queryset = queryset.exclude(category__name__in=["Sublet"])
-
         if request.query_params.get("seller", "false").lower() == "true":
             queryset = queryset.filter(seller=request.user)
         else:
@@ -125,25 +123,7 @@ class Items(viewsets.ModelViewSet):
         # Serialize and return the queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-    def create(self, request, *args, **kwargs):
-        if request.data.get("category", None) == "Sublet":
-            return Response(
-                "Sublet must be created using /sublets/", status=status.HTTP_400_BAD_REQUEST
-            )
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
+    
 
 class Sublets(viewsets.ModelViewSet):
     permission_classes = [SubletOwnerPermission | IsSuperUser]
@@ -189,8 +169,6 @@ class Sublets(viewsets.ModelViewSet):
 
         for tag in request.query_params.getlist("tags"):
             queryset = queryset.filter(item__tags__name=tag)
-
-        queryset = queryset.filter(item__category__name__in=["Sublet"])
 
         if request.query_params.get("seller", "false").lower() == "true":
             queryset = queryset.filter(item__seller=request.user)
@@ -299,6 +277,7 @@ class Offers(viewsets.ModelViewSet):
             raise exceptions.NotFound("No Item matches the given query")
 
     def create(self, request, *args, **kwargs):
+        # Required to be mutable since the item field is from the URL
         data = request.data
         request.POST._mutable = True
         if self.get_queryset().filter(user=self.request.user).exists():
@@ -317,7 +296,7 @@ class Offers(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)
-
+                                        
     def list(self, request, *args, **kwargs):
         if not Item.objects.filter(pk=int(self.kwargs["item_id"])).exists():
             raise exceptions.NotFound("No Item matches the given query")

@@ -73,7 +73,6 @@ class ItemImageURLSerializer(serializers.ModelSerializer):
 # complex item serializer for use in C/U/D + getting info about a singular item
 class ItemSerializer(serializers.ModelSerializer):
     images = ItemImageSerializer(many=True, required=False, read_only=True)
-    sublet_id = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Item
@@ -85,7 +84,6 @@ class ItemSerializer(serializers.ModelSerializer):
             "buyers",
             "images",
             "favorites",
-            "sublet_id",
         ]
 
     def validate_title(self, value):
@@ -101,35 +99,10 @@ class ItemSerializer(serializers.ModelSerializer):
     def contains_profanity(self, text):
         return predict([text])[0]
 
-    def get_sublet_id(self, obj):
-        return obj.sublet.pk if hasattr(obj, "sublet") else None
-
     def create(self, validated_data):
-        try:
-            self.validate(validated_data)
-            validated_data["seller"] = self.context["request"].user
-            return super().create(validated_data)
-        except exceptions.ValidationError as e:
-            raise serializers.ValidationError(e.message_dict)
-
-    def update(self, instance, validated_data):
-        try:
-            if (
-                instance.category.name == "Sublet"
-                and "category" in validated_data
-                and validated_data.get("category", None).name != "Sublet"
-            ):
-                raise serializers.ValidationError("Cannot change category from Sublet")
-            if (
-                instance.category.name != "Sublet"
-                and "category" in validated_data
-                and validated_data.get("category", None).name == "Sublet"
-            ):
-                raise serializers.ValidationError("Cannot change category to Sublet")
-
-            return super().update(instance, validated_data)
-        except exceptions.ValidationError as e:
-            raise serializers.ValidationError(e.message_dict)
+        self.validate(validated_data)
+        validated_data["seller"] = self.context["request"].user
+        return super().create(validated_data)
 
 
 # Read-only serializer for use when reading a single item
@@ -137,7 +110,6 @@ class ItemSerializerPublic(serializers.ModelSerializer):
     buyer_count = serializers.SerializerMethodField()
     favorite_count = serializers.SerializerMethodField()
     images = ItemImageURLSerializer(many=True)
-    sublet_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Item
@@ -154,15 +126,11 @@ class ItemSerializerPublic(serializers.ModelSerializer):
             "expires_at",
             "images",
             "favorite_count",
-            "sublet_id",
         ]
         read_only_fields = fields
 
     def get_buyer_count(self, obj):
         return obj.buyers.count()
-
-    def get_sublet_id(self, obj):
-        return obj.sublet.pk if hasattr(obj, "sublet") else None
 
     def get_favorite_count(self, obj):
         return obj.favorites.count()
@@ -171,7 +139,6 @@ class ItemSerializerPublic(serializers.ModelSerializer):
 # Read-only serializer for use when pulling all items/etc
 class ItemSerializerList(serializers.ModelSerializer):
     images = ItemImageURLSerializer(many=True)
-    sublet_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Item
@@ -186,12 +153,8 @@ class ItemSerializerList(serializers.ModelSerializer):
             "expires_at",
             "images",
             "favorites",
-            "sublet_id",
         ]
         read_only_fields = fields
-
-    def get_sublet_id(self, obj):
-        return obj.sublet.pk if hasattr(obj, "sublet") else None
 
 
 class SubletSerializer(serializers.ModelSerializer):
@@ -203,9 +166,6 @@ class SubletSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
     def create(self, validated_data):
-        category = validated_data.get("item", {}).get("category", None)
-        if category is None or category.name != "Sublet":
-            raise serializers.ValidationError({"item": "Item category must be 'Sublet'."})
         item_serializer = ItemSerializer(data=validated_data.pop("item"), context=self.context)
         item_serializer.is_valid(raise_exception=True)
         validated_data["item"] = item_serializer.save()
@@ -213,9 +173,6 @@ class SubletSerializer(serializers.ModelSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        category = validated_data.get("item", {}).get("category", None)
-        if category is None or category.name != "Sublet":
-            raise serializers.ValidationError({"item": "Item category must be 'Sublet'."})
         if item_data := validated_data.pop("item", None):
             item_serializer = ItemSerializer(
                 instance=instance.item, data=item_data, context=self.context, partial=True

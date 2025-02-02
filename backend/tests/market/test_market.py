@@ -118,7 +118,6 @@ class TestMarket(TestCase):
                 "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
                 "favorites": [1],
-                "sublet_id": None,
             },
             {
                 "id": 2,
@@ -131,7 +130,6 @@ class TestMarket(TestCase):
                 "expires_at": "2025-10-12T01:00:00-04:00",
                 "images": [],
                 "favorites": [1],
-                "sublet_id": None,
             },
             {
                 "id": 3,
@@ -144,7 +142,6 @@ class TestMarket(TestCase):
                 "expires_at": "2025-08-12T01:00:00-04:00",
                 "images": [],
                 "favorites": [1],
-                "sublet_id": None,
             },
             {
                 "id": 4,
@@ -157,7 +154,6 @@ class TestMarket(TestCase):
                 "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
                 "favorites": [],
-                "sublet_id": None,
             },
         ]
         self.assertEqual(response.status_code, 200)
@@ -172,7 +168,6 @@ class TestMarket(TestCase):
         expected_response = {
             "id": 1,
             "images": [],
-            "sublet_id": None,
             "title": "Math Textbook",
             "description": "2023 version",
             "external_link": "https://example.com/book",
@@ -207,41 +202,14 @@ class TestMarket(TestCase):
             "expires_at": "2025-10-12T01:00:00-04:00",
             "images": [],
             "favorite_count": 1,
-            "sublet_id": None,
         }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), expected_response)
 
-    def test_get_single_item_of_sublet_own(self):
+    def test_get_item_of_sublet(self):
         response = self.client.get("/market/items/5/")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
-        expected_response = {
-            "id": 5,
-            "images": [],
-            "sublet_id": 1,
-            "title": "Cira Green Sublet",
-            "description": (
-                "Fully furnished 3-bedroom apartment available for "
-                "sublet with all amenities included."
-            ),
-            "external_link": None,
-            "price": 1350.0,
-            "negotiable": False,
-            "expires_at": "2025-12-12T00:00:00-05:00",
-            "seller": 1,
-            "category": "Sublet",
-            "buyers": [1, 2],
-            "tags": ["New"],
-            "favorites": [],
-        }
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
-        self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
-        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {'detail': 'No Item matches the given query.'})
 
     def test_create_item_all_fields(self):
         payload = {
@@ -258,7 +226,6 @@ class TestMarket(TestCase):
             "created_at": "2024-11-26T00:50:03.217587-05:00",
             "expires_at": "2025-12-12T00:00:00-05:00",
             "images": [],
-            "sublet_id": None,
         }
         response = self.client.post("/market/items/", payload, format="json")
         response_without_created_at = response.json().copy()
@@ -278,7 +245,6 @@ class TestMarket(TestCase):
             "expires_at": "2025-12-12T00:00:00-05:00",
             "images": [],
             "favorites": [],
-            "sublet_id": None,
         }
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response_without_created_at, expected_response_without_created_at)
@@ -325,7 +291,6 @@ class TestMarket(TestCase):
             "expires_at": "2024-12-12T00:00:00-05:00",
             "images": [],
             "favorites": [],
-            "sublet_id": None,
         }
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response_without_created_at, expected_response_without_created_at)
@@ -398,6 +363,44 @@ class TestMarket(TestCase):
             res_json["description"][0], "The description contains inappropriate language."
         )
 
+    def test_create_item_sublet_category(self):
+        payload = {
+            "tags": ["New"],
+            "category": "Sublet",
+            "title": "Math Textbook",
+            "description": "2023 version",
+            "external_link": "https://example.com/listing",
+            "price": 20.0,
+            "negotiable": True,
+            "expires_at": "2024-12-12T00:00:00-05:00",
+        }
+        response = self.client.post("/market/items/", payload)
+        res_json = json.loads(response.content)
+        response_without_created_at = res_json.copy()
+        created_at = response_without_created_at.pop("created_at")
+        created_at = datetime.datetime.fromisoformat(created_at)
+        expected_response_without_created_at = {
+            "id": 7,
+            "seller": 1,
+            "buyers": [],
+            "tags": ["New"],
+            "category": "Sublet",
+            "title": "Math Textbook",
+            "description": "2023 version",
+            "external_link": "https://example.com/listing",
+            "price": 20.0,
+            "negotiable": True,
+            "expires_at": "2024-12-12T00:00:00-05:00",
+            "images": [],
+            "favorites": [],
+        }
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response_without_created_at, expected_response_without_created_at)
+        self.assertLessEqual(
+            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            datetime.timedelta(minutes=1),
+        )
+
     def test_update_item_minimum_required(self):
         # All fields included are strictly required.
         payload = {
@@ -424,7 +427,6 @@ class TestMarket(TestCase):
             "expires_at": "2024-12-13T00:00:00-05:00",
             "images": [],
             "favorites": [1],
-            "sublet_id": None,
         }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response_without_created_at, expected_response)
@@ -458,7 +460,6 @@ class TestMarket(TestCase):
             "created_at": "2024-11-26T00:50:03.217587-05:00",
             "expires_at": "2024-12-14T00:00:00-05:00",
             "images": [],
-            "sublet_id": None,
         }
         original_created_at = Item.objects.get(id=1).created_at
         response = self.client.patch("/market/items/1/", payload, format="json")
@@ -480,7 +481,6 @@ class TestMarket(TestCase):
             "expires_at": "2024-12-14T00:00:00-05:00",
             "images": [],
             "favorites": [1],
-            "sublet_id": None,
         }
         self.assertEqual(response_without_created_at, expected_response)
         self.assertEqual(original_created_at, created_at)
@@ -520,9 +520,29 @@ class TestMarket(TestCase):
     def test_update_item_to_sublet(self):
         payload = {"category": "Sublet"}
         response = self.client.patch("/market/items/1/", payload)
-        self.assertEqual(response.status_code, 400)
-        res_json = response.json()
-        self.assertEqual(res_json, ["Cannot change category to Sublet"])
+        response_without_created_at = response.json().copy()
+        created_at = response_without_created_at.pop("created_at")
+        created_at = datetime.datetime.fromisoformat(created_at)
+        expected_response = {
+            'id': 1, 
+            'images': [], 
+            'title': 'Math Textbook', 
+            'description': '2023 version', 
+            'external_link': 'https://example.com/book', 
+            'price': 20.0, 'negotiable': True, 
+            'expires_at': '2025-12-12T00:00:00-05:00', 
+            'seller': 1, 
+            'category': 'Sublet', 
+            'buyers': [1], 
+            'tags': ['Textbook', 'Used'], 
+            'favorites': [1]
+        }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response_without_created_at, expected_response)
+        self.assertLessEqual(
+            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            datetime.timedelta(minutes=1),
+        )
 
     def test_delete_item(self):
         response = self.client.delete("/market/items/1/")
@@ -547,7 +567,6 @@ class TestMarket(TestCase):
                     "expires_at": "2025-12-12T00:00:00-05:00",
                     "images": [],
                     "favorites": [],
-                    "sublet_id": 1,
                 },
                 "address": "Cira Green, Philadelphia, PA",
                 "beds": 3.0,
@@ -568,7 +587,6 @@ class TestMarket(TestCase):
                     "expires_at": "2025-12-12T00:00:00-05:00",
                     "images": [],
                     "favorites": [1],
-                    "sublet_id": 2,
                 },
                 "address": "3901 Locust Walk, Philadelphia, PA",
                 "beds": 4.0,
@@ -590,7 +608,6 @@ class TestMarket(TestCase):
             "item": {
                 "id": 5,
                 "images": [],
-                "sublet_id": 1,
                 "title": "Cira Green Sublet",
                 "description": (
                     "Fully furnished 3-bedroom apartment"
@@ -639,7 +656,6 @@ class TestMarket(TestCase):
                 "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
                 "favorite_count": 1,
-                "sublet_id": 2,
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
             "beds": 4.0,
@@ -697,7 +713,6 @@ class TestMarket(TestCase):
                 "buyers": [],
                 "tags": ["New"],
                 "favorites": [],
-                "sublet_id": 3,
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
             "beds": 4.0,
@@ -742,7 +757,6 @@ class TestMarket(TestCase):
                 "buyers": [],
                 "tags": ["New"],
                 "favorites": [],
-                "sublet_id": 3,
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
             "beds": 4.0,
@@ -773,7 +787,6 @@ class TestMarket(TestCase):
                 "buyers": [],
                 "tags": ["New"],
                 "favorites": [],
-                "sublet_id": 3,
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
             "beds": 4.0,
@@ -818,7 +831,6 @@ class TestMarket(TestCase):
                 "buyers": [],
                 "tags": ["New"],
                 "favorites": [],
-                "sublet_id": 3,
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
             "beds": 4.0,
@@ -853,7 +865,6 @@ class TestMarket(TestCase):
                 "buyers": [],
                 "tags": ["New"],
                 "favorites": [],
-                "sublet_id": 3,
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
             "beds": 4.0,
@@ -862,8 +873,41 @@ class TestMarket(TestCase):
             "end_date": "2025-05-31T00:00:00-04:00",
         }
         response = self.client.post("/market/sublets/", payload, format="json")
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"item": "Item category must be 'Sublet'."})
+        response_without_created_at = response.json().copy()
+        created_at = response_without_created_at["item"].pop("created_at")
+        created_at = datetime.datetime.fromisoformat(created_at)
+        expected_response = {
+            "id": 3,
+            "item": {
+                "id": 7,
+                "images": [],
+                "title": "Cira Green Sublet 2",
+                "description": (
+                    "Fully furnished 3-bedroom apartment "
+                    "available for sublet with all amenities included."
+                ),
+                "external_link": "https://example.com/listing",
+                "price": 1350.0,
+                "negotiable": False,
+                "expires_at": "2025-12-12T00:00:00-05:00",
+                "seller": 1,
+                "category": "Book",
+                "buyers": [],
+                "tags": ["New"],
+                "favorites": [],
+            },
+            "address": "3901 Locust Walk, Philadelphia, PA",
+            "beds": 4.0,
+            "baths": 1.0,
+            "start_date": "2024-01-01T00:00:00-05:00",
+            "end_date": "2025-05-31T00:00:00-04:00",
+        }
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response_without_created_at, expected_response)
+        self.assertLessEqual(
+            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            datetime.timedelta(minutes=1),
+        )
 
     def test_update_sublet(self):
         payload = {
@@ -885,7 +929,6 @@ class TestMarket(TestCase):
                 "buyers": [],
                 "tags": ["New"],
                 "favorites": [],
-                "sublet_id": 3,
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
             "beds": 4.0,
@@ -916,7 +959,6 @@ class TestMarket(TestCase):
                 "buyers": [1, 2],
                 "tags": ["New"],
                 "favorites": [],
-                "sublet_id": 1,
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
             "beds": 4.0,
@@ -969,8 +1011,33 @@ class TestMarket(TestCase):
             "end_date": "2025-05-31T00:00:00-04:00",
         }
         response = self.client.patch("/market/sublets/1/", payload, format="json")
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"item": "Item category must be 'Sublet'."})
+        expected_response = {
+            'id': 1, 
+            'item': {
+                'id': 5, 
+                'images': [], 
+                'title': 'Cira Green Sublet 2', 
+                'description': 'Fully furnished 3-bedroom apartment available for sublet with all amenities included.', 
+                'external_link': 'https://example.com/listing', 
+                'price': 1350.0, 
+                'negotiable': False, 
+                'expires_at': '2025-12-12T00:00:00-05:00', 
+                'seller': 1, 
+                'category': 'Book', 
+                'buyers': [1, 2], 
+                'tags': ['New'], 
+                'favorites': []}, 
+            'address': '3901 Locust Walk, Philadelphia, PA', 
+            'beds': 4.0, 
+            'baths': 1.0, 
+            'start_date': '2024-01-01T00:00:00-05:00', 
+            'end_date': '2025-05-31T00:00:00-04:00'
+        }
+        response_without_created_at = response.json().copy()
+        created_at = response_without_created_at["item"].pop("created_at")
+        created_at = datetime.datetime.fromisoformat(created_at)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response_without_created_at, expected_response)
 
     def test_delete_sublet(self):
         response = self.client.delete("/market/sublets/1/")
@@ -1007,7 +1074,6 @@ class TestMarket(TestCase):
                 "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
                 "favorites": [1],
-                "sublet_id": None,
             },
             {
                 "id": 2,
@@ -1020,7 +1086,6 @@ class TestMarket(TestCase):
                 "expires_at": "2025-10-12T01:00:00-04:00",
                 "images": [],
                 "favorites": [1],
-                "sublet_id": None,
             },
             {
                 "id": 3,
@@ -1033,7 +1098,6 @@ class TestMarket(TestCase):
                 "expires_at": "2025-08-12T01:00:00-04:00",
                 "images": [],
                 "favorites": [1],
-                "sublet_id": None,
             },
             {
                 "id": 6,
@@ -1046,7 +1110,6 @@ class TestMarket(TestCase):
                 "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
                 "favorites": [1],
-                "sublet_id": 2,
             },
         ]
         self.assertEqual(response.status_code, 200)
@@ -1187,6 +1250,10 @@ class TestMarket(TestCase):
         response = self.client.delete("/market/items/1/offers/")
         self.assertEqual(response.status_code, 204)
         self.assertFalse(Offer.objects.filter(id=1).exists())
+
+    def test_delete_offer_nonexistent(self):
+        response = self.client.delete("/market/items/4/offers/")
+        self.assertEqual(response.status_code, 404)
 
     def test_create_image(self):
         with open("tests/market/mock_image.jpg", "rb") as image:
