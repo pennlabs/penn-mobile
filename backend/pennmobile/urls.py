@@ -28,6 +28,7 @@ urlpatterns = [
     path("penndata/", include("penndata.urls")),
     path("sublet/", include("sublet.urls")),
     path("wrapped/", include("wrapped.urls")),
+    path("", include("health.urls")),
 ]
 
 urlpatterns = [
