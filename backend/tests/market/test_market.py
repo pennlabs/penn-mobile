@@ -26,63 +26,75 @@ class TestMarket(TestCase):
         user2 = User.objects.create_user("user2", "user2@seas.upenn.edu", "user2")
         tags = ["New", "Used", "Couch", "Laptop", "Textbook", "Chair", "Apartment", "House"]
         categories = ["Book", "Electronics", "Furniture", "Food", "Sublet", "Other"]
-        for tag in tags:
-            Tag.objects.create(name=tag)
-        for category in categories:
-            Category.objects.create(name=category)
+        Tag.objects.bulk_create([Tag(name=tag) for tag in tags])
+        Category.objects.bulk_create([Category(name=category) for category in categories])
         # "backend/tests/market/mock_items.json" if debugging
         # "tests/market/mock_items.json" if from backend directory
-        # item 1, 5 are self.user. item 3, 4 are user1. item 2, 6 are user2
-        with open("tests/market/mock_items.json") as data:
+        # item 0 are self.user. item 2,3 are user1. item 1 are user2
+        items = []
+        with open("tests/market/self_user_items.json") as data:
             data = json.load(data)
-            for item_number, item in enumerate(data):
-                if item_number == 0:
-                    seller = self.user
-                elif item_number == 2 or item_number == 3:
-                    seller = user1
-                else:
-                    seller = user2
-                created_item = Item.objects.create(
-                    seller=seller,
-                    category=Category.objects.get(name=item["category"]),
-                    title=item["title"],
-                    description=item["description"],
-                    external_link=item["external_link"],
-                    price=item["price"],
-                    negotiable=item["negotiable"],
-                    created_at=now(),
-                    expires_at=item["expires_at"],
-                )
-                created_item.tags.set(Tag.objects.filter(name__in=item["tags"]))
-                created_item.save()
-        with open("tests/market/mock_sublets.json") as data:
+            for item in data:
+                item["seller"] = self.user
+                items.append(item)
+        with open("tests/market/user_2_items.json") as data:
             data = json.load(data)
-            for sublet_number, sublet in enumerate(data):
-                if sublet_number == 0:
-                    seller = self.user
-                elif sublet_number == 1:
-                    seller = user2
-                created_item = Item.objects.create(
-                    seller=seller,
-                    category=Category.objects.get(name="Sublet"),
-                    title=sublet["item"]["title"],
-                    description=sublet["item"]["description"],
-                    price=sublet["item"]["price"],
-                    negotiable=sublet["item"]["negotiable"],
-                    created_at=now(),
-                    expires_at=sublet["item"]["expires_at"],
-                )
-                created_sublet = Sublet.objects.create(
-                    item=created_item,
-                    address=sublet["address"],
-                    beds=sublet["beds"],
-                    baths=sublet["baths"],
-                    start_date=sublet["start_date"],
-                    end_date=sublet["end_date"],
-                )
-                created_item.tags.set(Tag.objects.filter(name__in=sublet["item"]["tags"]))
-                created_item.save()
-                created_sublet.save()
+            for item in data:
+                item["seller"] = user2
+                items.append(item)
+        with open("tests/market/user_1_items.json") as data:
+            data = json.load(data)
+            for item in data:
+                item["seller"] = user1
+                items.append(item)
+        for item in items:
+            created_item = Item.objects.create(
+                seller=item["seller"],
+                category=Category.objects.get(name=item["category"]),
+                title=item["title"],
+                description=item["description"],
+                price=item["price"],
+                negotiable=item["negotiable"],
+                created_at=now(),
+                expires_at=item["expires_at"],
+                external_link=item["external_link"],
+            )
+            created_item.tags.set(Tag.objects.filter(name__in=item["tags"]))
+            created_item.save()
+        sublets = []
+        with open("tests/market/self_user_sublets.json") as data:
+            data = json.load(data)
+            for sublet in data:
+                sublet["item"]["seller"] = self.user
+                sublets.append(sublet)
+        with open("tests/market/user_2_sublets.json") as data:
+            data = json.load(data)
+            for sublet in data:
+                sublet["item"]["seller"] = user2
+                sublets.append(sublet)
+        for sublet in sublets:
+            created_item = Item.objects.create(
+                seller=sublet["item"]["seller"],
+                category=Category.objects.get(name="Sublet"),
+                title=sublet["item"]["title"],
+                description=sublet["item"]["description"],
+                price=sublet["item"]["price"],
+                negotiable=sublet["item"]["negotiable"],
+                created_at=now(),
+                expires_at=sublet["item"]["expires_at"],
+                external_link = sublet["item"]["external_link"],
+            )
+            created_sublet = Sublet.objects.create(
+                item=created_item,
+                address=sublet["address"],
+                beds=sublet["beds"],
+                baths=sublet["baths"],
+                start_date=sublet["start_date"],
+                end_date=sublet["end_date"],
+            )
+            created_item.tags.set(Tag.objects.filter(name__in=sublet["item"]["tags"]))
+            created_item.save()
+            created_sublet.save()
         self.user.items_favorited.set(Item.objects.filter(id__in=[1, 2, 3, 6]))
         created_offer_1 = Offer.objects.create(
             user=self.user, item=Item.objects.get(id=1), email="self_user@gmail.com"
@@ -108,14 +120,14 @@ class TestMarket(TestCase):
         response = self.client.get("/market/items/")
         expected_response = [
             {
-                "id": 1,
-                "seller": 1,
-                "tags": ["Textbook", "Used"],
-                "category": "Book",
-                "title": "Math Textbook",
-                "price": 20.0,
+                "id": 3,
+                "seller": 2,
+                "tags": ["Laptop", "New"],
+                "category": "Electronics",
+                "title": "Macbook Pro",
+                "price": 2000.0,
                 "negotiable": True,
-                "expires_at": "2025-12-12T00:00:00-05:00",
+                "expires_at": "2025-08-12T01:00:00-04:00",
                 "images": [],
                 "favorites": [1],
             },
@@ -132,14 +144,14 @@ class TestMarket(TestCase):
                 "favorites": [1],
             },
             {
-                "id": 3,
-                "seller": 2,
-                "tags": ["Laptop", "New"],
-                "category": "Electronics",
-                "title": "Macbook Pro",
-                "price": 2000.0,
+                "id": 1,
+                "seller": 1,
+                "tags": ["Textbook", "Used"],
+                "category": "Book",
+                "title": "Math Textbook",
+                "price": 20.0,
                 "negotiable": True,
-                "expires_at": "2025-08-12T01:00:00-04:00",
+                "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
                 "favorites": [1],
             },
@@ -157,7 +169,6 @@ class TestMarket(TestCase):
             },
         ]
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()), 4)
         self.assertEqual(response.json(), expected_response)
 
     def test_get_single_item_own(self):
@@ -197,6 +208,7 @@ class TestMarket(TestCase):
             "category": "Food",
             "title": "Bag of Doritos",
             "description": "Cool Ranch",
+            "external_link": "https://example.com/doritos",
             "price": 5.0,
             "negotiable": False,
             "expires_at": "2025-10-12T01:00:00-04:00",
@@ -209,7 +221,7 @@ class TestMarket(TestCase):
     def test_get_item_of_sublet(self):
         response = self.client.get("/market/items/5/")
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {'detail': 'No Item matches the given query.'})
+        self.assertEqual(response.json(), {"detail": "No Item matches the given query."})
 
     def test_create_item_all_fields(self):
         payload = {
@@ -524,18 +536,19 @@ class TestMarket(TestCase):
         created_at = response_without_created_at.pop("created_at")
         created_at = datetime.datetime.fromisoformat(created_at)
         expected_response = {
-            'id': 1, 
-            'images': [], 
-            'title': 'Math Textbook', 
-            'description': '2023 version', 
-            'external_link': 'https://example.com/book', 
-            'price': 20.0, 'negotiable': True, 
-            'expires_at': '2025-12-12T00:00:00-05:00', 
-            'seller': 1, 
-            'category': 'Sublet', 
-            'buyers': [1], 
-            'tags': ['Textbook', 'Used'], 
-            'favorites': [1]
+            "id": 1,
+            "images": [],
+            "title": "Math Textbook",
+            "description": "2023 version",
+            "external_link": "https://example.com/book",
+            "price": 20.0,
+            "negotiable": True,
+            "expires_at": "2025-12-12T00:00:00-05:00",
+            "seller": 1,
+            "category": "Sublet",
+            "buyers": [1],
+            "tags": ["Textbook", "Used"],
+            "favorites": [1],
         }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response_without_created_at, expected_response)
@@ -613,7 +626,7 @@ class TestMarket(TestCase):
                     "Fully furnished 3-bedroom apartment"
                     " available for sublet with all amenities included."
                 ),
-                "external_link": None,
+                "external_link": "https://example.com/cira-green",
                 "price": 1350.0,
                 "negotiable": False,
                 "expires_at": "2025-12-12T00:00:00-05:00",
@@ -656,6 +669,7 @@ class TestMarket(TestCase):
                 "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
                 "favorite_count": 1,
+                "external_link": "https://example.com/rodin-quad",
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
             "beds": 4.0,
@@ -1012,26 +1026,30 @@ class TestMarket(TestCase):
         }
         response = self.client.patch("/market/sublets/1/", payload, format="json")
         expected_response = {
-            'id': 1, 
-            'item': {
-                'id': 5, 
-                'images': [], 
-                'title': 'Cira Green Sublet 2', 
-                'description': 'Fully furnished 3-bedroom apartment available for sublet with all amenities included.', 
-                'external_link': 'https://example.com/listing', 
-                'price': 1350.0, 
-                'negotiable': False, 
-                'expires_at': '2025-12-12T00:00:00-05:00', 
-                'seller': 1, 
-                'category': 'Book', 
-                'buyers': [1, 2], 
-                'tags': ['New'], 
-                'favorites': []}, 
-            'address': '3901 Locust Walk, Philadelphia, PA', 
-            'beds': 4.0, 
-            'baths': 1.0, 
-            'start_date': '2024-01-01T00:00:00-05:00', 
-            'end_date': '2025-05-31T00:00:00-04:00'
+            "id": 1,
+            "item": {
+                "id": 5,
+                "images": [],
+                "title": "Cira Green Sublet 2",
+                "description": (
+                    "Fully furnished 3-bedroom apartment "
+                    "available for sublet with all amenities included."
+                ),
+                "external_link": "https://example.com/listing",
+                "price": 1350.0,
+                "negotiable": False,
+                "expires_at": "2025-12-12T00:00:00-05:00",
+                "seller": 1,
+                "category": "Book",
+                "buyers": [1, 2],
+                "tags": ["New"],
+                "favorites": [],
+            },
+            "address": "3901 Locust Walk, Philadelphia, PA",
+            "beds": 4.0,
+            "baths": 1.0,
+            "start_date": "2024-01-01T00:00:00-05:00",
+            "end_date": "2025-05-31T00:00:00-04:00",
         }
         response_without_created_at = response.json().copy()
         created_at = response_without_created_at["item"].pop("created_at")

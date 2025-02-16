@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.core import exceptions
 from phonenumber_field.serializerfields import PhoneNumberField
 from profanity_check import predict
 from rest_framework import serializers
@@ -121,6 +120,7 @@ class ItemSerializerPublic(serializers.ModelSerializer):
             "category",
             "title",
             "description",
+            "external_link",
             "price",
             "negotiable",
             "expires_at",
@@ -179,15 +179,10 @@ class SubletSerializer(serializers.ModelSerializer):
             )
             item_serializer.is_valid(raise_exception=True)
             validated_data["item"] = item_serializer.save()
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
+        instance = super().update(instance, validated_data)
         return instance
 
     def destroy(self, instance):
-        # Could check if instance.item is None, but it should never be.
         instance.item.delete()
         instance.delete()
 

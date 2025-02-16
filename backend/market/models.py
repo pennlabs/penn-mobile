@@ -9,7 +9,11 @@ User = get_user_model()
 class Offer(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=["user", "item"], name="unique_offer_market")]
-        indexes = [models.Index(fields=["user"]), models.Index(fields=["item"]), models.Index(fields=["created_at"])]
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["item"]),
+            models.Index(fields=["created_at"]),
+        ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="offers")
     item = models.ForeignKey("Item", on_delete=models.CASCADE)
@@ -38,8 +42,14 @@ class Tag(models.Model):
 
 class Item(models.Model):
     class Meta:
-        indexes = [models.Index(fields=["title"]), models.Index(fields=["price"]), models.Index(fields=["created_at"]), models.Index(fields=["expires_at"]), models.Index(fields=["negotiable"])]
-    
+        indexes = [
+            models.Index(fields=["title"]),
+            models.Index(fields=["price"]),
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["expires_at"]),
+            models.Index(fields=["negotiable"]),
+        ]
+
     seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name="items_listed")
     buyers = models.ManyToManyField(User, through=Offer, related_name="items_offered", blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
@@ -60,7 +70,12 @@ class Item(models.Model):
 
 class Sublet(models.Model):
     class Meta:
-        indexes = [models.Index(fields=["start_date"]), models.Index(fields=["end_date"]), models.Index(fields=["beds"]), models.Index(fields=["baths"])]
+        indexes = [
+            models.Index(fields=["start_date"]),
+            models.Index(fields=["end_date"]),
+            models.Index(fields=["beds"]),
+            models.Index(fields=["baths"]),
+        ]
 
     item = models.OneToOneField(Item, on_delete=models.CASCADE, related_name="sublet")
     address = models.CharField(max_length=255)
@@ -70,7 +85,7 @@ class Sublet(models.Model):
     end_date = models.DateTimeField()
 
     def delete(self, *args, **kwargs):
-        self.item.delete()    
+        self.item.delete()
         super().delete(*args, **kwargs)
 
 

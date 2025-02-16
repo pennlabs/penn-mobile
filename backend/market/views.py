@@ -123,7 +123,7 @@ class Items(viewsets.ModelViewSet):
         # Serialize and return the queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-    
+
 
 class Sublets(viewsets.ModelViewSet):
     permission_classes = [SubletOwnerPermission | IsSuperUser]
@@ -185,7 +185,7 @@ class Sublets(viewsets.ModelViewSet):
 class CreateImages(generics.CreateAPIView):
     serializer_class = ItemImageSerializer
     http_method_names = ["post"]
-    permission_classes = [ItemImageOwnerPermission | IsSuperUser]
+    permission_classes = [ItemOwnerPermission | IsSuperUser]
     parser_classes = (
         MultiPartParser,
         FormParser,
@@ -201,14 +201,13 @@ class CreateImages(generics.CreateAPIView):
         item_id = int(self.kwargs["item_id"])
         item = get_object_or_404(Item, id=item_id)
         self.check_object_permissions(request, item)
-        img_serializers = [
-            self.get_serializer(data={"item": item_id, "image": img}) for img in images
-        ]
-        instances = [
-            img_serializer.save()
-            for img_serializer in img_serializers
-            if img_serializer.is_valid(raise_exception=True)
-        ]
+        instances = []
+
+        for img in images:
+            img_serializer = self.get_serializer(data={"item": item_id, "image": img})
+            img_serializer.is_valid(raise_exception=True)
+            instances.append(img_serializer.save())
+
         data = ItemImageURLSerializer(instances, many=True).data
         return Response(data, status=status.HTTP_201_CREATED)
 
@@ -296,7 +295,7 @@ class Offers(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
         return Response(status=status.HTTP_204_NO_CONTENT)
-                                        
+
     def list(self, request, *args, **kwargs):
         if not Item.objects.filter(pk=int(self.kwargs["item_id"])).exists():
             raise exceptions.NotFound("No Item matches the given query")
