@@ -82,7 +82,7 @@ class TestMarket(TestCase):
                 negotiable=sublet["item"]["negotiable"],
                 created_at=now(),
                 expires_at=sublet["item"]["expires_at"],
-                external_link = sublet["item"]["external_link"],
+                external_link=sublet["item"]["external_link"],
             )
             created_sublet = Sublet.objects.create(
                 item=created_item,
