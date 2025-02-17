@@ -212,7 +212,10 @@ class TestMarket(TestCase):
             },
         ]
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(sorted(response.json(), key=lambda d:d['id']), sorted(expected_response, key=lambda d:d['id']))
+        self.assertEqual(
+            sorted(response.json(), key=lambda d: d["id"]),
+            sorted(expected_response, key=lambda d: d["id"]),
+        )
 
     def test_get_single_item_own(self):
         response = self.client.get("/market/items/1/")
