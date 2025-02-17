@@ -1,6 +1,9 @@
 import collections
-import os
 import sys
+from abc import ABC, abstractmethod
+
+import firebase_admin
+from firebase_admin import credentials, messaging
 
 
 # Monkey Patch for apn2 errors, referenced from:
@@ -18,106 +21,151 @@ if sys.version_info.major >= 3 and sys.version_info.minor >= 10:
     collections.MutableSet = abc.MutableSet
     collections.MutableMapping = abc.MutableMapping
 
-from apns2.client import APNsClient
-from apns2.credentials import TokenCredentials
+from apns2.client import APNsClient, Notification
 from apns2.payload import Payload
 from celery import shared_task
 
-from user.models import NotificationToken
+
+class NotificationWrapper(ABC):
+    def send_notification(self, tokens, title, body, urgent):
+        self.send_payload(tokens, self.create_payload(title, body, urgent))
+
+    def send_shadow_notification(self, tokens, body):
+        self.send_payload(tokens, self.create_shadow_payload(body))
+
+    def send_payload(self, tokens, payload):
+        if len(tokens) == 0:
+            raise ValueError("No tokens provided")
+        elif len(tokens) > 1:
+            self.send_many_notifications(tokens, payload)
+        else:
+            self.send_one_notification(tokens[0], payload)
+
+    @abstractmethod
+    def create_payload(self, title, body, urgent):
+        raise NotImplementedError  # pragma: no cover
+
+    @abstractmethod
+    def create_shadow_payload(self, body):
+        raise NotImplementedError
+
+    @abstractmethod
+    def send_many_notifications(self, tokens, payload):
+        raise NotImplementedError  # pragma: no cover
+
+    @abstractmethod
+    def send_one_notification(self, token, payload):
+        raise NotImplementedError
 
 
-# taken from the apns2 method for batch notifications
-Notification = collections.namedtuple("Notification", ["token", "payload"])
+class AndroidNotificationWrapper(NotificationWrapper):
+    def __init__(self):
+        try:
+            auth_key_path = "/app/secrets/notifications/android/fcm.json"
+            cred = credentials.Certificate(auth_key_path)
+            firebase_admin.initialize_app(cred)
+        except Exception as e:
+            print(f"Notifications Error: Failed to initialize Firebase client: {e}")
+
+    def create_payload(self, title, body, urgent):
+        # TODO: do something with urgent
+        return {"notification": messaging.Notification(title=title, body=body)}
+
+    def create_shadow_payload(self, body):
+        return {"data": body}
+
+    def send_many_notifications(self, tokens, payload):
+        message = messaging.MulticastMessage(tokens=tokens, **payload)
+        messaging.send_each_for_multicast(message)
+        # TODO: log response errors
+
+    def send_one_notification(self, token, payload):
+        message = messaging.Message(token=token, **payload)
+        messaging.send(message)
 
 
-def send_push_notifications(users, service, title, body, delay=0, is_dev=False, is_shadow=False):
-    """
-    Sends push notifications.
+class IOSNotificationWrapper(NotificationWrapper):
+    class CustomPayload(Payload):
+        # Custom payload to support interruption_level
+        def __init__(self, urgent, **kwargs):
+            super().__init__(**kwargs)
+            self.urgent = urgent
 
-    :param users: list of usernames to send notifications to or 'None' if to all
-    :param service: service to send notifications for or 'None' if ignoring settings
-    :param title: title of notification
-    :param body: body of notification
-    :param delay: delay in seconds before sending notification
-    :param isShadow: whether to send a shadow notification
-    :return: tuple of (list of success usernames, list of failed usernames)
-    """
+        def dict(self):
+            result = super().dict()
+            if self.urgent:
+                result["aps"]["interruption-level"] = "time-sensitive"
+            return result
 
-    # collect available usernames & their respective device tokens
-    token_objects = get_tokens(users, service)
-    if not token_objects:
-        return [], users
-    success_users, tokens = zip(*token_objects)
-
-    # send notifications
-    if delay:
-        send_delayed_notifications(tokens, title, body, service, is_dev, is_shadow, delay)
-    else:
-        send_immediate_notifications(tokens, title, body, service, is_dev, is_shadow)
-
-    if not users:  # if to all users, can't be any failed pennkeys
-        return success_users, []
-    failed_users = list(set(users) - set(success_users))
-    return success_users, failed_users
-
-
-def get_tokens(users=None, service=None):
-    """Returns list of token objects (with username & token value) for specified users"""
-
-    token_objs = NotificationToken.objects.select_related("user").filter(
-        kind=NotificationToken.KIND_IOS  # NOTE: until Android implementation
-    )
-    if users:
-        token_objs = token_objs.filter(user__username__in=users)
-    if service:
-        token_objs = token_objs.filter(
-            notificationsetting__service=service, notificationsetting__enabled=True
+    @staticmethod
+    def get_client(is_dev):
+        # TODO: We are getting a new client for each request, might be worth
+        # looking into how to keep the client alive.
+        auth_key_path = (
+            f"/app/secrets/notifications/ios{'/dev/apns-dev' if is_dev else '/prod/apns-prod'}.pem"
         )
-    return token_objs.exclude(token="").values_list("user__username", "token")
+        return APNsClient(credentials=auth_key_path, use_sandbox=is_dev)
 
+    def __init__(self, is_dev=False):
+        try:
+            self.is_dev = is_dev
+            self.topic = "org.pennlabs.PennMobile" + (".dev" if is_dev else "")
+        except Exception as e:
+            print(f"Notifications Error: Failed to initialize APNs client: {e}")
 
-@shared_task(name="notifications.send_immediate_notifications")
-def send_immediate_notifications(tokens, title, body, category, is_dev, is_shadow):
-    client = get_client(is_dev)
-    if is_shadow:
-        payload = Payload(
-            content_available=True, custom=body, mutable_content=True, category=category
+    def create_payload(self, title, body, urgent):
+        # TODO: we might want to add category here, but there is no use on iOS side for now
+        return IOSNotificationWrapper.CustomPayload(
+            alert={"title": title, "body": body},
+            sound="default",
+            badge=0,
+            mutable_content=True,
+            urgent=urgent,
         )
-    else:
-        alert = {"title": title, "body": body}
-        payload = Payload(
-            alert=alert, sound="default", badge=0, mutable_content=True, category=category
-        )
-    topic = "org.pennlabs.PennMobile" + (".dev" if is_dev else "")
 
-    if len(tokens) > 1:
+    def create_shadow_payload(self, body):
+        return Payload(content_available=True, custom=body, mutable_content=True)
+
+    def send_many_notifications(self, tokens, payload):
         notifications = [Notification(token, payload) for token in tokens]
-        client.send_notification_batch(notifications=notifications, topic=topic)
-    else:
-        client.send_notification(tokens[0], payload, topic)
+        self.get_client(self.is_dev).send_notification_batch(
+            notifications=notifications, topic=self.topic
+        )
+
+    def send_one_notification(self, token, payload):
+        self.get_client(self.is_dev).send_notification(token, payload, self.topic)
 
 
-def send_delayed_notifications(tokens, title, body, category, is_dev, is_shadow, delay):
-    send_immediate_notifications.apply_async(
-        (tokens, title, body, category, is_dev, is_shadow), countdown=delay
-    )
+IOSNotificationSender = IOSNotificationWrapper()
+AndroidNotificationSender = AndroidNotificationWrapper()
+IOSNotificationDevSender = IOSNotificationWrapper(is_dev=True)
 
 
-def get_auth_key_path():
-    return os.environ.get(
-        "IOS_KEY_PATH",  # for dev purposes
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ios_key.p8"),
-    )
+@shared_task(name="notifications.ios_send_notification")
+def ios_send_notification(tokens, title, body, urgent):
+    IOSNotificationSender.send_notification(tokens, title, body, urgent)
 
 
-def get_client(is_dev):
-    """Creates and returns APNsClient based on iOS credentials"""
+@shared_task(name="notifications.ios_send_shadow_notification")
+def ios_send_shadow_notification(tokens, body):
+    IOSNotificationSender.send_shadow_notification(tokens, body)
 
-    auth_key_path = get_auth_key_path()
-    auth_key_id = "2VX9TC37TB"
-    team_id = "VU59R57FGM"
-    token_credentials = TokenCredentials(
-        auth_key_path=auth_key_path, auth_key_id=auth_key_id, team_id=team_id
-    )
-    client = APNsClient(credentials=token_credentials, use_sandbox=is_dev)
-    return client
+
+@shared_task(name="notifications.android_send_notification")
+def android_send_notification(tokens, title, body, urgent):
+    AndroidNotificationSender.send_notification(tokens, title, body, urgent)
+
+
+@shared_task(name="notifications.android_send_shadow_notification")
+def android_send_shadow_notification(tokens, body):
+    AndroidNotificationSender.send_shadow_notification(tokens, body)
+
+
+@shared_task(name="notifications.ios_send_dev_notification")
+def ios_send_dev_notification(tokens, title, body, urgent):
+    IOSNotificationDevSender.send_notification(tokens, title, body, urgent)
+
+
+@shared_task(name="notifications.ios_send_dev_shadow_notification")
+def ios_send_dev_shadow_notification(tokens, body):
+    IOSNotificationDevSender.send_shadow_notification(tokens, body)

@@ -1,0 +1,505 @@
+[
+    {
+        "id": "452757",
+        "room": {
+            "id": "14100",
+            "roomName": "Harnwell 12th Floor"
+        },
+        "isDryer": false,
+        "isActive": true,
+        "isWasher": true,
+        "controlId": "148624543026683908",
+        "createdAt": "2024-07-30T17:52:12.776571",
+        "createdBy": 2,
+        "updatedAt": "2024-07-30T17:52:12.776571",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 35",
+        "machineType": {
+            "id": "10",
+            "isDryer": false,
+            "isWasher": true,
+            "typeName": "Frontload Washer"
+        },
+        "modelNumber": "SFNNYRSP116TW01",
+        "networkNode": "35",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2402034894",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0035",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": false,
+            "controlId": "148624543026683908",
+            "createdAt": "2024-10-27T16:42:01.195000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000
+                ],
+                "values": [
+                    "5tArt "
+                ]
+            },
+            "gatewayName": "3e9913389cde1a4518a93c2786748328",
+            "id": "452757",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 44,
+            "microType": 0,
+            "receivedAt": "2024-10-27T16:42:01.195000",
+            "remainingSeconds": 1800,
+            "remainingVend": 0,
+            "roomId": "14100",
+            "selectedCycle": {
+                "id": 3,
+                "name": "NORMAL_COLD"
+            },
+            "selectedModifier": {
+                "id": 0,
+                "name": "LIGHT"
+            },
+            "statusId": "AVAILABLE",
+            "topOffTime": 0,
+            "topOffVend": 0,
+            "topoffFullyDisabled": true,
+            "uuid": "a56bad9d-935d-485c-a149-155de0a20139"
+        },
+        "ordinalValue": 0
+    },
+    {
+        "id": "452756",
+        "room": {
+            "id": "14100",
+            "roomName": "Harnwell 12th Floor"
+        },
+        "isDryer": true,
+        "isActive": true,
+        "isWasher": false,
+        "controlId": "130156424172511236",
+        "createdAt": "2024-07-30T17:52:10.442788",
+        "createdBy": 2,
+        "updatedAt": "2024-07-30T17:52:10.442788",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 31",
+        "machineType": {
+            "id": "20",
+            "isDryer": true,
+            "isWasher": false,
+            "typeName": "Dryer"
+        },
+        "modelNumber": "SDENYRGS176TW01",
+        "networkNode": "31",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2303052978",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0031",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": true,
+            "controlId": "130156424172511236",
+            "createdAt": "2024-10-27T17:04:05.650000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000
+                ],
+                "values": [
+                    "5tArt "
+                ]
+            },
+            "gatewayName": "3e9913389cde1a4518a93c2786748328",
+            "id": "452756",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 49,
+            "microType": 0,
+            "receivedAt": "2024-10-27T17:04:05.650000",
+            "remainingSeconds": 3600,
+            "remainingVend": 0,
+            "roomId": "14100",
+            "selectedCycle": {
+                "id": 4,
+                "name": "MEDIUM"
+            },
+            "selectedModifier": {
+                "id": 0
+            },
+            "statusId": "AVAILABLE",
+            "topOffTime": 300,
+            "topOffVend": 25,
+            "topoffFullyDisabled": false,
+            "uuid": "02f531bc-dea3-48dd-a42c-e15916940e63"
+        },
+        "ordinalValue": 1
+    },
+    {
+        "id": "452766",
+        "room": {
+            "id": "14100",
+            "roomName": "Harnwell 12th Floor"
+        },
+        "isDryer": true,
+        "isActive": true,
+        "isWasher": false,
+        "controlId": "130155998970748932",
+        "createdAt": "2024-07-30T17:52:18.485909",
+        "createdBy": 2,
+        "updatedAt": "2024-07-30T17:52:18.485909",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 32",
+        "machineType": {
+            "id": "20",
+            "isDryer": true,
+            "isWasher": false,
+            "typeName": "Dryer"
+        },
+        "modelNumber": "SDENYRGS176TW01",
+        "networkNode": "32",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2303052988",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0032",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": true,
+            "controlId": "130155998970748932",
+            "createdAt": "2024-10-27T17:05:04.327000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000
+                ],
+                "values": [
+                    "FrEE  "
+                ]
+            },
+            "gatewayName": "3e9913389cde1a4518a93c2786748328",
+            "id": "452766",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 56,
+            "microType": 0,
+            "receivedAt": "2024-10-27T17:05:04.327000",
+            "remainingSeconds": 3600,
+            "remainingVend": 0,
+            "roomId": "14100",
+            "selectedCycle": {
+                "id": 4,
+                "name": "MEDIUM"
+            },
+            "selectedModifier": {
+                "id": 0
+            },
+            "statusId": "AVAILABLE",
+            "topOffTime": 300,
+            "topOffVend": 25,
+            "topoffFullyDisabled": false,
+            "uuid": "d423bd7f-60e0-47e2-b2fd-6c00770d7737"
+        },
+        "ordinalValue": 2
+    },
+    {
+        "id": "452763",
+        "room": {
+            "id": "14100",
+            "roomName": "Harnwell 12th Floor"
+        },
+        "isDryer": true,
+        "isActive": true,
+        "isWasher": false,
+        "controlId": "130156978223292420",
+        "createdAt": "2024-07-30T17:52:17.41128",
+        "createdBy": 2,
+        "updatedAt": "2024-07-30T17:52:17.41128",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 33",
+        "machineType": {
+            "id": "20",
+            "isDryer": true,
+            "isWasher": false,
+            "typeName": "Dryer"
+        },
+        "modelNumber": "SDENYRGS176TW01",
+        "networkNode": "33",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2303053001",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0033",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": true,
+            "controlId": "130156978223292420",
+            "createdAt": "2024-10-27T16:50:15.737000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000,
+                    1000
+                ],
+                "values": [
+                    "CLo5E",
+                    "door"
+                ]
+            },
+            "gatewayName": "3e9913389cde1a4518a93c2786748328",
+            "id": "452763",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 45,
+            "microType": 0,
+            "receivedAt": "2024-10-27T16:50:15.737000",
+            "remainingSeconds": 3600,
+            "remainingVend": 0,
+            "roomId": "14100",
+            "selectedCycle": {
+                "id": 4,
+                "name": "MEDIUM"
+            },
+            "selectedModifier": {
+                "id": 0
+            },
+            "statusId": "AVAILABLE",
+            "topOffTime": 300,
+            "topOffVend": 25,
+            "topoffFullyDisabled": false,
+            "uuid": "b9955d3e-0b76-4f32-a81f-ce83c005e86c"
+        },
+        "ordinalValue": 3
+    },
+    {
+        "id": "452754",
+        "room": {
+            "id": "14100",
+            "roomName": "Harnwell 12th Floor"
+        },
+        "isDryer": false,
+        "isActive": true,
+        "isWasher": true,
+        "controlId": "175240335100911620",
+        "createdAt": "2024-07-30T17:52:04.528356",
+        "createdBy": 2,
+        "updatedAt": "2024-07-30T17:52:04.528356",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 34",
+        "machineType": {
+            "id": "10",
+            "isDryer": false,
+            "isWasher": true,
+            "typeName": "Frontload Washer"
+        },
+        "modelNumber": "SFNNYRSP116TW01",
+        "networkNode": "34",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2405043743",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0034",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": false,
+            "controlId": "175240335100911620",
+            "createdAt": "2024-10-27T17:05:03.097000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000
+                ],
+                "values": [
+                    "    21"
+                ]
+            },
+            "gatewayName": "3e9913389cde1a4518a93c2786748328",
+            "id": "452754",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 41,
+            "microType": 0,
+            "receivedAt": "2024-10-27T17:05:03.097000",
+            "remainingSeconds": 1223,
+            "remainingVend": 0,
+            "roomId": "14100",
+            "selectedCycle": {
+                "id": 3,
+                "name": "NORMAL_COLD"
+            },
+            "selectedModifier": {
+                "id": 2,
+                "name": "HEAVY"
+            },
+            "statusId": "IN_USE",
+            "topOffTime": 0,
+            "topOffVend": 0,
+            "topoffFullyDisabled": true,
+            "uuid": "5383d36f-042e-4e6c-825d-7c9140dd065e"
+        },
+        "ordinalValue": 4
+    },
+    {
+        "id": "452755",
+        "room": {
+            "id": "14100",
+            "roomName": "Harnwell 12th Floor"
+        },
+        "isDryer": false,
+        "isActive": true,
+        "isWasher": true,
+        "controlId": "175240266381434884",
+        "createdAt": "2024-07-30T17:52:10.297965",
+        "createdBy": 2,
+        "updatedAt": "2024-07-30T17:52:10.297965",
+        "updatedBy": null,
+        "isExternal": false,
+        "machineName": "Machine Node - 36",
+        "machineType": {
+            "id": "10",
+            "isDryer": false,
+            "isWasher": true,
+            "typeName": "Frontload Washer"
+        },
+        "modelNumber": "SFNNYRSP116TW01",
+        "networkNode": "36",
+        "organization": {
+            "id": "481806",
+            "userRoleType": {
+                "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+            },
+            "organizationName": "University of Pennsylvania"
+        },
+        "serialNumber": "2405043736",
+        "userRoleType": {
+            "id": "ORGANIZATION_ROUTE_UNIVERSITY"
+        },
+        "machineNumber": "0036",
+        "machineAuditType": {
+            "id": "TITAN_T4",
+            "typeName": "TITAN_T4"
+        },
+        "machineGeneration": null,
+        "networkController": null,
+        "machineAuditGroupType": {
+            "id": "TITAN",
+            "typeName": "Quantum Gold Pro"
+        },
+        "currentStatus": {
+            "canTopOff": false,
+            "controlId": "175240266381434884",
+            "createdAt": "2024-10-27T17:02:07.346000",
+            "displayStatus": {
+                "id": "0",
+                "times": [
+                    1000
+                ],
+                "values": [
+                    "    :00"
+                ]
+            },
+            "gatewayName": "3e9913389cde1a4518a93c2786748328",
+            "id": "452755",
+            "isDoorOpen": false,
+            "linkQualityIndicator": 42,
+            "microType": 0,
+            "receivedAt": "2024-10-27T17:02:07.346000",
+            "remainingSeconds": 1800,
+            "remainingVend": 0,
+            "roomId": "14100",
+            "selectedCycle": {
+                "id": 3,
+                "name": "NORMAL_COLD"
+            },
+            "selectedModifier": {
+                "id": 0,
+                "name": "LIGHT"
+            },
+            "statusId": "COMPLETE",
+            "topOffTime": 0,
+            "topOffVend": 0,
+            "topoffFullyDisabled": true,
+            "uuid": "f8556ec4-fe2a-47c4-b74b-97045e019165"
+        },
+        "ordinalValue": 5
+    }
+]

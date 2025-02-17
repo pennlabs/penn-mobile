@@ -20,21 +20,13 @@ class GroupRoomBookingRequestSerializer(serializers.Serializer):
         return obj["lid"] == 1
 
 
-class MiniUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["username", "first_name", "last_name"]
-
-
 class GroupMembershipSerializer(serializers.ModelSerializer):
-    user = MiniUserSerializer(read_only=True)
     group = serializers.SlugRelatedField(slug_field="name", queryset=Group.objects.all())
     color = serializers.SlugRelatedField(slug_field="color", read_only=True, source="group")
 
     class Meta:
         model = GroupMembership
         fields = [
-            "user",
             "group",
             "type",
             "pennkey_allow",
@@ -71,29 +63,6 @@ class GroupField(serializers.RelatedField):
 
     def to_internal_value(self, data):
         return None  # TODO: If you want to update based on BookingField, implement this.
-
-
-class UserSerializer(serializers.ModelSerializer):
-    booking_groups = serializers.SerializerMethodField()
-
-    def get_booking_groups(self, obj):
-        result = []
-        for membership in GroupMembership.objects.filter(accepted=True, user=obj):
-            result.append(
-                {
-                    "name": membership.group.name,
-                    "id": membership.group.id,
-                    "color": membership.group.color,
-                    "pennkey_allow": membership.pennkey_allow,
-                    "notifications": membership.notifications,
-                }
-            )
-
-        return result
-
-    class Meta:
-        model = User
-        fields = ["username", "booking_groups"]
 
 
 class GSRSerializer(serializers.ModelSerializer):

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "accounts.apps.AccountsConfig",
     "identity.apps.IdentityConfig",
     "analytics.apps.AnalyticsConfig",
+    "wrapped.apps.WrappedConfig",
     "django_filters",
     "debug_toolbar",
     "gsr_booking",
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
     "options.apps.OptionsConfig",
     "marketplace",
     "phonenumber_field",
+    "market",
 ]
 
 MIDDLEWARE = [
@@ -160,7 +162,13 @@ CELERY_TIMEZONE = TIME_ZONE
 
 # Laundry API URL
 # LAUNDRY_URL = os.environ.get("LAUNDRY_URL", "http://suds.kite.upenn.edu")
-LAUNDRY_URL = "http://laundry.sketchy.dev/"
+LAUNDRY_URL = "https://api.alliancelslabs.com"
+LAUNDRY_X_API_KEY = os.environ.get("LAUNDRY_X_API_KEY", None)
+LAUNDRY_ALLIANCELS_API_KEY = os.environ.get("LAUNDRY_ALLIANCE_LS_KEY", None)
+LAUNDRY_HEADERS = {
+    "x-api-key": LAUNDRY_X_API_KEY,
+    "alliancels-auth-token": LAUNDRY_ALLIANCELS_API_KEY,
+}
 
 # Dining API Credentials
 DINING_USERNAME = os.environ.get("DINING_USERNAME", None)
@@ -180,3 +188,11 @@ AWS_STORAGE_BUCKET_NAME = "penn.mobile.portal"
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = "public-read"
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.environ.get("SMTP_HOST", "")
+EMAIL_USE_TLS = True
+EMAIL_PORT = os.environ.get("SMTP_PORT", 587)
+EMAIL_HOST_USER = os.environ.get("SMTP_USERNAME", "")
+EMAIL_HOST_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get("SMTP_FROM_EMAIL", EMAIL_HOST_USER)
