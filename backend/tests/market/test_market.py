@@ -32,8 +32,6 @@ def reset_auto_increment():
             cursor.execute("ALTER SEQUENCE market_offer_id_seq RESTART WITH 1;")
             cursor.execute("ALTER SEQUENCE market_item_favorites_id_seq RESTART WITH 1;")
             cursor.execute("ALTER SEQUENCE market_itemimage_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE market_tag_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE market_category_id_seq RESTART WITH 1;")
         elif backend == "sqlite":
             cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_item';")
             cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_sublet';")
@@ -41,8 +39,6 @@ def reset_auto_increment():
             cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_offer';")
             cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_item_favorites';")
             cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_itemimage';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_tag';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_category';")
         elif backend == "mysql":
             cursor.execute("ALTER TABLE market_item AUTO_INCREMENT = 1;")
             cursor.execute("ALTER TABLE market_sublet AUTO_INCREMENT = 1;")
@@ -50,8 +46,6 @@ def reset_auto_increment():
             cursor.execute("ALTER TABLE market_offer AUTO_INCREMENT = 1;")
             cursor.execute("ALTER TABLE market_item_favorites AUTO_INCREMENT = 1;")
             cursor.execute("ALTER TABLE market_itemimage AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE market_tag AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE market_category AUTO_INCREMENT = 1;")
 
 
 class TestMarket(TestCase):
