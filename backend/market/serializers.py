@@ -8,8 +8,8 @@ from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 
 User = get_user_model()
 
+
 class TagSerializer(serializers.ModelSerializer):
-    
     class Meta:
         model = Tag
         fields = "__all__"
