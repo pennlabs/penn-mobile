@@ -6,6 +6,7 @@ import pytz
 from django.contrib.auth import get_user_model
 from django.core.files.storage import Storage
 from django.test import TestCase
+from django.db import connection
 from django.utils.timezone import now
 from rest_framework.test import APIClient
 
@@ -16,9 +17,32 @@ User = get_user_model()
 
 
 # To run: python manage.py test ./tests/market
+# We assume that tests finish within 10 minutes to determine if created_at is set correctly
+
+def reset_auto_increment():
+    """Reset auto-incrementing primary keys based on the database backend."""
+    with connection.cursor() as cursor:
+        backend = connection.vendor  # Get database type (e.g., 'postgresql', 'sqlite', 'mysql')
+
+        if backend == "postgresql":
+            cursor.execute("ALTER SEQUENCE market_item_id_seq RESTART WITH 1;")
+            cursor.execute("ALTER SEQUENCE market_sublet_id_seq RESTART WITH 1;")
+        elif backend == "sqlite":
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_item';")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_sublet';")
+        elif backend == "mysql":
+            cursor.execute("ALTER TABLE market_item AUTO_INCREMENT = 1;")
+            cursor.execute("ALTER TABLE market_sublet AUTO_INCREMENT = 1;")
+
+
 class TestMarket(TestCase):
 
     def setUp(self):
+        # Ensure no leftover data
+        reset_auto_increment()
+        Item.objects.all().delete()
+        Sublet.objects.all().delete()
+
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
         self.client.force_authenticate(self.user)
@@ -97,8 +121,6 @@ class TestMarket(TestCase):
             created_sublet.save()
         self.item_ids = list(Item.objects.values_list("id", flat=True))
         self.sublet_ids = list(Sublet.objects.values_list("id", flat=True))
-        print("Item IDs:", self.item_ids)
-        print("Sublet IDs:", self.sublet_ids)
         self.user.items_favorited.set(Item.objects.filter(id__in=[1, 2, 3, 6]))
         created_offer_1 = Offer.objects.create(
             user=self.user, item=Item.objects.get(id=1), email="self_user@gmail.com"
