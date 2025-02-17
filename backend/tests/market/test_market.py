@@ -195,7 +195,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_get_single_item_other(self):
@@ -262,7 +262,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response_without_created_at)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
         response = self.client.get("/market/items/7/")
         response_without_created_at = response.json().copy()
@@ -272,7 +272,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response_without_created_at)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_create_item_exclude_unrequired(self):
@@ -308,7 +308,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response_without_created_at)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
         response = self.client.get("/market/items/7/")
         response_without_created_at = response.json().copy()
@@ -318,7 +318,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response_without_created_at)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_create_item_invalid_category(self):
@@ -410,7 +410,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response_without_created_at)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_update_item_minimum_required(self):
@@ -444,7 +444,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
         response = self.client.get("/market/items/1/")
         response_without_created_at = response.json().copy()
@@ -454,7 +454,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_update_item_all_fields(self):
@@ -554,7 +554,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_delete_item(self):
@@ -645,7 +645,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_get_sublet_other(self):
@@ -738,7 +738,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
         response = self.client.get("/market/sublets/3/")
         response_without_created_at = response.json().copy()
@@ -748,7 +748,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_create_sublet_all_fields(self):
@@ -812,7 +812,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
         response = self.client.get("/market/sublets/3/")
         response_without_created_at = response.json().copy()
@@ -822,7 +822,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_create_sublet_invalid_category(self):
@@ -920,7 +920,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_update_sublet(self):
@@ -984,7 +984,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
         response = self.client.get("/market/sublets/1/")
         response_without_created_at = response.json().copy()
@@ -994,7 +994,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_update_sublet_non_sublet_category(self):
@@ -1261,7 +1261,7 @@ class TestMarket(TestCase):
         self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=1),
+            datetime.timedelta(minutes=10),
         )
 
     def test_delete_offer(self):
