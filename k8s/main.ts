@@ -30,6 +30,18 @@ export class MyChart extends PennLabsChart {
             name: "penn-mobile",
             subPath: "ios-key",
             mountPath: "/app/ios_key.p8",
+          },
+          {
+            name: 'penn-mobile-apns-prod',
+            mountPath: '/app/secrets/notifications/ios/prod',
+          },
+          {
+            name: 'penn-mobile-apns-dev',
+            mountPath: '/app/secrets/notifications/ios/dev',
+          },
+          {
+            name: 'penn-mobile-fcm',
+            mountPath: '/app/secrets/notifications/android',
           }
         ],
         env: [
@@ -50,6 +62,18 @@ export class MyChart extends PennLabsChart {
             name: "penn-mobile",
             subPath: "ios-key",
             mountPath: "/app/ios_key.p8",
+          },
+          {
+            name: 'penn-mobile-apns-prod',
+            mountPath: '/app/secrets/notifications/ios/prod',
+          },
+          {
+            name: 'penn-mobile-apns-dev',
+            mountPath: '/app/secrets/notifications/ios/dev',
+          },
+          {
+            name: 'penn-mobile-fcm',
+            mountPath: '/app/secrets/notifications/android',
           }
         ]
       },
@@ -82,13 +106,13 @@ export class MyChart extends PennLabsChart {
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
 
-    new CronJob(this, 'send-gsr-reminders', {
-      schedule: "20,50 * * * *",
-      image: backendImage,
-      secret,
-      cmd: ["python", "manage.py", "send_gsr_reminders"],
-      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
-    });
+    // new CronJob(this, 'send-gsr-reminders', {
+    //   schedule: "20,50 * * * *",
+    //   image: backendImage,
+    //   secret,
+    //   cmd: ["python", "manage.py", "send_gsr_reminders"],
+    //   env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    // });
 
     new CronJob(this, 'get-fitness-snapshot', {
       schedule: cronTime.every(3).hours(),

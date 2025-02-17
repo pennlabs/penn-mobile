@@ -5,6 +5,7 @@ from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 
 
 class ItemAdmin(admin.ModelAdmin):
+
     def image_tag(self, instance):
         images = ['<img src="%s" height="150" />' for image in instance.images.all()]
         return mark_safe("<br>".join(images))
@@ -19,3 +20,4 @@ admin.site.register(Category)
 admin.site.register(Item, ItemAdmin)
 admin.site.register(Sublet)
 admin.site.register(ItemImage)
+

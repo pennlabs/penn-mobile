@@ -8,7 +8,7 @@ from gsr_booking.models import Group, GroupMembership
 User = get_user_model()
 
 
-class UserViewTestCase(TestCase):
+class MyMembershipViewTestCase(TestCase):
     def setUp(self):
         self.user1 = User.objects.create_user(
             username="user1", password="password", first_name="user", last_name="one"
@@ -17,28 +17,25 @@ class UserViewTestCase(TestCase):
             username="user2", password="password", first_name="user", last_name="two"
         )
 
-        self.group = Group.objects.create(owner=self.user1, name="g1", color="blue")
-        self.group.members.add(self.user1)
-        memship = self.group.memberships.all()[0]
-        memship.accepted = True
-        memship.save()
+        Group.objects.create(
+            owner=self.user1, name="g1", color="blue"
+        )  # creating group also adds user
+        group2 = Group.objects.create(owner=self.user2, name="g2", color="blue")
+        GroupMembership.objects.create(user=self.user1, group=group2, accepted=True)
+        group3 = Group.objects.create(owner=self.user2, name="g3", color="blue")
+        GroupMembership.objects.create(user=self.user1, group=group3)
         self.client = APIClient()
         self.client.login(username="user1", password="password")
 
-    def test_user_list(self):
-        response = self.client.get("/gsr/users/")
+    def test_user_memberships(self):
+        response = self.client.get("/gsr/mymemberships/")
         self.assertTrue(200, response.status_code)
         self.assertEqual(2, len(response.data))
 
-    def test_user_detail_in_group(self):
-        response = self.client.get("/gsr/users/user1/")
+    def test_user_invites(self):
+        response = self.client.get("/gsr/mymemberships/invites/")
         self.assertTrue(200, response.status_code)
-        self.assertEqual(2, len(response.data["booking_groups"]))
-
-    def test_me_user_detail_in_group(self):
-        response = self.client.get("/gsr/users/me/")
-        self.assertTrue(200, response.status_code)
-        self.assertEqual(2, len(response.data["booking_groups"]))
+        self.assertEqual(1, len(response.data))
 
 
 class MembershipViewTestCase(TestCase):
@@ -159,7 +156,7 @@ class GroupTestCase(TestCase):
     def test_get_groups(self):
         response = self.client.get("/gsr/groups/")
         self.assertEqual(200, response.status_code)
-        self.assertEqual(2, len(response.data))
+        self.assertEqual(1, len(response.data))
 
     def test_get_groups_includes_invites(self):
         GroupMembership.objects.create(user=self.user1, group=self.group2, accepted=False)
@@ -173,7 +170,7 @@ class GroupTestCase(TestCase):
     def test_make_group(self):
         response = self.client.post("/gsr/groups/", {"name": "gx", "color": "blue"})
         self.assertEqual(201, response.status_code, response.data)
-        self.assertEqual(5, Group.objects.count())
+        self.assertEqual(3, Group.objects.count())
         self.assertEqual("user1", Group.objects.get(name="gx").owner.username)
 
     def test_only_accepted_memberships(self):
