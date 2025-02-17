@@ -19,6 +19,7 @@ User = get_user_model()
 # To run: python manage.py test ./tests/market
 # We assume that tests finish within 10 minutes to determine if created_at is set correctly
 
+
 def reset_auto_increment():
     """Reset auto-incrementing primary keys based on the database backend."""
     with connection.cursor() as cursor:
