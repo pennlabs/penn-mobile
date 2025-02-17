@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 import pytz
 from django.contrib.auth import get_user_model
 from django.core.files.storage import Storage
-from django.test import TestCase
 from django.db import connection
+from django.test import TestCase
 from django.utils.timezone import now
 from rest_framework.test import APIClient
 
