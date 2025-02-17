@@ -20,4 +20,3 @@ admin.site.register(Category)
 admin.site.register(Item, ItemAdmin)
 admin.site.register(Sublet)
 admin.site.register(ItemImage)
-

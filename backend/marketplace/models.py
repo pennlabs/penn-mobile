@@ -1,7 +1,8 @@
+from enum import Enum
+
 from django.contrib.auth import get_user_model
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
-from enum import Enum
 
 
 User = get_user_model()
@@ -44,14 +45,14 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
-    
+
 
 class ValueTag(models.Model):
     name = models.CharField(max_length=255, primary_key=True)
 
     def __str__(self):
         return self.name
-    
+
 
 class ItemTag(models.Model):
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
@@ -72,9 +73,7 @@ class ItemTagValue(models.Model):
 
 class Item(models.Model):
     seller = models.ForeignKey(User, on_delete=models.CASCADE)
-    buyers = models.ManyToManyField(
-        User, through=Offer, related_name="items_offered", blank=True
-    )
+    buyers = models.ManyToManyField(User, through=Offer, related_name="items_offered", blank=True)
     favorites = models.ManyToManyField(User, related_name="items_favorited", blank=True)
 
     title = models.CharField(max_length=255)
@@ -82,7 +81,9 @@ class Item(models.Model):
     external_link = models.URLField(max_length=255, null=True, blank=True)
     price = models.IntegerField()
     negotiable = models.BooleanField(default=True)
-    category = models.CharField(max_length=50, choices=[(category, category.value) for category in Category])
+    category = models.CharField(
+        max_length=50, choices=[(category, category.value) for category in Category]
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
