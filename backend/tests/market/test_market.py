@@ -120,6 +120,8 @@ class TestMarket(TestCase):
             created_item.tags.set(Tag.objects.filter(name__in=sublet["item"]["tags"]))
             created_item.save()
             created_sublet.save()
+        print("Item IDs:", [item.id for item in Item.objects.all()])
+        print("Sublet IDs:", [sublet.id for sublet in Sublet.objects.all()])
         self.item_ids = list(Item.objects.values_list("id", flat=True))
         self.sublet_ids = list(Sublet.objects.values_list("id", flat=True))
         self.user.items_favorited.set(Item.objects.filter(id__in=[1, 2, 3, 6]))
