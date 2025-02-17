@@ -95,6 +95,10 @@ class TestMarket(TestCase):
             created_item.tags.set(Tag.objects.filter(name__in=sublet["item"]["tags"]))
             created_item.save()
             created_sublet.save()
+        self.item_ids = list(Item.objects.values_list('id', flat=True))
+        self.sublet_ids = list(Sublet.objects.values_list('id', flat=True))
+        print("Item IDs:", self.item_ids)
+        print("Sublet IDs:", self.sublet_ids)
         self.user.items_favorited.set(Item.objects.filter(id__in=[1, 2, 3, 6]))
         created_offer_1 = Offer.objects.create(
             user=self.user, item=Item.objects.get(id=1), email="self_user@gmail.com"
