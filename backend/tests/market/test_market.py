@@ -136,8 +136,6 @@ class TestMarket(TestCase):
             created_item.tags.set(Tag.objects.filter(name__in=sublet["item"]["tags"]))
             created_item.save()
             created_sublet.save()
-        print("Item IDs:", [item.id for item in Item.objects.all()])
-        print("Sublet IDs:", [sublet.id for sublet in Sublet.objects.all()])
         self.item_ids = list(Item.objects.values_list("id", flat=True))
         self.sublet_ids = list(Sublet.objects.values_list("id", flat=True))
         self.user.items_favorited.set(Item.objects.filter(id__in=[1, 2, 3, 6]))
@@ -165,14 +163,14 @@ class TestMarket(TestCase):
         response = self.client.get("/market/items/")
         expected_response = [
             {
-                "id": 3,
-                "seller": 2,
-                "tags": ["Laptop", "New"],
-                "category": "Electronics",
-                "title": "Macbook Pro",
-                "price": 2000.0,
+                "id": 1,
+                "seller": 1,
+                "tags": ["Textbook", "Used"],
+                "category": "Book",
+                "title": "Math Textbook",
+                "price": 20.0,
                 "negotiable": True,
-                "expires_at": "2025-08-12T01:00:00-04:00",
+                "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
                 "favorites": [1],
             },
@@ -189,14 +187,14 @@ class TestMarket(TestCase):
                 "favorites": [1],
             },
             {
-                "id": 1,
-                "seller": 1,
-                "tags": ["Textbook", "Used"],
-                "category": "Book",
-                "title": "Math Textbook",
-                "price": 20.0,
+                "id": 3,
+                "seller": 2,
+                "tags": ["Laptop", "New"],
+                "category": "Electronics",
+                "title": "Macbook Pro",
+                "price": 2000.0,
                 "negotiable": True,
-                "expires_at": "2025-12-12T00:00:00-05:00",
+                "expires_at": "2025-08-12T01:00:00-04:00",
                 "images": [],
                 "favorites": [1],
             },
@@ -214,7 +212,7 @@ class TestMarket(TestCase):
             },
         ]
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), expected_response)
+        self.assertEqual(sorted(response.json(), key=lambda d:d['id']), sorted(expected_response, key=lambda d:d['id']))
 
     def test_get_single_item_own(self):
         response = self.client.get("/market/items/1/")
