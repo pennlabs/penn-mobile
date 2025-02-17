@@ -28,12 +28,30 @@ def reset_auto_increment():
         if backend == "postgresql":
             cursor.execute("ALTER SEQUENCE market_item_id_seq RESTART WITH 1;")
             cursor.execute("ALTER SEQUENCE market_sublet_id_seq RESTART WITH 1;")
+            cursor.execute("ALTER SEQUENCE auth_user_id_seq RESTART WITH 1;")
+            cursor.execute("ALTER SEQUENCE market_offer_id_seq RESTART WITH 1;")
+            cursor.execute("ALTER SEQUENCE market_item_favorites_id_seq RESTART WITH 1;")
+            cursor.execute("ALTER SEQUENCE market_itemimage_id_seq RESTART WITH 1;")
+            cursor.execute("ALTER SEQUENCE market_tag_id_seq RESTART WITH 1;")
+            cursor.execute("ALTER SEQUENCE market_category_id_seq RESTART WITH 1;")
         elif backend == "sqlite":
             cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_item';")
             cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_sublet';")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='auth_user';")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_offer';")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_item_favorites';")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_itemimage';")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_tag';")
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_category';")
         elif backend == "mysql":
             cursor.execute("ALTER TABLE market_item AUTO_INCREMENT = 1;")
             cursor.execute("ALTER TABLE market_sublet AUTO_INCREMENT = 1;")
+            cursor.execute("ALTER TABLE auth_user AUTO_INCREMENT = 1;")
+            cursor.execute("ALTER TABLE market_offer AUTO_INCREMENT = 1;")
+            cursor.execute("ALTER TABLE market_item_favorites AUTO_INCREMENT = 1;")
+            cursor.execute("ALTER TABLE market_itemimage AUTO_INCREMENT = 1;")
+            cursor.execute("ALTER TABLE market_tag AUTO_INCREMENT = 1;")
+            cursor.execute("ALTER TABLE market_category AUTO_INCREMENT = 1;")
 
 
 class TestMarket(TestCase):
@@ -43,6 +61,10 @@ class TestMarket(TestCase):
         reset_auto_increment()
         Item.objects.all().delete()
         Sublet.objects.all().delete()
+        User.objects.all().delete()
+        Tag.objects.all().delete()
+        Category.objects.all().delete()
+        ItemImage.objects.all().delete()
 
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
