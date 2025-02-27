@@ -7,7 +7,6 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from pennmobile.analytics import Metric, record_analytics
 from sublet.models import Amenity, Offer, Sublet, SubletImage
 from sublet.permissions import (
     IsSuperUser,
@@ -85,8 +84,6 @@ class Properties(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)  # Check if the data is valid
         instance = serializer.save()  # Create the Sublet
         instance_serializer = SubletSerializerRead(instance=instance, context={"request": request})
-
-        record_analytics(Metric.SUBLET_CREATED, request.user.username)
 
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -178,8 +175,6 @@ class Properties(viewsets.ModelViewSet):
         if baths:
             queryset = queryset.filter(baths=baths)
 
-        record_analytics(Metric.SUBLET_BROWSE, request.user.username)
-
         # Serialize and return the queryset
         serializer = SubletSerializerSimple(queryset, many=True)
         return Response(serializer.data)
@@ -246,8 +241,6 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
         sublet = get_object_or_404(Sublet, id=sublet_id)
         self.get_queryset().add(sublet)
 
-        record_analytics(Metric.SUBLET_FAVORITED, request.user.username)
-
         return Response(status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
@@ -287,8 +280,6 @@ class Offers(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
-        record_analytics(Metric.SUBLET_OFFER, request.user.username)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
