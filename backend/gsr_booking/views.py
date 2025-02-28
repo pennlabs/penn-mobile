@@ -214,12 +214,13 @@ class BookRoom(APIView):
         FuncEntry(
             name=lambda args, res: (
                 "gsr_booking_duration."
-                f"{GSR.objects.get(id=args[1]['id']).location}."
-                f"{GSR.objects.get(id=args[1]['id']).name}"
+                f"{GSR.objects.get(id=args[1].data['id']).location}."
+                f"{GSR.objects.get(id=args[1].data['id']).name}"
             ),
             get_value=lambda args, res: (
                 (
-                    parse_datetime(args[1]["end_time"]) - parse_datetime(args[1]["start_time"])
+                    parse_datetime(args[1].data["end_time"])
+                    - parse_datetime(args[1].data["start_time"])
                 ).total_seconds()
                 / 60
             ),
