@@ -44,7 +44,7 @@ def universal_identifier_link(request):
                             "VU59R57FGM.org.pennlabs.PennMobile.dev",
                         ],
                         "components": [
-                            {"/": "/gsr/share/*", "?": {"data": "*"}, "comment": "GSR Sharing."}
+                            {"/": "ios/gsr/share/*", "?": {"data": "*"}, "comment": "GSR Sharing."}
                         ],
                     }
                 ]
