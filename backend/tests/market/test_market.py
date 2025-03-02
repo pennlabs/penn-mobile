@@ -169,10 +169,9 @@ class TestMarket(TestCase):
                 "category": "Book",
                 "title": "Math Textbook",
                 "price": 20.0,
-                "negotiable": True,
                 "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
-                "favorites": [1],
+                "favorite_count": 1,
             },
             {
                 "id": 2,
@@ -181,10 +180,9 @@ class TestMarket(TestCase):
                 "category": "Food",
                 "title": "Bag of Doritos",
                 "price": 5.0,
-                "negotiable": False,
                 "expires_at": "2025-10-12T01:00:00-04:00",
                 "images": [],
-                "favorites": [1],
+                "favorite_count": 1,
             },
             {
                 "id": 3,
@@ -193,10 +191,9 @@ class TestMarket(TestCase):
                 "category": "Electronics",
                 "title": "Macbook Pro",
                 "price": 2000.0,
-                "negotiable": True,
                 "expires_at": "2025-08-12T01:00:00-04:00",
                 "images": [],
-                "favorites": [1],
+                "favorite_count": 1,
             },
             {
                 "id": 4,
@@ -205,10 +202,9 @@ class TestMarket(TestCase):
                 "category": "Furniture",
                 "title": "Couch",
                 "price": 400.0,
-                "negotiable": True,
                 "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
-                "favorites": [],
+                "favorite_count": 0,
             },
         ]
         self.assertEqual(response.status_code, 200)
@@ -216,6 +212,24 @@ class TestMarket(TestCase):
             sorted(response.json(), key=lambda d: d["id"]),
             sorted(expected_response, key=lambda d: d["id"]),
         )
+
+    def test_get_item_seller(self):
+        response = self.client.get("/market/items/?seller=true")
+        expected_response = [
+            {
+                "id": 1,
+                "seller": 1,
+                "tags": ["Textbook", "Used"],
+                "category": "Book",
+                "title": "Math Textbook",
+                "price": 20.0,
+                "expires_at": "2025-12-12T00:00:00-05:00",
+                "images": [],
+                "favorite_count": 1,
+            }
+        ]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), expected_response)
 
     def test_get_single_item_own(self):
         response = self.client.get("/market/items/1/")
@@ -366,6 +380,24 @@ class TestMarket(TestCase):
             abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
             datetime.timedelta(minutes=10),
         )
+
+    def test_create_item_missing_filed(self):
+        payload = {
+            "tags": ["New"],
+            "category": "Book",
+            "external_link": "https://example.com/listing",
+            "price": 20.0,
+            "negotiable": True,
+            "expires_at": "2024-12-12T00:00:00-05:00",
+        }
+        response = self.client.post("/market/items/", payload)
+        res_json = json.loads(response.content)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(res_json, {
+            "title": [
+                "This field is required."
+            ]
+        })
 
     def test_create_item_invalid_category(self):
         payload = {
@@ -622,10 +654,9 @@ class TestMarket(TestCase):
                     "category": "Sublet",
                     "title": "Cira Green Sublet",
                     "price": 1350.0,
-                    "negotiable": False,
                     "expires_at": "2025-12-12T00:00:00-05:00",
                     "images": [],
-                    "favorites": [],
+                    "favorite_count": 0,
                 },
                 "address": "Cira Green, Philadelphia, PA",
                 "beds": 3.0,
@@ -642,10 +673,9 @@ class TestMarket(TestCase):
                     "category": "Sublet",
                     "title": "Rodin Quad",
                     "price": 1350.0,
-                    "negotiable": False,
                     "expires_at": "2025-12-12T00:00:00-05:00",
                     "images": [],
-                    "favorites": [1],
+                    "favorite_count": 1,
                 },
                 "address": "3901 Locust Walk, Philadelphia, PA",
                 "beds": 4.0,
@@ -654,7 +684,10 @@ class TestMarket(TestCase):
                 "end_date": "2025-05-31T00:00:00-04:00",
             },
         ]
-        self.assertEqual(response.json(), expected_response)
+        self.assertEqual(
+            sorted(response.json(), key=lambda d: d["id"]),
+            sorted(expected_response, key=lambda d: d["id"]),
+        )
 
     def test_get_sublet_own(self):
         response = self.client.get("/market/sublets/1/")
@@ -1134,10 +1167,9 @@ class TestMarket(TestCase):
                 "category": "Book",
                 "title": "Math Textbook",
                 "price": 20.0,
-                "negotiable": True,
                 "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
-                "favorites": [1],
+                "favorite_count": 1,
             },
             {
                 "id": 2,
@@ -1146,10 +1178,9 @@ class TestMarket(TestCase):
                 "category": "Food",
                 "title": "Bag of Doritos",
                 "price": 5.0,
-                "negotiable": False,
                 "expires_at": "2025-10-12T01:00:00-04:00",
                 "images": [],
-                "favorites": [1],
+                "favorite_count": 1,
             },
             {
                 "id": 3,
@@ -1158,10 +1189,9 @@ class TestMarket(TestCase):
                 "category": "Electronics",
                 "title": "Macbook Pro",
                 "price": 2000.0,
-                "negotiable": True,
                 "expires_at": "2025-08-12T01:00:00-04:00",
                 "images": [],
-                "favorites": [1],
+                "favorite_count": 1,
             },
             {
                 "id": 6,
@@ -1170,17 +1200,16 @@ class TestMarket(TestCase):
                 "category": "Sublet",
                 "title": "Rodin Quad",
                 "price": 1350.0,
-                "negotiable": False,
                 "expires_at": "2025-12-12T00:00:00-05:00",
                 "images": [],
-                "favorites": [1],
+                "favorite_count": 1,
             },
         ]
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), expected_response)
 
     def test_get_all_user_offers(self):
-        response = self.client.get("/market/offers/")
+        response = self.client.get("/market/offers/made/")
         response_without_created_at = [offer.copy() for offer in response.json()]
         created_at_list = [
             datetime.datetime.fromisoformat(offer.pop("created_at"))
@@ -1204,6 +1233,48 @@ class TestMarket(TestCase):
                 "user": 1,
                 "item": 5,
             },
+        ]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response_without_created_at, expected_response)
+        for created_at in created_at_list:
+            self.assertLessEqual(
+                abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+                datetime.timedelta(minutes=1),
+            )
+
+    def test_get_all_user_offers_received(self):
+        response = self.client.get("/market/offers/received/")
+        response_without_created_at = [offer.copy() for offer in response.json()]
+        created_at_list = [
+            datetime.datetime.fromisoformat(offer.pop("created_at"))
+            for offer in response_without_created_at
+        ]
+
+        expected_response = [
+            {
+                "id": 1,
+                "phone_number": None,
+                "email": "self_user@gmail.com",
+                "message": "",
+                "user": 1,
+                "item": 1
+            },
+            {
+                "id": 2,
+                "phone_number": None,
+                "email": "self_user@gmail.com",
+                "message": "",
+                "user": 1,
+                "item": 5
+            },
+            {
+                "id": 3,
+                "phone_number": None,
+                "email": "user_1@gmail.com",
+                "message": "",
+                "user": 2,
+                "item": 5
+            }
         ]
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response_without_created_at, expected_response)
@@ -1266,13 +1337,20 @@ class TestMarket(TestCase):
                     "user": 1,
                     "item": 1,
                 }
-            ],
+            ]
         )
         for created_at in created_at_list:
             self.assertLessEqual(
                 abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
                 datetime.timedelta(minutes=1),
             )
+
+    def test_list_item_offers_other(self):
+        response = self.client.get("/market/items/2/offers/")
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {
+            "detail": "You do not have permission to perform this action."
+        })
 
     def test_list_item_offers_invalid_item(self):
         response = self.client.get("/market/items/100/offers/")
@@ -1326,6 +1404,14 @@ class TestMarket(TestCase):
             images = Item.objects.get(id=1).images.all()
             self.assertTrue(images.exists())
             self.assertEqual(1, images.first().item.id)
+
+    def test_create_image_other_users_item(self):
+        with open("tests/market/mock_image.jpg", "rb") as image:
+            response = self.client.post("/market/items/2/images/", {"images": image})
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.json(), {
+                "detail": "You do not have permission to perform this action."
+            })
 
     def test_create_delete_images(self):
         with open("tests/market/mock_image.jpg", "rb") as image:

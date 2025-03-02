@@ -55,13 +55,22 @@ class UserFavorites(generics.ListAPIView):
 
 
 # TODO: Can add feature to filter for active offers only
-class UserOffers(generics.ListAPIView):
+class OffersMade(generics.ListAPIView):
     serializer_class = OfferSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
         return Offer.objects.filter(user=user)
+    
+
+class OffersReceived(generics.ListAPIView):
+    serializer_class = OfferSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Offer.objects.filter(item__seller=user)
 
 
 class Items(viewsets.ModelViewSet):
