@@ -6,7 +6,7 @@ on: push
 jobs:
   backend-check:
     name: "Backend Check"
-    uses: pennlabs/shared-actions/.github/workflows/django.yaml@507f4cf1cc88259fc8625fb3a35bd3f18fc91cd5
+    uses: pennlabs/shared-actions/.github/workflows/django.yaml@238aa5ee908afba9f906641b51f82bb81572f66a
     secrets: inherit
     with:
       projectName: pennmobile
@@ -18,7 +18,7 @@ jobs:
 
   frontend-check:
     name: "Frontend Check"
-    uses: pennlabs/shared-actions/.github/workflows/react-check.yaml@v0.1
+    uses: pennlabs/shared-actions/.github/workflows/react.yaml@238aa5ee908afba9f906641b51f82bb81572f66a
     with:
       path: frontend
       nodeVersion: 20.11.1
