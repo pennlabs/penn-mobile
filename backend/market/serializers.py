@@ -138,6 +138,7 @@ class ItemSerializerPublic(serializers.ModelSerializer):
 
 # Read-only serializer for use when pulling all items/etc
 class ItemSerializerList(serializers.ModelSerializer):
+    favorite_count = serializers.SerializerMethodField()
     images = ItemImageURLSerializer(many=True)
 
     class Meta:
@@ -149,12 +150,14 @@ class ItemSerializerList(serializers.ModelSerializer):
             "category",
             "title",
             "price",
-            "negotiable",
             "expires_at",
             "images",
-            "favorites",
+            "favorite_count",
         ]
         read_only_fields = fields
+
+    def get_favorite_count(self, obj):
+        return obj.favorites.count()
 
 
 class SubletSerializer(serializers.ModelSerializer):

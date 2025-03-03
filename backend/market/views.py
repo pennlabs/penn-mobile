@@ -55,13 +55,22 @@ class UserFavorites(generics.ListAPIView):
 
 
 # TODO: Can add feature to filter for active offers only
-class UserOffers(generics.ListAPIView):
+class OffersMade(generics.ListAPIView):
     serializer_class = OfferSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated | IsSuperUser]
 
     def get_queryset(self):
         user = self.request.user
         return Offer.objects.filter(user=user)
+
+
+class OffersReceived(generics.ListAPIView):
+    serializer_class = OfferSerializer
+    permission_classes = [IsAuthenticated | IsSuperUser]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Offer.objects.filter(item__seller=user)
 
 
 class Items(viewsets.ModelViewSet):
@@ -299,5 +308,6 @@ class Offers(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         if not Item.objects.filter(pk=int(self.kwargs["item_id"])).exists():
             raise exceptions.NotFound("No Item matches the given query")
-        self.check_object_permissions(request, Item.objects.get(pk=int(self.kwargs["item_id"])))
+        for offer in self.get_queryset():
+            self.check_object_permissions(request, offer)
         return super().list(request, *args, **kwargs)
