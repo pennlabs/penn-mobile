@@ -159,6 +159,7 @@ class ItemSerializerList(serializers.ModelSerializer):
     def get_favorite_count(self, obj):
         return obj.favorites.count()
 
+
 class SubletSerializer(serializers.ModelSerializer):
     item = ItemSerializer(required=True)
 

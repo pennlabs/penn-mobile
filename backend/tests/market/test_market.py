@@ -151,6 +151,10 @@ class TestMarket(TestCase):
             user=user1, item=Item.objects.get(id=5), email="user_1@gmail.com"
         )
         created_offer_3.save()
+        created_offer_4 = Offer.objects.create(
+            user=self.user, item=Item.objects.get(id=4), email="self_user@gmail.com"
+        )
+        created_offer_4.save()
 
         storage_mock = MagicMock(spec=Storage, name="StorageMock")
         storage_mock.generate_filename = lambda filename: filename
@@ -393,11 +397,7 @@ class TestMarket(TestCase):
         response = self.client.post("/market/items/", payload)
         res_json = json.loads(response.content)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(res_json, {
-            "title": [
-                "This field is required."
-            ]
-        })
+        self.assertEqual(res_json, {"title": ["This field is required."]})
 
     def test_create_item_invalid_category(self):
         payload = {
@@ -1233,6 +1233,14 @@ class TestMarket(TestCase):
                 "user": 1,
                 "item": 5,
             },
+            {
+                "id": 4,
+                "phone_number": None,
+                "email": "self_user@gmail.com",
+                "message": "",
+                "user": 1,
+                "item": 4,
+            },
         ]
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response_without_created_at, expected_response)
@@ -1257,7 +1265,7 @@ class TestMarket(TestCase):
                 "email": "self_user@gmail.com",
                 "message": "",
                 "user": 1,
-                "item": 1
+                "item": 1,
             },
             {
                 "id": 2,
@@ -1265,7 +1273,7 @@ class TestMarket(TestCase):
                 "email": "self_user@gmail.com",
                 "message": "",
                 "user": 1,
-                "item": 5
+                "item": 5,
             },
             {
                 "id": 3,
@@ -1273,8 +1281,8 @@ class TestMarket(TestCase):
                 "email": "user_1@gmail.com",
                 "message": "",
                 "user": 2,
-                "item": 5
-            }
+                "item": 5,
+            },
         ]
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response_without_created_at, expected_response)
@@ -1337,7 +1345,7 @@ class TestMarket(TestCase):
                     "user": 1,
                     "item": 1,
                 }
-            ]
+            ],
         )
         for created_at in created_at_list:
             self.assertLessEqual(
@@ -1346,11 +1354,11 @@ class TestMarket(TestCase):
             )
 
     def test_list_item_offers_other(self):
-        response = self.client.get("/market/items/2/offers/")
+        response = self.client.get("/market/items/4/offers/")
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json(), {
-            "detail": "You do not have permission to perform this action."
-        })
+        self.assertEqual(
+            response.json(), {"detail": "You do not have permission to perform this action."}
+        )
 
     def test_list_item_offers_invalid_item(self):
         response = self.client.get("/market/items/100/offers/")
@@ -1374,7 +1382,7 @@ class TestMarket(TestCase):
         created_at = response_without_created_at.pop("created_at")
         created_at = datetime.datetime.fromisoformat(created_at)
         expected_response = {
-            "id": 4,
+            "id": 5,
             "phone_number": "+14252694412",
             "email": "self_user@gmail.com",
             "message": "I am interested in buying this item.",
@@ -1394,7 +1402,7 @@ class TestMarket(TestCase):
         self.assertFalse(Offer.objects.filter(id=1).exists())
 
     def test_delete_offer_nonexistent(self):
-        response = self.client.delete("/market/items/4/offers/")
+        response = self.client.delete("/market/items/6/offers/")
         self.assertEqual(response.status_code, 404)
 
     def test_create_image(self):
@@ -1409,9 +1417,9 @@ class TestMarket(TestCase):
         with open("tests/market/mock_image.jpg", "rb") as image:
             response = self.client.post("/market/items/2/images/", {"images": image})
             self.assertEqual(response.status_code, 403)
-            self.assertEqual(response.json(), {
-                "detail": "You do not have permission to perform this action."
-            })
+            self.assertEqual(
+                response.json(), {"detail": "You do not have permission to perform this action."}
+            )
 
     def test_create_delete_images(self):
         with open("tests/market/mock_image.jpg", "rb") as image:

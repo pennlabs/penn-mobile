@@ -63,7 +63,6 @@ class OfferOwnerPermission(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:  # GET
-            return obj.seller == request.user
+            return obj.item.seller == request.user
 
-        if request.method == "DELETE":
-            return obj.user == request.user
+        return obj.user == request.user

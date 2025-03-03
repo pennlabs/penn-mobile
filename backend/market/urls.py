@@ -8,11 +8,11 @@ from market.views import (
     Favorites,
     Items,
     Offers,
+    OffersMade,
+    OffersReceived,
     Sublets,
     Tags,
     UserFavorites,
-    OffersMade,
-    OffersReceived,
 )
 
 
