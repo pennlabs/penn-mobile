@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import include, path
 from django.views.generic import TemplateView
 from rest_framework.schemas import get_schema_view
@@ -31,9 +32,33 @@ urlpatterns = [
     path("wrapped/", include("wrapped.urls")),
 ]
 
+
+def universal_identifier_link(request):
+    return JsonResponse(
+        {
+            "applinks": {
+                "details": [
+                    {
+                        "appIDs": [
+                            "VU59R57FGM.org.pennlabs.PennMobile",
+                            "VU59R57FGM.org.pennlabs.PennMobile.dev",
+                        ],
+                        "components": [
+                            {"/": "ios/gsr/share/*", "?": {"data": "*"}, "comment": "GSR Sharing."}
+                        ],
+                    }
+                ]
+            }
+        }
+    )
+
+
 urlpatterns = [
     path("api/", include(urlpatterns)),
     path("", include((urlpatterns, "apex"))),
+    path(
+        ".well-known/apple-app-site-association", universal_identifier_link, name="universal-links"
+    ),
 ]
 
 if settings.DEBUG:
