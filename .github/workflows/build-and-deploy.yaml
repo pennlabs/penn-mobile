@@ -25,6 +25,7 @@ jobs:
       nodeVersion: 20.11.1
       githubRef: ${{ github.ref }}
       gitSha: ${{ github.sha }}
+      skipCodecov: true
     secrets:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
