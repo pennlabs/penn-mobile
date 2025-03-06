@@ -21,8 +21,13 @@ jobs:
     uses: pennlabs/shared-actions/.github/workflows/react.yaml@238aa5ee908afba9f906641b51f82bb81572f66a
     with:
       path: frontend
+      imageName: penn-mobile-frontend
       nodeVersion: 20.11.1
-
+      githubRef: ${{ github.ref }}
+      gitSha: ${{ github.sha }}
+    secrets:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
   build-backend:
     name: Build backend
     runs-on: ubuntu-latest
