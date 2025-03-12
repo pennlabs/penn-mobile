@@ -155,6 +155,10 @@ class TestMarket(TestCase):
             user=self.user, item=Item.objects.get(id=4), email="self_user@gmail.com"
         )
         created_offer_4.save()
+        created_offer_5 = Offer.objects.create(
+            user=user1, item=Item.objects.get(id=4), email="user_1@gmail.com"
+        )
+        created_offer_5.save()
 
         storage_mock = MagicMock(spec=Storage, name="StorageMock")
         storage_mock.generate_filename = lambda filename: filename
@@ -1382,7 +1386,7 @@ class TestMarket(TestCase):
         created_at = response_without_created_at.pop("created_at")
         created_at = datetime.datetime.fromisoformat(created_at)
         expected_response = {
-            "id": 5,
+            "id": 6,
             "phone_number": "+14252694412",
             "email": "self_user@gmail.com",
             "message": "I am interested in buying this item.",
