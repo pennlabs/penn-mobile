@@ -8,10 +8,11 @@ from market.views import (
     Favorites,
     Items,
     Offers,
+    OffersMade,
+    OffersReceived,
     Sublets,
     Tags,
     UserFavorites,
-    UserOffers,
 )
 
 
@@ -29,7 +30,9 @@ additional_urls = [
     # All favorites for user
     path("favorites/", UserFavorites.as_view(), name="user-favorites"),
     # All offers made by user
-    path("offers/", UserOffers.as_view(), name="user-offers"),
+    path("offers/made/", OffersMade.as_view(), name="offers-made"),
+    # All offers for an item owned by user
+    path("offers/received/", OffersReceived.as_view(), name="offers-received"),
     # Favorites
     # post: add an item to the user's favorites
     # delete: remove an item from the user's favorites
