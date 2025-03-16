@@ -56,9 +56,6 @@ jobs:
           name: build-backend
           path: /tmp/image.tar
       - uses: actions/download-artifact@v4
-        with:
-          path: tmp
-          merge-multiple: true
     needs: backend-check
 
   build-frontend:
