@@ -93,6 +93,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
+        with:
+            path: tmp
+            merge-multiple: true
       - uses: geekyeggo/delete-artifact@v5
         with:
           name: |-
