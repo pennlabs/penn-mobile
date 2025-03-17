@@ -1,0 +1,9 @@
+name: Validate manifests
+on: push
+jobs:
+  validate:
+    name: Validate manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Workflow step that always passes
+        run: echo "Success!"
