@@ -130,8 +130,9 @@ def room_status(room):
         name="cron.full_laundry_room",
         get_value=lambda args, res: sum(
             1
-            for _, room in res.items()
-            if room["washers"]["open"] == 0 and room["dryers"]["open"] == 0
+            for _, room in (res or {}).items()
+            if room.get("washers", {}).get("open", 0) == 0
+            and room.get("dryers", {}).get("open", 0) == 0
         ),
     ),
     FuncEntry(
@@ -140,8 +141,9 @@ def room_status(room):
             timezone.localtime()
             if sum(
                 1
-                for _, room in res.items()
-                if room["washers"]["open"] == 0 and room["dryers"]["open"] == 0
+                for _, room in (res or {}).items()
+                if room.get("washers", {}).get("open", 0) == 0
+                and room.get("dryers", {}).get("open", 0) == 0
             )
             > 10
             else None
@@ -151,8 +153,9 @@ def room_status(room):
         name="cron.full_laundry_rooms_list",
         get_value=lambda args, res: [
             room_name
-            for room_name, room in res.items()
-            if room["washers"]["open"] == 0 and room["dryers"]["open"] == 0
+            for room_name, room in (res or {}).items()
+            if room.get("washers", {}).get("open", 0) == 0
+            and room.get("dryers", {}).get("open", 0) == 0
         ],
     ),
 )
