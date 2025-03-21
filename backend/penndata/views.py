@@ -2,6 +2,7 @@ import datetime
 from datetime import timedelta
 
 import requests
+from analytics.entries import ViewEntry
 from bs4 import BeautifulSoup
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -27,6 +28,7 @@ from penndata.serializers import (
     FitnessRoomSerializer,
     HomePageOrderSerializer,
 )
+from pennmobile.analytics import LabsAnalytics
 
 
 class News(APIView):
@@ -144,6 +146,10 @@ class HomePageOrdering(generics.ListAPIView):
         return HomePageOrder.objects.all()
 
 
+# Tracks the time user opens up Penn Mobile homepage
+@LabsAnalytics.record_apiview(
+    ViewEntry(name="homepage_visit_time", get_value=lambda req, res: timezone.localtime())
+)
 class HomePage(APIView):
     """
     GET: provides homepage Cells for mobile

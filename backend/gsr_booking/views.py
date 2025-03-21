@@ -1,5 +1,4 @@
-from analytics.analytics import Product, get_analytics_recorder
-from analytics.entries import FuncEntry, ViewEntry
+from analytics.entries import ViewEntry
 from dateutil.parser import parse as parse_datetime
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
@@ -15,10 +14,9 @@ from rest_framework.views import APIView
 from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, GSRSerializer
+from pennmobile.analytics import LabsAnalytics
 
 
-# Creates a singleton of of the 'AnalyticsRecorder' class
-LabsAnalytics = get_analytics_recorder(Product.MOBILE_BACKEND)
 User = get_user_model()
 
 
@@ -199,33 +197,26 @@ class Availability(APIView):
             return Response({"error": str(e)}, status=400)
 
 
+# Records analytics for GSR start time, room id, and duration
 @LabsAnalytics.record_apiview(
     ViewEntry(name="booking_start_time", get_value=lambda req, res: req.data.get("start_time")),
     ViewEntry(name="booking_room_id", get_value=lambda req, res: req.data.get("id")),
+    ViewEntry(
+        name="gsr_booking_duration",
+        get_value=lambda req, res: (
+            (
+                parse_datetime(req.data.get("end_time"))
+                - parse_datetime(req.data.get("start_time"))
+            ).total_seconds()
+            / 60
+        ),
+    ),
 )
 class BookRoom(APIView):
     """Books room in any GSR in the availability route"""
 
     permission_classes = [IsAuthenticated]
 
-    # Extracts GSR room ID, fetches location of GSR and room name, then stores key as
-    # gsr_booking_duration.<location>.<room_name> with duration in minutes
-    @LabsAnalytics.record_function(
-        FuncEntry(
-            name=lambda args, res: (
-                "gsr_booking_duration."
-                f"{GSR.objects.get(id=args[1].data['id']).location}."
-                f"{GSR.objects.get(id=args[1].data['id']).name}"
-            ),
-            get_value=lambda args, res: (
-                (
-                    parse_datetime(args[1].data["end_time"])
-                    - parse_datetime(args[1].data["start_time"])
-                ).total_seconds()
-                / 60
-            ),
-        )
-    )
     def post(self, request):
         start = request.data["start_time"]
         end = request.data["end_time"]
@@ -248,6 +239,11 @@ class BookRoom(APIView):
             return Response({"error": str(e)}, status=400)
 
 
+@LabsAnalytics.record_apiview(
+    ViewEntry(
+        name="gsr_cancellation_room_id", get_value=lambda req, res: req.data.get("booking_id")
+    ),
+)
 class CancelRoom(APIView):
     """
     Cancels  a room for a given user

@@ -1,9 +1,11 @@
 import requests
+from analytics.entries import FuncEntry
 from django.conf import settings
 from django.utils import timezone
 from requests.exceptions import HTTPError
 
 from laundry.models import LaundryRoom, LaundrySnapshot
+from pennmobile.analytics import LabsAnalytics
 
 
 def get_room_url(room_id: int):
@@ -123,6 +125,37 @@ def room_status(room):
     return {"machines": machines, "hall_name": room.name, "location": room.location}
 
 
+@LabsAnalytics.record_function(
+    FuncEntry(
+        name="cron.full_laundry_room",
+        get_value=lambda args, res: sum(
+            1
+            for _, room in res.items()
+            if room["washers"]["open"] == 0 and room["dryers"]["open"] == 0
+        ),
+    ),
+    FuncEntry(
+        name="cron.full_laundry_room_timestamp",
+        get_value=lambda args, res: (
+            timezone.localtime()
+            if sum(
+                1
+                for _, room in res.items()
+                if room["washers"]["open"] == 0 and room["dryers"]["open"] == 0
+            )
+            > 10
+            else None
+        ),
+    ),
+    FuncEntry(
+        name="cron.full_laundry_rooms_list",
+        get_value=lambda args, res: [
+            room_name
+            for room_name, room in res.items()
+            if room["washers"]["open"] == 0 and room["dryers"]["open"] == 0
+        ],
+    ),
+)
 def save_data():
     """
     Retrieves current laundry info and saves it into the database.

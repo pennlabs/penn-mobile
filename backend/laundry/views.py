@@ -1,7 +1,6 @@
 import calendar
 import datetime
 
-from analytics.analytics import Product, get_analytics_recorder
 from analytics.entries import FuncEntry
 from django.core.cache import cache
 from django.db.models import Q
@@ -15,11 +14,8 @@ from rest_framework.views import APIView
 from laundry.api_wrapper import check_is_working, room_status
 from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundryRoomSerializer
+from pennmobile.analytics import LabsAnalytics
 from utils.cache import Cache
-
-
-# Creates a singleton of of the 'AnalyticsRecorder' class
-LabsAnalytics = get_analytics_recorder(Product.MOBILE_BACKEND)
 
 
 class Ids(APIView):
@@ -36,6 +32,12 @@ class HallInfo(APIView):
     GET: returns list of a particular hall, its respective machines and machine details
     """
 
+    # Records which laundry rooms are checked by user
+    @LabsAnalytics.record_api_function(
+        FuncEntry(
+            name="laundry_room_id_checked", get_value_with_args=lambda _self, req, room_id: room_id
+        )
+    )
     def get(self, request, room_id):
         try:
             return Response(room_status(get_object_or_404(LaundryRoom, room_id=room_id)))
@@ -85,24 +87,6 @@ class HallUsage(APIView):
         snapshots = LaundrySnapshot.objects.filter(filter).order_by("-date")
         return (room, snapshots)
 
-    @LabsAnalytics.record_function(
-        FuncEntry(
-            # Retrieves location name associated with room_id and stores key as
-            # "washing_time_minutes.<dorm_location>"
-            name=lambda args, res: (
-                f"washing_time_minutes.{LaundryRoom.objects.get(room_id=args[0]).location}"
-            ),
-            # Finds the difference between total capacity and total available
-            # washers per hour, then computes minutes washers were in use
-            get_value=lambda args, res: (
-                (
-                    (res["total_number_of_washers"] * len(res["washer_data"]))
-                    - sum(res["washer_data"].values())
-                )
-                * 60
-            ),
-        )
-    )
     def compute_usage(room_id):
         try:
             (room, snapshots) = HallUsage.get_snapshot_info(room_id)
