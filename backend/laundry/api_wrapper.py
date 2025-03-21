@@ -125,37 +125,33 @@ def room_status(room):
     return {"machines": machines, "hall_name": room.name, "location": room.location}
 
 
+def is_room_full(room_data: dict) -> bool:
+    """
+    Retruns whether a room is full or not meaning no washers or dryers are available
+    """
+    return (
+        room_data.get("washers", {}).get("open", 0) == 0
+        and room_data.get("dryers", {}).get("open", 0) == 0
+    )
+
+
 @LabsAnalytics.record_function(
     FuncEntry(
         name="cron.full_laundry_room",
-        get_value=lambda args, res: sum(
-            1
-            for _, room in (res or {}).items()
-            if room.get("washers", {}).get("open", 0) == 0
-            and room.get("dryers", {}).get("open", 0) == 0
-        ),
+        get_value=lambda args, res: sum(1 for room_data in res.values() if is_room_full(room_data)),
     ),
     FuncEntry(
         name="cron.full_laundry_room_timestamp",
         get_value=lambda args, res: (
             timezone.localtime()
-            if sum(
-                1
-                for _, room in (res or {}).items()
-                if room.get("washers", {}).get("open", 0) == 0
-                and room.get("dryers", {}).get("open", 0) == 0
-            )
-            > 10
+            if sum(1 for room_data in res.values() if is_room_full(room_data)) > 10
             else None
         ),
     ),
     FuncEntry(
         name="cron.full_laundry_rooms_list",
         get_value=lambda args, res: [
-            room_name
-            for room_name, room in (res or {}).items()
-            if room.get("washers", {}).get("open", 0) == 0
-            and room.get("dryers", {}).get("open", 0) == 0
+            name for name, room_data in res.items() if is_room_full(room_data)
         ],
     ),
 )
@@ -178,3 +174,4 @@ def save_data():
                 available_washers=room["washers"]["open"],
                 available_dryers=room["dryers"]["open"],
             )
+        return data
