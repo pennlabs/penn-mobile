@@ -1,5 +1,3 @@
-from analytics.entries import FuncEntry, ViewEntry
-from dateutil.parser import parse as parse_datetime
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
@@ -14,7 +12,7 @@ from rest_framework.views import APIView
 from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, GSRSerializer
-from pennmobile.analytics import LabsAnalytics
+from pennmobile.analytics import Metric, record_analytics
 
 
 User = get_user_model()
@@ -197,21 +195,6 @@ class Availability(APIView):
             return Response({"error": str(e)}, status=400)
 
 
-# Records analytics for GSR start time, room id, and duration
-@LabsAnalytics.record_apiview(
-    ViewEntry(name="booking_start_time", get_value=lambda req, res: req.data.get("start_time")),
-    ViewEntry(name="booking_room_id", get_value=lambda req, res: req.data.get("id")),
-    ViewEntry(
-        name="gsr_booking_duration",
-        get_value=lambda req, res: (
-            (
-                parse_datetime(req.data.get("end_time"))
-                - parse_datetime(req.data.get("start_time"))
-            ).total_seconds()
-            / 60
-        ),
-    ),
-)
 class BookRoom(APIView):
     """Books room in any GSR in the availability route"""
 
@@ -234,6 +217,9 @@ class BookRoom(APIView):
                 request.user,
                 request.user.booking_groups.filter(name="Penn Labs").first(),
             )
+
+            record_analytics(Metric.GSR_BOOK, request.user.username)
+
             return Response({"detail": "success"})
         except APIError as e:
             return Response({"error": str(e)}, status=400)
@@ -246,12 +232,6 @@ class CancelRoom(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    @LabsAnalytics.record_api_function(
-        FuncEntry(
-            name="gsr_cancellation_booking_id",
-            get_value_with_args=lambda _self, request: request.data.get("booking_id"),
-        )
-    )
     def post(self, request):
         booking_id = request.data["booking_id"]
 

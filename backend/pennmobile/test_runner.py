@@ -18,12 +18,14 @@ class MockLabsAnalytics:
 
 
 class MobileTestCIRunner(XMLTestRunner):
+    @mock.patch("analytics.analytics.LabsAnalytics", MockLabsAnalytics)
     @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def run_tests(self, test_labels, **kwargs):
         return super().run_tests(test_labels, **kwargs)
 
 
 class MobileTestLocalRunner(DiscoverRunner):
+    @mock.patch("analytics.analytics.LabsAnalytics", MockLabsAnalytics)
     @mock.patch("gsr_booking.models.GroupMembership.check_wharton", check_wharton)
     def run_tests(self, test_labels, **kwargs):
         return super().run_tests(test_labels, **kwargs)
