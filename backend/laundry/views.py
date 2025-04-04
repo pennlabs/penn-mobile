@@ -1,7 +1,6 @@
 import calendar
 import datetime
 
-from analytics.entries import FuncEntry
 from django.core.cache import cache
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -14,7 +13,7 @@ from rest_framework.views import APIView
 from laundry.api_wrapper import check_is_working, room_status
 from laundry.models import LaundryRoom, LaundrySnapshot
 from laundry.serializers import LaundryRoomSerializer
-from pennmobile.analytics import LabsAnalytics
+from pennmobile.analytics import Metric, record_analytics
 from utils.cache import Cache
 
 
@@ -32,12 +31,6 @@ class HallInfo(APIView):
     GET: returns list of a particular hall, its respective machines and machine details
     """
 
-    # Records which laundry rooms are checked by user
-    @LabsAnalytics.record_api_function(
-        FuncEntry(
-            name="laundry_room_id_checked", get_value_with_args=lambda _self, req, room_id: room_id
-        )
-    )
     def get(self, request, room_id):
         try:
             return Response(room_status(get_object_or_404(LaundryRoom, room_id=room_id)))
@@ -59,6 +52,9 @@ class MultipleHallInfo(APIView):
             room_data["id"] = room_id
             room_data["usage_data"] = HallUsage.compute_usage(room_id)
             output["rooms"].append(room_data)
+
+        record_analytics(Metric.LAUNDRY_VIEWED, request.user.username)
+
         return Response(output)
 
 
