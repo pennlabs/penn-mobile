@@ -146,10 +146,8 @@ class HomePageOrdering(generics.ListAPIView):
         return HomePageOrder.objects.all()
 
 
-# Tracks the time user opens up Penn Mobile homepage
-@LabsAnalytics.record_apiview(
-    ViewEntry(name="homepage_visit_time", get_value=lambda req, res: timezone.localtime())
-)
+# Tracks every time user opens up Penn Mobile homepage
+@LabsAnalytics.record_apiview(ViewEntry(name="homepage_visited"))
 class HomePage(APIView):
     """
     GET: provides homepage Cells for mobile

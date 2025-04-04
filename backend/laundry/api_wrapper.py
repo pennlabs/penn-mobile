@@ -141,14 +141,6 @@ def is_room_full(room_data: dict) -> bool:
         get_value=lambda args, res: sum(1 for room_data in res.values() if is_room_full(room_data)),
     ),
     FuncEntry(
-        name="cron.full_laundry_room_timestamp",
-        get_value=lambda args, res: (
-            timezone.localtime()
-            if sum(1 for room_data in res.values() if is_room_full(room_data)) > 10
-            else None
-        ),
-    ),
-    FuncEntry(
         name="cron.full_laundry_rooms_list",
         get_value=lambda args, res: [
             name for name, room_data in res.items() if is_room_full(room_data)

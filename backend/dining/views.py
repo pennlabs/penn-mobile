@@ -1,6 +1,6 @@
 import datetime
 
-from analytics.entries import ViewEntry
+from analytics.entries import FuncEntry, ViewEntry
 from django.core.cache import cache
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -61,12 +61,6 @@ class Menus(generics.ListAPIView):
             return DiningMenu.objects.filter(date__gte=start_date, date__lte=end_date)
 
 
-# Records how many venues a user has selected as their dining preference
-@LabsAnalytics.record_apiview(
-    ViewEntry(
-        name="dining_preference_count", get_value=lambda req, res: len(req.data.get("venues", []))
-    ),
-)
 class Preferences(APIView):
     """
     GET: returns list of a User's diningpreferences
@@ -87,6 +81,12 @@ class Preferences(APIView):
             cache.set(key, cached_preferences, Cache.MONTH)
         return Response({"preferences": cached_preferences})
 
+    @LabsAnalytics.record_api_function(
+        FuncEntry(
+            name="num_dining_preferences",
+            get_value_with_args=lambda self, request: len(request.data.get("venues", [])),
+        )
+    )
     def post(self, request):
         key = self.key.format(user_id=request.user.id)
         profile = request.user.profile

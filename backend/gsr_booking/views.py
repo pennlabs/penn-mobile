@@ -1,4 +1,4 @@
-from analytics.entries import ViewEntry
+from analytics.entries import FuncEntry, ViewEntry
 from dateutil.parser import parse as parse_datetime
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
@@ -239,11 +239,6 @@ class BookRoom(APIView):
             return Response({"error": str(e)}, status=400)
 
 
-@LabsAnalytics.record_apiview(
-    ViewEntry(
-        name="gsr_cancellation_room_id", get_value=lambda req, res: req.data.get("booking_id")
-    ),
-)
 class CancelRoom(APIView):
     """
     Cancels  a room for a given user
@@ -251,6 +246,12 @@ class CancelRoom(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @LabsAnalytics.record_api_function(
+        FuncEntry(
+            name="gsr_cancellation_booking_id",
+            get_value_with_args=lambda _self, request: request.data.get("booking_id"),
+        )
+    )
     def post(self, request):
         booking_id = request.data["booking_id"]
 
