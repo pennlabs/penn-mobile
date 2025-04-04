@@ -80,7 +80,7 @@ export class MyChart extends PennLabsChart {
       domains: [
         { host: 'studentlife.pennlabs.org', isSubdomain: true, paths: ['/'] },
         { host: 'portal.pennmobile.org', isSubdomain: true, paths: ['/api', '/assets'] },
-        { host: 'pennmobile.org', paths: ['/api', '/assets'] },
+        { host: 'pennmobile.org', paths: ['/api', '/assets', '/.well-known/apple-app-site-association'] },
       ],
       ingressProps,
       djangoSettingsModule: 'pennmobile.settings.production',
