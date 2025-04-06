@@ -1,5 +1,6 @@
 import datetime
 
+from analytics.entries import FuncEntry, ViewEntry
 from django.core.cache import cache
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -13,12 +14,17 @@ from rest_framework.views import APIView
 from dining.api_wrapper import APIError, DiningAPIWrapper
 from dining.models import DiningMenu, Venue
 from dining.serializers import DiningMenuSerializer
+from pennmobile.analytics import LabsAnalytics
 from utils.cache import Cache
 
 
 d = DiningAPIWrapper()
 
 
+# Records the number of times a venue search happens and logs 1
+@LabsAnalytics.record_apiview(
+    ViewEntry(name="venue_search_count"),
+)
 class Venues(APIView):
     """
     GET: returns list of venue data provided by Penn API, as well as an image of the venue
@@ -31,6 +37,10 @@ class Venues(APIView):
             return Response({"error": str(e)}, status=400)
 
 
+# Records number of menu lookups and logs 1
+@LabsAnalytics.record_apiview(
+    ViewEntry(name="menu_lookup_count"),
+)
 class Menus(generics.ListAPIView):
     """
     GET: returns list of menus, defaulted to all objects within the week,
@@ -71,6 +81,12 @@ class Preferences(APIView):
             cache.set(key, cached_preferences, Cache.MONTH)
         return Response({"preferences": cached_preferences})
 
+    @LabsAnalytics.record_api_function(
+        FuncEntry(
+            name="num_dining_preferences",
+            get_value_with_args=lambda self, request: len(request.data.get("venues", [])),
+        )
+    )
     def post(self, request):
         key = self.key.format(user_id=request.user.id)
         profile = request.user.profile
