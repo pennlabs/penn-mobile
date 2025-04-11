@@ -6,7 +6,7 @@ on: push
 jobs:
   backend-check:
     name: "Backend Check"
-    uses: pennlabs/shared-actions/.github/workflows/django.yaml@238aa5ee908afba9f906641b51f82bb81572f66a
+    uses: pennlabs/shared-actions/.github/workflows/django.yaml@b227580b1791e5812e58c1244595452fc848eff5
     secrets: inherit
     with:
       projectName: pennmobile
@@ -15,6 +15,7 @@ jobs:
       flake: true
       black: true
       ruff: false
+      dependencyManager: uv
 
   frontend-check:
     name: "Frontend Check"
