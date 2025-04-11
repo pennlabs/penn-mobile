@@ -1,7 +1,7 @@
 [project]
 name = ""
 version = "0.0.1"
-requires-python = "==3.11.11"
+requires-python = "==3.11.4"
 dependencies = [
     "beautifulsoup4==4.12.3",
     "dj-database-url==2.3.0",
@@ -35,6 +35,7 @@ dependencies = [
     "alt-profanity-check==1.5.2",
     "inflection==0.5.1",
     "firebase-admin==6.6.0",
+    "cryptography==43.0.3" # not used directly, but later versions are incompatible with GLIBC of our Docker image
 ]
 
 [tool.black]
