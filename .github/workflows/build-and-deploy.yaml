@@ -18,7 +18,7 @@ jobs:
 
   frontend-check:
     name: "Frontend Check"
-    uses: pennlabs/shared-actions/.github/workflows/react-check.yaml@v0.1.9
+    uses: pennlabs/shared-actions/.github/workflows/react.yaml@v0.1.9
     with:
       path: frontend
       imageName: penn-mobile-frontend
