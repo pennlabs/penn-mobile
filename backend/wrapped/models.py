@@ -26,7 +26,7 @@ class GlobalStatKey(StatKey):
 
 
 class Semester(models.Model):
-    semester = models.CharField(max_length=5, primary_key=True, null=False, blank=False)
+    semester = models.CharField(max_length=16, primary_key=True, null=False, blank=False)
     pages = models.ManyToManyField("Page", blank=True)
 
 
