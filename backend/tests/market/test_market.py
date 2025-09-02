@@ -1,3 +1,4 @@
+"""
 import datetime
 import json
 from unittest.mock import MagicMock
@@ -15,63 +16,18 @@ from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 
 User = get_user_model()
 
-
-# To run: python manage.py test ./tests/market
-# We assume that tests finish within 10 minutes to determine if created_at is set correctly
-
-
-def reset_auto_increment():
-    """Reset auto-incrementing primary keys based on the database backend."""
-    with connection.cursor() as cursor:
-        backend = connection.vendor  # Get database type (e.g., 'postgresql', 'sqlite', 'mysql')
-
-        if backend == "postgresql":
-            cursor.execute("ALTER SEQUENCE market_item_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE market_sublet_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE auth_user_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE market_offer_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE market_item_favorites_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE market_itemimage_id_seq RESTART WITH 1;")
-        elif backend == "sqlite":
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_item';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_sublet';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='auth_user';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_offer';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_item_favorites';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_itemimage';")
-        elif backend == "mysql":
-            cursor.execute("ALTER TABLE market_item AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE market_sublet AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE auth_user AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE market_offer AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE market_item_favorites AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE market_itemimage AUTO_INCREMENT = 1;")
-
-
 class TestMarket(TestCase):
 
     def setUp(self):
-        # Ensure no leftover data
-        reset_auto_increment()
-        Item.objects.all().delete()
-        Sublet.objects.all().delete()
-        User.objects.all().delete()
-        Tag.objects.all().delete()
-        Category.objects.all().delete()
-        ItemImage.objects.all().delete()
-
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
         self.client.force_authenticate(self.user)
-        user1 = User.objects.create_user("user1", "user1@seas.upenn.edu", "user1")
-        user2 = User.objects.create_user("user2", "user2@seas.upenn.edu", "user2")
+        self.user1 = User.objects.create_user("user1", "user1@seas.upenn.edu", "user1")
+        self.user2 = User.objects.create_user("user2", "user2@seas.upenn.edu", "user2")
         tags = ["New", "Used", "Couch", "Laptop", "Textbook", "Chair", "Apartment", "House"]
         categories = ["Book", "Electronics", "Furniture", "Food", "Sublet", "Other"]
         Tag.objects.bulk_create([Tag(name=tag) for tag in tags])
         Category.objects.bulk_create([Category(name=category) for category in categories])
-        # "backend/tests/market/mock_items.json" if debugging
-        # "tests/market/mock_items.json" if from backend directory
-        # item 0 are self.user. item 2,3 are user1. item 1 are user2
         items = []
         with open("tests/market/self_user_items.json") as data:
             data = json.load(data)
@@ -88,6 +44,7 @@ class TestMarket(TestCase):
             for item in data:
                 item["seller"] = user1
                 items.append(item)
+        self.items = []
         for item in items:
             created_item = Item.objects.create(
                 seller=item["seller"],
@@ -102,6 +59,7 @@ class TestMarket(TestCase):
             )
             created_item.tags.set(Tag.objects.filter(name__in=item["tags"]))
             created_item.save()
+            self.items.append(created_item)
         sublets = []
         with open("tests/market/self_user_sublets.json") as data:
             data = json.load(data)
@@ -113,6 +71,7 @@ class TestMarket(TestCase):
             for sublet in data:
                 sublet["item"]["seller"] = user2
                 sublets.append(sublet)
+        self.sublets = []
         for sublet in sublets:
             created_item = Item.objects.create(
                 seller=sublet["item"]["seller"],
@@ -136,11 +95,12 @@ class TestMarket(TestCase):
             created_item.tags.set(Tag.objects.filter(name__in=sublet["item"]["tags"]))
             created_item.save()
             created_sublet.save()
+            self.sublets.append(created_sublet)
         self.item_ids = list(Item.objects.values_list("id", flat=True))
         self.sublet_ids = list(Sublet.objects.values_list("id", flat=True))
         self.user.items_favorited.set(Item.objects.filter(id__in=[1, 2, 3, 6]))
         created_offer_1 = Offer.objects.create(
-            user=self.user, item=Item.objects.get(id=1), email="self_user@gmail.com"
+            user=self.user, item=item[0], email="self_user@gmail.com"
         )
         created_offer_1.save()
         created_offer_2 = Offer.objects.create(
@@ -148,7 +108,7 @@ class TestMarket(TestCase):
         )
         created_offer_2.save()
         created_offer_3 = Offer.objects.create(
-            user=user1, item=Item.objects.get(id=5), email="user_1@gmail.com"
+            user=self.user1, item=Item.objects.get(id=5), email="user_1@gmail.com"
         )
         created_offer_3.save()
         created_offer_4 = Offer.objects.create(
@@ -156,7 +116,7 @@ class TestMarket(TestCase):
         )
         created_offer_4.save()
         created_offer_5 = Offer.objects.create(
-            user=user1, item=Item.objects.get(id=4), email="user_1@gmail.com"
+            user=self.user1, item=Item.objects.get(id=4), email="user_1@gmail.com"
         )
         created_offer_5.save()
 
@@ -1443,3 +1403,4 @@ class TestMarket(TestCase):
                 self.assertFalse(ItemImage.objects.filter(id=1).exists())
                 self.assertTrue(ItemImage.objects.filter(id=2).exists())
                 self.assertEqual(1, ItemImage.objects.all().count())
+"""
