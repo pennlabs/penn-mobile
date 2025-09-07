@@ -251,7 +251,7 @@ class Favorites(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.Gene
         item_id = int(self.kwargs["item_id"])
         queryset = self.get_queryset()
         if queryset.filter(id=item_id).exists():
-            raise exceptions.NotAcceptable("Favorite already exists")
+            raise exceptions.ValidationError("Favorite already exists")
         item = get_object_or_404(Item, id=item_id)
         self.get_queryset().add(item)
         return Response(status=status.HTTP_201_CREATED)
@@ -289,7 +289,7 @@ class Offers(viewsets.ModelViewSet):
         data = request.data
         request.POST._mutable = True
         if self.get_queryset().filter(user=self.request.user).exists():
-            raise exceptions.NotAcceptable("Offer already exists")
+            raise exceptions.ValidationError("Offer already exists")
         data["item"] = int(self.kwargs["item_id"])
         data["user"] = self.request.user.id
         serializer = self.get_serializer(data=request.data)
@@ -299,7 +299,10 @@ class Offers(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        filter = {"user": self.request.user, "item": int(self.kwargs["item_id"])}
+        filter = {
+            "user": self.request.user,
+            "item": int(self.kwargs["item_id"]),
+        }
         obj = get_object_or_404(queryset, **filter)
         self.check_object_permissions(self.request, obj)
         self.perform_destroy(obj)
