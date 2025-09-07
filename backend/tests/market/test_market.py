@@ -18,6 +18,12 @@ User = get_user_model()
 class BaseMarketTest(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self.tags = self.load_tags()
+        self.categories = self.load_categories()
+        self.users = [
+            self.load_user("user", "user@gmail.com", "user", True, True),
+            self.load_user("user1", "user1@gmail.com", "user1", False, False),
+        ]
 
     def load_tags(self):
         tags = [
@@ -143,12 +149,6 @@ class BaseMarketTest(TestCase):
 class TestItemGet(BaseMarketTest):
     def setUp(self):
         super().setUp()
-        self.tags = self.load_tags()
-        self.categories = self.load_categories()
-        self.users = [
-            self.load_user("user", "user@gmail.com", "user", True, True),
-            self.load_user("user1", "user1@gmail.com", "user1", False, False),
-        ]
         self.items = self.load_items(
             "tests/market/self_user_items.json", self.users[0]
         ) + self.load_items("tests/market/user_1_items.json", self.users[1])
@@ -276,12 +276,6 @@ class TestItemPost(BaseMarketTest):
 
     def setUp(self):
         super().setUp()
-        self.tags = self.load_tags()
-        self.categories = self.load_categories()
-        self.users = [
-            self.load_user("user", "user@gmail.com", "user", True, True),
-            self.load_user("user1", "user1@gmail.com", "user1", False, False),
-        ]
 
     def test_create_item_all_fields(self):
         payload = {
@@ -462,12 +456,6 @@ class TestItemPost(BaseMarketTest):
 class TestItemPatch(BaseMarketTest):
     def setUp(self):
         super().setUp()
-        self.tags = self.load_tags()
-        self.categories = self.load_categories()
-        self.users = [
-            self.load_user("user", "user@gmail.com", "user", True, True),
-            self.load_user("user1", "user1@gmail.com", "user1", False, False),
-        ]
         self.items = self.load_items(
             "tests/market/self_user_items.json", self.users[0]
         ) + self.load_items("tests/market/user_1_items.json", self.users[1])
@@ -662,12 +650,6 @@ class TestItemPatch(BaseMarketTest):
 class TestItemDelete(BaseMarketTest):
     def setUp(self):
         super().setUp()
-        self.tags = self.load_tags()
-        self.categories = self.load_categories()
-        self.users = [
-            self.load_user("user", "user@gmail.com", "user", True, True),
-            self.load_user("user1", "user1@gmail.com", "user1", False, False),
-        ]
         self.items = self.load_items(
             "tests/market/self_user_items.json", self.users[0]
         ) + self.load_items("tests/market/user_1_items.json", self.users[1])
@@ -690,12 +672,6 @@ class TestItemDelete(BaseMarketTest):
 class TestSubletGet(BaseMarketTest):
     def setUp(self):
         super().setUp()
-        self.tags = self.load_tags()
-        self.categories = self.load_categories()
-        self.users = [
-            self.load_user("user", "user@gmail.com", "user", True, True),
-            self.load_user("user1", "user1@gmail.com", "user1", False, False),
-        ]
         items1, sublets1 = self.load_sublets("tests/market/self_user_sublets.json", self.users[0])
         items2, sublets2 = self.load_sublets("tests/market/user_1_sublets.json", self.users[1])
         self.items = items1 + items2
@@ -836,12 +812,6 @@ class TestSubletGet(BaseMarketTest):
 class TestSubletPost(BaseMarketTest):
     def setUp(self):
         super().setUp()
-        self.tags = self.load_tags()
-        self.categories = self.load_categories()
-        self.users = [
-            self.load_user("user", "user@gmail.com", "user", True, True),
-            self.load_user("user1", "user1@gmail.com", "user1", False, False),
-        ]
 
     def test_create_sublet(self):
         payload = {
@@ -930,12 +900,6 @@ class TestSubletPost(BaseMarketTest):
 class TestSubletPatchDelete(BaseMarketTest):
     def setUp(self):
         super().setUp()
-        self.tags = self.load_tags()
-        self.categories = self.load_categories()
-        self.users = [
-            self.load_user("user", "user@gmail.com", "user", True, True),
-            self.load_user("user1", "user1@gmail.com", "user1", False, False),
-        ]
         items1, sublets1 = self.load_sublets("tests/market/self_user_sublets.json", self.users[0])
         items2, sublets2 = self.load_sublets("tests/market/user_1_sublets.json", self.users[1])
         self.items = items1 + items2
@@ -1100,12 +1064,6 @@ class TestSubletPatchDelete(BaseMarketTest):
 class TestOffer(BaseMarketTest):
     def setUp(self):
         super().setUp()
-        self.tags = super().load_tags()
-        self.categories = self.load_categories()
-        self.users = [
-            self.load_user("user", "user@gmail.com", "user", True, True),
-            self.load_user("user1", "user1@gmail.com", "user1", False, False),
-        ]
         self.items = self.load_items(
             "tests/market/self_user_items.json", self.users[0]
         ) + self.load_items("tests/market/user_1_items.json", self.users[1])
@@ -1268,12 +1226,6 @@ class TestOffer(BaseMarketTest):
 class TestFavorites(BaseMarketTest):
     def setUp(self):
         super().setUp()
-        self.tags = self.load_tags()
-        self.categories = self.load_categories()
-        self.users = [
-            self.load_user("user", "user@gmail.com", "user", True, True),
-            self.load_user("user1", "user1@gmail.com", "user1", False, False),
-        ]
         self.items = self.load_items(
             "tests/market/self_user_items.json", self.users[0]
         ) + self.load_items("tests/market/user_1_items.json", self.users[1])
@@ -1348,7 +1300,7 @@ class TestFavorites(BaseMarketTest):
         self.assertEqual(response.status_code, 204)
         self.assertEqual(Item.objects.get(id=self.items[1].id).favorites.count(), 0)
 
-    def test_delete_nonexistant_favorite(self):
+    def test_delete_nonexistent_favorite(self):
         response = self.client.delete(f"/market/items/{self.items[2].id}/favorites/")
         self.assertEqual(response.status_code, 404)
         self.assertEqual(Item.objects.get(id=self.items[2].id).favorites.count(), 0)
@@ -1358,12 +1310,6 @@ class TestFavorites(BaseMarketTest):
 class TestImages(BaseMarketTest):
     def setUp(self):
         super().setUp()
-        self.tags = self.load_tags()
-        self.categories = self.load_categories()
-        self.users = [
-            self.load_user("user", "user@gmail.com", "user", True, True),
-            self.load_user("user1", "user1@gmail.com", "user1", False, False),
-        ]
         self.items = self.load_items(
             "tests/market/self_user_items.json", self.users[0]
         ) + self.load_items("tests/market/user_1_items.json", self.users[1])
