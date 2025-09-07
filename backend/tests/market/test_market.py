@@ -1204,7 +1204,7 @@ class TestOffer(BaseMarketTest):
             "email": "self_user@gmail.com",
             "message": "I want this",
             "user": self.users[0].id,
-            "item": 3,
+            "item": self.items[2].id,
         }
         self.assertEqual(response.status_code, 201)
         self.assert_dict_equal_ignoring_keys(
