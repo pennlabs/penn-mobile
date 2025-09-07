@@ -806,7 +806,7 @@ class TestSubletGet(BaseMarketTest):
                 "tags": ["New"],
                 "category": "Sublet",
                 "title": "Rodin Quad",
-                "description": "Fully furnished 3-bedroom apartment available for sublet with all"
+                "description": "Fully furnished 4-bedroom apartment available for sublet with all"
                 + " amenities included.",
                 "external_link": "https://example.com/rodin-quad",
                 "price": 1350.0,
@@ -1222,7 +1222,7 @@ class TestOffer(BaseMarketTest):
             "email": None,
             "message": "",
             "user": self.users[0].id,
-            "item": 3,
+            "item": self.items[2].id,
         }
         self.assertEqual(response.status_code, 201)
         self.assert_dict_equal_ignoring_keys(
@@ -1252,10 +1252,10 @@ class TestOffer(BaseMarketTest):
         self.assertEqual(response.json(), expected_response)
 
     def test_delete_offer(self):
-        self.assertTrue(Offer.objects.filter(id=1).exists())
+        self.assertTrue(Offer.objects.filter(id=self.offers[0].id).exists())
         response = self.client.delete(f"/market/items/{self.items[1].id}/offers/")
         self.assertEqual(response.status_code, 204)
-        self.assertFalse(Offer.objects.filter(id=1).exists())
+        self.assertFalse(Offer.objects.filter(id=self.offers[0].id).exists())
 
     def test_delete_offer_nonexistent(self):
         invalid_id = 1
