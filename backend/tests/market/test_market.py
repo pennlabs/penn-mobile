@@ -1283,7 +1283,7 @@ class TestFavorites(BaseMarketTest):
     def test_get_favorites_for_item_owned(self):
         response = self.client.get(f"/market/items/{self.items[0].id}/")
         expected_response = {
-            "id": 1,
+            "id": self.items[0].id,
             "images": [],
             "title": "Math Textbook",
             "description": "2023 version",
@@ -1309,8 +1309,8 @@ class TestFavorites(BaseMarketTest):
     def test_get_favorites_for_item_other(self):
         response = self.client.get(f"/market/items/{self.items[1].id}/")
         expected_response = {
-            "id": 2,
-            "seller": 2,
+            "id": self.items[1].id,
+            "seller": self.users[1].id,
             "buyer_count": 0,
             "tags": ["Laptop", "New"],
             "category": "Electronics",
