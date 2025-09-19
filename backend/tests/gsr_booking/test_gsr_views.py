@@ -59,7 +59,7 @@ class TestGSRs(TestCase):
             if entry["id"] == 2:
                 self.assertEquals(entry["name"], "Academic Research")
             if entry["id"] == 3:
-                self.assertEquals(entry["name"], "Weigle")
+                self.assertEquals(entry["name"], "Albrecht Music Library")
 
 
 class TestGSRFunctions(TestCase):
