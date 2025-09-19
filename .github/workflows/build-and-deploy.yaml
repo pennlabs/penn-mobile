@@ -6,7 +6,7 @@ on: push
 jobs:
   backend-check:
     name: "Backend Check"
-    uses: pennlabs/shared-actions/.github/workflows/django.yaml@v0.1.9
+    uses: pennlabs/shared-actions/.github/workflows/django.yaml@main
     secrets: inherit
     with:
       projectName: pennmobile
@@ -19,7 +19,7 @@ jobs:
 
   frontend-check:
     name: "Frontend Check"
-    uses: pennlabs/shared-actions/.github/workflows/react.yaml@v0.1.9
+    uses: pennlabs/shared-actions/.github/workflows/react.yaml@main
     with:
       path: frontend
       imageName: penn-mobile-frontend
@@ -119,7 +119,7 @@ jobs:
 
   deploy:
     name: "Deploy"
-    uses: pennlabs/shared-actions/.github/workflows/deployment.yaml@v0.1.9
+    uses: pennlabs/shared-actions/.github/workflows/deployment.yaml@main
     with:
       githubRef: ${{ github.ref }}
       gitSha: ${{ github.sha }}
