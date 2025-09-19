@@ -16,7 +16,7 @@ dependencies = [
     "uritemplate==4.1.1",
     "uwsgi==2.0.28",
     "django-filter==24.3",
-    "django-labs-accounts==1.0.2",
+    "django-labs-accounts==1.0.3",
     "django-debug-toolbar==4.4.6",
     "django-runtime-options==0.1.3",
     "django-storages==1.14.4",
