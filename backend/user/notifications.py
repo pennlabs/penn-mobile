@@ -21,7 +21,7 @@ if sys.version_info.major >= 3 and sys.version_info.minor >= 10:
     collections.MutableSet = abc.MutableSet
     collections.MutableMapping = abc.MutableMapping
 
-from apns2.client import APNsClient, Notification
+from apns2.client import APNsClient
 from apns2.payload import Payload
 from celery import shared_task
 
@@ -127,7 +127,7 @@ class IOSNotificationWrapper(NotificationWrapper):
         return Payload(content_available=True, custom=body, mutable_content=True)
 
     def send_many_notifications(self, tokens, payload):
-        notifications = [Notification(token, payload) for token in tokens]
+        notifications = [(token, payload) for token in tokens]
         self.get_client(self.is_dev).send_notification_batch(
             notifications=notifications, topic=self.topic
         )

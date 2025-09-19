@@ -32,7 +32,7 @@ class PageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Page
-        fields = ["name", "template_path", "combined_stats", "duration"]
+        fields = ["id", "name", "template_path", "combined_stats", "duration"]
 
     def get_combined_stats(self, obj):
         if not (semester := self.context.get("semester", obj)):

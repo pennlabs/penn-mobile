@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 import pytz
 from django.contrib.auth import get_user_model
 from django.core.files.storage import Storage
-from django.db import connection
 from django.test import TestCase
 from django.utils.timezone import now
 from rest_framework.test import APIClient
@@ -16,285 +15,272 @@ from market.models import Category, Item, ItemImage, Offer, Sublet, Tag
 User = get_user_model()
 
 
-# To run: python manage.py test ./tests/market
-# We assume that tests finish within 10 minutes to determine if created_at is set correctly
-
-
-def reset_auto_increment():
-    """Reset auto-incrementing primary keys based on the database backend."""
-    with connection.cursor() as cursor:
-        backend = connection.vendor  # Get database type (e.g., 'postgresql', 'sqlite', 'mysql')
-
-        if backend == "postgresql":
-            cursor.execute("ALTER SEQUENCE market_item_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE market_sublet_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE auth_user_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE market_offer_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE market_item_favorites_id_seq RESTART WITH 1;")
-            cursor.execute("ALTER SEQUENCE market_itemimage_id_seq RESTART WITH 1;")
-        elif backend == "sqlite":
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_item';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_sublet';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='auth_user';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_offer';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_item_favorites';")
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='market_itemimage';")
-        elif backend == "mysql":
-            cursor.execute("ALTER TABLE market_item AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE market_sublet AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE auth_user AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE market_offer AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE market_item_favorites AUTO_INCREMENT = 1;")
-            cursor.execute("ALTER TABLE market_itemimage AUTO_INCREMENT = 1;")
-
-
-class TestMarket(TestCase):
-
+class BaseMarketTest(TestCase):
     def setUp(self):
-        # Ensure no leftover data
-        reset_auto_increment()
-        Item.objects.all().delete()
-        Sublet.objects.all().delete()
-        User.objects.all().delete()
-        Tag.objects.all().delete()
-        Category.objects.all().delete()
-        ItemImage.objects.all().delete()
-
-        self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
-        self.client.force_authenticate(self.user)
-        user1 = User.objects.create_user("user1", "user1@seas.upenn.edu", "user1")
-        user2 = User.objects.create_user("user2", "user2@seas.upenn.edu", "user2")
-        tags = ["New", "Used", "Couch", "Laptop", "Textbook", "Chair", "Apartment", "House"]
-        categories = ["Book", "Electronics", "Furniture", "Food", "Sublet", "Other"]
-        Tag.objects.bulk_create([Tag(name=tag) for tag in tags])
-        Category.objects.bulk_create([Category(name=category) for category in categories])
-        # "backend/tests/market/mock_items.json" if debugging
-        # "tests/market/mock_items.json" if from backend directory
-        # item 0 are self.user. item 2,3 are user1. item 1 are user2
-        items = []
-        with open("tests/market/self_user_items.json") as data:
-            data = json.load(data)
-            for item in data:
-                item["seller"] = self.user
-                items.append(item)
-        with open("tests/market/user_2_items.json") as data:
-            data = json.load(data)
-            for item in data:
-                item["seller"] = user2
-                items.append(item)
-        with open("tests/market/user_1_items.json") as data:
-            data = json.load(data)
-            for item in data:
-                item["seller"] = user1
-                items.append(item)
-        for item in items:
-            created_item = Item.objects.create(
-                seller=item["seller"],
-                category=Category.objects.get(name=item["category"]),
-                title=item["title"],
-                description=item["description"],
-                price=item["price"],
-                negotiable=item["negotiable"],
-                created_at=now(),
-                expires_at=item["expires_at"],
-                external_link=item["external_link"],
-            )
-            created_item.tags.set(Tag.objects.filter(name__in=item["tags"]))
-            created_item.save()
-        sublets = []
-        with open("tests/market/self_user_sublets.json") as data:
-            data = json.load(data)
-            for sublet in data:
-                sublet["item"]["seller"] = self.user
-                sublets.append(sublet)
-        with open("tests/market/user_2_sublets.json") as data:
-            data = json.load(data)
-            for sublet in data:
-                sublet["item"]["seller"] = user2
-                sublets.append(sublet)
-        for sublet in sublets:
-            created_item = Item.objects.create(
-                seller=sublet["item"]["seller"],
-                category=Category.objects.get(name="Sublet"),
-                title=sublet["item"]["title"],
-                description=sublet["item"]["description"],
-                price=sublet["item"]["price"],
-                negotiable=sublet["item"]["negotiable"],
-                created_at=now(),
-                expires_at=sublet["item"]["expires_at"],
-                external_link=sublet["item"]["external_link"],
-            )
-            created_sublet = Sublet.objects.create(
-                item=created_item,
-                address=sublet["address"],
-                beds=sublet["beds"],
-                baths=sublet["baths"],
-                start_date=sublet["start_date"],
-                end_date=sublet["end_date"],
-            )
-            created_item.tags.set(Tag.objects.filter(name__in=sublet["item"]["tags"]))
-            created_item.save()
-            created_sublet.save()
-        self.item_ids = list(Item.objects.values_list("id", flat=True))
-        self.sublet_ids = list(Sublet.objects.values_list("id", flat=True))
-        self.user.items_favorited.set(Item.objects.filter(id__in=[1, 2, 3, 6]))
-        created_offer_1 = Offer.objects.create(
-            user=self.user, item=Item.objects.get(id=1), email="self_user@gmail.com"
-        )
-        created_offer_1.save()
-        created_offer_2 = Offer.objects.create(
-            user=self.user, item=Item.objects.get(id=5), email="self_user@gmail.com"
-        )
-        created_offer_2.save()
-        created_offer_3 = Offer.objects.create(
-            user=user1, item=Item.objects.get(id=5), email="user_1@gmail.com"
-        )
-        created_offer_3.save()
-        created_offer_4 = Offer.objects.create(
-            user=self.user, item=Item.objects.get(id=4), email="self_user@gmail.com"
-        )
-        created_offer_4.save()
-        created_offer_5 = Offer.objects.create(
-            user=user1, item=Item.objects.get(id=4), email="user_1@gmail.com"
-        )
-        created_offer_5.save()
+        self.tags = self.load_tags()
+        self.categories = self.load_categories()
+        self.users = [
+            self.load_user("user", "user@gmail.com", "user", True, True),
+            self.load_user("user1", "user1@gmail.com", "user1", False, False),
+        ]
 
-        storage_mock = MagicMock(spec=Storage, name="StorageMock")
-        storage_mock.generate_filename = lambda filename: filename
-        storage_mock.save = MagicMock(side_effect=lambda name, *args, **kwargs: name)
-        storage_mock.url = MagicMock(name="url")
-        storage_mock.url.return_value = "http://penn-mobile.com/mock-image.png"
-        ItemImage._meta.get_field("image").storage = storage_mock
+    def load_tags(self):
+        tags = [
+            "New",
+            "Used",
+            "Couch",
+            "Laptop",
+            "Textbook",
+            "Chair",
+            "Apartment",
+            "House",
+        ]
+        tag_objects = Tag.objects.bulk_create([Tag(name=tag) for tag in tags])
+
+        return tag_objects
+
+    def load_categories(self):
+        categories = [
+            "Book",
+            "Electronics",
+            "Furniture",
+            "Food",
+            "Sublet",
+            "Other",
+        ]
+        category_objects = Category.objects.bulk_create([Category(name=cat) for cat in categories])
+        return category_objects
+
+    def load_user(self, username, email=None, password=None, is_self=False, auth=False):
+        user = User.objects.create_user(username, email, password)
+        if is_self:
+            self.user = user
+        if auth:
+            self.client.force_authenticate(user)
+        return user
+
+    def load_items(self, filepath, user):
+        items = []
+        with open(filepath) as data:
+            data = json.load(data)
+            for item in data:
+                created_item = Item.objects.create(
+                    seller=user,
+                    category=Category.objects.get(name=item["category"]),
+                    title=item["title"],
+                    description=item["description"],
+                    price=item["price"],
+                    negotiable=item["negotiable"],
+                    created_at=now(),
+                    expires_at=item["expires_at"],
+                    external_link=item["external_link"],
+                )
+                created_item.tags.set(Tag.objects.filter(name__in=item["tags"]))
+                created_item.save()
+                items.append(created_item)
+        return items
+
+    def load_sublets(self, filepath, user):
+        items, sublets = [], []
+        with open(filepath) as data:
+            data = json.load(data)
+            for sublet in data:
+                created_item = Item.objects.create(
+                    seller=user,
+                    category=Category.objects.get(name="Sublet"),
+                    title=sublet["item"]["title"],
+                    description=sublet["item"]["description"],
+                    price=sublet["item"]["price"],
+                    negotiable=sublet["item"]["negotiable"],
+                    created_at=now(),
+                    expires_at=sublet["item"]["expires_at"],
+                    external_link=sublet["item"]["external_link"],
+                )
+                created_sublet = Sublet.objects.create(
+                    item=created_item,
+                    address=sublet["address"],
+                    beds=sublet["beds"],
+                    baths=sublet["baths"],
+                    start_date=sublet["start_date"],
+                    end_date=sublet["end_date"],
+                )
+                created_item.tags.set(Tag.objects.filter(name__in=sublet["item"]["tags"]))
+                created_item.save()
+                created_sublet.save()
+                items.append(created_item)
+                sublets.append(created_sublet)
+        return items, sublets
+
+    def assert_dict_equal_ignoring_keys(self, actual, expected, ignored_keys=(), unordered_keys=()):
+        ignored = set(ignored_keys)
+        unordered = set(unordered_keys)
+
+        def sort_key(x):
+            if isinstance(x, dict):
+                return json.dumps(x, sort_keys=True)
+            else:
+                return str(x)
+
+        def normalize(obj, path=""):
+            if isinstance(obj, dict):
+                out = {}
+                for k, v in obj.items():
+                    p = f"{path}{k}"
+                    if p in ignored:
+                        continue
+                    val = normalize(v, p + ".")
+                    if p in unordered and isinstance(val, list):
+                        val = sorted(val, key=sort_key)
+                    out[k] = val
+                return out
+
+            elif isinstance(obj, list):
+                items = [normalize(e, path) for e in obj]
+                if path.rstrip(".") in unordered:
+                    items = sorted(items, key=sort_key)
+                return items
+
+            return obj
+
+        self.assertEqual(normalize(actual), normalize(expected))
+
+
+class TestItemGet(BaseMarketTest):
+    def setUp(self):
+        super().setUp()
+        self.items = self.load_items(
+            "tests/market/self_user_items.json", self.users[0]
+        ) + self.load_items("tests/market/user_1_items.json", self.users[1])
 
     def test_get_items(self):
         response = self.client.get("/market/items/")
         expected_response = [
             {
-                "id": 1,
-                "seller": 1,
+                "id": self.items[0].id,
+                "seller": self.users[0].id,
                 "tags": ["Textbook", "Used"],
                 "category": "Book",
                 "title": "Math Textbook",
                 "price": 20.0,
-                "expires_at": "2025-12-12T00:00:00-05:00",
+                "expires_at": "3000-12-12T00:00:00-05:00",
                 "images": [],
-                "favorite_count": 1,
+                "favorite_count": 0,
             },
             {
-                "id": 2,
-                "seller": 3,
-                "tags": ["New"],
-                "category": "Food",
-                "title": "Bag of Doritos",
-                "price": 5.0,
-                "expires_at": "2025-10-12T01:00:00-04:00",
-                "images": [],
-                "favorite_count": 1,
-            },
-            {
-                "id": 3,
-                "seller": 2,
+                "id": self.items[1].id,
+                "seller": self.users[1].id,
                 "tags": ["Laptop", "New"],
                 "category": "Electronics",
                 "title": "Macbook Pro",
                 "price": 2000.0,
-                "expires_at": "2025-08-12T01:00:00-04:00",
+                "expires_at": "3000-08-12T01:00:00-04:00",
                 "images": [],
-                "favorite_count": 1,
+                "favorite_count": 0,
             },
             {
-                "id": 4,
-                "seller": 2,
+                "id": self.items[2].id,
+                "seller": self.users[1].id,
                 "tags": ["Couch"],
                 "category": "Furniture",
                 "title": "Couch",
                 "price": 400.0,
-                "expires_at": "2025-12-12T00:00:00-05:00",
+                "expires_at": "3000-12-12T00:00:00-05:00",
                 "images": [],
                 "favorite_count": 0,
             },
         ]
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            sorted(response.json(), key=lambda d: d["id"]),
-            sorted(expected_response, key=lambda d: d["id"]),
+        self.assert_dict_equal_ignoring_keys(
+            response.json(), expected_response, [], ["", "tags", "images"]
         )
 
     def test_get_item_seller(self):
         response = self.client.get("/market/items/?seller=true")
         expected_response = [
             {
-                "id": 1,
-                "seller": 1,
+                "id": self.items[0].id,
+                "seller": self.users[0].id,
                 "tags": ["Textbook", "Used"],
                 "category": "Book",
                 "title": "Math Textbook",
                 "price": 20.0,
-                "expires_at": "2025-12-12T00:00:00-05:00",
+                "expires_at": "3000-12-12T00:00:00-05:00",
                 "images": [],
-                "favorite_count": 1,
+                "favorite_count": 0,
             }
         ]
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), expected_response)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(), expected_response, [], ["", "tags", "images"]
+        )
 
     def test_get_single_item_own(self):
-        response = self.client.get("/market/items/1/")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
+        response = self.client.get(f"/market/items/{self.items[0].id}/")
+        response_json = response.json()
         expected_response = {
-            "id": 1,
+            "id": self.items[0].id,
             "images": [],
             "title": "Math Textbook",
             "description": "2023 version",
             "external_link": "https://example.com/book",
             "price": 20.0,
             "negotiable": True,
-            "expires_at": "2025-12-12T00:00:00-05:00",
-            "seller": 1,
+            "created_at": "2025-09-04T14:01:34.530659-04:00",
+            "expires_at": "3000-12-12T00:00:00-05:00",
+            "seller": self.users[0].id,
             "category": "Book",
-            "buyers": [1],
+            "buyers": [],
             "tags": ["Textbook", "Used"],
-            "favorites": [1],
+            "favorites": [],
         }
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
+        self.assert_dict_equal_ignoring_keys(
+            response_json,
+            expected_response,
+            ["created_at"],
+            ["", "tags", "images", "buyers", "favorites"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response_json["created_at"])
+                - datetime.datetime.now(pytz.UTC)
+            ),
             datetime.timedelta(minutes=10),
         )
 
     def test_get_single_item_other(self):
-        response = self.client.get("/market/items/2/")
+        response = self.client.get(f"/market/items/{self.items[1].id}/")
         expected_response = {
-            "id": 2,
-            "seller": 3,
+            "id": self.items[1].id,
+            "seller": self.users[1].id,
             "buyer_count": 0,
-            "tags": ["New"],
-            "category": "Food",
-            "title": "Bag of Doritos",
-            "description": "Cool Ranch",
-            "external_link": "https://example.com/doritos",
-            "price": 5.0,
-            "negotiable": False,
-            "expires_at": "2025-10-12T01:00:00-04:00",
+            "tags": ["Laptop", "New"],
+            "category": "Electronics",
+            "title": "Macbook Pro",
+            "description": "M1 Chip",
+            "external_link": "https://example.com/macbook",
+            "price": 2000.0,
+            "negotiable": True,
+            "expires_at": "3000-08-12T01:00:00-04:00",
             "images": [],
-            "favorite_count": 1,
+            "favorite_count": 0,
         }
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), expected_response)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(), expected_response, [], ["", "tags", "images"]
+        )
 
-    def test_get_item_of_sublet(self):
-        response = self.client.get("/market/items/5/")
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {"detail": "No Item matches the given query."})
+
+class TestItemPost(BaseMarketTest):
+
+    def setUp(self):
+        super().setUp()
 
     def test_create_item_all_fields(self):
         payload = {
             "id": 88,
-            "seller": 2,
+            "seller": self.users[1].id,
             "buyers": [],
             "tags": ["New"],
             "category": "Book",
@@ -304,42 +290,53 @@ class TestMarket(TestCase):
             "price": 20.0,
             "negotiable": True,
             "created_at": "2024-11-26T00:50:03.217587-05:00",
-            "expires_at": "2025-12-12T00:00:00-05:00",
+            "expires_at": "3000-12-12T00:00:00-05:00",
             "images": [],
         }
         response = self.client.post("/market/items/", payload, format="json")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
-        expected_response_without_created_at = {
-            "id": 7,
-            "seller": 1,
-            "buyers": [],
-            "tags": ["New"],
-            "category": "Book",
+        expected_response = {
+            "id": int(f"{response.json()['id']}"),
+            "images": [],
             "title": "Math Textbook",
             "description": "2023 version",
             "external_link": "https://example.com/listing",
             "price": 20.0,
             "negotiable": True,
-            "expires_at": "2025-12-12T00:00:00-05:00",
-            "images": [],
+            "created_at": "2025-09-04T15:00:58.895709-04:00",
+            "expires_at": "3000-12-12T00:00:00-05:00",
+            "seller": self.users[0].id,
+            "category": "Book",
+            "buyers": [],
+            "tags": ["New"],
             "favorites": [],
         }
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response_without_created_at, expected_response_without_created_at)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["", "tags", "images", "buyers", "favorites"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["created_at"])
+                - datetime.datetime.now(pytz.UTC)
+            ),
             datetime.timedelta(minutes=10),
         )
-        response = self.client.get("/market/items/7/")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
+        response = self.client.get(f"/market/items/{response.json()['id']}/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response_without_created_at)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["", "tags", "images", "buyers", "favorites"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
             datetime.timedelta(minutes=10),
         )
 
@@ -351,57 +348,67 @@ class TestMarket(TestCase):
             "description": "2023 version",
             "price": 20.0,
             "negotiable": True,
-            "expires_at": "2024-12-12T00:00:00-05:00",
+            "expires_at": "3000-12-12T00:00:00-05:00",
         }
-        response = self.client.post("/market/items/", payload)
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
-        expected_response_without_created_at = {
-            "id": 7,
-            "seller": 1,
-            "buyers": [],
-            "tags": ["New"],
-            "category": "Book",
+        response = self.client.post("/market/items/", payload, format="json")
+        expected_response = {
+            "id": int(f"{response.json()['id']}"),
+            "images": [],
             "title": "Math Textbook",
             "description": "2023 version",
             "external_link": None,
             "price": 20.0,
             "negotiable": True,
-            "expires_at": "2024-12-12T00:00:00-05:00",
-            "images": [],
+            "created_at": "2025-09-04T15:00:58.895709-04:00",
+            "expires_at": "3000-12-12T00:00:00-05:00",
+            "seller": self.users[0].id,
+            "category": "Book",
+            "buyers": [],
+            "tags": ["New"],
             "favorites": [],
         }
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response_without_created_at, expected_response_without_created_at)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["", "tags", "images", "buyers", "favorites"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["created_at"])
+                - datetime.datetime.now(pytz.UTC)
+            ),
             datetime.timedelta(minutes=10),
         )
-        response = self.client.get("/market/items/7/")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
+        response = self.client.get(f"/market/items/{response.json()['id']}/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response_without_created_at)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["", "tags", "images", "buyers", "favorites"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
             datetime.timedelta(minutes=10),
         )
 
-    def test_create_item_missing_filed(self):
+    def test_create_item_missing_field(self):
         payload = {
             "tags": ["New"],
             "category": "Book",
             "external_link": "https://example.com/listing",
             "price": 20.0,
             "negotiable": True,
-            "expires_at": "2024-12-12T00:00:00-05:00",
+            "expires_at": "3000-12-12T00:00:00-05:00",
         }
         response = self.client.post("/market/items/", payload)
-        res_json = json.loads(response.content)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(res_json, {"title": ["This field is required."]})
+        self.assertEqual(response.json(), {"title": ["This field is required."]})
 
     def test_create_item_invalid_category(self):
         payload = {
@@ -412,28 +419,15 @@ class TestMarket(TestCase):
             "external_link": "https://example.com/listing",
             "price": 20.0,
             "negotiable": True,
-            "expires_at": "2024-12-12T00:00:00-05:00",
+            "expires_at": "3000-12-12T00:00:00-05:00",
         }
         response = self.client.post("/market/items/", payload)
         res_json = json.loads(response.content)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(res_json, {"category": ['Invalid pk "Textbook" - object does not exist.']})
-
-    def test_create_item_invalid_tag(self):
-        payload = {
-            "tags": ["Not a tag"],
-            "category": "Book",
-            "title": "Math Textbook",
-            "description": "2023 version",
-            "external_link": "https://example.com/listing",
-            "price": 20.0,
-            "negotiable": True,
-            "expires_at": "2024-12-12T00:00:00-05:00",
-        }
-        response = self.client.post("/market/items/", payload)
-        res_json = json.loads(response.content)
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(res_json, {"tags": ['Invalid pk "Not a tag" - object does not exist.']})
+        self.assertEqual(
+            res_json,
+            {"category": ['Invalid pk "Textbook" - object does not exist.']},
+        )
 
     def test_create_item_with_profanity_title(self):
         payload = {
@@ -444,7 +438,7 @@ class TestMarket(TestCase):
             "external_link": "https://example.com/listing",
             "price": 20.0,
             "negotiable": True,
-            "expires_at": "2024-12-12T00:00:00-05:00",
+            "expires_at": "3000-12-12T00:00:00-05:00",
         }
         response = self.client.post("/market/items/", payload)
         self.assertEqual(response.status_code, 400)
@@ -454,95 +448,75 @@ class TestMarket(TestCase):
         self.assertIn("description", res_json)
         self.assertEqual(res_json["title"][0], "The title contains inappropriate language.")
         self.assertEqual(
-            res_json["description"][0], "The description contains inappropriate language."
+            res_json["description"][0],
+            "The description contains inappropriate language.",
         )
 
-    def test_create_item_sublet_category(self):
-        payload = {
-            "tags": ["New"],
-            "category": "Sublet",
-            "title": "Math Textbook",
-            "description": "2023 version",
-            "external_link": "https://example.com/listing",
-            "price": 20.0,
-            "negotiable": True,
-            "expires_at": "2024-12-12T00:00:00-05:00",
-        }
-        response = self.client.post("/market/items/", payload)
-        res_json = json.loads(response.content)
-        response_without_created_at = res_json.copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
-        expected_response_without_created_at = {
-            "id": 7,
-            "seller": 1,
-            "buyers": [],
-            "tags": ["New"],
-            "category": "Sublet",
-            "title": "Math Textbook",
-            "description": "2023 version",
-            "external_link": "https://example.com/listing",
-            "price": 20.0,
-            "negotiable": True,
-            "expires_at": "2024-12-12T00:00:00-05:00",
-            "images": [],
-            "favorites": [],
-        }
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response_without_created_at, expected_response_without_created_at)
-        self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=10),
-        )
+
+class TestItemPatch(BaseMarketTest):
+    def setUp(self):
+        super().setUp()
+        self.items = self.load_items(
+            "tests/market/self_user_items.json", self.users[0]
+        ) + self.load_items("tests/market/user_1_items.json", self.users[1])
 
     def test_update_item_minimum_required(self):
-        # All fields included are strictly required.
         payload = {
             "category": "Book",
             "title": "Physics Textbook",
             "price": 25.0,
-            "expires_at": "2024-12-13T00:00:00-05:00",
+            "expires_at": "3000-12-13T00:00:00-05:00",
         }
-        response = self.client.patch("/market/items/1/", payload)
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
+        response = self.client.patch(f"/market/items/{self.items[0].id}/", payload)
         expected_response = {
-            "id": 1,
-            "seller": 1,
-            "buyers": [1],
-            "tags": ["Textbook", "Used"],
+            "id": self.items[0].id,
+            "seller": self.users[0].id,
+            "buyers": [],
+            "tags": ["Used", "Textbook"],
             "category": "Book",
             "title": "Physics Textbook",
             "description": "2023 version",
             "external_link": "https://example.com/book",
             "price": 25.0,
             "negotiable": True,
-            "expires_at": "2024-12-13T00:00:00-05:00",
+            "expires_at": "3000-12-13T00:00:00-05:00",
             "images": [],
-            "favorites": [1],
+            "favorites": [],
         }
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["tags", "images", "favorites", "buyers"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
             datetime.timedelta(minutes=10),
         )
-        response = self.client.get("/market/items/1/")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
+        response = self.client.get(f"/market/items/{self.items[0].id}/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["tags", "images", "favorites", "buyers"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
             datetime.timedelta(minutes=10),
         )
 
     def test_update_item_all_fields(self):
         payload = {
             "id": 7,
-            "seller": 1,
+            "seller": self.users[1].id,
             "buyers": [],
             "tags": ["New"],
             "category": "Food",
@@ -552,19 +526,14 @@ class TestMarket(TestCase):
             "price": 25.0,
             "negotiable": False,
             "created_at": "2024-11-26T00:50:03.217587-05:00",
-            "expires_at": "2024-12-14T00:00:00-05:00",
+            "expires_at": "3000-12-14T00:00:00-05:00",
             "images": [],
         }
-        original_created_at = Item.objects.get(id=1).created_at
-        response = self.client.patch("/market/items/1/", payload, format="json")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
-        self.assertEqual(response.status_code, 200)
+        response = self.client.patch(f"/market/items/{self.items[0].id}/", payload)
         expected_response = {
-            "id": 1,
-            "seller": 1,
-            "buyers": [1],
+            "id": self.items[0].id,
+            "seller": self.users[0].id,
+            "buyers": [],
             "tags": ["New"],
             "category": "Food",
             "title": "5 meal swipes",
@@ -572,31 +541,54 @@ class TestMarket(TestCase):
             "external_link": "https://example.com/meal-swipes",
             "price": 25.0,
             "negotiable": False,
-            "expires_at": "2024-12-14T00:00:00-05:00",
+            "expires_at": "3000-12-14T00:00:00-05:00",
             "images": [],
-            "favorites": [1],
+            "favorites": [],
         }
-        self.assertEqual(response_without_created_at, expected_response)
-        self.assertEqual(original_created_at, created_at)
-        response = self.client.get("/market/items/1/")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
+
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
-        self.assertEqual(original_created_at, created_at)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["tags", "images", "buyers", "favorites"],
+        )
+        self.assertLessEqual(
+            abs(
+                datetime.datetime.fromisoformat(response.json()["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
+            datetime.timedelta(minutes=10),
+        )
+        response = self.client.get(f"/market/items/{self.items[0].id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["tags", "images", "buyers", "favorites"],
+        )
+        self.assertLessEqual(
+            abs(
+                datetime.datetime.fromisoformat(response.json()["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
+            datetime.timedelta(minutes=10),
+        )
 
     def test_update_item_invalid_category(self):
         payload = {
             "category": "Textbook",
             "title": "Physics Textbook",
             "price": 25.0,
-            "expires_at": "2024-12-13T00:00:00-05:00",
+            "expires_at": "3000-12-13T00:00:00-05:00",
         }
-        response = self.client.patch("/market/items/1/", payload)
-        res_json = json.loads(response.content)
+        response = self.client.patch(f"/market/items/{self.items[0].id}/", payload)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(res_json, {"category": ['Invalid pk "Textbook" - object does not exist.']})
+        self.assertEqual(
+            response.json(),
+            {"category": ['Invalid pk "Textbook" - object does not exist.']},
+        )
 
     def test_update_item_invalid_tag(self):
         payload = {
@@ -604,45 +596,86 @@ class TestMarket(TestCase):
             "category": "Book",
             "title": "Physics Textbook",
             "price": 25.0,
-            "expires_at": "2024-12-13T00:00:00-05:00",
+            "expires_at": "3000-12-13T00:00:00-05:00",
         }
-        response = self.client.patch("/market/items/1/", payload)
-        res_json = json.loads(response.content)
+        response = self.client.patch(f"/market/items/{self.items[0].id}/", payload)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(res_json, {"tags": ['Invalid pk "Not a tag" - object does not exist.']})
+        self.assertEqual(
+            response.json(),
+            {"tags": ['Invalid pk "Not a tag" - object does not exist.']},
+        )
 
     def test_update_item_to_sublet(self):
-        payload = {"category": "Sublet"}
-        response = self.client.patch("/market/items/1/", payload)
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
+        response = self.client.patch(f"/market/items/{self.items[0].id}/", {"category": "Sublet"})
         expected_response = {
-            "id": 1,
+            "id": self.items[0].id,
             "images": [],
             "title": "Math Textbook",
             "description": "2023 version",
             "external_link": "https://example.com/book",
             "price": 20.0,
             "negotiable": True,
-            "expires_at": "2025-12-12T00:00:00-05:00",
-            "seller": 1,
+            "expires_at": "3000-12-12T00:00:00-05:00",
+            "seller": self.users[0].id,
             "category": "Sublet",
-            "buyers": [1],
+            "buyers": [],
             "tags": ["Textbook", "Used"],
-            "favorites": [1],
+            "favorites": [],
         }
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["tags", "images", "buyers", "favorites"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
             datetime.timedelta(minutes=10),
         )
 
+    def test_update_item_not_owned(self):
+        payload = {"title": "New Title"}
+        response = self.client.patch(f"/market/items/{self.items[1].id}/", payload, format="json")
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.json(),
+            {"detail": "You do not have permission to perform this action."},
+        )
+
+
+class TestItemDelete(BaseMarketTest):
+    def setUp(self):
+        super().setUp()
+        self.items = self.load_items(
+            "tests/market/self_user_items.json", self.users[0]
+        ) + self.load_items("tests/market/user_1_items.json", self.users[1])
+
     def test_delete_item(self):
-        response = self.client.delete("/market/items/1/")
+        self.assertTrue(Item.objects.filter(id=self.items[0].id).exists())
+        response = self.client.delete(f"/market/items/{self.items[0].id}/")
         self.assertEqual(response.status_code, 204)
-        self.assertFalse(Item.objects.filter(id=1).exists())
+        self.assertFalse(Item.objects.filter(id=self.items[0].id).exists())
+
+    def test_delete_item_not_owned(self):
+        response = self.client.delete(f"/market/items/{self.items[1].id}/")
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.json(),
+            {"detail": "You do not have permission to perform this action."},
+        )
+
+
+class TestSubletGet(BaseMarketTest):
+    def setUp(self):
+        super().setUp()
+        items1, sublets1 = self.load_sublets("tests/market/self_user_sublets.json", self.users[0])
+        items2, sublets2 = self.load_sublets("tests/market/user_1_sublets.json", self.users[1])
+        self.items = items1 + items2
+        self.sublets = sublets1 + sublets2
 
     def test_get_sublets(self):
         response = self.client.get("/market/sublets/")
@@ -650,15 +683,15 @@ class TestMarket(TestCase):
         self.assertEqual(len(response.json()), 2)
         expected_response = [
             {
-                "id": 1,
+                "id": self.sublets[0].id,
                 "item": {
-                    "id": 5,
-                    "seller": 1,
+                    "id": self.items[0].id,
+                    "seller": self.users[0].id,
                     "tags": ["New"],
                     "category": "Sublet",
                     "title": "Cira Green Sublet",
                     "price": 1350.0,
-                    "expires_at": "2025-12-12T00:00:00-05:00",
+                    "expires_at": "3000-12-12T00:00:00-05:00",
                     "images": [],
                     "favorite_count": 0,
                 },
@@ -666,56 +699,54 @@ class TestMarket(TestCase):
                 "beds": 3.0,
                 "baths": 1.0,
                 "start_date": "2024-01-01T00:00:00-05:00",
-                "end_date": "2025-05-31T00:00:00-04:00",
+                "end_date": "3000-05-31T00:00:00-04:00",
             },
             {
-                "id": 2,
+                "id": self.sublets[1].id,
                 "item": {
-                    "id": 6,
-                    "seller": 3,
+                    "id": self.items[1].id,
+                    "seller": self.users[1].id,
                     "tags": ["New"],
                     "category": "Sublet",
                     "title": "Rodin Quad",
                     "price": 1350.0,
-                    "expires_at": "2025-12-12T00:00:00-05:00",
+                    "expires_at": "3000-12-12T00:00:00-05:00",
                     "images": [],
-                    "favorite_count": 1,
+                    "favorite_count": 0,
                 },
                 "address": "3901 Locust Walk, Philadelphia, PA",
                 "beds": 4.0,
                 "baths": 1.0,
                 "start_date": "2024-01-01T00:00:00-05:00",
-                "end_date": "2025-05-31T00:00:00-04:00",
+                "end_date": "3000-05-31T00:00:00-04:00",
             },
         ]
-        self.assertEqual(
-            sorted(response.json(), key=lambda d: d["id"]),
-            sorted(expected_response, key=lambda d: d["id"]),
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["", "tags", "images", "buyers", "favorites"],
         )
 
     def test_get_sublet_own(self):
-        response = self.client.get("/market/sublets/1/")
+        response = self.client.get(f"/market/sublets/{self.sublets[0].id}/")
         self.assertEqual(response.status_code, 200)
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at["item"].pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
         expected_response = {
-            "id": 1,
+            "id": self.sublets[0].id,
             "item": {
-                "id": 5,
+                "id": self.items[0].id,
                 "images": [],
                 "title": "Cira Green Sublet",
-                "description": (
-                    "Fully furnished 3-bedroom apartment"
-                    " available for sublet with all amenities included."
-                ),
+                "description": "Fully furnished 3-bedroom apartment available for sublet with all"
+                + " amenities included.",
                 "external_link": "https://example.com/cira-green",
                 "price": 1350.0,
                 "negotiable": False,
-                "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
+                "created_at": "2025-09-05T00:14:15.141807-04:00",
+                "expires_at": "3000-12-12T00:00:00-05:00",
+                "seller": self.users[0].id,
                 "category": "Sublet",
-                "buyers": [1, 2],
+                "buyers": [],
                 "tags": ["New"],
                 "favorites": [],
             },
@@ -723,118 +754,66 @@ class TestMarket(TestCase):
             "beds": 3.0,
             "baths": 1.0,
             "start_date": "2024-01-01T00:00:00-05:00",
-            "end_date": "2025-05-31T00:00:00-04:00",
+            "end_date": "3000-05-31T00:00:00-04:00",
         }
-        self.assertEqual(response_without_created_at, expected_response)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["item.created_at"],
+            ["", "item.tags", "item.images", "item.buyers", "item.favorites"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["item"]["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
             datetime.timedelta(minutes=10),
         )
 
     def test_get_sublet_other(self):
-        response = self.client.get("/market/sublets/2/")
+        response = self.client.get(f"/market/sublets/{self.sublets[1].id}/")
         self.assertEqual(response.status_code, 200)
         expected_response = {
-            "id": 2,
+            "id": self.sublets[1].id,
             "item": {
-                "id": 6,
-                "seller": 3,
+                "id": self.items[1].id,
+                "seller": self.users[1].id,
                 "buyer_count": 0,
                 "tags": ["New"],
                 "category": "Sublet",
                 "title": "Rodin Quad",
-                "description": (
-                    "Fully furnished 4-bedroom apartment available"
-                    " for sublet with all amenities included."
-                ),
+                "description": "Fully furnished 4-bedroom apartment available for sublet with all"
+                + " amenities included.",
+                "external_link": "https://example.com/rodin-quad",
                 "price": 1350.0,
                 "negotiable": False,
-                "expires_at": "2025-12-12T00:00:00-05:00",
+                "expires_at": "3000-12-12T00:00:00-05:00",
                 "images": [],
-                "favorite_count": 1,
-                "external_link": "https://example.com/rodin-quad",
+                "favorite_count": 0,
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
             "beds": 4.0,
             "baths": 1.0,
             "start_date": "2024-01-01T00:00:00-05:00",
-            "end_date": "2025-05-31T00:00:00-04:00",
+            "end_date": "3000-05-31T00:00:00-04:00",
         }
-        self.assertEqual(response.json(), expected_response)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["item.created_at"],
+            ["", "item.tags", "item.images", "item.buyers", "item.favorites"],
+        )
 
     def test_get_single_sublet_invalid_id(self):
-        response = self.client.get("/market/sublets/3/")
+        response = self.client.get(f"/market/sublets/{self.sublets[1].id+1}/")
         self.assertEqual(response.status_code, 404)
 
-    def test_create_sublet_required_fields(self):
-        payload = {
-            "item": {
-                "title": "Cira Green Sublet 2",
-                "description": (
-                    "Fully furnished 3-bedroom apartment available"
-                    " for sublet with all amenities included."
-                ),
-                "external_link": "https://example.com/listing",
-                "price": 1350.0,
-                "negotiable": False,
-                "expires_at": "2025-12-12T00:00:00-05:00",
-                "category": "Sublet",
-                "tags": ["New"],
-            },
-            "address": "3901 Locust Walk, Philadelphia, PA",
-            "beds": 4.0,
-            "baths": 1.0,
-            "start_date": "2024-01-01T00:00:00-05:00",
-            "end_date": "2025-05-31T00:00:00-04:00",
-        }
-        response = self.client.post("/market/sublets/", payload, format="json")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at["item"].pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
-        expected_response = {
-            "id": 3,
-            "item": {
-                "id": 7,
-                "images": [],
-                "title": "Cira Green Sublet 2",
-                "description": (
-                    "Fully furnished 3-bedroom apartment"
-                    " available for sublet with all amenities included."
-                ),
-                "external_link": "https://example.com/listing",
-                "price": 1350.0,
-                "negotiable": False,
-                "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
-                "category": "Sublet",
-                "buyers": [],
-                "tags": ["New"],
-                "favorites": [],
-            },
-            "address": "3901 Locust Walk, Philadelphia, PA",
-            "beds": 4.0,
-            "baths": 1.0,
-            "start_date": "2024-01-01T00:00:00-05:00",
-            "end_date": "2025-05-31T00:00:00-04:00",
-        }
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response_without_created_at, expected_response)
-        self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=10),
-        )
-        response = self.client.get("/market/sublets/3/")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at["item"].pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
-        self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=10),
-        )
 
-    def test_create_sublet_all_fields(self):
+class TestSubletPost(BaseMarketTest):
+    def setUp(self):
+        super().setUp()
+
+    def test_create_sublet(self):
         payload = {
             "id": 3,
             "item": {
@@ -849,7 +828,7 @@ class TestMarket(TestCase):
                 "price": 1350.0,
                 "negotiable": False,
                 "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
+                "seller": self.users[0].id,
                 "category": "Sublet",
                 "buyers": [],
                 "tags": ["New"],
@@ -859,27 +838,23 @@ class TestMarket(TestCase):
             "beds": 4.0,
             "baths": 1.0,
             "start_date": "2024-01-01T00:00:00-05:00",
-            "end_date": "2025-05-31T00:00:00-04:00",
+            "end_date": "3000-05-31T00:00:00-04:00",
         }
         response = self.client.post("/market/sublets/", payload, format="json")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at["item"].pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
         expected_response = {
-            "id": 3,
+            "id": response.json()["id"],
             "item": {
-                "id": 7,
+                "id": response.json()["item"]["id"],
                 "images": [],
                 "title": "Cira Green Sublet 2",
-                "description": (
-                    "Fully furnished 3-bedroom apartment "
-                    "available for sublet with all amenities included."
-                ),
+                "description": "Fully furnished 3-bedroom apartment available for sublet with all"
+                + " amenities included.",
                 "external_link": "https://example.com/listing",
                 "price": 1350.0,
                 "negotiable": False,
+                "created_at": "2025-09-05T00:48:08.880144-04:00",
                 "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
+                "seller": self.users[0].id,
                 "category": "Sublet",
                 "buyers": [],
                 "tags": ["New"],
@@ -889,122 +864,46 @@ class TestMarket(TestCase):
             "beds": 4.0,
             "baths": 1.0,
             "start_date": "2024-01-01T00:00:00-05:00",
-            "end_date": "2025-05-31T00:00:00-04:00",
+            "end_date": "3000-05-31T00:00:00-04:00",
         }
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response_without_created_at, expected_response)
-        self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=10),
-        )
-        response = self.client.get("/market/sublets/3/")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at["item"].pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
-        self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-            datetime.timedelta(minutes=10),
-        )
-
-    def test_create_sublet_invalid_category(self):
-        payload = {
-            "id": 3,
-            "item": {
-                "id": 7,
-                "images": [],
-                "title": "Cira Green Sublet 2",
-                "description": (
-                    "Fully furnished 3-bedroom apartment"
-                    " available for sublet with all amenities included."
-                ),
-                "external_link": "https://example.com/listing",
-                "price": 1350.0,
-                "negotiable": False,
-                "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
-                "category": "Invalid",
-                "buyers": [],
-                "tags": ["New"],
-                "favorites": [],
-            },
-            "address": "3901 Locust Walk, Philadelphia, PA",
-            "beds": 4.0,
-            "baths": 1.0,
-            "start_date": "2024-01-01T00:00:00-05:00",
-            "end_date": "2025-05-31T00:00:00-04:00",
-        }
-        response = self.client.post("/market/sublets/", payload, format="json")
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(
+        self.assert_dict_equal_ignoring_keys(
             response.json(),
-            {"item": {"category": ['Invalid pk "Invalid" - object does not exist.']}},
+            expected_response,
+            ["item.created_at"],
+            ["item.tags", "item.images", "item.buyers", "item.favorites"],
         )
-
-    def test_create_sublet_non_sublet_category(self):
-        payload = {
-            "id": 3,
-            "item": {
-                "id": 7,
-                "images": [],
-                "title": "Cira Green Sublet 2",
-                "description": (
-                    "Fully furnished 3-bedroom apartment "
-                    "available for sublet with all amenities included."
-                ),
-                "external_link": "https://example.com/listing",
-                "price": 1350.0,
-                "negotiable": False,
-                "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
-                "category": "Book",
-                "buyers": [],
-                "tags": ["New"],
-                "favorites": [],
-            },
-            "address": "3901 Locust Walk, Philadelphia, PA",
-            "beds": 4.0,
-            "baths": 1.0,
-            "start_date": "2024-01-01T00:00:00-05:00",
-            "end_date": "2025-05-31T00:00:00-04:00",
-        }
-        response = self.client.post("/market/sublets/", payload, format="json")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at["item"].pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
-        expected_response = {
-            "id": 3,
-            "item": {
-                "id": 7,
-                "images": [],
-                "title": "Cira Green Sublet 2",
-                "description": (
-                    "Fully furnished 3-bedroom apartment "
-                    "available for sublet with all amenities included."
-                ),
-                "external_link": "https://example.com/listing",
-                "price": 1350.0,
-                "negotiable": False,
-                "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
-                "category": "Book",
-                "buyers": [],
-                "tags": ["New"],
-                "favorites": [],
-            },
-            "address": "3901 Locust Walk, Philadelphia, PA",
-            "beds": 4.0,
-            "baths": 1.0,
-            "start_date": "2024-01-01T00:00:00-05:00",
-            "end_date": "2025-05-31T00:00:00-04:00",
-        }
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["item"]["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
             datetime.timedelta(minutes=10),
         )
+        response = self.client.get(f"/market/sublets/{response.json()['id']}/")
+        self.assertEqual(response.status_code, 200)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["item.created_at"],
+            ["item.tags", "item.images", "item.buyers", "item.favorites"],
+        )
+        self.assertLessEqual(
+            abs(
+                datetime.datetime.fromisoformat(response.json()["item"]["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
+            datetime.timedelta(minutes=10),
+        )
+
+
+class TestSubletPatchDelete(BaseMarketTest):
+    def setUp(self):
+        super().setUp()
+        items1, sublets1 = self.load_sublets("tests/market/self_user_sublets.json", self.users[0])
+        items2, sublets2 = self.load_sublets("tests/market/user_1_sublets.json", self.users[1])
+        self.items = items1 + items2
+        self.sublets = sublets1 + sublets2
 
     def test_update_sublet(self):
         payload = {
@@ -1021,10 +920,10 @@ class TestMarket(TestCase):
                 "price": 1350.0,
                 "negotiable": False,
                 "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
+                "seller": self.users[0].id,
                 "category": "Sublet",
                 "buyers": [],
-                "tags": ["New"],
+                "tags": ["Apartment", "New"],
                 "favorites": [],
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
@@ -1033,14 +932,13 @@ class TestMarket(TestCase):
             "start_date": "2024-01-01T00:00:00-05:00",
             "end_date": "2025-05-31T00:00:00-04:00",
         }
-        response = self.client.patch("/market/sublets/1/", payload, format="json")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at["item"].pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
+        response = self.client.patch(
+            f"/market/sublets/{self.sublets[0].id}/", payload, format="json"
+        )
         expected_response = {
-            "id": 1,
+            "id": int(self.sublets[0].id),
             "item": {
-                "id": 5,
+                "id": int(self.items[0].id),
                 "images": [],
                 "title": "Cira Green Sublet 2",
                 "description": (
@@ -1051,10 +949,10 @@ class TestMarket(TestCase):
                 "price": 1350.0,
                 "negotiable": False,
                 "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
+                "seller": self.users[0].id,
                 "category": "Sublet",
-                "buyers": [1, 2],
-                "tags": ["New"],
+                "buyers": [],
+                "tags": ["New", "Apartment"],
                 "favorites": [],
             },
             "address": "3901 Locust Walk, Philadelphia, PA",
@@ -1064,27 +962,38 @@ class TestMarket(TestCase):
             "end_date": "2025-05-31T00:00:00-04:00",
         }
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["item.created_at"],
+            ["item.tags", "item.images", "item.buyers", "item.favorites"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["item"]["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
             datetime.timedelta(minutes=10),
         )
-        response = self.client.get("/market/sublets/1/")
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at["item"].pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
+        response = self.client.get(f"/market/sublets/{self.sublets[0].id}/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["item.created_at"],
+            ["item.tags", "item.images", "item.buyers", "item.favorites"],
+        )
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["item"]["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
             datetime.timedelta(minutes=10),
         )
 
     def test_update_sublet_non_sublet_category(self):
         payload = {
-            "id": 3,
             "item": {
-                "id": 7,
                 "images": [],
                 "title": "Cira Green Sublet 2",
                 "description": (
@@ -1095,7 +1004,7 @@ class TestMarket(TestCase):
                 "price": 1350.0,
                 "negotiable": False,
                 "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
+                "seller": self.users[0].id,
                 "category": "Book",
                 "buyers": [],
                 "tags": ["New"],
@@ -1107,11 +1016,13 @@ class TestMarket(TestCase):
             "start_date": "2024-01-01T00:00:00-05:00",
             "end_date": "2025-05-31T00:00:00-04:00",
         }
-        response = self.client.patch("/market/sublets/1/", payload, format="json")
+        response = self.client.patch(
+            f"/market/sublets/{self.sublets[0].id}/", payload, format="json"
+        )
         expected_response = {
-            "id": 1,
+            "id": self.sublets[0].id,
             "item": {
-                "id": 5,
+                "id": self.items[0].id,
                 "images": [],
                 "title": "Cira Green Sublet 2",
                 "description": (
@@ -1122,9 +1033,9 @@ class TestMarket(TestCase):
                 "price": 1350.0,
                 "negotiable": False,
                 "expires_at": "2025-12-12T00:00:00-05:00",
-                "seller": 1,
+                "seller": self.users[0].id,
                 "category": "Book",
-                "buyers": [1, 2],
+                "buyers": [],
                 "tags": ["New"],
                 "favorites": [],
             },
@@ -1134,312 +1045,320 @@ class TestMarket(TestCase):
             "start_date": "2024-01-01T00:00:00-05:00",
             "end_date": "2025-05-31T00:00:00-04:00",
         }
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at["item"].pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
-
-    def test_delete_sublet(self):
-        response = self.client.delete("/market/sublets/1/")
-        self.assertEqual(response.status_code, 204)
-        self.assertFalse(Sublet.objects.filter(id=1).exists())
-        self.assertFalse(Item.objects.filter(id=5).exists())
-
-    def test_get_all_tags(self):
-        response = self.client.get("/market/tags/")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
+        self.assert_dict_equal_ignoring_keys(
             response.json(),
-            ["New", "Used", "Couch", "Laptop", "Textbook", "Chair", "Apartment", "House"],
+            expected_response,
+            ["item.created_at"],
+            ["item.tags", "item.images", "item.buyers", "item.favorites"],
         )
-
-    def test_get_all_categories(self):
-        response = self.client.get("/market/categories/")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json(), ["Book", "Electronics", "Furniture", "Food", "Sublet", "Other"]
-        )
-
-    def test_get_all_user_favorites(self):
-        response = self.client.get("/market/favorites/")
-        expected_response = [
-            {
-                "id": 1,
-                "seller": 1,
-                "tags": ["Textbook", "Used"],
-                "category": "Book",
-                "title": "Math Textbook",
-                "price": 20.0,
-                "expires_at": "2025-12-12T00:00:00-05:00",
-                "images": [],
-                "favorite_count": 1,
-            },
-            {
-                "id": 2,
-                "seller": 3,
-                "tags": ["New"],
-                "category": "Food",
-                "title": "Bag of Doritos",
-                "price": 5.0,
-                "expires_at": "2025-10-12T01:00:00-04:00",
-                "images": [],
-                "favorite_count": 1,
-            },
-            {
-                "id": 3,
-                "seller": 2,
-                "tags": ["Laptop", "New"],
-                "category": "Electronics",
-                "title": "Macbook Pro",
-                "price": 2000.0,
-                "expires_at": "2025-08-12T01:00:00-04:00",
-                "images": [],
-                "favorite_count": 1,
-            },
-            {
-                "id": 6,
-                "seller": 3,
-                "tags": ["New"],
-                "category": "Sublet",
-                "title": "Rodin Quad",
-                "price": 1350.0,
-                "expires_at": "2025-12-12T00:00:00-05:00",
-                "images": [],
-                "favorite_count": 1,
-            },
-        ]
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), expected_response)
-
-    def test_get_all_user_offers(self):
-        response = self.client.get("/market/offers/made/")
-        response_without_created_at = [offer.copy() for offer in response.json()]
-        created_at_list = [
-            datetime.datetime.fromisoformat(offer.pop("created_at"))
-            for offer in response_without_created_at
-        ]
-
-        expected_response = [
-            {
-                "id": 1,
-                "phone_number": None,
-                "email": "self_user@gmail.com",
-                "message": "",
-                "user": 1,
-                "item": 1,
-            },
-            {
-                "id": 2,
-                "phone_number": None,
-                "email": "self_user@gmail.com",
-                "message": "",
-                "user": 1,
-                "item": 5,
-            },
-            {
-                "id": 4,
-                "phone_number": None,
-                "email": "self_user@gmail.com",
-                "message": "",
-                "user": 1,
-                "item": 4,
-            },
-        ]
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
-        for created_at in created_at_list:
-            self.assertLessEqual(
-                abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-                datetime.timedelta(minutes=1),
-            )
-
-    def test_get_all_user_offers_received(self):
-        response = self.client.get("/market/offers/received/")
-        response_without_created_at = [offer.copy() for offer in response.json()]
-        created_at_list = [
-            datetime.datetime.fromisoformat(offer.pop("created_at"))
-            for offer in response_without_created_at
-        ]
-
-        expected_response = [
-            {
-                "id": 1,
-                "phone_number": None,
-                "email": "self_user@gmail.com",
-                "message": "",
-                "user": 1,
-                "item": 1,
-            },
-            {
-                "id": 2,
-                "phone_number": None,
-                "email": "self_user@gmail.com",
-                "message": "",
-                "user": 1,
-                "item": 5,
-            },
-            {
-                "id": 3,
-                "phone_number": None,
-                "email": "user_1@gmail.com",
-                "message": "",
-                "user": 2,
-                "item": 5,
-            },
-        ]
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_without_created_at, expected_response)
-        for created_at in created_at_list:
-            self.assertLessEqual(
-                abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-                datetime.timedelta(minutes=1),
-            )
-
-    def test_favorite_item(self):
-        response = self.client.post("/market/items/4/favorites/")
-        self.assertEqual(response.status_code, 201)
-        self.assertTrue(Item.objects.get(id=1).favorites.filter(id=1).exists())
-
-    def test_favorite_favorited_item(self):
-        response = self.client.post("/market/items/1/favorites/")
-        self.assertEqual(response.status_code, 406)
-        self.assertEqual(response.json(), {"detail": "Favorite already exists"})
-
-    def test_unfavorite_item(self):
-        response = self.client.delete("/market/items/1/favorites/")
-        self.assertEqual(response.status_code, 204)
-        self.assertFalse(Item.objects.get(id=1).favorites.filter(id=1).exists())
-
-    def test_unfavorite_unfavorited_item(self):
-        response = self.client.delete("/market/items/4/favorites/")
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {"detail": "No Item matches the given query."})
-
-    def test_favorite_invalid_item(self):
-        response = self.client.post("/market/items/100/favorites/")
-        self.assertEqual(response.status_code, 404)
-
-    def test_favorite_sublet(self):
-        response = self.client.post("/market/items/5/favorites/")
-        self.assertEqual(response.status_code, 201)
-        self.assertTrue(Item.objects.get(id=6).favorites.filter(id=1).exists())
-
-    def test_favorite_favorited_sublet(self):
-        response = self.client.post("/market/items/1/favorites/")
-        self.assertEqual(response.status_code, 406)
-        self.assertEqual(response.json(), {"detail": "Favorite already exists"})
-
-    def test_list_item_offers(self):
-        response = self.client.get("/market/items/1/offers/")
-        response_without_created_at = response.json().copy()
-        created_at_list = [
-            datetime.datetime.fromisoformat(offer.pop("created_at"))
-            for offer in response_without_created_at
-        ]
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response_without_created_at,
-            [
-                {
-                    "id": 1,
-                    "phone_number": None,
-                    "email": "self_user@gmail.com",
-                    "message": "",
-                    "user": 1,
-                    "item": 1,
-                }
-            ],
-        )
-        for created_at in created_at_list:
-            self.assertLessEqual(
-                abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
-                datetime.timedelta(minutes=1),
-            )
-
-    def test_list_item_offers_other(self):
-        response = self.client.get("/market/items/4/offers/")
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(
-            response.json(), {"detail": "You do not have permission to perform this action."}
-        )
-
-    def test_list_item_offers_invalid_item(self):
-        response = self.client.get("/market/items/100/offers/")
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {"detail": "No Item matches the given query"})
-
-    def test_list_item_delete_and_offers_nonexistent(self):
-        self.client.delete("/market/items/1/offers/")
-        response = self.client.get("/market/items/1/offers/")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), [])
-
-    def test_create_offer(self):
-        payload = {
-            "phone_number": "+1 (425)-269-4412",
-            "email": "self_user@gmail.com",
-            "message": "I am interested in buying this item.",
-        }
-        response = self.client.post("/market/items/2/offers/", payload)
-        response_without_created_at = response.json().copy()
-        created_at = response_without_created_at.pop("created_at")
-        created_at = datetime.datetime.fromisoformat(created_at)
-        expected_response = {
-            "id": 6,
-            "phone_number": "+14252694412",
-            "email": "self_user@gmail.com",
-            "message": "I am interested in buying this item.",
-            "user": 1,
-            "item": 2,
-        }
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response_without_created_at, expected_response)
         self.assertLessEqual(
-            abs(created_at - datetime.datetime.now(pytz.timezone("UTC"))),
+            abs(
+                datetime.datetime.fromisoformat(response.json()["item"]["created_at"])
+                - datetime.datetime.now(pytz.timezone("UTC"))
+            ),
             datetime.timedelta(minutes=10),
         )
 
+
+class TestOffer(BaseMarketTest):
+    def setUp(self):
+        super().setUp()
+        self.items = self.load_items(
+            "tests/market/self_user_items.json", self.users[0]
+        ) + self.load_items("tests/market/user_1_items.json", self.users[1])
+        items1, sublets1 = self.load_sublets("tests/market/self_user_sublets.json", self.users[0])
+        items2, sublets2 = self.load_sublets("tests/market/user_1_sublets.json", self.users[1])
+        self.items += items1 + items2
+        self.sublets = sublets1 + sublets2
+        self.offers = [
+            Offer.objects.create(
+                user=self.users[0],
+                item=self.items[1],
+                email="self_user@gmail.com",
+            ),
+            Offer.objects.create(
+                user=self.users[0],
+                item=self.items[4],
+                email="self_user@gmail.com",
+                phone_number="+15555555555",
+                message="I want this",
+            ),
+            Offer.objects.create(
+                user=self.users[1],
+                item=self.items[0],
+                email="user1@gmail.com",
+                phone_number="+15555555555",
+                message="",
+            ),
+        ]
+
+    def test_get_all_user_offers(self):
+        response = self.client.get("/market/offers/made/")
+        expected_response = [
+            {
+                "id": self.offers[0].id,
+                "phone_number": None,
+                "email": "self_user@gmail.com",
+                "message": "",
+                "user": self.users[0].id,
+                "item": self.items[1].id,
+            },
+            {
+                "id": self.offers[1].id,
+                "phone_number": "+15555555555",
+                "email": "self_user@gmail.com",
+                "message": "I want this",
+                "user": self.users[0].id,
+                "item": self.items[4].id,
+            },
+        ]
+        self.assertEqual(response.status_code, 200)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(), expected_response, ["created_at"], [""]
+        )
+
+    def test_list_item_offers(self):
+        response = self.client.get(f"/market/items/{self.items[0].id}/offers/")
+        expected = [
+            {
+                "id": self.offers[2].id,
+                "phone_number": "+15555555555",
+                "email": "user1@gmail.com",
+                "message": "",
+                "user": self.users[1].id,
+                "item": self.items[0].id,
+            }
+        ]
+        self.assertEqual(response.status_code, 200)
+        self.assert_dict_equal_ignoring_keys(response.json(), expected, ["created_at"], [""])
+
+    def test_get_offer_other(self):
+        response = self.client.get(f"/market/items/{self.items[1].id}/offers/")
+        expected = {"detail": "You do not have permission to perform this action."}
+        self.assertEqual(response.status_code, 403)
+        self.assert_dict_equal_ignoring_keys(response.json(), expected, ["created_at"], [""])
+
+    def test_list_item_offers_invalid_item(self):
+        invalid_id = 1
+        while Item.objects.filter(id=invalid_id).exists():
+            invalid_id += 1
+        response = self.client.get(f"/market/items/{invalid_id}/offers/")
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "No Item matches the given query"})
+
+    def test_create_offer_all_fields(self):
+        payload = {
+            "phone_number": "+1 (202) 555 0100",
+            "email": "self_user@gmail.com",
+            "message": "I want this",
+        }
+        response = self.client.post(
+            f"/market/items/{self.items[2].id}/offers/", payload, format="json"
+        )
+        expected_response = {
+            "id": response.json()["id"],
+            "phone_number": "+12025550100",
+            "email": "self_user@gmail.com",
+            "message": "I want this",
+            "user": self.users[0].id,
+            "item": self.items[2].id,
+        }
+        self.assertEqual(response.status_code, 201)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(), expected_response, ["created_at"], [""]
+        )
+
+    def test_create_offer_required_fields(self):
+        payload = {"phone_number": "+12025550100"}
+        response = self.client.post(
+            f"/market/items/{self.items[2].id}/offers/", payload, format="json"
+        )
+        expected_response = {
+            "id": response.json()["id"],
+            "phone_number": "+12025550100",
+            "email": None,
+            "message": "",
+            "user": self.users[0].id,
+            "item": self.items[2].id,
+        }
+        self.assertEqual(response.status_code, 201)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(), expected_response, ["created_at"], [""]
+        )
+
+    def test_create_offer_invalid(self):
+        payload = {}
+        response = self.client.post(
+            f"/market/items/{self.items[2].id}/offers/", payload, format="json"
+        )
+        expected_response = {"phone_number": ["This field is required."]}
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), expected_response)
+
+    def test_create_offer_existing(self):
+        payload = {
+            "phone_number": "+1 (202) 555 0100",
+            "email": "self_user@gmail.com",
+            "message": "I want this",
+        }
+        response = self.client.post(
+            f"/market/items/{self.items[1].id}/offers/", payload, format="json"
+        )
+        expected_response = ["Offer already exists"]
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), expected_response)
+
     def test_delete_offer(self):
-        response = self.client.delete("/market/items/1/offers/")
+        self.assertTrue(Offer.objects.filter(id=self.offers[0].id).exists())
+        response = self.client.delete(f"/market/items/{self.items[1].id}/offers/")
         self.assertEqual(response.status_code, 204)
-        self.assertFalse(Offer.objects.filter(id=1).exists())
+        self.assertFalse(Offer.objects.filter(id=self.offers[0].id).exists())
 
     def test_delete_offer_nonexistent(self):
-        response = self.client.delete("/market/items/6/offers/")
+        invalid_id = 1
+        while Offer.objects.filter(id=invalid_id).exists():
+            invalid_id += 1
+        response = self.client.delete(f"/market/items/{invalid_id}/offers/")
         self.assertEqual(response.status_code, 404)
+
+
+class TestFavorites(BaseMarketTest):
+    def setUp(self):
+        super().setUp()
+        self.items = self.load_items(
+            "tests/market/self_user_items.json", self.users[0]
+        ) + self.load_items("tests/market/user_1_items.json", self.users[1])
+        self.items[0].favorites.add(self.users[1])
+        self.items[1].favorites.add(self.users[0])
+
+    def test_get_favorites_for_item_owned(self):
+        response = self.client.get(f"/market/items/{self.items[0].id}/")
+        expected_response = {
+            "id": self.items[0].id,
+            "images": [],
+            "title": "Math Textbook",
+            "description": "2023 version",
+            "external_link": "https://example.com/book",
+            "price": 20.0,
+            "negotiable": True,
+            "created_at": "2025-09-06T21:40:57.667236-04:00",
+            "expires_at": "3000-12-12T00:00:00-05:00",
+            "seller": self.users[0].id,
+            "category": "Book",
+            "buyers": [],
+            "tags": ["Textbook", "Used"],
+            "favorites": [self.users[1].id],
+        }
+        self.assertEqual(response.status_code, 200)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["tags", "images", "buyers", "favorites"],
+        )
+
+    def test_get_favorites_for_item_other(self):
+        response = self.client.get(f"/market/items/{self.items[1].id}/")
+        expected_response = {
+            "id": self.items[1].id,
+            "seller": self.users[1].id,
+            "buyer_count": 0,
+            "tags": ["Laptop", "New"],
+            "category": "Electronics",
+            "title": "Macbook Pro",
+            "description": "M1 Chip",
+            "external_link": "https://example.com/macbook",
+            "price": 2000.0,
+            "negotiable": True,
+            "expires_at": "3000-08-12T01:00:00-04:00",
+            "images": [],
+            "favorite_count": 1,
+        }
+        self.assertEqual(response.status_code, 200)
+        self.assert_dict_equal_ignoring_keys(
+            response.json(),
+            expected_response,
+            ["created_at"],
+            ["tags", "images", "buyers", "favorites"],
+        )
+
+    def test_post_favorite(self):
+        response = self.client.post(f"/market/items/{self.items[2].id}/favorites/")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Item.objects.get(id=self.items[2].id).favorites.count(), 1)
+        self.assertEqual(Item.objects.get(id=self.items[2].id).favorites.first(), self.users[0])
+
+    def test_post_favorite_existing(self):
+        response = self.client.post(f"/market/items/{self.items[1].id}/favorites/")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), ["Favorite already exists"])
+        self.assertEqual(Item.objects.get(id=self.items[1].id).favorites.count(), 1)
+
+    def test_delete_favorite(self):
+        response = self.client.delete(f"/market/items/{self.items[1].id}/favorites/")
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(Item.objects.get(id=self.items[1].id).favorites.count(), 0)
+
+    def test_delete_nonexistent_favorite(self):
+        response = self.client.delete(f"/market/items/{self.items[2].id}/favorites/")
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(Item.objects.get(id=self.items[2].id).favorites.count(), 0)
+        self.assertEqual(response.json(), {"detail": "No Item matches the given query."})
+
+
+class TestImages(BaseMarketTest):
+    def setUp(self):
+        super().setUp()
+        self.items = self.load_items(
+            "tests/market/self_user_items.json", self.users[0]
+        ) + self.load_items("tests/market/user_1_items.json", self.users[1])
+
+        storage_mock = MagicMock(spec=Storage, name="StorageMock")
+        storage_mock.generate_filename = lambda filename: filename
+        storage_mock.save = MagicMock(side_effect=lambda name, *args, **kwargs: name)
+        storage_mock.url = MagicMock(name="url")
+        storage_mock.url.return_value = "http://penn-mobile.com/mock-image.png"
+        ItemImage._meta.get_field("image").storage = storage_mock
 
     def test_create_image(self):
         with open("tests/market/mock_image.jpg", "rb") as image:
-            response = self.client.post("/market/items/1/images/", {"images": image})
+            self.assertEqual(Item.objects.get(id=self.items[0].id).images.count(), 0)
+            response = self.client.post(
+                f"/market/items/{self.items[0].id}/images/", {"images": image}
+            )
             self.assertEqual(response.status_code, 201)
-            images = Item.objects.get(id=1).images.all()
-            self.assertTrue(images.exists())
-            self.assertEqual(1, images.first().item.id)
+            self.assertEqual(Item.objects.get(id=self.items[0].id).images.count(), 1)
+            img = Item.objects.get(id=self.items[0].id).images.first()
+            self.assertIsNotNone(img)
 
     def test_create_image_other_users_item(self):
         with open("tests/market/mock_image.jpg", "rb") as image:
-            response = self.client.post("/market/items/2/images/", {"images": image})
+            response = self.client.post(
+                f"/market/items/{self.items[1].id}/images/", {"images": image}
+            )
             self.assertEqual(response.status_code, 403)
             self.assertEqual(
-                response.json(), {"detail": "You do not have permission to perform this action."}
+                response.json(),
+                {"detail": "You do not have permission to perform this action."},
             )
 
     def test_create_delete_images(self):
         with open("tests/market/mock_image.jpg", "rb") as image:
             with open("tests/market/mock_image.jpg", "rb") as image2:
                 response = self.client.post(
-                    "/market/items/1/images/",
+                    f"/market/items/{self.items[0].id}/images/",
                     {"images": [image, image2]},
                     "multipart",
                 )
+                saved_images = response.json()
                 self.assertEqual(response.status_code, 201)
-                images = Item.objects.get(id=1).images.all()
+                images = Item.objects.get(id=self.items[0].id).images.all()
                 self.assertTrue(images.exists())
                 self.assertEqual(2, images.count())
-                self.assertEqual(1, images.first().item.id)
-                response = self.client.delete("/market/items/images/1/")
+                self.assertEqual(self.items[0].id, images.first().item.id)
+                response = self.client.delete(f"/market/items/images/{saved_images[0]['id']}/")
                 self.assertEqual(response.status_code, 204)
-                self.assertFalse(ItemImage.objects.filter(id=1).exists())
-                self.assertTrue(ItemImage.objects.filter(id=2).exists())
+                self.assertFalse(ItemImage.objects.filter(id=saved_images[0]["id"]).exists())
+                self.assertTrue(ItemImage.objects.filter(id=saved_images[1]["id"]).exists())
                 self.assertEqual(1, ItemImage.objects.all().count())

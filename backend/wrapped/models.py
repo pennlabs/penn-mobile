@@ -26,7 +26,7 @@ class GlobalStatKey(StatKey):
 
 
 class Semester(models.Model):
-    semester = models.CharField(max_length=5, primary_key=True, null=False, blank=False)
+    semester = models.CharField(max_length=16, primary_key=True, null=False, blank=False)
     pages = models.ManyToManyField("Page", blank=True)
 
 
@@ -60,6 +60,7 @@ class IndividualStat(models.Model):
 class Page(models.Model):
 
     name = models.CharField(max_length=50, primary_key=True, null=False, blank=False)
+    id = models.IntegerField(null=False, blank=False)
     template_path = models.CharField(max_length=200, null=False, blank=False)
     individual_stats = models.ManyToManyField(
         IndividualStatKey, through="IndividualStatPageField", blank=True
