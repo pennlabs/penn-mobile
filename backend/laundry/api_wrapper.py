@@ -36,26 +36,25 @@ def update_machine_object(machine, machine_type_data):
     #  TODO: Early stage in update 9/29/2024, known status codes are
     #  TODO: "IN_USE", "AVAILABLE", "COMPLETE";
     #  TODO: need to update if we identify other codes, especially error
-    status = machine["currentStatus"]["statusId"]
+    current_status = machine["currentStatus"]
+    status = current_status.get("statusId")
     if status == "IN_USE":
-        time_remaining = machine["currentStatus"]["remainingSeconds"]
+        time_remaining = current_status.get("remainingSeconds")
         machine_type_data["running"] += 1
         try:
-            machine_type_data["time_remaining"].append(int(time_remaining) // 60)
-        except ValueError:
+            if time_remaining is not None:
+                machine_type_data["time_remaining"].append(int(time_remaining) // 60)
+        except (ValueError, TypeError):
             pass
-    elif status in ["AVAILABLE", "COMPLETE"]:
+    elif status in {"AVAILABLE", "COMPLETE"}:
         machine_type_data["open"] += 1
     # TODO: Verify there are no other statuses
     else:
+        # Log any unknown statuses
+        if status not in {"IN_USE", "AVAILABLE", "COMPLETE"}:
+            with open("laundry/data/laundry_status_record.txt", "a") as f:
+                f.write(f"{timezone.now()}: {status}\n")
         machine_type_data["offline"] += 1
-
-    # edge case that handles machine not sending time data
-    # TODO: I don't think we need this?
-    diff = int(machine_type_data["running"]) - len(machine_type_data["time_remaining"])
-    while diff > 0:
-        machine_type_data["time_remaining"].append(-1)
-        diff = diff - 1
 
     return machine_type_data
 
@@ -74,23 +73,23 @@ def parse_a_room(room_request_link):
     if request_json is None:
         return {"washers": washers, "dryers": dryers, "details": detailed}
     for machine in request_json:
-        if machine["isWasher"]:
+        if machine.get("isWasher"):
             update_machine_object(machine, washers)
-        elif machine["isDryer"]:
+        elif machine.get("isDryer"):
             update_machine_object(machine, dryers)
     detailed = [
         {
-            "id": machine["id"],
-            "type": "washer" if machine["isWasher"] else "dryer",
-            "status": machine["currentStatus"]["statusId"],
+            "id": machine.get("id"),
+            "type": "washer" if machine.get("isWasher") else "dryer",
+            "status": machine.get("currentStatus").get("statusId"),
             "time_remaining": (
-                int(machine["currentStatus"]["remainingSeconds"]) // 60
-                if machine["currentStatus"]["statusId"] == "IN_USE"
+                int(machine.get("currentStatus").get("remainingSeconds")) // 60
+                if machine.get("currentStatus").get("statusId") == "IN_USE"
                 else 0
             ),
         }
         for machine in request_json
-        if machine["isWasher"] or machine["isDryer"]
+        if machine.get("isWasher") or machine.get("isDryer")
     ]
 
     return {"washers": washers, "dryers": dryers, "details": detailed}
@@ -163,7 +162,7 @@ def save_data():
             LaundrySnapshot.objects.create(
                 room=laundry_room,
                 date=now,
-                available_washers=room["washers"]["open"],
-                available_dryers=room["dryers"]["open"],
+                available_washers=room.get("washers", {}).get("open", 0),
+                available_dryers=room.get("dryers", {}).get("open", 0),
             )
         return data
