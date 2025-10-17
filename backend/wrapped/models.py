@@ -26,25 +26,17 @@ class GlobalStatKey(StatKey):
 
 
 class Semester(models.Model):
-    semester = models.CharField(max_length=16, primary_key=True, null=False, blank=False)
+    id = models.AutoField(primary_key=True)
+    semester = models.CharField(max_length=16, null=False, blank=False)
     pages = models.ManyToManyField("Page", blank=True)
     current = models.BooleanField(default=False)
 
+
+
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=["current"],
-                condition=models.Q(current=True),
-                name="unique_current_semester",
-                )
-            ]
-    
-    def set_current(self):
-        Semester.objects.update(current=False)
-        self.current = True
-        self.save()
-
-
+            models.UniqueConstraint(fields=["semester"], name="semester_unique")
+        ]
 
     def __str__(self):
         return self.semester
@@ -78,15 +70,20 @@ class IndividualStat(models.Model):
 
 
 class Page(models.Model):
-
-    name = models.CharField(max_length=50, primary_key=True, null=False, blank=False)
-    id = models.IntegerField(null=False, blank=False)
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=50, null=False, blank=False)
+    page_id = models.IntegerField(null=False, blank=False)
     template_path = models.CharField(max_length=200, null=False, blank=False)
     individual_stats = models.ManyToManyField(
         IndividualStatKey, through="IndividualStatPageField", blank=True
     )
     global_stats = models.ManyToManyField(GlobalStatKey, through="GlobalStatPageField", blank=True)
     duration = models.DurationField(blank=True, null=True, default=timedelta(minutes=0))
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["name"], name="page_name_unique")
+        ]
 
     def __str__(self):
         return f"{self.name}"

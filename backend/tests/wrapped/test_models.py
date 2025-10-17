@@ -72,23 +72,6 @@ class WrappedModelsTestCase(TestCase):
             text_field_name="bottom",
         )
 
-    def test_semester_current(self):
-        self.semester.set_current()
-        self.assertTrue(self.semester.current)
-        self.assertFalse(self.semester2.current)
-        self.assertEqual(Semester.objects.get(current=True), self.semester)
-        self.semester2.set_current()
-        self.semester.refresh_from_db()
-        self.semester2.refresh_from_db()
-        self.assertFalse(self.semester.current)
-        self.assertTrue(self.semester2.current)
-    
-    def test_semester_current_unique(self):
-        self.semester.set_current()
-        with self.assertRaises(IntegrityError):
-            self.semester2.current = True
-            self.semester2.save()
-
 
 
 
@@ -137,3 +120,13 @@ class WrappedModelsTestCase(TestCase):
     def test_stat_page_get_value(self):
         self.assertEqual("5", self.ind_field.get_value(self.user, self.semester))
         self.assertEqual("1000", self.glob_field.get_value(self.user, self.semester))
+
+
+    def updating_semester_non_duplicate(self):
+        self.semester.semester = "2025T"
+        self.semester.save()
+        self.assertEqual(Semester.objects.get(semester="2025T"), self.semester)
+        self.assertEqual(Semester.objects.get(semester="2025fa"), None)
+        self.assertEqual(len(Semester.objects.all()), 2)
+        print(Semester.objects.all())
+        
