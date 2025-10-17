@@ -30,6 +30,8 @@ class GroupMembership(models.Model):
 
     is_wharton = models.BooleanField(blank=True, null=True, default=None)
 
+    is_seas = models.BooleanField(blank=True, null=True, default=None)
+
     @property
     def is_invite(self):
         return not self.accepted
@@ -38,13 +40,19 @@ class GroupMembership(models.Model):
         return f"{self.user}<->{self.group}"
 
     def save(self, *args, **kwargs):
-        # determines whether user is wharton or not
+        # Determines whether user is wharton or not
         if self.is_wharton is None:
             self.is_wharton = self.check_wharton()
+        # Determines whether user is seas or not
+        if self.is_seas is None:
+            self.is_seas = self.check_seas()
         super().save(*args, **kwargs)
 
     def check_wharton(self):
         return WhartonGSRBooker.is_wharton(self.user)
+
+    def check_seas(self):
+        return PennGroupsGSRBooker.is_seas(self.user)
 
     class Meta:
         verbose_name = "Group Membership"
@@ -95,7 +103,8 @@ class GSR(models.Model):
 
     KIND_WHARTON = "WHARTON"
     KIND_LIBCAL = "LIBCAL"
-    KIND_OPTIONS = ((KIND_WHARTON, "Wharton"), (KIND_LIBCAL, "Libcal"))
+    KIND_PENNGROUPS = "PENNGRP"
+    KIND_OPTIONS = ((KIND_WHARTON, "Wharton"), (KIND_LIBCAL, "Libcal"), (KIND_PENNGROUPS, "PennGroups"))
 
     kind = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_LIBCAL)
     lid = models.CharField(max_length=255)
@@ -163,4 +172,4 @@ class GSRShareCode(models.Model):
 
 
 # import at end to prevent circular dependency
-from gsr_booking.api_wrapper import WhartonGSRBooker  # noqa: E402
+from gsr_booking.api_wrapper import WhartonGSRBooker, PennGroupsGSRBooker  # noqa: E402

@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
+from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker, PennGroupsGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRShareCode
 from gsr_booking.permissions import IsShareCodeOwner
 from gsr_booking.serializers import (
@@ -163,7 +163,7 @@ class RecentGSRs(generics.ListAPIView):
 
 
 class CheckWharton(APIView):
-
+    """Check if user has Wharton privilege"""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -173,6 +173,17 @@ class CheckWharton(APIView):
                 or WhartonGSRBooker.is_wharton(request.user)
             }
         )
+
+
+class CheckSEAS(APIView):
+    """Check if user has SEAS status"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from gsr_booking.api_wrapper import PennGroupsGSRBooker
+        return Response({
+            "is_seas": PennGroupsGSRBooker.is_seas(request.user)
+        })
 
 
 class Availability(APIView):

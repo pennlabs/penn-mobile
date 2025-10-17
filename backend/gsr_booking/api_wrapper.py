@@ -12,6 +12,7 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+from requests.auth import HTTPBasicAuth
 
 from gsr_booking.models import GSR, GroupMembership, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
@@ -24,6 +25,7 @@ User = get_user_model()
 BASE_URL = "https://libcal.library.upenn.edu"
 API_URL = "https://api2.libcal.com"
 WHARTON_URL = "https://apps.wharton.upenn.edu/gsr/api/v1/"
+PENNGROUPS_URL = "https://grouperWs.apps.upenn.edu/grouperWs/servicesRest/4.9.3/subjects/" # /{PennID}/groups
 
 # unbookable rooms
 LOCATION_BLACKLIST = {3620, 2636, 2611, 3217, 2637, 2634}
@@ -59,7 +61,7 @@ class AbstractBookingWrapper(ABC):
 
 class WhartonBookingWrapper(AbstractBookingWrapper):
     def request(self, *args, **kwargs):
-        """Make a signed request to the libcal API."""
+        """Make a signed request to the Wharton GSR API."""
         # add authorization headers
         kwargs["headers"] = {"Authorization": f"Token {settings.WHARTON_TOKEN}"}
 
@@ -162,6 +164,237 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
         except APIError:
             return None
 
+
+class PennGroupsBookingWrapper(AbstractBookingWrapper):
+    """
+    Handles AGH GSR bookings with SEAS permission checks.
+    Uses separate LibCal credentials specific to AGH.
+    """
+    
+    def __init__(self):
+        # Separate LibCal token for AGH
+        self.token = None
+        self.expiration = timezone.localtime()
+        
+    def update_token(self):
+        """Get AGH-specific LibCal token"""
+        if self.expiration > timezone.localtime():
+            return
+        body = {
+            "client_id": settings.AGH_LIBCAL_ID,  # Different from regular LibCal!
+            "client_secret": settings.AGH_LIBCAL_SECRET,  
+            "grant_type": "client_credentials",
+        }
+
+        response = requests.post(f"{API_URL}/1.1/oauth/token", body).json()
+        
+        if "error" in response:
+            raise APIError(f"AGH LibCal: {response['error']}, {response.get('error_description')}")
+        
+        self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
+        self.token = response["access_token"]
+    
+    def request(self, *args, **kwargs):
+        """Make a signed request to the libcal API using AGH credentials."""
+        self.update_token()
+
+        headers = {"Authorization": f"Bearer {self.token}"}
+
+        # add authorization headers
+        if "headers" in kwargs:
+            kwargs["headers"].update(headers)
+        else:
+            kwargs["headers"] = headers
+
+        try:
+            return requests.request(*args, **kwargs)
+        except (ConnectTimeout, ReadTimeout, ConnectionError):
+            raise APIError("LibCal: Connection timeout")
+    
+    def get_authorized_rooms(self, user):
+        """
+        Check which AGH rooms the user can access via PennGroups API.
+        Returns dict mapping room extensions to their group info, or None if API fails.
+        """
+        try:
+            url = f"{PENNGROUPS_URL}/{user.username}/groups"
+
+            response = requests.get(
+                url,
+                params={"subjectId": user.username},
+                auth=HTTPBasicAuth(settings.PENNGROUPS_USERNAME, settings.PENNGROUPS_PASSWORD),
+                timeout=5,
+            )
+            
+            data = response.json()
+            result = data.get("WsGetGroupsLiteResult", {})
+            metadata = result.get("resultMetadata", {})
+            
+            if metadata.get("resultCode") == "SUBJECT_NOT_FOUND":
+                return {}  # Not a SEAS student
+            
+            if metadata.get("resultCode") == "SUCCESS":
+                groups = result.get("wsGroups", [])
+                # Return mapping of room extension to group info
+                return {
+                    group["extension"]: group
+                    for group in groups 
+                    if "AGH:GSR" in group.get("name", "")
+                }
+            
+            return None  # API error
+            
+        except (ConnectionError, ConnectTimeout, ReadTimeout, Exception) as e:
+            # Log error
+            return None
+    
+    def is_seas(self, user):
+        """Check if user has SEAS status"""
+        rooms = self.get_authorized_rooms(user)
+        return rooms is not None and len(rooms) > 0
+    
+    def book_room(self, rid, start, end, user):
+        """
+        Check SEAS permissions via PennGroups, then book via LibCal using AGH credentials.
+        
+        rid: The LibCal room ID
+        start: ISO format datetime string
+        end: ISO format datetime string
+        user: User object
+        """
+        # First, verify SEAS membership and room authorization
+        authorized_rooms = self.get_authorized_rooms(user)
+        
+        if authorized_rooms is None:
+            raise APIError("PennGroups: Unable to verify SEAS membership")
+        
+        if not authorized_rooms:
+            raise APIError("AGH rooms are only available to SEAS students")
+        
+        # TODO: Verify that the specific room (rid) matches one of the authorized rooms
+        # This requires mapping LibCal room IDs to PennGroups room extensions
+        # For now, we assume if user has ANY AGH access, they can book any AGH room
+        
+         # turns parameters into valid json format, then books room
+        payload = {
+            "start": start,
+            "fname": user.first_name,
+            "lname": user.last_name,
+            "email": user.email,
+            "nickname": f"{user.username} GSR Booking",
+            "q43": f"{user.username} GSR Booking",
+            "bookings": [{"id": rid, "to": end}],
+            "test": False,
+            "q2555": "4-5",  # corresponds to radio button
+            "q2537": "4-5",  # corresponds to radio button
+            "q3699": "SEAS", # Hardcoded to SEAS because we only have SEAS rooms
+            "q2533": "000-000-0000",
+            "q16801": "4",  # has to be between 2 and 4
+            "q16802": "5",  # has to be between 5 and 10
+            "q16805": "Yes",  # has to be "Yes"
+            "q16804": "Yes",  # has to be "Yes"
+        }
+
+        response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=payload)
+
+        if response.status_code != 200:
+            raise APIError(f"GSR Reserve: Error {response.status_code} when reserving data")
+
+        res_json = response.json()
+        # corrects keys in response
+        if "error" not in res_json and "errors" in res_json:
+            errors = res_json["errors"]
+            if isinstance(errors, list):
+                errors = " ".join(errors)
+            res_json["error"] = BeautifulSoup(errors.replace("\n", " "), "html.parser").text.strip()
+            del res_json["errors"]
+        if "error" in res_json:
+            raise APIError("LibCal: " + res_json["error"])
+        return res_json
+    
+    def cancel_room(self, booking_id, user):
+        """Cancels AGH room"""
+        # Optional: verify SEAS status before canceling
+        # For now, allow anyone to cancel their own booking
+        response = self.request("POST", f"{API_URL}/1.1/space/cancel/{booking_id}").json()
+        if "error" in response[0]:
+            raise APIError("LibCal: " + response[0]["error"])
+        return response
+    
+    def get_availability(self, gid, start, end, user):
+        """
+        Returns a list of AGH rooms and their availabilities.
+        Filter to only rooms the user is authorized for.
+        """
+        # First check SEAS membership
+        authorized_rooms = self.get_authorized_rooms(user)
+        
+        if authorized_rooms is None:
+            raise APIError("PennGroups: Unable to verify SEAS membership")
+        
+        if not authorized_rooms:
+            # Not a SEAS student - return empty list
+            return []
+        
+        # Fetch availability from LibCal using AGH credentials
+        range_str = "availability"
+        if start:
+            start_datetime = datetime.datetime.combine(
+                datetime.datetime.strptime(start, "%Y-%m-%d").date(), 
+                datetime.datetime.min.time()
+            )
+            range_str += "=" + start
+            if end and not start == end:
+                range_str += "," + end
+        else:
+            start_datetime = None
+        
+        # Get items for AGH category
+        response = self.request("GET", f"{API_URL}/1.1/space/category/{gid}").json()
+        items = response[0]["items"]
+        items = ",".join([str(item) for item in items])
+        
+        response = self.request("GET", f"{API_URL}/1.1/space/item/{items}?{range_str}")
+        
+        if response.status_code != 200:
+            raise APIError(f"AGH Reserve: Error {response.status_code} when fetching availability")
+        
+        all_rooms = response.json()
+        
+        # Filter to authorized rooms
+        # Match room names against authorized extensions
+        authorized_extensions = set(authorized_rooms.keys())
+        
+        filtered_rooms = []
+        for room in all_rooms:
+            # Extract room extension from name (e.g., "GroupStudyRoom_206" from full name)
+            room_name = room.get("name", "")
+            
+            # Check if any authorized extension matches this room
+            is_authorized = any(
+                ext in room_name for ext in authorized_extensions
+            )
+            
+            if is_authorized:
+                filtered_rooms.append({
+                    "room_name": room["name"],
+                    "id": room["id"],
+                    "availability": [
+                        {"start_time": time["from"], "end_time": time["to"]}
+                        for time in room.get("availability", [])
+                        if not start_datetime or 
+                        datetime.datetime.strptime(time["from"][:-6], "%Y-%m-%dT%H:%M:%S") >= start_datetime
+                    ]
+                })
+        
+        return filtered_rooms
+    
+    def get_reservations(self, user):
+        """
+        LibCal doesn't provide per-user reservations.
+        This is handled via database queries in BookingHandler.
+        """
+        pass
 
 class LibCalBookingWrapper(AbstractBookingWrapper):
     def __init__(self):
@@ -315,9 +548,10 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
 
 
 class BookingHandler:
-    def __init__(self, WBW=None, LBW=None):
+    def __init__(self, WBW=None, LBW=None, PBW=None):
         self.WBW = WBW or WhartonBookingWrapper()
         self.LBW = LBW or LibCalBookingWrapper()
+        self.PBW = PBW or PennGroupsBookingWrapper()
 
     def format_members(self, members):
         PREFIX = "user__"
@@ -394,6 +628,43 @@ class BookingHandler:
         )
         return self.format_members(ret)
 
+    def get_seas_members(self, group):  # ADD THIS METHOD
+        """Get SEAS members with LibCal-style credits for AGH bookings"""
+        day_start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + datetime.timedelta(days=1)
+        two_hours = datetime.timedelta(hours=2)
+        zero_min = datetime.timedelta(minutes=0)
+
+        # AGH/SEAS allows 2 hours a day, same as regular LibCal
+        ret = (
+            GroupMembership.objects.filter(group=group, is_seas=True)
+            .values("user")
+            .annotate(
+                credits=two_hours
+                - Coalesce(
+                    Sum(
+                        F("user__gsrbooking__end") - F("user__gsrbooking__start"),
+                        filter=Q(user__gsrbooking__gsr__kind=GSR.KIND_PENNGROUPS)
+                        & Q(user__gsrbooking__is_cancelled=False)
+                        & Q(user__gsrbooking__start__gte=day_start)
+                        & Q(user__gsrbooking__end__lte=day_end),
+                    ),
+                    zero_min,
+                )
+            )
+            .filter(Q(credits__gt=zero_min))
+            .values(
+                "user__id",
+                "user__username",
+                "user__first_name",
+                "user__last_name",
+                "user__email",
+                "credits",
+            )
+            .order_by("?")[:LIBCAL_CREDIT_LIMIT]
+        )
+        return self.format_members(ret)
+
     def book_room(self, gid, rid, room_name, start, end, user, group=None):
         # NOTE when booking with a group, we are only querying our db for existing bookings,
         # so users in a group who book through wharton may screw up the query
@@ -401,16 +672,28 @@ class BookingHandler:
         start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S%z")
         end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S%z")
 
-        book_func = self.WBW.book_room if gsr.kind == GSR.KIND_WHARTON else self.LBW.book_room
-        members = (
-            [(user, datetime.timedelta(days=99))]
-            if group is None
-            else (
-                self.get_wharton_members(group, gsr.id)
-                if gsr.kind == GSR.KIND_WHARTON
+        # Determine which wrapper and members to use based on GSR kind
+        if gsr.kind == GSR.KIND_WHARTON:
+            book_func = self.WBW.book_room
+            members = (
+                [(user, datetime.timedelta(days=99))]
+                if group is None
+                else self.get_wharton_members(group, gsr.id)
+            )
+        elif gsr.kind == GSR.KIND_PENNGROUPS:
+            book_func = self.PBW.book_room
+            members = (
+                [(user, datetime.timedelta(days=99))]
+                if group is None
+                else self.get_seas_members(group)
+            )
+        else:  # LIBCAL
+            book_func = self.LBW.book_room
+            members = (
+                [(user, datetime.timedelta(days=99))]
+                if group is None
                 else self.get_libcal_members(group)
             )
-        )
 
         total_time_available = sum(
             [time_available for _, time_available in members], datetime.timedelta(minutes=0)
@@ -463,9 +746,15 @@ class BookingHandler:
             if gsr_booking.user != user and gsr_booking.reservation.creator != user:
                 raise APIError("Error: Unauthorized: This reservation was booked by someone else.")
 
-            (self.WBW if gsr_booking.gsr.kind == GSR.KIND_WHARTON else self.LBW).cancel_room(
-                booking_id, gsr_booking.user
-            )
+            # Select appropriate wrapper based on GSR kind
+            if gsr_booking.gsr.kind == GSR.KIND_WHARTON:
+                cancel_func = self.WBW.cancel_room
+            elif gsr_booking.gsr.kind == GSR.KIND_PENNGROUPS:
+                cancel_func = self.PBW.cancel_room
+            else:  # LIBCAL
+                cancel_func = self.LBW.cancel_room
+
+            cancel_func(booking_id, gsr_booking.user)
 
             gsr_booking.is_cancelled = True
             gsr_booking.save()
@@ -475,7 +764,8 @@ class BookingHandler:
                 reservation.is_cancelled = True
                 reservation.save()
         else:
-            for service in [self.WBW, self.LBW]:
+            # Try all services if booking not in our database
+            for service in [self.WBW, self.LBW, self.PBW]:
                 try:
                     service.cancel_room(booking_id, user)
                     return
@@ -493,11 +783,14 @@ class BookingHandler:
                 raise APIError("Error: Non Wharton cannot book Wharton GSR")
             user = wharton_members[randint(0, n - 1)].user
 
-        rooms = (
-            self.WBW.get_availability(lid, start, end, user)
-            if gsr.kind == GSR.KIND_WHARTON
-            else self.LBW.get_availability(gid, start, end, user)
-        )
+        # Select appropriate wrapper based on GSR kind
+        if gsr.kind == GSR.KIND_WHARTON:
+            rooms = self.WBW.get_availability(lid, start, end, user)
+        elif gsr.kind == GSR.KIND_PENNGROUPS:
+            rooms = self.PBW.get_availability(gid, start, end, user)
+        else:  # LIBCAL
+            rooms = self.LBW.get_availability(gid, start, end, user)
+
         return {"name": gsr.name, "gid": gsr.gid, "rooms": rooms}
 
     def get_reservations(self, user, group=None):
@@ -551,4 +844,5 @@ class BookingHandler:
 # initialize singletons
 WhartonGSRBooker = WhartonBookingWrapper()
 LibCalGSRBooker = LibCalBookingWrapper()
-GSRBooker = BookingHandler(WhartonGSRBooker, LibCalGSRBooker)
+PennGroupsGSRBooker = PennGroupsBookingWrapper()
+GSRBooker = BookingHandler(WhartonGSRBooker, LibCalGSRBooker, PennGroupsGSRBooker)

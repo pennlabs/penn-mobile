@@ -17,7 +17,7 @@ class Command(BaseCommand):
                 image_url = (
                     f"https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-{lid}-gid-{gid}.jpg"
                 )
-                kind = GSR.KIND_WHARTON if service == "wharton" else GSR.KIND_LIBCAL
+                kind = GSR.KIND_WHARTON if service == "wharton" else GSR.KIND_PENNGROUPS if service == "penngroups" else GSR.KIND_LIBCAL
                 GSR.objects.create(lid=lid, gid=gid, name=name, kind=kind, image_url=image_url)
 
         self.stdout.write("Uploaded GSRs!")

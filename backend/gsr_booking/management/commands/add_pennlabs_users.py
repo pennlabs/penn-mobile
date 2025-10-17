@@ -21,6 +21,7 @@ class Command(BaseCommand):
 
         users = []
         wharton_statuses = []
+        seas_statuses = []
 
         input_count = int(input("How many users would you like to add? "))
         if input_count <= 0:
@@ -37,11 +38,20 @@ class Command(BaseCommand):
             users.append(user)
             is_wharton = WhartonGSRBooker.is_wharton(user)
             wharton_statuses.append(is_wharton)
+            is_seas = PennGroupsGSRBooker.is_seas(user)
+            seas_statuses.append(is_seas)
 
         # confirm with the admin before proceeding
         self.stdout.write("The following users will be added to the Penn Labs group:")
         for user, is_wharton in zip(users, wharton_statuses):
-            status = "Wharton" if is_wharton else "Regular"
+            status_parts = []
+            if is_wharton:
+                status_parts.append("Wharton")
+            if is_seas:
+                status_parts.append("SEAS")
+            if not status_parts:
+                status_parts.append("Regular")
+            status = " + ".join(status_parts)
             self.stdout.write(f"- {user.username} ({status})")
         confirm = input("Type 'yes' to confirm and proceed: ").strip().lower()
         if confirm != "yes":
@@ -56,6 +66,7 @@ class Command(BaseCommand):
                     "accepted": True,
                     "pennkey_allow": True,
                     "is_wharton": is_wharton,
+                    "is_seas": is_seas,
                 },
             )
             if not created:
@@ -64,6 +75,7 @@ class Command(BaseCommand):
                 membership.accepted = True
                 membership.pennkey_allow = True
                 membership.is_wharton = is_wharton
+                membership.is_seas = is_seas
                 membership.save()
                 self.stdout.write(f"Updated existing membership for {user.username}")
             else:
