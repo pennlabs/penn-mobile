@@ -28,6 +28,26 @@ class GlobalStatKey(StatKey):
 class Semester(models.Model):
     semester = models.CharField(max_length=16, primary_key=True, null=False, blank=False)
     pages = models.ManyToManyField("Page", blank=True)
+    current = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["current"],
+                condition=models.Q(current=True),
+                name="unique_current_semester",
+                )
+            ]
+    
+    def set_current(self):
+        Semester.objects.update(current=False)
+        self.current = True
+        self.save()
+
+
+
+    def __str__(self):
+        return self.semester
 
 
 class GlobalStat(models.Model):
