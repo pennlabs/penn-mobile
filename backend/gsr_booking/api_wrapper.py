@@ -274,7 +274,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         # TODO: Verify that the specific room (rid) matches one of the authorized rooms
         # This requires mapping LibCal room IDs to PennGroups room extensions
         # For now, we assume if user has ANY AGH access, they can book any AGH room
-        
+
          # turns parameters into valid json format, then books room
         payload = {
             "start": start,
@@ -406,8 +406,8 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
         if self.expiration > timezone.localtime():
             return
         body = {
-            "client_id": settings.LIBCAL_ID,
-            "client_secret": settings.LIBCAL_SECRET,
+            "client_id": settings.GENERAL_LIBCAL_ID,
+            "client_secret": settings.GENERAL_LIBCAL_SECRET,
             "grant_type": "client_credentials",
         }
 
@@ -628,7 +628,7 @@ class BookingHandler:
         )
         return self.format_members(ret)
 
-    def get_seas_members(self, group):  # ADD THIS METHOD
+    def get_seas_members(self, group):
         """Get SEAS members with LibCal-style credits for AGH bookings"""
         day_start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + datetime.timedelta(days=1)
@@ -666,6 +666,7 @@ class BookingHandler:
         return self.format_members(ret)
 
     def book_room(self, gid, rid, room_name, start, end, user, group=None):
+        """Book a room using the appropriate wrapper based on the GSR kind"""
         # NOTE when booking with a group, we are only querying our db for existing bookings,
         # so users in a group who book through wharton may screw up the query
         gsr = get_object_or_404(GSR, gid=gid)
