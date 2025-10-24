@@ -104,9 +104,9 @@ class GSR(models.Model):
     KIND_WHARTON = "WHARTON"
     KIND_LIBCAL = "LIBCAL"
     KIND_PENNGROUPS = "PENNGRP"
-    KIND_OPTIONS = ((KIND_WHARTON, "Wharton"), (KIND_LIBCAL, "Libcal"), (KIND_PENNGROUPS, "PennGroups"))
+    KIND_OPTIONS = ((KIND_WHARTON, "Wharton"), (KIND_LIBCAL, "Libcal"), (KIND_PENNGROUPS, "Penngrp"))
 
-    kind = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_LIBCAL)
+    kind = models.CharField(max_length=8, choices=KIND_OPTIONS, default=KIND_LIBCAL)
     lid = models.CharField(max_length=255)
     gid = models.IntegerField(null=True)
     name = models.CharField(max_length=255)

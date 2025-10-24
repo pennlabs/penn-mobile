@@ -1,4 +1,5 @@
 import datetime
+import re
 from abc import ABC, abstractmethod
 from enum import Enum
 from random import randint
@@ -186,7 +187,12 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
             "grant_type": "client_credentials",
         }
 
-        response = requests.post(f"{API_URL}/1.1/oauth/token", body).json()
+        response = requests.post(f"{API_URL}/1.1/oauth/token", body)
+        
+        if response.status_code != 200:
+            raise APIError(f"AGH LibCal: HTTP {response.status_code} when getting token")
+        
+        response = response.json()
         
         if "error" in response:
             raise APIError(f"AGH LibCal: {response['error']}, {response.get('error_description')}")
@@ -209,7 +215,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         try:
             return requests.request(*args, **kwargs)
         except (ConnectTimeout, ReadTimeout, ConnectionError):
-            raise APIError("LibCal: Connection timeout")
+            raise APIError("AGH LibCal: Connection timeout")
     
     def get_authorized_rooms(self, user):
         """
@@ -253,6 +259,21 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         rooms = self.get_authorized_rooms(user)
         return rooms is not None and len(rooms) > 0
     
+    def extract_room_number(self, libcal_name):
+        """Extract room number from LibCal name like 'AGH 334' -> '334'"""
+        match = re.search(r'AGH\s+(\d+)', libcal_name)
+        return match.group(1) if match else None
+    
+    def is_room_authorized(self, libcal_name, authorized_extensions):
+        """Check if LibCal room name corresponds to an authorized PennGroups extension"""
+        room_number = self.extract_room_number(libcal_name)
+        if not room_number:
+            return False
+        
+        # Check if there's a matching extension like "GroupStudyRoom_334"
+        expected_extension = f"GroupStudyRoom_{room_number}"
+        return expected_extension in authorized_extensions
+    
     def book_room(self, rid, start, end, user):
         """
         Check SEAS permissions via PennGroups, then book via LibCal using AGH credentials.
@@ -271,9 +292,19 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         if not authorized_rooms:
             raise APIError("AGH rooms are only available to SEAS students")
         
-        # TODO: Verify that the specific room (rid) matches one of the authorized rooms
-        # This requires mapping LibCal room IDs to PennGroups room extensions
-        # For now, we assume if user has ANY AGH access, they can book any AGH room
+        # Verify that the specific room (rid) matches one of the authorized rooms
+        # We need to fetch the room details to get the room name for authorization
+        try:
+            # Get room details to extract room name for authorization check
+            room_response = self.request("GET", f"{API_URL}/1.1/space/item/{rid}").json()
+            room_name = room_response.get("name", "")
+            
+            # Check if user is authorized for this specific room
+            if not self.is_room_authorized(room_name, authorized_rooms):
+                raise APIError(f"AGH LibCal: User not authorized for room {room_name}")
+                
+        except Exception as e:
+            raise APIError(f"AGH LibCal: Unable to verify room authorization: {str(e)}")
 
          # turns parameters into valid json format, then books room
         payload = {
@@ -320,7 +351,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         if "error" in response[0]:
             raise APIError("LibCal: " + response[0]["error"])
         return response
-    
+
     def get_availability(self, gid, start, end, user):
         """
         Returns a list of AGH rooms and their availabilities.
@@ -361,21 +392,15 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         
         all_rooms = response.json()
         
-        # Filter to authorized rooms
-        # Match room names against authorized extensions
+        # Filter to authorized rooms using proper name mapping
         authorized_extensions = set(authorized_rooms.keys())
         
         filtered_rooms = []
         for room in all_rooms:
-            # Extract room extension from name (e.g., "GroupStudyRoom_206" from full name)
             room_name = room.get("name", "")
             
-            # Check if any authorized extension matches this room
-            is_authorized = any(
-                ext in room_name for ext in authorized_extensions
-            )
-            
-            if is_authorized:
+            # Use proper room name mapping instead of substring matching
+            if self.is_room_authorized(room_name, authorized_extensions):
                 filtered_rooms.append({
                     "room_name": room["name"],
                     "id": room["id"],
