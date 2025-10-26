@@ -1,13 +1,14 @@
 from django.urls import include, path
 from django.views.decorators.cache import cache_page
 from rest_framework import routers
+from utils.cache import Cache
 
 from gsr_booking.views import (
     Availability,
     BookRoom,
     CancelRoom,
-    CheckWharton,
     CheckSEAS,
+    CheckWharton,
     GroupMembershipViewSet,
     GroupViewSet,
     GSRShareCodeViewSet,
@@ -16,7 +17,6 @@ from gsr_booking.views import (
     RecentGSRs,
     ReservationsView,
 )
-from utils.cache import Cache
 
 
 router = routers.DefaultRouter()

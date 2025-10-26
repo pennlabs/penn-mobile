@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
-from gsr_booking.api_wrapper import WhartonGSRBooker
+from gsr_booking.api_wrapper import PennGroupsGSRBooker, WhartonGSRBooker
 from gsr_booking.models import Group, GroupMembership
 
 
