@@ -110,7 +110,7 @@ class GSR(models.Model):
         (KIND_PENNGROUPS, "Penngrp"),
     )
 
-    kind = models.CharField(max_length=8, choices=KIND_OPTIONS, default=KIND_LIBCAL)
+    kind = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_LIBCAL)
     lid = models.CharField(max_length=255)
     gid = models.IntegerField(null=True)
     name = models.CharField(max_length=255)
