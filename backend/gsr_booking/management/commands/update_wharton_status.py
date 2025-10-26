@@ -11,7 +11,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         users = GroupMembership.objects.values_list("user__username", flat=True).distinct()
         print(f"Checking {len(users)} users...")
-        for username in users: 
+        for username in users:
             user = get_user_model().objects.get(username=username)
             is_wharton = WhartonBookingWrapper().is_wharton(user)
             memberships = GroupMembership.objects.filter(user__username=user)

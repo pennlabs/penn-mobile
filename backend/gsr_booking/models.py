@@ -104,7 +104,11 @@ class GSR(models.Model):
     KIND_WHARTON = "WHARTON"
     KIND_LIBCAL = "LIBCAL"
     KIND_PENNGROUPS = "PENNGRP"
-    KIND_OPTIONS = ((KIND_WHARTON, "Wharton"), (KIND_LIBCAL, "Libcal"), (KIND_PENNGROUPS, "Penngrp"))
+    KIND_OPTIONS = (
+        (KIND_WHARTON, "Wharton"),
+        (KIND_LIBCAL, "Libcal"),
+        (KIND_PENNGROUPS, "Penngrp"),
+    )
 
     kind = models.CharField(max_length=8, choices=KIND_OPTIONS, default=KIND_LIBCAL)
     lid = models.CharField(max_length=255)
@@ -172,4 +176,4 @@ class GSRShareCode(models.Model):
 
 
 # import at end to prevent circular dependency
-from gsr_booking.api_wrapper import WhartonGSRBooker, PennGroupsGSRBooker  # noqa: E402
+from gsr_booking.api_wrapper import PennGroupsGSRBooker, WhartonGSRBooker  # noqa: E402

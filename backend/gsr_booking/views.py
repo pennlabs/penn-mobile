@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+<<<<<<< HEAD
 from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker, PennGroupsGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRShareCode
 from gsr_booking.permissions import IsShareCodeOwner
@@ -21,6 +22,11 @@ from gsr_booking.serializers import (
     GSRShareCodeSerializer,
     SharedGSRBookingSerializer,
 )
+=======
+from gsr_booking.api_wrapper import APIError, GSRBooker, PennGroupsGSRBooker, WhartonGSRBooker
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
+from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, GSRSerializer
+>>>>>>> cded762 (Fix remaining linting issues in gsr_booking)
 from pennmobile.analytics import LabsAnalytics
 
 
@@ -180,7 +186,6 @@ class CheckSEAS(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        from gsr_booking.api_wrapper import PennGroupsGSRBooker
         return Response({
             "is_seas": PennGroupsGSRBooker.is_seas(request.user)
         })
