@@ -26,7 +26,9 @@ User = get_user_model()
 BASE_URL = "https://libcal.library.upenn.edu"
 API_URL = "https://api2.libcal.com"
 WHARTON_URL = "https://apps.wharton.upenn.edu/gsr/api/v1/"
-PENNGROUPS_URL = "https://grouperWs.apps.upenn.edu/grouperWs/servicesRest/4.9.3/subjects/"  # noqa: E501
+PENNGROUPS_URL = (
+    "https://grouperWs.apps.upenn.edu/grouperWs/servicesRest/4.9.3/subjects/"  # noqa: E501
+)
 
 # unbookable rooms
 LOCATION_BLACKLIST = {3620, 2636, 2611, 3217, 2637, 2634}
@@ -371,8 +373,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         range_str = "availability"
         if start:
             start_datetime = datetime.datetime.combine(
-                datetime.datetime.strptime(start, "%Y-%m-%d").date(),
-                datetime.datetime.min.time()
+                datetime.datetime.strptime(start, "%Y-%m-%d").date(), datetime.datetime.min.time()
             )
             range_str += "=" + start
             if end and not start == end:
@@ -401,18 +402,23 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
 
             # Use proper room name mapping instead of substring matching
             if self.is_room_authorized(room_name, authorized_extensions):
-                filtered_rooms.append({
-                    "room_name": room["name"],
-                    "id": room["id"],
-                    "availability": [
-                        {"start_time": time["from"], "end_time": time["to"]}
-                        for time in room.get("availability", [])
-                        if (not start_datetime
-                            or datetime.datetime.strptime(
-                                time["from"][:-6], "%Y-%m-%dT%H:%M:%S"
-                            ) >= start_datetime)
-                    ]
-                })
+                filtered_rooms.append(
+                    {
+                        "room_name": room["name"],
+                        "id": room["id"],
+                        "availability": [
+                            {"start_time": time["from"], "end_time": time["to"]}
+                            for time in room.get("availability", [])
+                            if (
+                                not start_datetime
+                                or datetime.datetime.strptime(
+                                    time["from"][:-6], "%Y-%m-%dT%H:%M:%S"
+                                )
+                                >= start_datetime
+                            )
+                        ],
+                    }
+                )
 
         return filtered_rooms
 

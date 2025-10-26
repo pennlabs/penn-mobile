@@ -170,6 +170,7 @@ class RecentGSRs(generics.ListAPIView):
 
 class CheckWharton(APIView):
     """Check if user has Wharton privilege"""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -183,12 +184,11 @@ class CheckWharton(APIView):
 
 class CheckSEAS(APIView):
     """Check if user has SEAS status"""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response({
-            "is_seas": PennGroupsGSRBooker.is_seas(request.user)
-        })
+        return Response({"is_seas": PennGroupsGSRBooker.is_seas(request.user)})
 
 
 class Availability(APIView):
