@@ -53,7 +53,7 @@ class News(APIView):
 
         # Find the centerpiece article with the new class structure
         centerpiece = soup.find("article", {"class": "centerpiece"})
-        
+
         if not centerpiece:
             return None
 
@@ -61,11 +61,11 @@ class News(APIView):
         headline_tag = centerpiece.find("h1", {"class": "headline"})
         if not headline_tag:
             return None
-        
+
         title_link = headline_tag.find("a")
         if not title_link:
             return None
-        
+
         article["title"] = title_link.get_text().strip()
         article["link"] = title_link.get("href", "")
 
@@ -91,7 +91,6 @@ class News(APIView):
             return article
         else:
             return None
-
 
     def get(self, request):
         article = self.get_article()
