@@ -51,36 +51,47 @@ class News(APIView):
 
         soup = BeautifulSoup(html, "html5lib")
 
-        if not (
-            frontpage := soup.find(
-                "div", {"class": "col-lg-6 col-md-5 col-sm-12 frontpage-carousel"}
-            )
-        ):
+        # Find the centerpiece article with the new class structure
+        centerpiece = soup.find("article", {"class": "centerpiece"})
+        
+        if not centerpiece:
             return None
 
-        # adds all variables for news object
-        if not (title_html := frontpage.find("a", {"class": "frontpage-link large-link"})):
+        # Find the headline link
+        headline_tag = centerpiece.find("h1", {"class": "headline"})
+        if not headline_tag:
             return None
-        article["link"] = title_html["href"]
-        article["title"] = title_html.get_text()
+        
+        title_link = headline_tag.find("a")
+        if not title_link:
+            return None
+        
+        article["title"] = title_link.get_text().strip()
+        article["link"] = title_link.get("href", "")
 
-        subtitle_html = frontpage.find("p")
-        if subtitle_html:
-            article["subtitle"] = subtitle_html.get_text()
+        # Find the subtitle/abstract
+        abstract_tag = centerpiece.find("p", {"class": "article-abstract"})
+        if abstract_tag:
+            article["subtitle"] = abstract_tag.get_text().strip()
 
-        timestamp_html = frontpage.find("div", {"class": "timestamp"})
-        if timestamp_html:
-            article["timestamp"] = timestamp_html.get_text().strip()
+        # Find the timestamp
+        timestamp_tag = centerpiece.find("div", {"class": "combo-line"})
+        if timestamp_tag:
+            time_span = timestamp_tag.find("span")
+            if time_span:
+                article["timestamp"] = time_span.get_text().strip()
 
-        image_html = frontpage.find("img")
-        if image_html:
-            article["imageurl"] = image_html["src"]
+        # Find the image
+        image_tag = centerpiece.find("img", {"class": "dom-art-above-image"})
+        if image_tag:
+            article["imageurl"] = image_tag.get("src", "")
 
-        # checks if all variables are there
+        # Check if all required variables are present
         if all(v in article for v in ["title", "subtitle", "timestamp", "imageurl", "link"]):
             return article
         else:
             return None
+
 
     def get(self, request):
         article = self.get_article()
