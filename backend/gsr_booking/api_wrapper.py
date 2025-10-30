@@ -250,11 +250,12 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
                     if "AGH:GSR" in group.get("name", "")
                 }
 
-            return None  # API error
+            raise APIError(f"PennGroups: Unexpected resultCode '{metadata.get('resultCode')}'")
 
-        except (ConnectionError, ConnectTimeout, ReadTimeout, Exception):
-            # Log error
-            return None
+        except (ConnectionError, ConnectTimeout, ReadTimeout):
+            raise APIError("PennGroups: Connection timeout")
+        except Exception as e:
+            raise APIError(f"PennGroups: Error accessing API: {str(e)}")
 
     def is_seas(self, user):
         """Check if user has SEAS status"""
