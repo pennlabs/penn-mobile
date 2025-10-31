@@ -5,15 +5,21 @@ from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, viewsets
+from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
-from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, GSRSerializer
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRShareCode
+from gsr_booking.serializers import (
+    GroupMembershipSerializer,
+    GroupSerializer,
+    GSRSerializer,
+    GSRShareCodeSerializer,
+    SharedGSRBookingSerializer,
+)
 from pennmobile.analytics import LabsAnalytics
 
 
@@ -102,7 +108,9 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         if membership.user is None or membership.user != request.user:
             return HttpResponseForbidden()
         if not membership.is_invite:
-            return Response({"message": "cannot decline an invite that has been accepted."}, 400)
+            return Response(
+                {"message": "cannot decline an invite that has been accepted."}, status=400
+            )
 
         resp = {
             "message": "invite declined",
@@ -275,3 +283,94 @@ class ReservationsView(APIView):
                 request.user, request.user.booking_groups.filter(name="Penn Labs").first()
             )
         )
+
+
+class CreateShareCode(APIView):
+    """
+    Creates or retrieves a share code for a GSR booking
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        booking_id = request.data.get("booking_id")
+
+        if not booking_id:
+            return Response({"error": "booking_id is required"}, status=400)
+
+        booking = GSRBooking.objects.filter(id=booking_id).first()
+        if booking is None:
+            return Response({"error": "Booking not found"}, status=404)
+
+        owner = booking.reservation.creator if booking.reservation else booking.user
+        if owner != request.user and not request.user.is_staff:
+            return Response(
+                {"error": "You do not have permission to share this booking"},
+                status=403,
+            )
+
+        try:
+            existing_code = GSRShareCode.objects.filter(booking=booking).first()
+
+            if existing_code and existing_code.is_valid():
+                serializer = GSRShareCodeSerializer(existing_code)
+                return Response(serializer.data)
+
+            share_code = GSRShareCode.objects.create(
+                code=GSRShareCode.generate_code(),
+                booking=booking,
+                owner=request.user,
+            )
+
+            serializer = GSRShareCodeSerializer(share_code)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except APIError as e:
+            return Response({"error": str(e)}, status=400)
+
+
+class ViewSharedBooking(APIView):
+    """
+    View a booking using a share code, no authentication is needed
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, code):
+        try:
+            share_code = GSRShareCode.objects.filter(code=code).first()
+
+            if share_code is None:
+                return Response({"error": "Invalid share code"}, status=404)
+
+            if not share_code.is_valid():
+                return Response(
+                    {"error": "This share code has expired or been revoked"},
+                    status=400,
+                )
+
+            serializer = SharedGSRBookingSerializer(share_code.booking)
+            return Response(serializer.data)
+        except APIError as e:
+            return Response({"error": str(e)}, status=400)
+
+
+class RevokeShareCode(APIView):
+    """
+    Revoke a share code (only owner can revoke)
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, code):
+        share_code = GSRShareCode.objects.filter(code=code).first()
+
+        if share_code is None:
+            return Response({"error": "Invalid share code"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if user is the owner or staff
+        if share_code.owner != request.user and not request.user.is_staff:
+            return Response({"error": "You can only revoke your own share codes"}, status=403)
+
+        share_code.delete()
+
+        return Response({"detail": "success"})

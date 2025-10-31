@@ -7,12 +7,15 @@ from gsr_booking.views import (
     BookRoom,
     CancelRoom,
     CheckWharton,
+    CreateShareCode,
     GroupMembershipViewSet,
     GroupViewSet,
     Locations,
     MyMembershipViewSet,
     RecentGSRs,
     ReservationsView,
+    RevokeShareCode,
+    ViewSharedBooking,
 )
 from utils.cache import Cache
 
@@ -32,4 +35,7 @@ urlpatterns = [
     path("book/", BookRoom.as_view(), name="book"),
     path("cancel/", CancelRoom.as_view(), name="cancel"),
     path("reservations/", ReservationsView.as_view(), name="reservations"),
+    path("share/", CreateShareCode.as_view(), name="share-create"),
+    path("share/<str:code>/", ViewSharedBooking.as_view(), name="share-view"),
+    path("share/<str:code>/revoke/", RevokeShareCode.as_view(), name="share-revoke"),
 ]
