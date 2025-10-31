@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
         # confirm with the admin before proceeding
         self.stdout.write("The following users will be added to the Penn Labs group:")
-        for user, is_wharton in zip(users, wharton_statuses):
+        for user, is_wharton, is_seas in zip(users, wharton_statuses, seas_statuses):
             status_parts = []
             if is_wharton:
                 status_parts.append("Wharton")
@@ -57,7 +57,7 @@ class Command(BaseCommand):
         if confirm != "yes":
             self.stdout.write("Aborted.")
             return
-        for user, is_wharton in zip(users, wharton_statuses):
+        for user, is_wharton, is_seas in zip(users, wharton_statuses, seas_statuses):
             membership, created = GroupMembership.objects.get_or_create(
                 user=user,
                 group=group,
