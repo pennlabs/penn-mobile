@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
 
+from utils.errors import APIError
+
 
 User = get_user_model()
 
@@ -49,10 +51,16 @@ class GroupMembership(models.Model):
         super().save(*args, **kwargs)
 
     def check_wharton(self):
-        return WhartonGSRBooker.is_wharton(self.user)
+        try:
+            return WhartonGSRBooker.is_wharton(self.user)
+        except APIError:
+            return False
 
     def check_seas(self):
-        return PennGroupsGSRBooker.is_seas(self.user)
+        try:
+            return PennGroupsGSRBooker.is_seas(self.user)
+        except APIError:
+            return False
 
     class Meta:
         verbose_name = "Group Membership"

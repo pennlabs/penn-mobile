@@ -165,7 +165,9 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
             res_json = response.json()
             return res_json.get("type") == "whartonMBA" or res_json.get("type") == "whartonUGR"
         except APIError:
-            return None
+            raise
+        except Exception as e:
+            raise APIError(f"Wharton: Error checking privileges: {str(e)}")
 
 
 class PennGroupsBookingWrapper(AbstractBookingWrapper):
@@ -260,7 +262,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
     def is_seas(self, user):
         """Check if user has SEAS status"""
         rooms = self.get_authorized_rooms(user)
-        return rooms is not None and len(rooms) > 0
+        return len(rooms) > 0  # Will raise APIError if rooms is None
 
     def extract_room_number(self, libcal_name):
         """Extract room number from LibCal name like 'AGH 334' -> '334'"""
