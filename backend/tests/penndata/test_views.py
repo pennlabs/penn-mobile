@@ -16,9 +16,18 @@ from portal.models import Poll, Post
 
 
 def fakeFitnessGet(url, *args, **kwargs):
-    if "docs.google.com/spreadsheets/" in url:
-        with open("tests/penndata/fitness_snapshot.html", "rb") as f:
-            m = mock.MagicMock(content=f.read())
+    if "goboardapi.azurewebsites.net/api" in url:
+        with open("tests/penndata/fitness_snapshot.js", "rb") as f:
+            raw = f.read()
+        m = mock.MagicMock()
+        m.content = raw
+        m.status_code = 200
+        m.headers = {"Content-Type": "application/json"}
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+        except Exception:
+            parsed = None
+        m.json = mock.MagicMock(return_value=parsed)
         return m
     else:
         raise NotImplementedError
@@ -205,7 +214,7 @@ class TestGetFitnessSnapshot(TestCase):
         call_command("get_fitness_snapshot")
 
         # checks that all fitness snapshots have been accounted for
-        self.assertEqual(FitnessSnapshot.objects.all().count(), 9)
+        self.assertEqual(FitnessSnapshot.objects.all().count(), 12)
 
         # asserts that fields are correct, and that all snapshots
         # have been accounted for
@@ -215,7 +224,7 @@ class TestGetFitnessSnapshot(TestCase):
         call_command("get_fitness_snapshot")
 
         # does not create duplicate snapshots
-        self.assertEqual(FitnessSnapshot.objects.all().count(), 9)
+        self.assertEqual(FitnessSnapshot.objects.all().count(), 12)
 
 
 class TestFitnessUsage(TestCase):

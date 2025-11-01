@@ -6,15 +6,18 @@ from penndata.models import FitnessRoom
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         fitness_rooms = [
-            "4th Floor Fitness",
-            "3rd Floor Fitness",
-            "2nd Floor Strength",
-            "Basketball Courts",
-            "MPR",
             "Climbing Wall",
+            "Rec Lounge",
             "1st Floor Fitness",
-            "Pool-Shallow",
-            "Pool-Deep",
+            "Court 1",
+            "Court 2",
+            "Court 3",
+            "Multipurpose Room",
+            "2nd Floor Weight Room",
+            "3rd Floor Fitness Room",
+            "4th Floor Fitness Room",
+            "Studio 409",
+            "Sheerr Pool",
         ]
         for room in fitness_rooms:
             obj, _ = FitnessRoom.objects.get_or_create(name=room)

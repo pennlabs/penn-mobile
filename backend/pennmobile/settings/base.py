@@ -180,6 +180,9 @@ LIBCAL_ID = os.environ.get("LIBCAL_ID", None)
 LIBCAL_SECRET = os.environ.get("LIBCAL_SECRET", None)
 WHARTON_TOKEN = os.environ.get("WHARTON_TOKEN", None)
 
+# Fitness Token
+FITNESS_TOKEN = os.environ.get("FITNESS_TOKEN", None)
+
 # Upload file storage
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", None)
