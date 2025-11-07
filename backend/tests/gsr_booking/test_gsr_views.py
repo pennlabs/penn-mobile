@@ -72,9 +72,10 @@ class TestGSRs(TestCase):
         res_json = json.loads(response.content)
 
         # Regular users should only see LibCal GSRs
+        # Check kinds from response data directly
         for entry in res_json:
-            gsr = GSR.objects.get(id=entry["id"])
-            self.assertEqual(gsr.kind, GSR.KIND_LIBCAL)
+            self.assertIn("kind", entry)
+            self.assertEqual(entry["kind"], GSR.KIND_LIBCAL)
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=True)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
@@ -86,8 +87,8 @@ class TestGSRs(TestCase):
         # Wharton users should see LibCal and Wharton GSRs
         kinds_seen = set()
         for entry in res_json:
-            gsr = GSR.objects.get(id=entry["id"])
-            kinds_seen.add(gsr.kind)
+            self.assertIn("kind", entry)
+            kinds_seen.add(entry["kind"])
 
         self.assertIn(GSR.KIND_LIBCAL, kinds_seen)
         self.assertIn(GSR.KIND_WHARTON, kinds_seen)
@@ -103,8 +104,8 @@ class TestGSRs(TestCase):
         # SEAS users should see LibCal and PennGroups GSRs
         kinds_seen = set()
         for entry in res_json:
-            gsr = GSR.objects.get(id=entry["id"])
-            kinds_seen.add(gsr.kind)
+            self.assertIn("kind", entry)
+            kinds_seen.add(entry["kind"])
 
         self.assertIn(GSR.KIND_LIBCAL, kinds_seen)
         self.assertIn(GSR.KIND_PENNGROUPS, kinds_seen)
@@ -120,8 +121,8 @@ class TestGSRs(TestCase):
         # Users with both should see all kinds
         kinds_seen = set()
         for entry in res_json:
-            gsr = GSR.objects.get(id=entry["id"])
-            kinds_seen.add(gsr.kind)
+            self.assertIn("kind", entry)
+            kinds_seen.add(entry["kind"])
 
         self.assertIn(GSR.KIND_LIBCAL, kinds_seen)
         self.assertIn(GSR.KIND_WHARTON, kinds_seen)
@@ -139,18 +140,19 @@ class TestGSRs(TestCase):
         res_json = json.loads(response.content)
 
         # Penn Labs members should see all GSRs
-        all_gsrs = GSR.objects.all()
-        self.assertEqual(len(res_json), len(all_gsrs))
-
-        # Verify all kinds are present
+        # Verify all kinds are present in the response
         kinds_seen = set()
         for entry in res_json:
-            gsr = GSR.objects.get(id=entry["id"])
-            kinds_seen.add(gsr.kind)
+            self.assertIn("kind", entry)
+            kinds_seen.add(entry["kind"])
 
-        # Should see all available kinds
+        # Should see all available kinds (check that all kinds in database are in response)
         expected_kinds = set(GSR.objects.values_list("kind", flat=True).distinct())
         self.assertEqual(kinds_seen, expected_kinds)
+
+        # Verify response contains all GSRs (check count matches)
+        all_gsrs_count = GSR.objects.count()
+        self.assertEqual(len(res_json), all_gsrs_count)
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", side_effect=APIError("API Error"))
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", side_effect=APIError("API Error"))
@@ -161,8 +163,8 @@ class TestGSRs(TestCase):
 
         # Even if API calls fail, users should still see LibCal GSRs
         for entry in res_json:
-            gsr = GSR.objects.get(id=entry["id"])
-            self.assertEqual(gsr.kind, GSR.KIND_LIBCAL)
+            self.assertIn("kind", entry)
+            self.assertEqual(entry["kind"], GSR.KIND_LIBCAL)
 
 
 class TestGSRFunctions(TestCase):
