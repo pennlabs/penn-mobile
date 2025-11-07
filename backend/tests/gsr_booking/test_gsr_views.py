@@ -7,7 +7,8 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from gsr_booking.models import GSR, Group, GSRBooking
+from gsr_booking.api_wrapper import APIError
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 
 
 User = get_user_model()
@@ -50,7 +51,9 @@ class TestGSRs(TestCase):
         test_user = User.objects.create_user("user1", "user")
         Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
-    def test_get_location(self):
+    @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
+    @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
+    def test_get_location(self, mock_is_seas, mock_is_wharton):
         response = self.client.get(reverse("locations"))
         res_json = json.loads(response.content)
         for entry in res_json:
@@ -60,6 +63,106 @@ class TestGSRs(TestCase):
                 self.assertEquals(entry["name"], "Amy Gutmann Hall")
             if entry["id"] == 3:
                 self.assertEquals(entry["name"], "Academic Research")
+
+    @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
+    @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
+    def test_get_location_regular_user(self, mock_is_seas, mock_is_wharton):
+        """Test that regular users only see LibCal GSRs"""
+        response = self.client.get(reverse("locations"))
+        res_json = json.loads(response.content)
+
+        # Regular users should only see LibCal GSRs
+        for entry in res_json:
+            gsr = GSR.objects.get(id=entry["id"])
+            self.assertEqual(gsr.kind, GSR.KIND_LIBCAL)
+
+    @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=True)
+    @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
+    def test_get_location_wharton_user(self, mock_is_seas, mock_is_wharton):
+        """Test that Wharton users see LibCal and Wharton GSRs"""
+        response = self.client.get(reverse("locations"))
+        res_json = json.loads(response.content)
+
+        # Wharton users should see LibCal and Wharton GSRs
+        kinds_seen = set()
+        for entry in res_json:
+            gsr = GSR.objects.get(id=entry["id"])
+            kinds_seen.add(gsr.kind)
+
+        self.assertIn(GSR.KIND_LIBCAL, kinds_seen)
+        self.assertIn(GSR.KIND_WHARTON, kinds_seen)
+        self.assertNotIn(GSR.KIND_PENNGROUPS, kinds_seen)
+
+    @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
+    @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=True)
+    def test_get_location_seas_user(self, mock_is_seas, mock_is_wharton):
+        """Test that SEAS users see LibCal and PennGroups GSRs"""
+        response = self.client.get(reverse("locations"))
+        res_json = json.loads(response.content)
+
+        # SEAS users should see LibCal and PennGroups GSRs
+        kinds_seen = set()
+        for entry in res_json:
+            gsr = GSR.objects.get(id=entry["id"])
+            kinds_seen.add(gsr.kind)
+
+        self.assertIn(GSR.KIND_LIBCAL, kinds_seen)
+        self.assertIn(GSR.KIND_PENNGROUPS, kinds_seen)
+        self.assertNotIn(GSR.KIND_WHARTON, kinds_seen)
+
+    @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=True)
+    @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=True)
+    def test_get_location_wharton_seas_user(self, mock_is_seas, mock_is_wharton):
+        """Test that users with both Wharton and SEAS access see all non-Penn Labs GSRs"""
+        response = self.client.get(reverse("locations"))
+        res_json = json.loads(response.content)
+
+        # Users with both should see all kinds
+        kinds_seen = set()
+        for entry in res_json:
+            gsr = GSR.objects.get(id=entry["id"])
+            kinds_seen.add(gsr.kind)
+
+        self.assertIn(GSR.KIND_LIBCAL, kinds_seen)
+        self.assertIn(GSR.KIND_WHARTON, kinds_seen)
+        self.assertIn(GSR.KIND_PENNGROUPS, kinds_seen)
+
+    def test_get_location_penn_labs_member(self):
+        """Test that Penn Labs members see all GSRs regardless of their individual status"""
+        # Add user to Penn Labs group
+        penn_labs_group = Group.objects.get(name="Penn Labs")
+        GroupMembership.objects.create(
+            user=self.user, group=penn_labs_group, accepted=True, type=GroupMembership.MEMBER
+        )
+
+        response = self.client.get(reverse("locations"))
+        res_json = json.loads(response.content)
+
+        # Penn Labs members should see all GSRs
+        all_gsrs = GSR.objects.all()
+        self.assertEqual(len(res_json), len(all_gsrs))
+
+        # Verify all kinds are present
+        kinds_seen = set()
+        for entry in res_json:
+            gsr = GSR.objects.get(id=entry["id"])
+            kinds_seen.add(gsr.kind)
+
+        # Should see all available kinds
+        expected_kinds = set(GSR.objects.values_list("kind", flat=True).distinct())
+        self.assertEqual(kinds_seen, expected_kinds)
+
+    @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", side_effect=APIError("API Error"))
+    @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", side_effect=APIError("API Error"))
+    def test_get_location_api_error_handling(self, mock_is_seas, mock_is_wharton):
+        """Test that API errors are handled gracefully and users still see LibCal GSRs"""
+        response = self.client.get(reverse("locations"))
+        res_json = json.loads(response.content)
+
+        # Even if API calls fail, users should still see LibCal GSRs
+        for entry in res_json:
+            gsr = GSR.objects.get(id=entry["id"])
+            self.assertEqual(gsr.kind, GSR.KIND_LIBCAL)
 
 
 class TestGSRFunctions(TestCase):
@@ -198,3 +301,115 @@ class TestGSRFunctions(TestCase):
         self.assertIn("gid", gsr)
         self.assertIn("name", gsr)
         self.assertIn("image_url", gsr)
+
+
+class TestSEASViews(TestCase):
+    def setUp(self):
+        call_command("load_gsrs")
+        self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.is_seas", return_value=True)
+    def test_check_seas_true(self, mock_is_seas):
+        response = self.client.get(reverse("is-seas"))
+        res_json = json.loads(response.content)
+        self.assertEqual(1, len(res_json))
+        self.assertTrue(res_json["is_seas"])
+
+    @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.is_seas", return_value=False)
+    def test_check_seas_false(self, mock_is_seas):
+        response = self.client.get(reverse("is-seas"))
+        res_json = json.loads(response.content)
+        self.assertEqual(1, len(res_json))
+        self.assertFalse(res_json["is_seas"])
+
+
+def penngroups_availability(*args):
+    """Mock AGH availability response"""
+    return {
+        "name": "Amy Gutmann Hall",
+        "gid": 42437,
+        "rooms": [
+            {
+                "room_name": "AGH 206",
+                "id": 172129,
+                "availability": [
+                    {
+                        "start_time": "2025-10-30T23:30:00-04:00",
+                        "end_time": "2025-10-30T23:59:00-04:00",
+                    }
+                ],
+            },
+            {
+                "room_name": "AGH 334",
+                "id": 191384,
+                "availability": [
+                    {
+                        "start_time": "2025-10-30T23:30:00-04:00",
+                        "end_time": "2025-10-30T23:59:00-04:00",
+                    }
+                ],
+            },
+        ],
+    }
+
+
+def penngroups_book_cancel(*args):
+    """Mock AGH book/cancel response"""
+    pass
+
+
+class TestPennGroupsViews(TestCase):
+    def setUp(self):
+        call_command("load_gsrs")
+        self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+        test_user = User.objects.create_user("user1", "user")
+        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
+
+    @mock.patch("gsr_booking.api_wrapper.BookingHandler.get_availability", penngroups_availability)
+    def test_availability_penngroups(self):
+        """Test AGH availability endpoint"""
+        response = self.client.get(reverse("availability", args=["20157", "42437"]))
+        res_json = json.loads(response.content)
+        self.assertEqual(3, len(res_json))
+        self.assertIn("name", res_json)
+        self.assertIn("gid", res_json)
+        self.assertIn("rooms", res_json)
+        self.assertEqual("Amy Gutmann Hall", res_json["name"])
+        if len(res_json["rooms"]) > 0:
+            room = res_json["rooms"][0]
+            self.assertIn("room_name", room)
+            self.assertIn("id", room)
+            self.assertIn("availability", room)
+
+    @mock.patch("gsr_booking.api_wrapper.BookingHandler.book_room", penngroups_book_cancel)
+    def test_book_penngroups(self):
+        """Test AGH booking endpoint"""
+        payload = {
+            "start_time": "2025-10-30T23:30:00-04:00",
+            "end_time": "2025-10-31T00:00:00-04:00",
+            "room_name": "AGH 206",
+            "id": 172129,
+            "gid": 42437,
+        }
+        response = self.client.post(
+            reverse("book"), json.dumps(payload), content_type="application/json"
+        )
+        res_json = json.loads(response.content)
+        self.assertEqual(1, len(res_json))
+        self.assertEqual("success", res_json["detail"])
+
+    @mock.patch("gsr_booking.api_wrapper.BookingHandler.cancel_room", penngroups_book_cancel)
+    def test_cancel_penngroups(self):
+        """Test AGH cancel endpoint"""
+        payload = {"booking_id": "476df5dc92c1"}
+        response = self.client.post(
+            reverse("cancel"), json.dumps(payload), content_type="application/json"
+        )
+        res_json = json.loads(response.content)
+        self.assertEqual(1, len(res_json))
+        self.assertEqual("success", res_json["detail"])

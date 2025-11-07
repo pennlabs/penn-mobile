@@ -150,7 +150,38 @@ class Locations(generics.ListAPIView):
     """Lists all available locations to book from"""
 
     serializer_class = GSRSerializer
-    queryset = GSR.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Penn Labs members can see all GSRs
+        if user.booking_groups.filter(name="Penn Labs").exists():
+            return GSR.objects.all()
+
+        # For other users, filter based on their memberships
+        accessible_kinds = []
+
+        # Check if user has Wharton access
+        try:
+            if WhartonGSRBooker.is_wharton(user):
+                accessible_kinds.append(GSR.KIND_WHARTON)
+        except APIError:
+            # If API call fails, user doesn't have Wharton access
+            pass
+
+        # Check if user has SEAS access
+        try:
+            if PennGroupsGSRBooker.is_seas(user):
+                accessible_kinds.append(GSR.KIND_PENNGROUPS)
+        except APIError:
+            # If API call fails, user doesn't have SEAS access
+            pass
+
+        # LibCal is accessible to everyone
+        accessible_kinds.append(GSR.KIND_LIBCAL)
+
+        return GSR.objects.filter(kind__in=accessible_kinds)
 
 
 class RecentGSRs(generics.ListAPIView):
@@ -188,7 +219,12 @@ class CheckSEAS(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response({"is_seas": PennGroupsGSRBooker.is_seas(request.user)})
+        return Response(
+            {
+                "is_seas": request.user.booking_groups.filter(name="Penn Labs").exists()
+                or PennGroupsGSRBooker.is_seas(request.user)
+            }
+        )
 
 
 class Availability(APIView):
