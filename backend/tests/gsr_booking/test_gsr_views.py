@@ -139,8 +139,6 @@ class TestGSRs(TestCase):
     def test_get_location_penn_labs_member(self):
         """Test that Penn Labs members see all GSRs regardless of their individual status"""
         # Add user to Penn Labs group
-        print("GSR count:", GSR.objects.count())  # Test that all GSRs are loaded
-
         penn_labs_group = Group.objects.get(name="Penn Labs")
         GroupMembership.objects.create(
             user=self.user, group=penn_labs_group, accepted=True, type=GroupMembership.MEMBER
@@ -156,13 +154,27 @@ class TestGSRs(TestCase):
             self.assertIn("kind", entry)
             kinds_seen.add(entry["kind"])
 
-        # Should see all available kinds (check that all kinds in database are in response)
+        # Get debug info for failure messages
+        all_gsrs_count = GSR.objects.count()
         expected_kinds = set(GSR.objects.values_list("kind", flat=True).distinct())
-        self.assertEqual(kinds_seen, expected_kinds)
+        gsr_kinds_in_db = {kind: GSR.objects.filter(kind=kind).count() for kind in expected_kinds}
+
+        # Should see all available kinds (check that all kinds in database are in response)
+        self.assertEqual(
+            kinds_seen,
+            expected_kinds,
+            f"Expected kinds {expected_kinds} but got {kinds_seen}. "
+            f"Total GSRs in DB: {all_gsrs_count}, GSRs by kind: {gsr_kinds_in_db}, "
+            f"Response count: {len(res_json)}",
+        )
 
         # Verify response contains all GSRs (check count matches)
-        all_gsrs_count = GSR.objects.count()
-        self.assertEqual(len(res_json), all_gsrs_count)
+        self.assertEqual(
+            len(res_json),
+            all_gsrs_count,
+            f"Expected {all_gsrs_count} GSRs in response but got {len(res_json)}. "
+            f"Kinds in DB: {expected_kinds}, Kinds in response: {kinds_seen}",
+        )
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", side_effect=APIError("API Error"))
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", side_effect=APIError("API Error"))
