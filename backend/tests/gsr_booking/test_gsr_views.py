@@ -54,15 +54,23 @@ class TestGSRs(TestCase):
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
     def test_get_location(self, mock_is_seas, mock_is_wharton):
+        """Test that regular users do not see Wharton or PennGroups GSRs"""
         response = self.client.get(reverse("locations"))
         res_json = json.loads(response.content)
+
+        # Regular users should NOT see Wharton or PennGroups GSRs
+        # Verify that Huntsman (Wharton), Amy Gutmann Hall (PennGroups),
+        # and Academic Research (Wharton) are not in the response
+        gsr_ids = [entry["id"] for entry in res_json]
+        self.assertNotIn(1, gsr_ids, "Regular users should not see Huntsman (Wharton GSR)")
+        self.assertNotIn(
+            2, gsr_ids, "Regular users should not see Amy Gutmann Hall (PennGroups GSR)"
+        )
+        self.assertNotIn(3, gsr_ids, "Regular users should not see Academic Research (Wharton GSR)")
+
+        # Verify all returned GSRs are LibCal
         for entry in res_json:
-            if entry["id"] == 1:
-                self.assertEquals(entry["name"], "Huntsman")
-            if entry["id"] == 2:
-                self.assertEquals(entry["name"], "Amy Gutmann Hall")
-            if entry["id"] == 3:
-                self.assertEquals(entry["name"], "Academic Research")
+            self.assertEqual(entry["kind"], GSR.KIND_LIBCAL)
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
@@ -131,6 +139,8 @@ class TestGSRs(TestCase):
     def test_get_location_penn_labs_member(self):
         """Test that Penn Labs members see all GSRs regardless of their individual status"""
         # Add user to Penn Labs group
+        print("GSR count:", GSR.objects.count())  # Test that all GSRs are loaded
+
         penn_labs_group = Group.objects.get(name="Penn Labs")
         GroupMembership.objects.create(
             user=self.user, group=penn_labs_group, accepted=True, type=GroupMembership.MEMBER
