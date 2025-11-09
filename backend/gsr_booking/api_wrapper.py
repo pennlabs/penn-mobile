@@ -228,13 +228,16 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         """
         try:
             url = f"{PENNGROUPS_URL}/{user.username}/groups"
-
             response = requests.get(
                 url,
                 params={"subjectId": user.username},
                 auth=HTTPBasicAuth(settings.PENNGROUPS_USERNAME, settings.PENNGROUPS_PASSWORD),
                 timeout=5,
             )
+
+            # Check HTTP status first
+            if response.status_code != 200:
+                raise APIError(f"PennGroups: HTTP {response.status_code}")
 
             data = response.json()
             result = data.get("WsGetGroupsLiteResult", {})
@@ -244,8 +247,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
                 return {}  # Not a SEAS student
 
             if metadata.get("resultCode") == "SUCCESS":
-                groups = result.get("wsGroups", [])
-                # Return mapping of room extension to group info
+                groups = result.get("wsGroups", []) or []  # Handle None case
                 return {
                     group["extension"]: group
                     for group in groups
@@ -254,6 +256,8 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
 
             raise APIError(f"PennGroups: Unexpected resultCode '{metadata.get('resultCode')}'")
 
+        except requests.exceptions.JSONDecodeError:
+            raise APIError("PennGroups: Invalid JSON response")
         except (ConnectionError, ConnectTimeout, ReadTimeout):
             raise APIError("PennGroups: Connection timeout")
         except Exception as e:
@@ -261,8 +265,11 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
 
     def is_seas(self, user):
         """Check if user has SEAS status"""
-        rooms = self.get_authorized_rooms(user)
-        return len(rooms) > 0  # Will raise APIError if rooms is None
+        try:
+            rooms = self.get_authorized_rooms(user)
+            return len(rooms) > 0
+        except APIError:
+            raise
 
     def extract_room_number(self, libcal_name):
         """Extract room number from LibCal name like 'AGH 334' -> '334'"""
@@ -289,25 +296,34 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         user: User object
         """
         # First, verify SEAS membership and room authorization
-        authorized_rooms = self.get_authorized_rooms(user)
-
-        if authorized_rooms is None:
+        try:
+            authorized_rooms = self.get_authorized_rooms(user)
+        except APIError:
             raise APIError("PennGroups: Unable to verify SEAS membership")
 
         if not authorized_rooms:
             raise APIError("AGH rooms are only available to SEAS students")
 
         # Verify that the specific room (rid) matches one of the authorized rooms
-        # We need to fetch the room details to get the room name for authorization
         try:
             # Get room details to extract room name for authorization check
-            room_response = self.request("GET", f"{API_URL}/1.1/space/item/{rid}").json()
-            room_name = room_response.get("name", "")
+            room_response = self.request("GET", f"{API_URL}/1.1/space/item/{rid}")
+
+            # Check status code BEFORE calling .json()
+            if room_response.status_code != 200:
+                raise APIError(
+                    f"AGH LibCal: Room not found or unavailable (HTTP {room_response.status_code})"
+                )
+
+            room_data = room_response.json()
+            room_name = room_data.get("name", "")
 
             # Check if user is authorized for this specific room
             if not self.is_room_authorized(room_name, authorized_rooms):
                 raise APIError(f"AGH LibCal: User not authorized for room {room_name}")
 
+        except APIError:
+            raise
         except Exception as e:
             raise APIError(f"AGH LibCal: Unable to verify room authorization: {str(e)}")
 
@@ -363,13 +379,12 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         Filter to only rooms the user is authorized for.
         """
         # First check SEAS membership
-        authorized_rooms = self.get_authorized_rooms(user)
-
-        if authorized_rooms is None:
-            raise APIError("PennGroups: Unable to verify SEAS membership")
+        try:
+            authorized_rooms = self.get_authorized_rooms(user)
+        except APIError:
+            return []
 
         if not authorized_rooms:
-            # Not a SEAS student - return empty list
             return []
 
         # Fetch availability from LibCal using AGH credentials

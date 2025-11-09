@@ -2,7 +2,6 @@ import json
 from unittest import mock
 
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -12,6 +11,40 @@ from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 
 
 User = get_user_model()
+
+
+def create_test_gsrs(cls):
+    """Helper to create test GSRs and store references in the class"""
+    cls.huntsman_gsr, _ = GSR.objects.get_or_create(
+        lid="JMHH",
+        gid=1,
+        defaults={
+            "name": "Huntsman",
+            "kind": GSR.KIND_WHARTON,
+            "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-JMHH-gid-1.jpg",
+            "in_use": True,
+        },
+    )
+    cls.agh_gsr, _ = GSR.objects.get_or_create(
+        lid="20157",
+        gid=42437,
+        defaults={
+            "name": "Amy Gutmann Hall",
+            "kind": GSR.KIND_PENNGROUPS,
+            "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-20157-gid-42437.jpg",
+            "in_use": True,
+        },
+    )
+    cls.weigle_gsr, _ = GSR.objects.get_or_create(
+        lid="1086",
+        gid=1889,
+        defaults={
+            "name": "Weigle",
+            "kind": GSR.KIND_LIBCAL,
+            "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-1086-gid-1889.jpg",
+            "in_use": True,
+        },
+    )
 
 
 def is_wharton_false(*args):
@@ -42,14 +75,16 @@ def reservations(*args):
 
 
 class TestGSRs(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        create_test_gsrs(cls)
+        test_user = User.objects.create_user("user1", "user")
+        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
+
     def setUp(self):
-        call_command("load_gsrs")
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
-
-        test_user = User.objects.create_user("user1", "user")
-        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
@@ -58,19 +93,14 @@ class TestGSRs(TestCase):
         response = self.client.get(reverse("locations"))
         res_json = json.loads(response.content)
 
-        # Regular users should NOT see Wharton or PennGroups GSRs
-        # Verify that Huntsman (Wharton), Amy Gutmann Hall (PennGroups),
-        # and Academic Research (Wharton) are not in the response
         gsr_ids = [entry["id"] for entry in res_json]
-        self.assertNotIn(1, gsr_ids, "Regular users should not see Huntsman (Wharton GSR)")
-        self.assertNotIn(
-            2, gsr_ids, "Regular users should not see Amy Gutmann Hall (PennGroups GSR)"
-        )
-        self.assertNotIn(3, gsr_ids, "Regular users should not see Academic Research (Wharton GSR)")
 
-        # Verify all returned GSRs are LibCal
-        for entry in res_json:
-            self.assertEqual(entry["kind"], GSR.KIND_LIBCAL)
+        # Use class variables
+        self.assertNotIn(self.huntsman_gsr.id, gsr_ids)
+        self.assertNotIn(self.agh_gsr.id, gsr_ids)
+        self.assertIn(self.weigle_gsr.id, gsr_ids)
+
+        self.assertEqual(len(res_json), 1)
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
@@ -154,27 +184,13 @@ class TestGSRs(TestCase):
             self.assertIn("kind", entry)
             kinds_seen.add(entry["kind"])
 
-        # Get debug info for failure messages
-        all_gsrs_count = GSR.objects.count()
-        expected_kinds = set(GSR.objects.values_list("kind", flat=True).distinct())
-        gsr_kinds_in_db = {kind: GSR.objects.filter(kind=kind).count() for kind in expected_kinds}
-
         # Should see all available kinds (check that all kinds in database are in response)
-        self.assertEqual(
-            kinds_seen,
-            expected_kinds,
-            f"Expected kinds {expected_kinds} but got {kinds_seen}. "
-            f"Total GSRs in DB: {all_gsrs_count}, GSRs by kind: {gsr_kinds_in_db}, "
-            f"Response count: {len(res_json)}",
-        )
+        expected_kinds = set(GSR.objects.values_list("kind", flat=True).distinct())
+        self.assertEqual(kinds_seen, expected_kinds)
 
         # Verify response contains all GSRs (check count matches)
-        self.assertEqual(
-            len(res_json),
-            all_gsrs_count,
-            f"Expected {all_gsrs_count} GSRs in response but got {len(res_json)}. "
-            f"Kinds in DB: {expected_kinds}, Kinds in response: {kinds_seen}",
-        )
+        all_gsrs_count = GSR.objects.count()
+        self.assertEqual(len(res_json), all_gsrs_count)
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", side_effect=APIError("API Error"))
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", side_effect=APIError("API Error"))
@@ -190,14 +206,16 @@ class TestGSRs(TestCase):
 
 
 class TestGSRFunctions(TestCase):
-    def setUp(self):
-        call_command("load_gsrs")
-        self.user = User.objects.create_user("user", "user@sas.upenn.edu", "user")
-        self.client = APIClient()
-        self.client.force_authenticate(user=self.user)
-
+    @classmethod
+    def setUpTestData(cls):
+        create_test_gsrs(cls)
         test_user = User.objects.create_user("user1", "user")
         Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
+
+    def setUp(self):
+        self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
 
     def test_recent(self):
         gsrs = list(GSR.objects.all())
@@ -208,9 +226,9 @@ class TestGSRFunctions(TestCase):
 
         response = self.client.get(reverse("recent-gsrs"))
         res_json = json.loads(response.content)
-        self.assertEquals(2, len(res_json))
-        self.assertEquals(6, len(res_json[0]))
-        self.assertEquals(6, len(res_json[1]))
+        self.assertEqual(2, len(res_json))
+        self.assertEqual(6, len(res_json[0]))
+        self.assertEqual(6, len(res_json[1]))
         self.assertIn("id", res_json[0])
         self.assertIn("kind", res_json[0])
         self.assertIn("lid", res_json[0])
@@ -328,8 +346,13 @@ class TestGSRFunctions(TestCase):
 
 
 class TestSEASViews(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        create_test_gsrs(cls)
+        test_user = User.objects.create_user("user1", "user")
+        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
+
     def setUp(self):
-        call_command("load_gsrs")
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
@@ -385,14 +408,16 @@ def penngroups_book_cancel(*args):
 
 
 class TestPennGroupsViews(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        create_test_gsrs(cls)
+        test_user = User.objects.create_user("user1", "user")
+        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
+
     def setUp(self):
-        call_command("load_gsrs")
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
-
-        test_user = User.objects.create_user("user1", "user")
-        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
     @mock.patch("gsr_booking.api_wrapper.BookingHandler.get_availability", penngroups_availability)
     def test_availability_penngroups(self):

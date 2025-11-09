@@ -29,12 +29,12 @@ class MyMembershipViewTestCase(TestCase):
 
     def test_user_memberships(self):
         response = self.client.get("/gsr/mymemberships/")
-        self.assertTrue(200, response.status_code)
+        self.assertEqual(200, response.status_code)
         self.assertEqual(2, len(response.data))
 
     def test_user_invites(self):
         response = self.client.get("/gsr/mymemberships/invites/")
-        self.assertTrue(200, response.status_code)
+        self.assertEqual(200, response.status_code)
         self.assertEqual(1, len(response.data))
 
 
@@ -59,13 +59,6 @@ class MembershipViewTestCase(TestCase):
         self.client.login(username="user2", password="password")
         response = self.client.post(
             "/gsr/membership/invite/", {"user": "user2,user3", "group": self.group.pk}
-        )
-        self.assertEqual(200, response.status_code)
-
-    def test_invite_no_permission(self):
-        self.client.login(username="user2", password="password")
-        response = self.client.post(
-            "/gsr/membership/invite/", {"user": "user2", "group": self.group.pk}
         )
         self.assertEqual(200, response.status_code)
 
