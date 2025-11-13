@@ -5,7 +5,7 @@ from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status, viewsets
+from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRShareCode
+from gsr_booking.permissions import IsShareCodeOwner
 from gsr_booking.serializers import (
     GroupMembershipSerializer,
     GroupSerializer,
@@ -285,92 +286,69 @@ class ReservationsView(APIView):
         )
 
 
-class CreateShareCode(APIView):
+class GSRShareCodeViewSet(
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     """
-    Creates or retrieves a share code for a GSR booking
+    ViewSet for creating, retrieving, and deleting GSR share codes.
     """
 
-    permission_classes = [IsAuthenticated]
+    serializer_class = GSRShareCodeSerializer
+    lookup_field = "code"
+    lookup_value_regex = r"[A-Za-z0-9_-]{8}"
 
-    def post(self, request):
-        booking_id = request.data.get("booking_id")
+    permission_classes = [IsShareCodeOwner]
 
-        if not booking_id:
-            return Response({"error": "booking_id is required"}, status=400)
+    def get_permissions(self):
+        if self.action == "retrieve":
+            return [AllowAny()]
+        elif self.action == "destroy":
+            return [IsAuthenticated(), IsShareCodeOwner()]
+        return [IsAuthenticated()]
 
-        booking = GSRBooking.objects.filter(id=booking_id).first()
-        if booking is None:
-            return Response({"error": "Booking not found"}, status=404)
+    def get_queryset(self):
+        if self.action == "retrieve":
+            # Allow anyone to retrieve by code
+            return GSRShareCode.objects.all()
+        # For create/destroy, only show user's own share codes
+        return self.request.user.gsr_share_codes.all()
 
-        owner = booking.reservation.creator if booking.reservation else booking.user
-        if owner != request.user and not request.user.is_staff:
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return SharedGSRBookingSerializer
+        return GSRShareCodeSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        share_code = self.get_object()
+
+        if not share_code.is_valid():
             return Response(
-                {"error": "You do not have permission to share this booking"},
-                status=403,
+                {"error": "This share code has expired or been revoked by owner"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        try:
-            existing_code = GSRShareCode.objects.filter(booking=booking).first()
+        serializer = self.get_serializer(share_code.booking)
+        return Response(serializer.data)
 
-            if existing_code and existing_code.is_valid():
-                serializer = GSRShareCodeSerializer(existing_code)
-                return Response(serializer.data)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-            share_code = GSRShareCode.objects.create(
-                code=GSRShareCode.generate_code(),
-                booking=booking,
-                owner=request.user,
-            )
+        # Check if code already exists before saving
+        booking = serializer.validated_data["booking"]
+        existing_code = getattr(booking, "share_code", None)
 
-            serializer = GSRShareCodeSerializer(share_code)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except APIError as e:
-            return Response({"error": str(e)}, status=400)
+        instance = serializer.save()
 
+        was_created = existing_code is None or existing_code.pk != instance.pk
+        status_code = status.HTTP_201_CREATED if was_created else status.HTTP_200_OK
 
-class ViewSharedBooking(APIView):
-    """
-    View a booking using a share code, no authentication is needed
-    """
+        return Response(
+            GSRShareCodeSerializer(instance, context={"request": request}).data, status=status_code
+        )
 
-    permission_classes = [AllowAny]
-
-    def get(self, request, code):
-        try:
-            share_code = GSRShareCode.objects.filter(code=code).first()
-
-            if share_code is None:
-                return Response({"error": "Invalid share code"}, status=404)
-
-            if not share_code.is_valid():
-                return Response(
-                    {"error": "This share code has expired or been revoked"},
-                    status=400,
-                )
-
-            serializer = SharedGSRBookingSerializer(share_code.booking)
-            return Response(serializer.data)
-        except APIError as e:
-            return Response({"error": str(e)}, status=400)
-
-
-class RevokeShareCode(APIView):
-    """
-    Revoke a share code (only owner can revoke)
-    """
-
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, code):
-        share_code = GSRShareCode.objects.filter(code=code).first()
-
-        if share_code is None:
-            return Response({"error": "Invalid share code"}, status=status.HTTP_404_NOT_FOUND)
-
-        # Check if user is the owner or staff
-        if share_code.owner != request.user and not request.user.is_staff:
-            return Response({"error": "You can only revoke your own share codes"}, status=403)
-
-        share_code.delete()
-
-        return Response({"detail": "success"})
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)

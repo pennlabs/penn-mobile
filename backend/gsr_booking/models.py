@@ -139,14 +139,17 @@ class GSRBooking(models.Model):
 
 class GSRShareCode(models.Model):
     code = models.CharField(max_length=8, unique=True, db_index=True)
-    booking = models.ForeignKey("GSRBooking", on_delete=models.CASCADE, related_name="share_codes")
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    booking = models.OneToOneField(GSRBooking, on_delete=models.CASCADE, related_name="share_code")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="gsr_share_codes")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.code} - {self.booking}"
 
     @classmethod
     def generate_code(cls):
-        """Generate a unique 8-character code"""
         while True:
+            # Creates unique 8 character code
             code = secrets.token_urlsafe(6)[:8]
             if not cls.objects.filter(code=code).exists():
                 return code
@@ -157,12 +160,6 @@ class GSRShareCode(models.Model):
         if self.booking.end and self.booking.end <= now:
             return False
         return True
-
-    class Meta:
-        db_table = "gsr_share_codes"
-
-    def __str__(self):
-        return f"{self.code} - {self.booking}"
 
 
 # import at end to prevent circular dependency
