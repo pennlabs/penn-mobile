@@ -76,6 +76,13 @@ def reservations(*args):
 
 
 class TestGSRs(TestCase):
+    """
+    Tests for GSR locations endpoint with different permission levels.
+
+    setUpTestData: Creates shared test data (GSRs, Penn Labs group) - runs once per class
+    setUp: Creates fresh user/client for each test - runs before each test method
+    """
+
     @classmethod
     def setUpTestData(cls):
         create_test_gsrs(cls)
@@ -86,9 +93,7 @@ class TestGSRs(TestCase):
         # Clear cache to avoid stale data from previous tests
         cache.clear()
 
-        # Ensure test GSRs exist (in case setUpTestData didn't run or was reset)
-        create_test_gsrs(self.__class__)
-
+        # Create a fresh user and client for this test
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
