@@ -126,7 +126,6 @@ class TestGSRs(TestCase):
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
     def test_get_location_wharton_user(self, mock_is_seas, mock_is_wharton):
         """Test that Wharton users see LibCal and Wharton GSRs"""
-        cache.clear()  # Clear cache to ensure fresh data
         response = self.client.get(reverse("locations"))
         res_json = json.loads(response.content)
 
@@ -144,7 +143,6 @@ class TestGSRs(TestCase):
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=True)
     def test_get_location_seas_user(self, mock_is_seas, mock_is_wharton):
         """Test that SEAS users see LibCal and PennGroups GSRs"""
-        cache.clear()  # Clear cache to ensure fresh data
         response = self.client.get(reverse("locations"))
         res_json = json.loads(response.content)
 
@@ -162,7 +160,6 @@ class TestGSRs(TestCase):
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=True)
     def test_get_location_wharton_seas_user(self, mock_is_seas, mock_is_wharton):
         """Test that users with both Wharton and SEAS access see all non-Penn Labs GSRs"""
-        cache.clear()  # Clear cache to ensure fresh data
         response = self.client.get(reverse("locations"))
         res_json = json.loads(response.content)
 
@@ -178,9 +175,6 @@ class TestGSRs(TestCase):
 
     def test_get_location_penn_labs_member(self):
         """Test that Penn Labs members see all GSRs regardless of their individual status"""
-        # Clear cache before test
-        cache.clear()
-
         # Add user to Penn Labs group
         penn_labs_group = Group.objects.get(name="Penn Labs")
         GroupMembership.objects.create(

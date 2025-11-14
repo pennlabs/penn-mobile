@@ -1,7 +1,10 @@
 import secrets
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db import models
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 from django.utils import timezone
 
 from utils.errors import APIError
@@ -185,3 +188,29 @@ class GSRShareCode(models.Model):
 
 # import at end to prevent circular dependency
 from gsr_booking.api_wrapper import PennGroupsGSRBooker, WhartonGSRBooker  # noqa: E402
+
+
+# Signal handlers to clear location caches when GSR data changes
+def clear_gsr_location_caches():
+    """Clear all GSR location caches for all permission combinations"""
+    cache_keys = [
+        "gsr_locations:penn_labs",
+        "gsr_locations:wharton_True_seas_True",
+        "gsr_locations:wharton_True_seas_False",
+        "gsr_locations:wharton_False_seas_True",
+        "gsr_locations:wharton_False_seas_False",
+    ]
+    for key in cache_keys:
+        cache.delete(key)
+
+
+@receiver(post_save, sender=GSR)
+def clear_cache_on_gsr_save(sender, instance, **kwargs):
+    """Clear location caches when a GSR is saved (via admin or any other method)"""
+    clear_gsr_location_caches()
+
+
+@receiver(post_delete, sender=GSR)
+def clear_cache_on_gsr_delete(sender, instance, **kwargs):
+    """Clear location caches when a GSR is deleted (via admin or any other method)"""
+    clear_gsr_location_caches()

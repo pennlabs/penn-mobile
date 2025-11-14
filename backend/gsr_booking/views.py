@@ -1,6 +1,7 @@
 from analytics.entries import FuncEntry, ViewEntry
 from dateutil.parser import parse as parse_datetime
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
@@ -28,6 +29,7 @@ from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, GSRSerializer
 >>>>>>> cded762 (Fix remaining linting issues in gsr_booking)
 from pennmobile.analytics import LabsAnalytics
+from utils.cache import Cache
 
 
 User = get_user_model()
@@ -151,6 +153,55 @@ class Locations(generics.ListAPIView):
 
     serializer_class = GSRSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_permission_level(self, user):
+        """
+        Determine the user's permission level for caching purposes.
+        Returns a tuple of booleans: (is_penn_labs, is_wharton, is_seas)
+        """
+        is_penn_labs = user.booking_groups.filter(name="Penn Labs").exists()
+
+        if is_penn_labs:
+            # Penn Labs users see everything, so we can cache at that level
+            return "penn_labs"
+
+        # Check Wharton and SEAS access
+        is_wharton = False
+        is_seas = False
+
+        try:
+            is_wharton = WhartonGSRBooker.is_wharton(user)
+        except APIError:
+            pass
+
+        try:
+            is_seas = PennGroupsGSRBooker.is_seas(user)
+        except APIError:
+            pass
+
+        # Create a permission key based on access levels
+        return f"wharton_{is_wharton}_seas_{is_seas}"
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override list to implement per-permission-level caching
+        """
+        permission_level = self.get_permission_level(request.user)
+        cache_key = f"gsr_locations:{permission_level}"
+
+        # Try to get from cache
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
+        # If not in cache, get the data
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+
+        # Cache the response for a week (locations don't change often)
+        cache.set(cache_key, serializer.data, Cache.DAY * 7)
+
+        return Response(serializer.data)
 
     def get_queryset(self):
         user = self.request.user
