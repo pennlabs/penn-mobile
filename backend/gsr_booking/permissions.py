@@ -13,18 +13,17 @@ class IsShareCodeOwner(permissions.BasePermission):
             return True
 
         # For create/destroy, require authentication
-        return request.user and request.user.is_authenticated
+        if view.action in ["create", "destroy"]:
+            return request.user and request.user.is_authenticated
+
+        return False
 
     def has_object_permission(self, request, view, obj):
-        booking = obj.booking
-        owner = booking.reservation.creator if booking.reservation else booking.user
+        if view.action == "retrieve":
+            return True
 
-        # Allow safe methods (GET) for anyone if valid
-        if request.method in permissions.SAFE_METHODS:
-            return obj.is_valid()
+        # For destroy, must own the share code
+        if view.action == "destroy":
+            return obj.owner == request.user
 
-        # For DELETE, must be owner
-        is_owner = owner == request.user
-        if not is_owner:
-            return False
-        return True
+        return False

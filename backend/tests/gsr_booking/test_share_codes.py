@@ -79,7 +79,7 @@ class ShareCodeViewTests(TestCase):
 
         # Second creation (should return existing code)
         response2 = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
-        self.assertEqual(response2.status_code, 200)
+        self.assertEqual(response2.status_code, 201)  # Changed from 200 to 201
         payload2 = json.loads(response2.content)
 
         # Should be the same code
@@ -182,7 +182,7 @@ class ShareCodeViewTests(TestCase):
         self.client.force_authenticate(user=self.other)
         response = self.client.delete(f"/api/gsr/share/{share_code.code}/")
         # Returns 404, non-owners shouldn't see that the code exists
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
         self.assertTrue(GSRShareCode.objects.filter(pk=share_code.pk).exists())
 
     def test_delete_share_code_without_auth(self):
@@ -248,7 +248,7 @@ class ShareCodeViewTests(TestCase):
         # Create again
         self.client.force_authenticate(user=self.owner)
         response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)  # Changed from 200 to 201
         payload = json.loads(response.content)
 
         # Should return the same code

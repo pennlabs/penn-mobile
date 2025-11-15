@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -296,25 +296,10 @@ class GSRShareCodeViewSet(
     ViewSet for creating, retrieving, and deleting GSR share codes.
     """
 
-    serializer_class = GSRShareCodeSerializer
     lookup_field = "code"
     lookup_value_regex = r"[A-Za-z0-9_-]{8}"
-
     permission_classes = [IsShareCodeOwner]
-
-    def get_permissions(self):
-        if self.action == "retrieve":
-            return [AllowAny()]
-        elif self.action == "destroy":
-            return [IsAuthenticated(), IsShareCodeOwner()]
-        return [IsAuthenticated()]
-
-    def get_queryset(self):
-        if self.action == "retrieve":
-            # Allow anyone to retrieve by code
-            return GSRShareCode.objects.all()
-        # For create/destroy, only show user's own share codes
-        return self.request.user.gsr_share_codes.all()
+    queryset = GSRShareCode.objects.all()
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -333,22 +318,5 @@ class GSRShareCodeViewSet(
         serializer = self.get_serializer(share_code.booking)
         return Response(serializer.data)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        # Check if code already exists before saving
-        booking = serializer.validated_data["booking"]
-        existing_code = getattr(booking, "share_code", None)
-
-        instance = serializer.save()
-
-        was_created = existing_code is None or existing_code.pk != instance.pk
-        status_code = status.HTTP_201_CREATED if was_created else status.HTTP_200_OK
-
-        return Response(
-            GSRShareCodeSerializer(instance, context={"request": request}).data, status=status_code
-        )
-
-    def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
+    # create() is inherited from CreateModelMixin
+    # destroy() is inherited from DestroyModelMixin
