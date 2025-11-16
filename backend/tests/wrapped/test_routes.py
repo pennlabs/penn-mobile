@@ -5,7 +5,6 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from wrapped.models import (
-    Font,
     GlobalStat,
     GlobalStatKey,
     GlobalStatPageField,
@@ -35,9 +34,6 @@ class WrappedRoutesTestCase(TestCase):
         self.glob_key = GlobalStatKey.objects.create(key="total_gsr_hours")
         self.glob_key2 = GlobalStatKey.objects.create(key="total_gym_hours")
         self.ind_key2 = IndividualStatKey.objects.create(key="gym_hours")
-        self.font1 = Font.objects.create(name="Arial", filepath="test/fonts/arial.ttf")
-        self.font2 = Font.objects.create(name="Verdana", filepath="test/fonts/verdana.ttf")
-        self.font3 = Font.objects.create(name="Helvetica", filepath="test/fonts/helvetica.ttf")
 
         self.ind_stat = IndividualStat.objects.create(
             user=self.user,
@@ -76,10 +72,6 @@ class WrappedRoutesTestCase(TestCase):
             template_path="wrapped/gsr_page2.html",
             duration=timedelta(minutes=1),
         )
-        self.page.required_fonts.add(self.font1)
-        self.page.required_fonts.add(self.font2)
-        self.page2.required_fonts.add(self.font2)
-        self.page2.required_fonts.add(self.font3)
         self.semester.pages.add(self.page)
         self.semester.pages.add(self.page2)
 
@@ -123,11 +115,6 @@ class WrappedRoutesTestCase(TestCase):
                             "bottom": "1000",
                             "middle_left": "2000",
                         },
-                        "required_font_names": ["Arial", "Verdana"],
-                        "required_font_paths": [
-                            "test/fonts/arial.ttf",
-                            "test/fonts/verdana.ttf",
-                        ],
                         "duration": "00:01:00",
                     },
                     {
@@ -135,11 +122,6 @@ class WrappedRoutesTestCase(TestCase):
                         "name": "GSR_Page2",
                         "template_path": "wrapped/gsr_page2.html",
                         "combined_stats": {},
-                        "required_font_names": ["Verdana", "Helvetica"],
-                        "required_font_paths": [
-                            "test/fonts/verdana.ttf",
-                            "test/fonts/helvetica.ttf",
-                        ],
                         "duration": "00:01:00",
                     },
                 ],
@@ -164,11 +146,6 @@ class WrappedRoutesTestCase(TestCase):
                             "bottom": "1000",
                             "middle_left": "2000",
                         },
-                        "required_font_names": ["Arial", "Verdana"],
-                        "required_font_paths": [
-                            "test/fonts/arial.ttf",
-                            "test/fonts/verdana.ttf",
-                        ],
                         "duration": "00:01:00",
                     },
                     {
@@ -176,11 +153,6 @@ class WrappedRoutesTestCase(TestCase):
                         "name": "GSR_Page2",
                         "template_path": "wrapped/gsr_page2.html",
                         "combined_stats": {},
-                        "required_font_names": ["Verdana", "Helvetica"],
-                        "required_font_paths": [
-                            "test/fonts/verdana.ttf",
-                            "test/fonts/helvetica.ttf",
-                        ],
                         "duration": "00:01:00",
                     },
                 ],
