@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import serializers
 
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRShareCode
 
 
 User = get_user_model()
@@ -62,7 +63,8 @@ class GroupField(serializers.RelatedField):
         return {"name": value.name, "id": value.id, "color": value.color}
 
     def to_internal_value(self, data):
-        return None  # TODO: If you want to update based on BookingField, implement this.
+        # TODO: If you want to update based on BookingField, implement this.
+        return None
 
 
 class GSRSerializer(serializers.ModelSerializer):
@@ -78,3 +80,57 @@ class GSRBookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = GSRBooking
         fields = ("booking_id", "gsr", "room_id", "room_name", "start", "end")
+
+
+class GSRShareCodeSerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+    expires_at = serializers.SerializerMethodField()
+    booking_id = serializers.PrimaryKeyRelatedField(
+        source="booking", queryset=GSRBooking.objects.all(), write_only=True
+    )
+
+    class Meta:
+        model = GSRShareCode
+        fields = ["code", "created_at", "expires_at", "status", "booking_id"]
+        read_only_fields = ["code", "created_at", "expires_at", "status"]
+
+    def get_status(self, obj):
+        if obj.booking.end and obj.booking.end <= timezone.now():
+            return "expired"
+        return "active"
+
+    def get_expires_at(self, obj):
+        return obj.booking.end
+
+    def create(self, validated_data):
+        booking = validated_data["booking"]
+
+        # Check if share code already exists for this booking
+        try:
+            existing_code = booking.share_code
+            if existing_code.is_valid():
+                return existing_code
+            # Delete invalid code
+            existing_code.delete()
+        except GSRShareCode.DoesNotExist:
+            # No existing share code so create a new one
+            pass
+
+        # Create new share code
+        validated_data["owner"] = self.context["request"].user
+        validated_data["code"] = GSRShareCode.generate_code()
+        return super().create(validated_data)
+
+
+class SharedGSRBookingSerializer(serializers.ModelSerializer):
+
+    building = serializers.CharField(source="gsr.name")
+    is_valid = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GSRBooking
+        fields = ["room_name", "building", "start", "end", "is_valid"]
+        read_only_fields = fields
+
+    def get_is_valid(self, obj):
+        return obj.end and obj.end > timezone.now()

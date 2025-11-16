@@ -1,3 +1,5 @@
+import secrets
+
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
@@ -133,6 +135,31 @@ class GSRBooking(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.gsr.name} - {self.start} - {self.end}"
+
+
+class GSRShareCode(models.Model):
+    code = models.CharField(max_length=8, unique=True, db_index=True)
+    booking = models.OneToOneField(GSRBooking, on_delete=models.CASCADE, related_name="share_code")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="gsr_share_codes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.code} - {self.booking}"
+
+    @classmethod
+    def generate_code(cls):
+        while True:
+            # Creates unique 8 character code
+            code = secrets.token_urlsafe(6)[:8]
+            if not cls.objects.filter(code=code).exists():
+                return code
+
+    def is_valid(self):
+        """Check if the share code is still valid (not revoked and not expired)"""
+        now = timezone.now()
+        if self.booking.end and self.booking.end <= now:
+            return False
+        return True
 
 
 # import at end to prevent circular dependency

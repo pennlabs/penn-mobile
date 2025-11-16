@@ -5,15 +5,22 @@ from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, viewsets
+from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
-from gsr_booking.serializers import GroupMembershipSerializer, GroupSerializer, GSRSerializer
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRShareCode
+from gsr_booking.permissions import IsShareCodeOwner
+from gsr_booking.serializers import (
+    GroupMembershipSerializer,
+    GroupSerializer,
+    GSRSerializer,
+    GSRShareCodeSerializer,
+    SharedGSRBookingSerializer,
+)
 from pennmobile.analytics import LabsAnalytics
 
 
@@ -102,7 +109,9 @@ class GroupMembershipViewSet(viewsets.ModelViewSet):
         if membership.user is None or membership.user != request.user:
             return HttpResponseForbidden()
         if not membership.is_invite:
-            return Response({"message": "cannot decline an invite that has been accepted."}, 400)
+            return Response(
+                {"message": "cannot decline an invite that has been accepted."}, status=400
+            )
 
         resp = {
             "message": "invite declined",
@@ -275,3 +284,39 @@ class ReservationsView(APIView):
                 request.user, request.user.booking_groups.filter(name="Penn Labs").first()
             )
         )
+
+
+class GSRShareCodeViewSet(
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    ViewSet for creating, retrieving, and deleting GSR share codes.
+    """
+
+    lookup_field = "code"
+    lookup_value_regex = r"[A-Za-z0-9_-]{8}"
+    permission_classes = [IsShareCodeOwner]
+    queryset = GSRShareCode.objects.all()
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return SharedGSRBookingSerializer
+        return GSRShareCodeSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        share_code = self.get_object()
+
+        if not share_code.is_valid():
+            return Response(
+                {"error": "This share code has expired or been revoked by owner"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.get_serializer(share_code.booking)
+        return Response(serializer.data)
+
+    # create() is inherited from CreateModelMixin
+    # destroy() is inherited from DestroyModelMixin
