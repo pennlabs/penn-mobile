@@ -22,11 +22,7 @@ class Command(BaseCommand):
         for room in fitness_rooms:
             obj, _ = FitnessRoom.objects.get_or_create(name=room)
             if obj.image_url == "":
-                s3_image_name = (
-                    room.replace(" ", "_") + (".png" if "2nd" in room else ".jpg")
-                    if "Pool" not in room
-                    else "Pool.jpeg"
-                )
+                s3_image_name = room.replace(" ", "_") + ".jpg"
                 obj.image_url = (
                     f"https://s3.us-east-2.amazonaws.com/penn.mobile/pottruck/{s3_image_name}"
                 )
