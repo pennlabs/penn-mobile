@@ -152,6 +152,11 @@ def mock_non_seas_get(*args, **kwargs):
     return MockResponse({})
 
 
+def mock_get_user_pennid(self, user):
+    """Mock pennid extraction"""
+    return "12345678"
+
+
 class TestBookingWrapper(TestCase):
     def setUp(self):
         call_command("load_gsrs")
@@ -366,6 +371,9 @@ class TestBookingWrapper(TestCase):
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
     @mock.patch("requests.get", mock_penngroups_api_get)
+    @mock.patch(
+        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
+    )
     def test_is_seas(self, mock_is_wharton):
         """Test SEAS status checking via PennGroups API"""
         from gsr_booking.api_wrapper import PennGroupsGSRBooker
@@ -484,6 +492,9 @@ class TestBookingWrapper(TestCase):
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("requests.get", mock_penngroups_api_get)
     @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
+    @mock.patch(
+        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
+    )
     def test_book_penngroups(self, mock_is_seas, mock_is_wharton):
         """Test booking an AGH room"""
         book_agh = GSRBooker.book_room(
@@ -518,6 +529,9 @@ class TestBookingWrapper(TestCase):
     @mock.patch("requests.get", mock_penngroups_api_get)
     @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
     @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=True)
+    @mock.patch(
+        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
+    )
     def test_group_book_penngroups(self, mock_model_is_seas, mock_is_wharton):
         """Test group booking for AGH rooms"""
         # Make sure group_user is SEAS - when membership is created, is_seas will be auto-set
@@ -566,6 +580,9 @@ class TestBookingWrapper(TestCase):
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("requests.get", mock_penngroups_api_get)
     @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
+    @mock.patch(
+        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
+    )
     def test_penngroups_authorization_filtering(self, mock_is_seas, mock_is_wharton):
         """Test that only authorized rooms are returned for SEAS students"""
         # User authorized for rooms 206 and 334
@@ -619,6 +636,9 @@ class TestBookingWrapper(TestCase):
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("requests.get", mock_penngroups_api_get)
     @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request")
+    @mock.patch(
+        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
+    )
     def test_unauthorized_room_booking_fails(self, mock_request, mock_is_seas, mock_is_wharton):
         """Test that users cannot book rooms they're not authorized for"""
 
@@ -678,6 +698,9 @@ class TestBookingWrapper(TestCase):
     @mock.patch("requests.get", mock_penngroups_api_get)
     @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
     @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=True)
+    @mock.patch(
+        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
+    )
     def test_group_penngroups_availability(self, mock_model_is_seas, mock_is_wharton):
         """Test group availability for AGH rooms"""
         # Test that group availability works when group has SEAS members
@@ -771,6 +794,9 @@ class TestBookingWrapper(TestCase):
 
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("requests.get")
+    @mock.patch(
+        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
+    )
     def test_get_authorized_rooms_api_errors(self, mock_get, mock_is_wharton):
         """Test error handling in get_authorized_rooms"""
         from gsr_booking.api_wrapper import PennGroupsGSRBooker
@@ -800,6 +826,9 @@ class TestBookingWrapper(TestCase):
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("requests.get", mock_penngroups_api_get)
     @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
+    @mock.patch(
+        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
+    )
     def test_penngroups_booking_creates_reservation(self, mock_is_seas, mock_is_wharton):
         """Test that booking creates proper database records"""
         initial_reservation_count = Reservation.objects.count()
@@ -899,6 +928,9 @@ class TestBookingWrapper(TestCase):
     @mock.patch("requests.get", mock_penngroups_api_get)
     @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
     @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=True)
+    @mock.patch(
+        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
+    )
     def test_group_book_penngroups_credit_distribution(self, mock_model_is_seas, mock_is_wharton):
         """Test that group bookings properly distribute credits among members"""
         # Set up group with multiple SEAS members
