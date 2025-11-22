@@ -316,8 +316,9 @@ class GSRShareCodeViewSet(
             )
 
         serializer = self.get_serializer(share_code.booking)
+        user = share_code.booking.user
         return Response({
-            "owner_name": f"{share_code.booking.user.first_name} {share_code.booking.user.last_name}",
+            "owner_name": f"{user.first_name} {user.last_name}",
             "booking": serializer.data
         })
 
