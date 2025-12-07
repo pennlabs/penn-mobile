@@ -288,8 +288,8 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
             raise
 
     def extract_room_number(self, libcal_name):
-        """Extract room number from LibCal name like 'AGH 334' -> '334'"""
-        match = re.search(r"AGH\s+(\d+)", libcal_name)
+        """Extract room number from LibCal name like 'AGH 334' -> '334' or 'AGH 300A' -> '300A'"""
+        match = re.search(r"AGH\s+(\d+[A-Za-z]*)", libcal_name)
         return match.group(1) if match else None
 
     def is_room_authorized(self, libcal_name, authorized_extensions):
