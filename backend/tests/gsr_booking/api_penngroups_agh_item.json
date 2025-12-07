@@ -1,16 +1,18 @@
-{
-  "id": 172129,
-  "name": "AGH 206",
-  "description": "",
-  "termsAndConditions": "<ul>\r\n\t<li>Use of the Penn Engineering Group Study Rooms (GSRs) is reserved for Penn Engineering Students, Faculty, Staff, and occupants of Amy Gutmann Hall only.</li>\r\n\t<li>Students from another college at Penn taking an Engineering class cannot reserve GSRs. However, GSRs, as well as additional rooms can be reserved at&nbsp;<a data-saferedirecturl=\"https://www.google.com/url?q=https://libcal.library.upenn.edu/&amp;source=gmail&amp;ust=1738847504585000&amp;usg=AOvVaw0AxbEI8-kU6_NvI1Pgr_YZ\" href=\"https://libcal.library.upenn.edu/\" target=\"_blank\">Van Pelt Library</a>&nbsp;with a PennKey.</li>\r\n</ul>\r\n",
-  "image": "",
-  "capacity": 4,
-  "formid": 0,
-  "isBookableAsWhole": true,
-  "isEventLocation": true,
-  "zoneId": 10151,
-  "google": false,
-  "exchange": false,
-  "filter_ids": []
-}
+[
+  {
+    "id": 172129,
+    "name": "AGH 206",
+    "description": "",
+    "termsAndConditions": "<ul>\r\n\t<li>Use of the Penn Engineering Group Study Rooms (GSRs) is reserved for Penn Engineering Students, Faculty, Staff, and occupants of Amy Gutmann Hall only.</li>\r\n\t<li>Students from another college at Penn taking an Engineering class cannot reserve GSRs. However, GSRs, as well as additional rooms can be reserved at&nbsp;<a data-saferedirecturl=\"https://www.google.com/url?q=https://libcal.library.upenn.edu/&amp;source=gmail&amp;ust=1738847504585000&amp;usg=AOvVaw0AxbEI8-kU6_NvI1Pgr_YZ\" href=\"https://libcal.library.upenn.edu/\" target=\"_blank\">Van Pelt Library</a>&nbsp;with a PennKey.</li>\r\n</ul>\r\n",
+    "image": "",
+    "capacity": 4,
+    "formid": 0,
+    "isBookableAsWhole": true,
+    "isEventLocation": true,
+    "zoneId": 10151,
+    "google": false,
+    "exchange": false,
+    "filter_ids": []
+  }
+]
 

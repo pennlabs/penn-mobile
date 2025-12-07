@@ -103,17 +103,18 @@ def mock_agh_libcal_request(obj, *args, **kwargs):
         file_path = "tests/gsr_booking/api_penngroups_agh_category.json"
     # AGH single item (for authorization check in book_room)
     elif method == "GET" and "space/item/" in url and "?" not in url:
-        # Single item request - return a dict, not a list
+        # Single item request - LibCal API returns a list with one item
         item_id = url.split("space/item/")[1].split("/")[0]
         if item_id in ["172129", "191384"]:
             file_path = "tests/gsr_booking/api_penngroups_agh_item.json"
             with open(file_path) as data:
                 item_data = json.load(data)
                 if item_id == "191384":
-                    item_data["id"] = 191384
-                    item_data["name"] = "AGH 334"
-                    item_data["capacity"] = 5
-                    item_data["zoneId"] = 10798
+                    # Modify the first (and only) item in the list
+                    item_data[0]["id"] = 191384
+                    item_data[0]["name"] = "AGH 334"
+                    item_data[0]["capacity"] = 5
+                    item_data[0]["zoneId"] = 10798
                 return Mock(item_data, 200)
         else:
             return Mock({"error": "invalid item id"}, 404)
@@ -663,13 +664,16 @@ class TestBookingWrapper(TestCase):
                 if item_id == "999999":
                     # Return a room that's not authorized (e.g., AGH 999)
                     # The user is only authorized for rooms 206 and 334 based on the PennGroups mock
+                    # LibCal returns a list with one item
                     return Mock(
-                        {
-                            "id": 999999,
-                            "name": "AGH 999",  # Not in authorized rooms (206, 334)
-                            "capacity": 4,
-                            "zoneId": 10798,
-                        },
+                        [
+                            {
+                                "id": 999999,
+                                "name": "AGH 999",  # Not in authorized rooms (206, 334)
+                                "capacity": 4,
+                                "zoneId": 10798,
+                            }
+                        ],
                         200,
                     )
             # For booking, return success (but authorization check should fail before this)

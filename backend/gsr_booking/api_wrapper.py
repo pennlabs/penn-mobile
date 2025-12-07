@@ -244,7 +244,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
             except APIError:
                 raise APIError("PennGroups: Failed to get user pennid")
 
-            url = f"{PENNGROUPS_URL}/{pennid}/groups"
+            url = f"{PENNGROUPS_URL}{pennid}/groups"
             response = requests.get(
                 url,
                 auth=HTTPBasicAuth(settings.PENNGROUPS_USERNAME, settings.PENNGROUPS_PASSWORD),
@@ -332,7 +332,12 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
                 )
 
             room_data = room_response.json()
-            room_name = room_data.get("name", "")
+
+            # LibCal space/item endpoint returns a list with one item
+            if not room_data or len(room_data) == 0:
+                raise APIError("AGH LibCal: Empty room data returned")
+
+            room_name = room_data[0].get("name", "")
 
             # Check if user is authorized for this specific room
             if not self.is_room_authorized(room_name, authorized_rooms):
@@ -412,8 +417,8 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
             range_str += "=" + start
             if end and not start == end:
                 range_str += "," + end
-            else:
-                start_datetime = None
+        else:
+            start_datetime = None
 
         # Get items for AGH category
         response = self.request("GET", f"{API_URL}/1.1/space/category/{gid}").json()
