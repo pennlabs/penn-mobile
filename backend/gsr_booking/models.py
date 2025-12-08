@@ -7,8 +7,6 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from utils.errors import APIError
-
 
 User = get_user_model()
 
@@ -54,16 +52,10 @@ class GroupMembership(models.Model):
         super().save(*args, **kwargs)
 
     def check_wharton(self):
-        try:
-            return WhartonGSRBooker.is_wharton(self.user)
-        except APIError:
-            return False
+        return WhartonGSRBooker.is_wharton(self.user)
 
     def check_seas(self):
-        try:
-            return PennGroupsGSRBooker.is_seas(self.user)
-        except APIError:
-            return False
+        return PennGroupsGSRBooker.is_seas(self.user)
 
     class Meta:
         verbose_name = "Group Membership"

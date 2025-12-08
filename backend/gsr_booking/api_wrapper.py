@@ -1,4 +1,5 @@
 import datetime
+import logging
 import re
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -19,6 +20,9 @@ from gsr_booking.models import GSR, GroupMembership, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
 from portal.logic import get_user_info
 from utils.errors import APIError
+
+
+logger = logging.getLogger(__name__)
 
 
 User = get_user_model()
@@ -158,17 +162,22 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
         ]
 
     def is_wharton(self, user):
+        """
+        Check if user has Wharton privileges.
+        Returns False if user doesn't have access or if API fails.
+        Logs errors for monitoring.
+        """
         url = f"{WHARTON_URL}{user.username}/privileges"
         try:
             response = self.request("GET", url)
             if response.status_code != 200:
-                return None
+                logger.error(f"Wharton API error for {user.username}: HTTP {response.status_code}")
+                return False
             res_json = response.json()
             return res_json.get("type") == "whartonMBA" or res_json.get("type") == "whartonUGR"
-        except APIError:
-            raise
-        except Exception as e:
-            raise APIError(f"Wharton: Error checking privileges: {str(e)}")
+        except APIError as e:
+            logger.error(f"Wharton API error for {user.username}: {e}")
+            return False
 
 
 class PennGroupsBookingWrapper(AbstractBookingWrapper):
@@ -280,12 +289,17 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
             raise APIError(f"PennGroups: Error accessing API: {str(e)}")
 
     def is_seas(self, user):
-        """Check if user has SEAS status"""
+        """
+        Check if user has SEAS status.
+        Returns False if user doesn't have SEAS access or if API fails.
+        Logs errors for monitoring.
+        """
         try:
             rooms = self.get_authorized_rooms(user)
             return len(rooms) > 0
-        except APIError:
-            raise
+        except APIError as e:
+            logger.error(f"PennGroups API error for {user.username}: {e}")
+            return False
 
     def extract_room_number(self, libcal_name):
         """Extract room number from LibCal name like 'AGH 334' -> '334' or 'AGH 300A' -> '300A'"""

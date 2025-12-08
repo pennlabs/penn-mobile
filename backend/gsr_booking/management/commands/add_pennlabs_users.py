@@ -35,6 +35,7 @@ class Command(BaseCommand):
             except User.DoesNotExist:
                 self.stdout.write(f"User with PennKey {pennkey} does not exist. Skipping.")
                 continue
+
             users.append(user)
             is_wharton = WhartonGSRBooker.is_wharton(user)
             wharton_statuses.append(is_wharton)

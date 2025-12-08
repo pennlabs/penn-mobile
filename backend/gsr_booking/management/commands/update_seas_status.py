@@ -11,9 +11,12 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         users = GroupMembership.objects.values_list("user__username", flat=True).distinct()
         print(f"Checking {len(users)} users...")
+        penngroups_wrapper = PennGroupsBookingWrapper()
+        updated = 0
+
         for username in users:
             user = get_user_model().objects.get(username=username)
-            is_seas = PennGroupsBookingWrapper().is_seas(user)
+            is_seas = penngroups_wrapper.is_seas(user)
             memberships = GroupMembership.objects.filter(user__username=user)
             for membership in memberships:
                 if membership.is_seas != is_seas:
@@ -21,4 +24,6 @@ class Command(BaseCommand):
                     membership.save()
                     status = "now" if is_seas else "no longer"
                     print(f"User {user} is {status} a SEAS user.")
-        print("Done updating SEAS statuses.")
+                    updated += 1
+
+        print(f"Done updating SEAS statuses. Updated: {updated} users.")

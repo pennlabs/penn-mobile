@@ -7,7 +7,6 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from gsr_booking.api_wrapper import APIError
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
 
 
@@ -211,14 +210,14 @@ class TestGSRs(TestCase):
         self.assertIn(self.agh_gsr.id, gsr_ids, "AGH GSR should be visible")
         self.assertIn(self.weigle_gsr.id, gsr_ids, "Weigle GSR should be visible")
 
-    @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", side_effect=APIError("API Error"))
-    @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", side_effect=APIError("API Error"))
+    @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
+    @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
     def test_get_location_api_error_handling(self, mock_is_seas, mock_is_wharton):
-        """Test that API errors are handled gracefully and users still see LibCal GSRs"""
+        """Test that when permission checks return False, users only see LibCal GSRs"""
         response = self.client.get(reverse("locations"))
         res_json = json.loads(response.content)
 
-        # Even if API calls fail, users should still see LibCal GSRs
+        # When permission checks return False, users should only see LibCal GSRs
         for entry in res_json:
             self.assertIn("kind", entry)
             self.assertEqual(entry["kind"], GSR.KIND_LIBCAL)
