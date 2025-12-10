@@ -56,7 +56,7 @@ class ShareCodeViewTests(TestCase):
     def test_create_share_code_success(self):
         # Creates a gsr share code successfully
         self.client.force_authenticate(user=self.owner)
-        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response.status_code, 201)
         payload = json.loads(response.content)
 
@@ -72,13 +72,13 @@ class ShareCodeViewTests(TestCase):
         self.client.force_authenticate(user=self.owner)
 
         # First creation
-        response1 = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response1 = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response1.status_code, 201)
         payload1 = json.loads(response1.content)
         first_code = payload1["code"]
 
         # Second creation (should return existing code)
-        response2 = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response2 = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response2.status_code, 201)  # Changed from 200 to 201
         payload2 = json.loads(response2.content)
 
@@ -89,7 +89,7 @@ class ShareCodeViewTests(TestCase):
         self.assertEqual(GSRShareCode.objects.filter(booking=self.booking).count(), 1)
 
     def test_create_share_code_without_auth(self):
-        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response.status_code, 403)
         self.assertEqual(GSRShareCode.objects.count(), 0)
 
@@ -217,7 +217,7 @@ class ShareCodeViewTests(TestCase):
         self.booking.save(update_fields=["end"])
 
         self.client.force_authenticate(user=self.owner)
-        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response.status_code, 201)
         payload = json.loads(response.content)
         self.assertEqual(payload["status"], "expired")
@@ -247,7 +247,7 @@ class ShareCodeViewTests(TestCase):
 
         # Create again
         self.client.force_authenticate(user=self.owner)
-        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response.status_code, 201)  # Changed from 200 to 201
         payload = json.loads(response.content)
 
