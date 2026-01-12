@@ -12,7 +12,7 @@ def forwards_backfill_globalstat_semester_id(apps, schema_editor):
         cursor.execute(
             """
             UPDATE wrapped_globalstat as gstat
-            SET semester_id_new_id = s.id
+            SET semester_id_new = s.id
             FROM wrapped_semester s
             WHERE gstat.semester_id = s.semester;
             """
@@ -24,7 +24,7 @@ def forwards_backfill_individualstat_semester_id(apps, schema_editor):
         cursor.execute(
             """
             UPDATE wrapped_individualstat as istat
-            SET semester_id_new_id = s.id
+            SET semester_id_new = s.id
             FROM wrapped_semester s
             WHERE istat.semester_id = s.semester;
             """
@@ -38,7 +38,7 @@ def backwards_backfill_globalstat_semester(apps, schema_editor):
             UPDATE wrapped_globalstat as gstat
             SET semester_id = s.semester
             FROM wrapped_semester s
-            WHERE gstat.semester_id_new_id = s.id;
+            WHERE gstat.semester_id_new = s.id;
             """
         )
 
@@ -50,7 +50,7 @@ def backwards_backfill_individualstat_semester(apps, schema_editor):
             UPDATE wrapped_individualstat as istat
             SET semester_id = s.semester
             FROM wrapped_semester s
-            WHERE istat.semester_id_new_id = s.id;
+            WHERE istat.semester_id_new = s.id;
             """
         )
 
@@ -88,13 +88,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="globalstat",
             name="semester_id_new",
-            field=models.ForeignKey(
-                to="wrapped.semester",
-                to_field="id",
-                null=True,
-                on_delete=models.CASCADE,
-                related_name="+",
-            ),
+            field=models.BigIntegerField(null=True),
         ),
         migrations.AlterField(
             model_name="globalstat",
@@ -122,17 +116,20 @@ class Migration(migrations.Migration):
                 related_name="+",
             ),
         ),
+        migrations.RemoveField(
+            model_name="globalstat",
+            name="semester",
+        ),
+        migrations.RenameField(
+            model_name="globalstat",
+            old_name="semester_id_new",
+            new_name="semester",
+        ),
         # Migrate ForeignKeys in IndividualStat to use the new Semester id field
         migrations.AddField(
             model_name="individualstat",
             name="semester_id_new",
-            field=models.ForeignKey(
-                to="wrapped.semester",
-                to_field="id",
-                null=True,
-                on_delete=models.CASCADE,
-                related_name="+",
-            ),
+            field=models.BigIntegerField(null=True),
         ),
         migrations.AlterField(
             model_name="individualstat",
@@ -159,6 +156,15 @@ class Migration(migrations.Migration):
                 on_delete=models.CASCADE,
                 related_name="+",
             ),
+        ),
+        migrations.RemoveField(
+            model_name="individualstat",
+            name="semester",
+        ),
+        migrations.RenameField(
+            model_name="individualstat",
+            old_name="semester_id_new",
+            new_name="semester",
         ),
         # Migrate ForeignKeys in SemesterPage to use the new Semester id field
         migrations.RunSQL(
