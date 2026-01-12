@@ -7,6 +7,54 @@ def print_log(apps, schema_editor):
     print("PRINTING STUFF")
 
 
+def forwards_backfill_globalstat_semester_id(apps, schema_editor):
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE wrapped_globalstat as gstat
+            SET semester_id_new_id = s.id
+            FROM wrapped_semester s
+            WHERE gstat.semester_id = s.semester;
+            """
+        )
+
+
+def forwards_backfill_individualstat_semester_id(apps, schema_editor):
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE wrapped_individualstat as istat
+            SET semester_id_new_id = s.id
+            FROM wrapped_semester s
+            WHERE istat.semester_id = s.semester;
+            """
+        )
+
+
+def backwards_backfill_globalstat_semester(apps, schema_editor):
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE wrapped_globalstat as gstat
+            SET semester_id = s.semester
+            FROM wrapped_semester s
+            WHERE gstat.semester_id_new_id = s.id;
+            """
+        )
+
+
+def backwards_backfill_individualstat_semester(apps, schema_editor):
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE wrapped_individualstat as istat
+            SET semester_id = s.semester
+            FROM wrapped_semester s
+            WHERE istat.semester_id_new_id = s.id;
+            """
+        )
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -48,14 +96,20 @@ class Migration(migrations.Migration):
                 related_name="+",
             ),
         ),
-        migrations.RunSQL(
-            """
-            UPDATE wrapped_globalstat as gstat
-            SET semester_id_new_id = s.id
-            FROM wrapped_semester s
-            WHERE gstat.semester_id = s.semester;
-            """,
-            reverse_sql=migrations.RunSQL.noop,
+        migrations.AlterField(
+            model_name="globalstat",
+            name="semester",
+            field=models.ForeignKey(
+                to="wrapped.semester",
+                to_field="semester",
+                null=True,
+                on_delete=models.CASCADE,
+                related_name="+",
+            ),
+        ),
+        migrations.RunPython(
+            code=forwards_backfill_globalstat_semester_id,
+            reverse_code=backwards_backfill_globalstat_semester,
         ),
         migrations.AlterField(
             model_name="globalstat",
@@ -67,24 +121,6 @@ class Migration(migrations.Migration):
                 on_delete=models.CASCADE,
                 related_name="+",
             ),
-        ),
-        migrations.RunSQL(
-            sql=migrations.RunSQL.noop,
-            reverse_sql="""
-            UPDATE wrapped_globalstat as gstat
-            SET semester = s.semester
-            FROM wrapped_semester s
-            WHERE gstat.semester_id_new_id = s.id;
-            """,
-        ),
-        migrations.RemoveField(
-            model_name="globalstat",
-            name="semester",
-        ),
-        migrations.RenameField(
-            model_name="globalstat",
-            old_name="semester_id_new",
-            new_name="semester",
         ),
         # Migrate ForeignKeys in IndividualStat to use the new Semester id field
         migrations.AddField(
@@ -98,14 +134,20 @@ class Migration(migrations.Migration):
                 related_name="+",
             ),
         ),
-        migrations.RunSQL(
-            """
-            UPDATE wrapped_individualstat as istat
-            SET semester_id_new_id = s.id
-            FROM wrapped_semester s
-            WHERE istat.semester_id = s.semester;
-            """,
-            reverse_sql=migrations.RunSQL.noop,
+        migrations.AlterField(
+            model_name="individualstat",
+            name="semester",
+            field=models.ForeignKey(
+                to="wrapped.semester",
+                to_field="semester",
+                null=True,
+                on_delete=models.CASCADE,
+                related_name="+",
+            ),
+        ),
+        migrations.RunPython(
+            code=forwards_backfill_individualstat_semester_id,
+            reverse_code=backwards_backfill_individualstat_semester,
         ),
         migrations.AlterField(
             model_name="individualstat",
@@ -118,61 +160,21 @@ class Migration(migrations.Migration):
                 related_name="+",
             ),
         ),
-        migrations.RunSQL(
-            sql=migrations.RunSQL.noop,
-            reverse_sql="""
-            UPDATE wrapped_individualstat as istat
-            SET semester = s.semester
-            FROM wrapped_semester s
-            WHERE istat.semester_id_new_id = s.id;
-            """,
-        ),
-        migrations.RemoveField(
-            model_name="individualstat",
-            name="semester",
-        ),
-        migrations.RenameField(
-            model_name="individualstat",
-            old_name="semester_id_new",
-            new_name="semester",
-        ),
         # Migrate ForeignKeys in SemesterPage to use the new Semester id field
-        migrations.RunPython(
-            code=print_log,
-            reverse_code=migrations.RunPython.noop,
-        ),
         migrations.RunSQL(
             sql="""
             ALTER TABLE wrapped_semester_pages
             ADD COLUMN semester_id_new bigint;
-            """,
-            reverse_sql="""
-            ALTER TABLE wrapped_semester_pages
-            DROP COLUMN semester_id_new;
-            """,
-        ),
-        migrations.RunSQL(
-            sql="""
             UPDATE wrapped_semester_pages as spage
             SET semester_id_new = s.id
             FROM wrapped_semester s
             WHERE spage.semester_id = s.semester;
-            """,
-            reverse_sql="""
-            UPDATE wrapped_semester_pages as spage
-            SET semester_id = s.semester
-            FROM wrapped_semester s
-            WHERE spage.semester_id_new = s.id;
-            """,
-        ),
-        migrations.RunSQL(
-            sql="""
             ALTER TABLE wrapped_semester_pages
-            ALTER COLUMN semester_id SET NOT NULL;
+            ALTER COLUMN semester_id_new SET NOT NULL;
             """,
             reverse_sql="""
             ALTER TABLE wrapped_semester_pages
-            ALTER COLUMN semester_id DROP NOT NULL;
+            DROP COLUMN semester_id_new;
             """,
         ),
         migrations.RunSQL(
@@ -208,12 +210,13 @@ class Migration(migrations.Migration):
             """,
             reverse_sql="""
             ALTER TABLE wrapped_semester_pages
-            ADD COLUMN semester_id varchar(16) NOT NULL;
-
+            ADD COLUMN semester_id varchar(16);
             UPDATE wrapped_semester_pages as spage
             SET semester_id = s.semester
             FROM wrapped_semester s
             WHERE spage.semester_id_new = s.id;
+            ALTER TABLE wrapped_semester_pages
+            ALTER COLUMN semester_id SET NOT NULL;
             """,
         ),
         migrations.RunSQL(
@@ -225,22 +228,5 @@ class Migration(migrations.Migration):
             ALTER TABLE wrapped_semester_pages
             RENAME COLUMN semester_id TO semester_id_new;
             """,
-        ),
-        # Drop old primary key and set new primary key on id field
-        migrations.RunSQL(
-            sql="ALTER TABLE wrapped_semester DROP CONSTRAINT wrapped_semester_pkey;",
-            reverse_sql="ALTER TABLE wrapped_semester ADD PRIMARY KEY (semester);",
-        ),
-        migrations.AlterField(
-            model_name="semester",
-            name="id",
-            field=models.BigAutoField(
-                auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
-            ),
-        ),
-        migrations.AlterField(
-            model_name="semester",
-            name="semester",
-            field=models.CharField(max_length=16, unique=True, null=False, blank=False),
         ),
     ]
