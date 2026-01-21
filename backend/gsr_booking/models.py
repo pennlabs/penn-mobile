@@ -1,10 +1,7 @@
 import secrets
 
 from django.contrib.auth import get_user_model
-from django.core.cache import cache
 from django.db import models
-from django.db.models.signals import post_delete, post_save
-from django.dispatch import receiver
 from django.utils import timezone
 
 
@@ -33,8 +30,6 @@ class GroupMembership(models.Model):
 
     is_wharton = models.BooleanField(blank=True, null=True, default=None)
 
-    is_seas = models.BooleanField(blank=True, null=True, default=None)
-
     @property
     def is_invite(self):
         return not self.accepted
@@ -43,19 +38,13 @@ class GroupMembership(models.Model):
         return f"{self.user}<->{self.group}"
 
     def save(self, *args, **kwargs):
-        # Determines whether user is wharton or not
+        # determines whether user is wharton or not
         if self.is_wharton is None:
             self.is_wharton = self.check_wharton()
-        # Determines whether user is seas or not
-        if self.is_seas is None:
-            self.is_seas = self.check_seas()
         super().save(*args, **kwargs)
 
     def check_wharton(self):
         return WhartonGSRBooker.is_wharton(self.user)
-
-    def check_seas(self):
-        return PennGroupsGSRBooker.is_seas(self.user)
 
     class Meta:
         verbose_name = "Group Membership"
@@ -106,12 +95,7 @@ class GSR(models.Model):
 
     KIND_WHARTON = "WHARTON"
     KIND_LIBCAL = "LIBCAL"
-    KIND_PENNGROUPS = "PENNGRP"
-    KIND_OPTIONS = (
-        (KIND_WHARTON, "Wharton"),
-        (KIND_LIBCAL, "Libcal"),
-        (KIND_PENNGROUPS, "Penngrp"),
-    )
+    KIND_OPTIONS = ((KIND_WHARTON, "Wharton"), (KIND_LIBCAL, "Libcal"))
 
     kind = models.CharField(max_length=7, choices=KIND_OPTIONS, default=KIND_LIBCAL)
     lid = models.CharField(max_length=255)
@@ -179,30 +163,4 @@ class GSRShareCode(models.Model):
 
 
 # import at end to prevent circular dependency
-from gsr_booking.api_wrapper import PennGroupsGSRBooker, WhartonGSRBooker  # noqa: E402
-
-
-# Signal handlers to clear location caches when GSR data changes
-def clear_gsr_location_caches():
-    """Clear all GSR location caches for all permission combinations"""
-    cache_keys = [
-        "gsr_locations:penn_labs",
-        "gsr_locations:wharton_True_seas_True",
-        "gsr_locations:wharton_True_seas_False",
-        "gsr_locations:wharton_False_seas_True",
-        "gsr_locations:wharton_False_seas_False",
-    ]
-    for key in cache_keys:
-        cache.delete(key)
-
-
-@receiver(post_save, sender=GSR)
-def clear_cache_on_gsr_save(sender, instance, **kwargs):
-    """Clear location caches when a GSR is saved (via admin or any other method)"""
-    clear_gsr_location_caches()
-
-
-@receiver(post_delete, sender=GSR)
-def clear_cache_on_gsr_delete(sender, instance, **kwargs):
-    """Clear location caches when a GSR is deleted (via admin or any other method)"""
-    clear_gsr_location_caches()
+from gsr_booking.api_wrapper import WhartonGSRBooker  # noqa: E402
