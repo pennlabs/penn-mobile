@@ -176,15 +176,9 @@ DINING_PASSWORD = os.environ.get("DINING_PASSWORD", None)
 DINING_ID = os.environ.get("DINING_ID", None)
 DINING_SECRET = os.environ.get("DINING_SECRET", None)
 
-
-# GSR Booking API Credentials
-AGH_LIBCAL_ID = os.environ.get("AGH_LIBCAL_ID", None)
-AGH_LIBCAL_SECRET = os.environ.get("AGH_LIBCAL_SECRET", None)
-GENERAL_LIBCAL_ID = os.environ.get("GENERAL_LIBCAL_ID", None)
-GENERAL_LIBCAL_SECRET = os.environ.get("GENERAL_LIBCAL_SECRET", None)
+LIBCAL_ID = os.environ.get("LIBCAL_ID", None)
+LIBCAL_SECRET = os.environ.get("LIBCAL_SECRET", None)
 WHARTON_TOKEN = os.environ.get("WHARTON_TOKEN", None)
-PENNGROUPS_USERNAME = os.environ.get("PENNGROUPS_USERNAME", None)
-PENNGROUPS_PASSWORD = os.environ.get("PENNGROUPS_PASSWORD", None)
 
 # Upload file storage
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"

@@ -29,12 +29,12 @@ class MyMembershipViewTestCase(TestCase):
 
     def test_user_memberships(self):
         response = self.client.get("/gsr/mymemberships/")
-        self.assertEqual(200, response.status_code)
+        self.assertTrue(200, response.status_code)
         self.assertEqual(2, len(response.data))
 
     def test_user_invites(self):
         response = self.client.get("/gsr/mymemberships/invites/")
-        self.assertEqual(200, response.status_code)
+        self.assertTrue(200, response.status_code)
         self.assertEqual(1, len(response.data))
 
 
