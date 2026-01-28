@@ -85,8 +85,11 @@ class GSRBookingSerializer(serializers.ModelSerializer):
 class GSRShareCodeSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     expires_at = serializers.SerializerMethodField()
-    booking_id = serializers.PrimaryKeyRelatedField(
-        source="booking", queryset=GSRBooking.objects.all(), write_only=True
+    booking_id = serializers.SlugRelatedField(
+        slug_field="booking_id",
+        source="booking",
+        queryset=GSRBooking.objects.all(),
+        write_only=True,
     )
 
     class Meta:
@@ -126,11 +129,23 @@ class SharedGSRBookingSerializer(serializers.ModelSerializer):
 
     building = serializers.CharField(source="gsr.name")
     is_valid = serializers.SerializerMethodField()
+    owner_name = serializers.SerializerMethodField()
 
     class Meta:
         model = GSRBooking
-        fields = ["room_name", "building", "start", "end", "is_valid"]
+        fields = ["room_name", "building", "start", "end", "is_valid", "owner_name"]
         read_only_fields = fields
+
+    def get_owner_name(self, obj):
+        user = obj.reservation.creator if obj.reservation else obj.user
+        if not user:
+            return "Unknown"
+
+        full_name = f"{user.first_name} {user.last_name}".strip()
+        if full_name:
+            return full_name
+
+        return user.username
 
     def get_is_valid(self, obj):
         return obj.end and obj.end > timezone.now()
