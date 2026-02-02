@@ -16,9 +16,18 @@ from portal.models import Poll, Post
 
 
 def fakeFitnessGet(url, *args, **kwargs):
-    if "docs.google.com/spreadsheets/" in url:
-        with open("tests/penndata/fitness_snapshot.html", "rb") as f:
-            m = mock.MagicMock(content=f.read())
+    if "goboardapi.azurewebsites.net/api" in url:
+        with open("tests/penndata/fitness_snapshot.js", "rb") as f:
+            raw = f.read()
+        m = mock.MagicMock()
+        m.content = raw
+        m.status_code = 200
+        m.headers = {"Content-Type": "application/json"}
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+        except Exception:
+            parsed = None
+        m.json = mock.MagicMock(return_value=parsed)
         return m
     else:
         raise NotImplementedError
@@ -205,17 +214,35 @@ class TestGetFitnessSnapshot(TestCase):
         call_command("get_fitness_snapshot")
 
         # checks that all fitness snapshots have been accounted for
-        self.assertEqual(FitnessSnapshot.objects.all().count(), 9)
+        fitness_snapshots = FitnessSnapshot.objects.all()
+        original_fitness_snapshots = set(fitness_snapshots.values_list("room", "date"))
+        self.assertEqual(fitness_snapshots.count(), 12)
 
         # asserts that fields are correct, and that all snapshots
         # have been accounted for
-        for snapshot in FitnessSnapshot.objects.all():
+        for snapshot in fitness_snapshots:
             self.assertTrue(snapshot.count >= 0)
 
+        # Does not create duplicate snapshots
         call_command("get_fitness_snapshot")
+        fitness_snapshots = FitnessSnapshot.objects.all()
+        new_fitness_snapshots = set(fitness_snapshots.values_list("room", "date"))
+        self.assertEqual(fitness_snapshots.count(), 12)
+        self.assertEqual(original_fitness_snapshots, new_fitness_snapshots)
 
-        # does not create duplicate snapshots
-        self.assertEqual(FitnessSnapshot.objects.all().count(), 9)
+        # Outdated snapshot timestamp gets updated to newest snapshot timestamp
+        first_snapshot = FitnessSnapshot.objects.first()
+        first_snapshot.date = timezone.now() - datetime.timedelta(days=10)
+        first_snapshot.save()
+        fitness_snapshots = FitnessSnapshot.objects.all()
+        new_fitness_snapshots = set(fitness_snapshots.values_list("room", "date"))
+        self.assertFalse(original_fitness_snapshots <= new_fitness_snapshots)
+
+        call_command("get_fitness_snapshot")
+        fitness_snapshots = FitnessSnapshot.objects.all()
+        new_fitness_snapshots = set(fitness_snapshots.values_list("room", "date"))
+        self.assertEqual(fitness_snapshots.count(), 13)
+        self.assertTrue(original_fitness_snapshots <= new_fitness_snapshots)
 
 
 class TestFitnessUsage(TestCase):
