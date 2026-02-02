@@ -16,11 +16,25 @@ def cap_string(s):
 
 def get_usages():
     try:
-        resp = requests.get(
-            "https://goboardapi.azurewebsites.net/api/FacilityCount/GetCountsByAccount",
-            params={"AccountAPIKey": settings.FITNESS_TOKEN},
-        )
-        data = resp.json()
+
+        session = requests.Session()
+
+        url = "https://goboardapi.azurewebsites.net/api/FacilityCount/GetCountsByAccount"
+
+        params = {"AccountAPIKey": settings.FITNESS_TOKEN}
+
+        headers = {
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://www.connect2mycloud.com",
+            "Host": "goboardapi.azurewebsites.net",
+            "Referer": "https://www.connect2mycloud.com/",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+            + "(KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+        }
+        session.get(url, params=params, headers=headers)
+        resp2 = session.get(url, params=params, headers=headers)
+        data = resp2.json()
     except ConnectionError:
         return None
     except requests.exceptions.JSONDecodeError:
