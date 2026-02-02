@@ -3,6 +3,7 @@ import zoneinfo
 import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import make_aware
 
@@ -45,18 +46,27 @@ class Command(BaseCommand):
     help = "Captures a new Fitness Snapshot for every Fitness room."
 
     def handle(self, *args, **kwargs):
+        # Don't update locations for which we already have a room with a matching last_updated date.
+        # Fixed the O(n^2) issue by loading everything into memory. Should be fine since there's
+        # not many rooms, and 1 snapshot returned per room
+        all_rooms = FitnessRoom.objects.all()
+        all_room_names = set(room.name for room in all_rooms)
+        query = Q()
+        for room_name, room_usage in get_usages().items():
+            query |= Q(room__name=room_name, date=room_usage["last_updated"])
+        existing_snapshots = FitnessSnapshot.objects.filter(query)
+        existing_room_date_pairs = set(
+            (snapshot.room.name, snapshot.date) for snapshot in existing_snapshots
+        )
+
         def exists(record):
             (name, usage) = record
-            try:
-                room = FitnessRoom.objects.get(name=name)
-            except FitnessRoom.DoesNotExist:
+            if name not in all_room_names:
                 return False
-            return not FitnessSnapshot.objects.filter(
-                date=usage["last_updated"], room=room
-            ).exists()
+            if (name, usage["last_updated"]) in existing_room_date_pairs:
+                return False
+            return True
 
-        # Don't update locations for which we already have a room with a matching last_updated date.
-        # This is also O(n^2), idk how we feel about that chat
         usage_by_location = filter(exists, get_usages().items())
         FitnessSnapshot.objects.bulk_create(
             [
