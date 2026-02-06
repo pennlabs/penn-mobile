@@ -316,7 +316,11 @@ class GSRShareCodeViewSet(
             )
 
         serializer = self.get_serializer(share_code.booking)
-        return Response(serializer.data)
+        user = share_code.booking.user
+        return Response({
+            "owner_name": f"{user.first_name} {user.last_name}",
+            "booking": serializer.data
+        })
 
     # create() is inherited from CreateModelMixin
     # destroy() is inherited from DestroyModelMixin
