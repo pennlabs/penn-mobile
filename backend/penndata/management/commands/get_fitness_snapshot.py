@@ -52,7 +52,8 @@ class Command(BaseCommand):
         all_rooms = FitnessRoom.objects.all()
         all_room_names = set(room.name for room in all_rooms)
         query = Q()
-        for room_name, room_usage in get_usages().items():
+        usages = get_usages()
+        for room_name, room_usage in usages.items():
             query |= Q(room__name=room_name, date=room_usage["last_updated"])
         existing_snapshots = FitnessSnapshot.objects.filter(query)
         existing_room_date_pairs = set(
@@ -67,7 +68,8 @@ class Command(BaseCommand):
                 return False
             return True
 
-        usage_by_location = filter(exists, get_usages().items())
+        usage_by_location = filter(exists, usages.items())
+        usage_by_location_list = list(usage_by_location)
         FitnessSnapshot.objects.bulk_create(
             [
                 FitnessSnapshot(
@@ -76,7 +78,7 @@ class Command(BaseCommand):
                     count=room_usage["count"],
                     capacity=room_usage["capacity"],
                 )
-                for (room_name, room_usage) in usage_by_location
+                for (room_name, room_usage) in usage_by_location_list
             ]
         )
 
