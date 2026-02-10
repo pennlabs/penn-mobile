@@ -127,13 +127,22 @@ class GSRShareCodeSerializer(serializers.ModelSerializer):
 
 class SharedGSRBookingSerializer(serializers.ModelSerializer):
 
-    building = serializers.CharField(source="gsr.name")
     is_valid = serializers.SerializerMethodField()
     owner_name = serializers.SerializerMethodField()
+    gsr = GSRSerializer(read_only=True)
 
     class Meta:
         model = GSRBooking
-        fields = ["room_name", "building", "start", "end", "is_valid", "owner_name"]
+        fields = [
+            "booking_id",
+            "gsr",
+            "room_id",
+            "room_name",
+            "start",
+            "end",
+            "is_valid",
+            "owner_name",
+        ]
         read_only_fields = fields
 
     def get_owner_name(self, obj):
