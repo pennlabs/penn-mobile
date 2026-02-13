@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import Q
 
 
 User = get_user_model()
@@ -28,6 +29,20 @@ class GlobalStatKey(StatKey):
 class Semester(models.Model):
     semester = models.CharField(max_length=16, primary_key=True, null=False, blank=False)
     pages = models.ManyToManyField("Page", blank=True)
+    current = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["semester"], name="semester_unique"),
+            models.UniqueConstraint(
+                fields=["current"],
+                condition=Q(current=True),
+                name="single_current_semester",
+            ),
+        ]
+
+    def __str__(self):
+        return self.semester
 
 
 class GlobalStat(models.Model):
