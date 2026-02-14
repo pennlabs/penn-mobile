@@ -478,6 +478,9 @@ class TestBookingWrapper(TestCase):
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("requests.get", mock_penngroups_api_get)
     @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
+    @mock.patch(
+        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
+    )
     def test_penngroups_availability(self, mock_is_seas, mock_is_wharton):
         """Test AGH room availability for SEAS students"""
         availability = GSRBooker.get_availability(
@@ -489,11 +492,17 @@ class TestBookingWrapper(TestCase):
         self.assertIn("rooms", availability)
         self.assertEqual("Amy Gutmann Hall", availability["name"])
 
-        if len(availability["rooms"]) > 0:
-            room = availability["rooms"][0]
-            self.assertIn("room_name", room)
-            self.assertIn("id", room)
-            self.assertIn("availability", room)
+        rooms = availability["rooms"]
+        self.assertGreater(len(rooms), 0)
+        room = rooms[0]
+        self.assertIn("room_name", room)
+        self.assertIn("id", room)
+        self.assertIn("availability", room)
+
+        # Verify only authorized rooms are returned
+        room_names = [r["room_name"] for r in rooms]
+        self.assertIn("AGH 206", room_names)
+        self.assertIn("AGH 334", room_names)
 
     @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=True)
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
@@ -504,6 +513,9 @@ class TestBookingWrapper(TestCase):
     )
     def test_book_penngroups(self, mock_is_seas, mock_is_wharton):
         """Test booking an AGH room"""
+        initial_reservation_count = Reservation.objects.count()
+        initial_booking_count = GSRBooking.objects.count()
+
         book_agh = GSRBooker.book_room(
             42437,
             172129,
@@ -512,7 +524,22 @@ class TestBookingWrapper(TestCase):
             "2025-10-31T00:00:00-04:00",
             self.user,
         )
-        self.assertEqual("AGH 206", book_agh.gsrbooking_set.first().room_name)
+
+        # Verify reservation and booking counts incremented
+        self.assertEqual(Reservation.objects.count(), initial_reservation_count + 1)
+        self.assertEqual(GSRBooking.objects.count(), initial_booking_count + 1)
+
+        # Verify reservation details
+        self.assertEqual(book_agh.creator, self.user)
+        self.assertIsNotNone(book_agh.start)
+        self.assertIsNotNone(book_agh.end)
+
+        # Verify booking details
+        booking = book_agh.gsrbooking_set.first()
+        self.assertEqual(booking.room_name, "AGH 206")
+        self.assertEqual(booking.room_id, 172129)
+        self.assertEqual(booking.user, self.user)
+        self.assertIsNotNone(booking.booking_id)
 
     @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False)
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
@@ -582,27 +609,6 @@ class TestBookingWrapper(TestCase):
 
         # Check reservation exists
         self.assertIsNotNone(Reservation.objects.get(pk=reservation.id))
-
-    @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=True)
-    @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
-    @mock.patch("requests.get", mock_penngroups_api_get)
-    @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
-    @mock.patch(
-        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
-    )
-    def test_penngroups_authorization_filtering(self, mock_is_seas, mock_is_wharton):
-        """Test that only authorized rooms are returned for SEAS students"""
-        # User authorized for rooms 206 and 334
-        availability = GSRBooker.get_availability(
-            "20157", 42437, "2025-10-30", "2025-10-31", self.user
-        )
-
-        rooms = availability["rooms"]
-        room_names = [room["room_name"] for room in rooms]
-
-        # Should only include authorized rooms
-        self.assertIn("AGH 206", room_names)
-        self.assertIn("AGH 334", room_names)
 
     @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False)
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
@@ -763,8 +769,7 @@ class TestBookingWrapper(TestCase):
         self.assertIn("rooms", availability)
         self.assertEqual(0, len(availability["rooms"]))
 
-    @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
-    def test_extract_room_number(self, mock_is_wharton):
+    def test_extract_room_number(self):
         """Test room number extraction from LibCal room names"""
         from gsr_booking.api_wrapper import PennGroupsGSRBooker
 
@@ -782,8 +787,7 @@ class TestBookingWrapper(TestCase):
         self.assertIsNone(PennGroupsGSRBooker.extract_room_number(""))
         self.assertIsNone(PennGroupsGSRBooker.extract_room_number("206"))
 
-    @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
-    def test_is_room_authorized(self, mock_is_wharton):
+    def test_is_room_authorized(self):
         """Test room authorization checking logic"""
         from gsr_booking.api_wrapper import PennGroupsGSRBooker
 
@@ -831,69 +835,6 @@ class TestBookingWrapper(TestCase):
         with self.assertRaises(APIError) as context:
             PennGroupsGSRBooker.get_authorized_rooms(self.user)
         self.assertIn("timeout", str(context.exception).lower())
-
-    @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=True)
-    @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
-    @mock.patch("requests.get", mock_penngroups_api_get)
-    @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
-    @mock.patch(
-        "gsr_booking.api_wrapper.PennGroupsBookingWrapper.get_user_pennid", mock_get_user_pennid
-    )
-    def test_penngroups_booking_creates_reservation(self, mock_is_seas, mock_is_wharton):
-        """Test that booking creates proper database records"""
-        initial_reservation_count = Reservation.objects.count()
-        initial_booking_count = GSRBooking.objects.count()
-
-        book_agh = GSRBooker.book_room(
-            42437,
-            172129,
-            "AGH 206",
-            "2025-10-30T23:30:00-04:00",
-            "2025-10-31T00:00:00-04:00",
-            self.user,
-        )
-
-        # Verify reservation was created
-        self.assertEqual(Reservation.objects.count(), initial_reservation_count + 1)
-        self.assertEqual(GSRBooking.objects.count(), initial_booking_count + 1)
-
-        # Verify reservation details
-        self.assertEqual(book_agh.creator, self.user)
-        self.assertIsNotNone(book_agh.start)
-        self.assertIsNotNone(book_agh.end)
-
-        # Verify booking details
-        booking = book_agh.gsrbooking_set.first()
-        self.assertEqual(booking.room_name, "AGH 206")
-        self.assertEqual(booking.room_id, 172129)
-        self.assertEqual(booking.user, self.user)
-        self.assertIsNotNone(booking.booking_id)
-
-    @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=True)
-    @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
-    @mock.patch("requests.get", mock_penngroups_api_get)
-    @mock.patch("gsr_booking.api_wrapper.PennGroupsBookingWrapper.request", mock_agh_libcal_request)
-    def test_penngroups_availability_date_filtering(self, mock_is_seas, mock_is_wharton):
-        """Test that availability respects date filtering"""
-        # Get availability for a specific date range
-        availability = GSRBooker.get_availability(
-            "20157", 42437, "2025-10-30", "2025-10-31", self.user
-        )
-
-        # Verify structure
-        self.assertIn("rooms", availability)
-        rooms = availability["rooms"]
-
-        # Verify each room has availability slots
-        for room in rooms:
-            self.assertIn("availability", room)
-            # Verify availability slots are within the requested date range
-            for slot in room["availability"]:
-                self.assertIn("start_time", slot)
-                self.assertIn("end_time", slot)
-                # Verify times are properly formatted
-                self.assertRegex(slot["start_time"], r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
-                self.assertRegex(slot["end_time"], r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
 
     @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False)
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)

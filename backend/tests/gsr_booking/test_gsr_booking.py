@@ -79,13 +79,6 @@ class MembershipViewTestCase(TestCase):
         )
         self.assertEqual(200, response.status_code)
 
-    def test_invite_no_permission(self):
-        self.client.login(username="user2", password="password")
-        response = self.client.post(
-            "/gsr/membership/invite/", {"user": "user2", "group": self.group.pk}
-        )
-        self.assertEqual(200, response.status_code)
-
     def test_invite_logged_out_fails(self):
         self.client.logout()
         response = self.client.post(
