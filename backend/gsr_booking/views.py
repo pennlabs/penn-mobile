@@ -146,6 +146,13 @@ class Locations(generics.ListAPIView):
     """Lists all available locations to book from"""
 
     serializer_class = GSRSerializer
+    queryset = GSR.objects.all()
+
+
+class UserLocations(generics.ListAPIView):
+    """Lists all available locations to book based on user permission level"""
+
+    serializer_class = GSRSerializer
     permission_classes = [IsAuthenticated]
 
     def get_permission_level(self, user):

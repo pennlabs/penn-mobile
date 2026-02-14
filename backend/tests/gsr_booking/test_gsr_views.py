@@ -86,7 +86,10 @@ class TestGSRs(TestCase):
     def setUpTestData(cls):
         create_test_gsrs(cls)
         test_user = User.objects.create_user("user1", "user")
-        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
+        with mock.patch(
+            "gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False
+        ), mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False):
+            Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
     def setUp(self):
         # Clear cache to avoid stale data from previous tests
@@ -100,8 +103,21 @@ class TestGSRs(TestCase):
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
     def test_get_location(self, mock_is_seas, mock_is_wharton):
-        """Test that regular users do not see Wharton or PennGroups GSRs"""
         response = self.client.get(reverse("locations"))
+        res_json = json.loads(response.content)
+        for entry in res_json:
+            if entry["id"] == 1:
+                self.assertEquals(entry["name"], "Huntsman")
+            if entry["id"] == 2:
+                self.assertEquals(entry["name"], "Amy Gutmann Hall")
+            if entry["id"] == 3:
+                self.assertEquals(entry["name"], "Weigle")
+
+    @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
+    @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
+    def test_get_user_location(self, mock_is_seas, mock_is_wharton):
+        """Test that regular users do not see Wharton or PennGroups GSRs"""
+        response = self.client.get(reverse("user-locations"))
         res_json = json.loads(response.content)
 
         gsr_ids = [entry["id"] for entry in res_json]
@@ -115,9 +131,9 @@ class TestGSRs(TestCase):
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
-    def test_get_location_regular_user(self, mock_is_seas, mock_is_wharton):
+    def test_get_user_location_regular_user(self, mock_is_seas, mock_is_wharton):
         """Test that regular users only see LibCal GSRs"""
-        response = self.client.get(reverse("locations"))
+        response = self.client.get(reverse("user-locations"))
         res_json = json.loads(response.content)
 
         # Regular users should only see LibCal GSRs
@@ -128,9 +144,9 @@ class TestGSRs(TestCase):
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=True)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
-    def test_get_location_wharton_user(self, mock_is_seas, mock_is_wharton):
+    def test_get_user_location_wharton_user(self, mock_is_seas, mock_is_wharton):
         """Test that Wharton users see LibCal and Wharton GSRs"""
-        response = self.client.get(reverse("locations"))
+        response = self.client.get(reverse("user-locations"))
         res_json = json.loads(response.content)
 
         # Wharton users should see LibCal and Wharton GSRs
@@ -145,9 +161,9 @@ class TestGSRs(TestCase):
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=True)
-    def test_get_location_seas_user(self, mock_is_seas, mock_is_wharton):
+    def test_get_user_location_seas_user(self, mock_is_seas, mock_is_wharton):
         """Test that SEAS users see LibCal and PennGroups GSRs"""
-        response = self.client.get(reverse("locations"))
+        response = self.client.get(reverse("user-locations"))
         res_json = json.loads(response.content)
 
         # SEAS users should see LibCal and PennGroups GSRs
@@ -162,9 +178,9 @@ class TestGSRs(TestCase):
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=True)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=True)
-    def test_get_location_wharton_seas_user(self, mock_is_seas, mock_is_wharton):
+    def test_get_user_location_wharton_seas_user(self, mock_is_seas, mock_is_wharton):
         """Test that users with both Wharton and SEAS access see all non-Penn Labs GSRs"""
-        response = self.client.get(reverse("locations"))
+        response = self.client.get(reverse("user-locations"))
         res_json = json.loads(response.content)
 
         # Users with both should see all kinds
@@ -177,7 +193,9 @@ class TestGSRs(TestCase):
         self.assertIn(GSR.KIND_WHARTON, kinds_seen)
         self.assertIn(GSR.KIND_PENNGROUPS, kinds_seen)
 
-    def test_get_location_penn_labs_member(self):
+    @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False)
+    @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)
+    def test_get_user_location_penn_labs_member(self, mock_is_wharton, mock_is_seas):
         """Test that Penn Labs members see all GSRs regardless of their individual status"""
         # Add user to Penn Labs group
         penn_labs_group = Group.objects.get(name="Penn Labs")
@@ -185,7 +203,7 @@ class TestGSRs(TestCase):
             user=self.user, group=penn_labs_group, accepted=True, type=GroupMembership.MEMBER
         )
 
-        response = self.client.get(reverse("locations"))
+        response = self.client.get(reverse("user-locations"))
         res_json = json.loads(response.content)
 
         # Penn Labs members should see all GSRs
@@ -212,9 +230,9 @@ class TestGSRs(TestCase):
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
-    def test_get_location_api_error_handling(self, mock_is_seas, mock_is_wharton):
+    def test_get_user_location_api_error_handling(self, mock_is_seas, mock_is_wharton):
         """Test that when permission checks return False, users only see LibCal GSRs"""
-        response = self.client.get(reverse("locations"))
+        response = self.client.get(reverse("user-locations"))
         res_json = json.loads(response.content)
 
         # When permission checks return False, users should only see LibCal GSRs
@@ -228,7 +246,10 @@ class TestGSRFunctions(TestCase):
     def setUpTestData(cls):
         create_test_gsrs(cls)
         test_user = User.objects.create_user("user1", "user")
-        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
+        with mock.patch(
+            "gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False
+        ), mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False):
+            Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
     def setUp(self):
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
@@ -368,7 +389,10 @@ class TestSEASViews(TestCase):
     def setUpTestData(cls):
         create_test_gsrs(cls)
         test_user = User.objects.create_user("user1", "user")
-        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
+        with mock.patch(
+            "gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False
+        ), mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False):
+            Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
     def setUp(self):
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
@@ -430,7 +454,10 @@ class TestPennGroupsViews(TestCase):
     def setUpTestData(cls):
         create_test_gsrs(cls)
         test_user = User.objects.create_user("user1", "user")
-        Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
+        with mock.patch(
+            "gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False
+        ), mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False):
+            Group.objects.create(owner=test_user, name="Penn Labs", color="blue")
 
     def setUp(self):
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")

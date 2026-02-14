@@ -159,15 +159,21 @@ def mock_get_user_pennid(self, user):
 
 
 class TestBookingWrapper(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         call_command("load_gsrs")
+
+    def setUp(self):
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.group_user = User.objects.create_user(
             "grou_user", "group_user@seas.upenn.edu", "group_user"
         )
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
-        self.group = Group.objects.create(owner=self.group_user, name="Penn Labs", color="blue")
+        with mock.patch(
+            "gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False
+        ), mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False):
+            self.group = Group.objects.create(owner=self.group_user, name="Penn Labs", color="blue")
 
     @mock.patch("gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False)
     @mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False)

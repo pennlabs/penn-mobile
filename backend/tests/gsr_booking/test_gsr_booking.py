@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -17,13 +19,16 @@ class MyMembershipViewTestCase(TestCase):
             username="user2", password="password", first_name="user", last_name="two"
         )
 
-        Group.objects.create(
-            owner=self.user1, name="g1", color="blue"
-        )  # creating group also adds user
-        group2 = Group.objects.create(owner=self.user2, name="g2", color="blue")
-        GroupMembership.objects.create(user=self.user1, group=group2, accepted=True)
-        group3 = Group.objects.create(owner=self.user2, name="g3", color="blue")
-        GroupMembership.objects.create(user=self.user1, group=group3)
+        with mock.patch(
+            "gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False
+        ), mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False):
+            Group.objects.create(
+                owner=self.user1, name="g1", color="blue"
+            )  # creating group also adds user
+            group2 = Group.objects.create(owner=self.user2, name="g2", color="blue")
+            GroupMembership.objects.create(user=self.user1, group=group2, accepted=True)
+            group3 = Group.objects.create(owner=self.user2, name="g3", color="blue")
+            GroupMembership.objects.create(user=self.user1, group=group3)
         self.client = APIClient()
         self.client.login(username="user1", password="password")
 
@@ -42,10 +47,22 @@ class MembershipViewTestCase(TestCase):
     def setUp(self):
         self.user1 = User.objects.create_user(username="user1", password="password")
         self.user2 = User.objects.create_user(username="user2", password="password")
+        self._patcher_seas = mock.patch(
+            "gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False
+        )
+        self._patcher_wharton = mock.patch(
+            "gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False
+        )
+        self._patcher_seas.start()
+        self._patcher_wharton.start()
         self.group = Group.objects.create(owner=self.user1, name="g1", color="blue")
         self.group2 = Group.objects.create(owner=self.user2, name="g2", color="white")
         self.client = APIClient()
         self.client.login(username="user1", password="password")
+
+    def tearDown(self):
+        self._patcher_seas.stop()
+        self._patcher_wharton.stop()
 
     def test_invite_single(self):
         self.client.login(username="user2", password="password")
@@ -148,10 +165,22 @@ class GroupTestCase(TestCase):
     def setUp(self):
         self.user1 = User.objects.create_user(username="user1", password="password")
         self.user2 = User.objects.create_user(username="user2", password="password")
+        self._patcher_seas = mock.patch(
+            "gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False
+        )
+        self._patcher_wharton = mock.patch(
+            "gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False
+        )
+        self._patcher_seas.start()
+        self._patcher_wharton.start()
         self.group = Group.objects.create(owner=self.user1, name="g1", color="blue")
         self.group2 = Group.objects.create(owner=self.user2, name="g2", color="white")
         self.client = APIClient()
         self.client.login(username="user1", password="password")
+
+    def tearDown(self):
+        self._patcher_seas.stop()
+        self._patcher_wharton.stop()
 
     def test_get_groups(self):
         response = self.client.get("/gsr/groups/")
