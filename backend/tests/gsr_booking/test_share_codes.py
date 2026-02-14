@@ -63,7 +63,7 @@ class ShareCodeViewTests(TestCase):
     def test_create_share_code_success(self):
         # Creates a gsr share code successfully
         self.client.force_authenticate(user=self.owner)
-        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response.status_code, 201)
         payload = json.loads(response.content)
 
@@ -79,13 +79,13 @@ class ShareCodeViewTests(TestCase):
         self.client.force_authenticate(user=self.owner)
 
         # First creation
-        response1 = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response1 = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response1.status_code, 201)
         payload1 = json.loads(response1.content)
         first_code = payload1["code"]
 
         # Second creation (should return existing code)
-        response2 = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response2 = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response2.status_code, 201)  # Changed from 200 to 201
         payload2 = json.loads(response2.content)
 
@@ -96,7 +96,7 @@ class ShareCodeViewTests(TestCase):
         self.assertEqual(GSRShareCode.objects.filter(booking=self.booking).count(), 1)
 
     def test_create_share_code_without_auth(self):
-        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response.status_code, 403)
         self.assertEqual(GSRShareCode.objects.count(), 0)
 
@@ -124,13 +124,22 @@ class ShareCodeViewTests(TestCase):
         payload = json.loads(response.content)
 
         # Should only contain booking info and not owner info
+        print("Payload: ", payload)
+        self.assertIn("booking_id", payload)
+        self.assertIn("gsr", payload)
+        self.assertIn("lid", payload["gsr"])
+        self.assertIn("gid", payload["gsr"])
+        self.assertIn("name", payload["gsr"])
+        self.assertIn("kind", payload["gsr"])
+        self.assertIn("image_url", payload["gsr"])
         self.assertIn("room_name", payload)
-        self.assertIn("building", payload)
+        self.assertIn("room_id", payload)
         self.assertIn("start", payload)
         self.assertIn("end", payload)
         self.assertIn("is_valid", payload)
+        self.assertIn("owner_name", payload)
         self.assertEqual(payload["room_name"], self.booking.room_name)
-        self.assertEqual(payload["building"], self.booking.gsr.name)
+        self.assertEqual(payload["gsr"]["name"], self.booking.gsr.name)
         self.assertEqual(payload["is_valid"], True)
 
     def test_view_shared_booking_invalid_code(self):
@@ -224,7 +233,7 @@ class ShareCodeViewTests(TestCase):
         self.booking.save(update_fields=["end"])
 
         self.client.force_authenticate(user=self.owner)
-        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response.status_code, 201)
         payload = json.loads(response.content)
         self.assertEqual(payload["status"], "expired")
@@ -254,7 +263,7 @@ class ShareCodeViewTests(TestCase):
 
         # Create again
         self.client.force_authenticate(user=self.owner)
-        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.id})
+        response = self.client.post("/api/gsr/share/", {"booking_id": self.booking.booking_id})
         self.assertEqual(response.status_code, 201)  # Changed from 200 to 201
         payload = json.loads(response.content)
 
@@ -314,17 +323,24 @@ class ShareCodeModelSerializerTests(TestCase):
         data = serializer.data
 
         # Should have booking details
+        self.assertIn("booking_id", data)
+        self.assertIn("gsr", data)
+        self.assertIn("lid", data["gsr"])
+        self.assertIn("gid", data["gsr"])
+        self.assertIn("name", data["gsr"])
+        self.assertIn("kind", data["gsr"])
+        self.assertIn("image_url", data["gsr"])
         self.assertIn("room_name", data)
-        self.assertIn("building", data)
+        self.assertIn("room_id", data)
         self.assertIn("start", data)
         self.assertIn("end", data)
         self.assertIn("is_valid", data)
+        self.assertIn("owner_name", data)
 
         # Should not have owner info
         self.assertNotIn("user", data)
         self.assertNotIn("owner", data)
         self.assertNotIn("reservation", data)
-        self.assertNotIn("booking_id", data)
 
     def test_is_valid_method(self):
         share_code = GSRShareCode.objects.create(
