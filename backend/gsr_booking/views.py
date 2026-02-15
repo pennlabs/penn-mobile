@@ -146,7 +146,7 @@ class Locations(generics.ListAPIView):
     """Lists all available locations to book from"""
 
     serializer_class = GSRSerializer
-    queryset = GSR.objects.all()
+    queryset = GSR.objects.filter(kind__in=[GSR.KIND_WHARTON, GSR.KIND_LIBCAL])
 
 
 class UserLocations(generics.ListAPIView):
