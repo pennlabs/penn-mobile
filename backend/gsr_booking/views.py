@@ -1,6 +1,7 @@
 from analytics.entries import FuncEntry, ViewEntry
 from dateutil.parser import parse as parse_datetime
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
@@ -11,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from gsr_booking.api_wrapper import APIError, GSRBooker, WhartonGSRBooker
+from gsr_booking.api_wrapper import APIError, GSRBooker, PennGroupsGSRBooker, WhartonGSRBooker
 from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRShareCode
 from gsr_booking.permissions import IsShareCodeOwner
 from gsr_booking.serializers import (
@@ -22,6 +23,7 @@ from gsr_booking.serializers import (
     SharedGSRBookingSerializer,
 )
 from pennmobile.analytics import LabsAnalytics
+from utils.cache import Cache
 
 
 User = get_user_model()
@@ -144,7 +146,94 @@ class Locations(generics.ListAPIView):
     """Lists all available locations to book from"""
 
     serializer_class = GSRSerializer
-    queryset = GSR.objects.all()
+    queryset = GSR.objects.filter(kind__in=[GSR.KIND_WHARTON, GSR.KIND_LIBCAL])
+
+
+class UserLocations(generics.ListAPIView):
+    """Lists all available locations to book based on user permission level"""
+
+    serializer_class = GSRSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permission_level(self, user):
+        """
+        Determine the user's permission level for caching purposes.
+        Returns a tuple of booleans: (is_penn_labs, is_wharton, is_seas)
+        """
+        is_penn_labs = user.booking_groups.filter(name="Penn Labs").exists()
+
+        if is_penn_labs:
+            # Penn Labs users see everything, so we can cache at that level
+            return "penn_labs"
+
+        # Check Wharton and SEAS access
+        is_wharton = False
+        is_seas = False
+
+        try:
+            is_wharton = WhartonGSRBooker.is_wharton(user)
+        except APIError:
+            pass
+
+        try:
+            is_seas = PennGroupsGSRBooker.is_seas(user)
+        except APIError:
+            pass
+
+        # Create a permission key based on access levels
+        return f"wharton_{is_wharton}_seas_{is_seas}"
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override list to implement per-permission-level caching
+        """
+        permission_level = self.get_permission_level(request.user)
+        cache_key = f"gsr_locations:{permission_level}"
+
+        # Try to get from cache
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
+        # If not in cache, get the data
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+
+        # Cache the response for a week (locations don't change often)
+        cache.set(cache_key, serializer.data, Cache.DAY * 7)
+
+        return Response(serializer.data)
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Penn Labs members can see all GSRs
+        if user.booking_groups.filter(name="Penn Labs").exists():
+            return GSR.objects.all()
+
+        # For other users, filter based on their memberships
+        accessible_kinds = []
+
+        # Check if user has Wharton access
+        try:
+            if WhartonGSRBooker.is_wharton(user):
+                accessible_kinds.append(GSR.KIND_WHARTON)
+        except APIError:
+            # If API call fails, user doesn't have Wharton access
+            pass
+
+        # Check if user has SEAS access
+        try:
+            if PennGroupsGSRBooker.is_seas(user):
+                accessible_kinds.append(GSR.KIND_PENNGROUPS)
+        except APIError:
+            # If API call fails, user doesn't have SEAS access
+            pass
+
+        # LibCal is accessible to everyone
+        accessible_kinds.append(GSR.KIND_LIBCAL)
+
+        return GSR.objects.filter(kind__in=accessible_kinds)
 
 
 class RecentGSRs(generics.ListAPIView):
@@ -163,6 +252,7 @@ class RecentGSRs(generics.ListAPIView):
 
 
 class CheckWharton(APIView):
+    """Check if user has Wharton privilege"""
 
     permission_classes = [IsAuthenticated]
 
@@ -171,6 +261,20 @@ class CheckWharton(APIView):
             {
                 "is_wharton": request.user.booking_groups.filter(name="Penn Labs").exists()
                 or WhartonGSRBooker.is_wharton(request.user)
+            }
+        )
+
+
+class CheckSEAS(APIView):
+    """Check if user has SEAS status"""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(
+            {
+                "is_seas": request.user.booking_groups.filter(name="Penn Labs").exists()
+                or PennGroupsGSRBooker.is_seas(request.user)
             }
         )
 

@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -43,13 +44,19 @@ def load_sample_booking(owner):
 
 
 class ShareCodeViewTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         call_command("load_gsrs")
+
+    def setUp(self):
         self.client = APIClient()
         self.owner = User.objects.create_user("owner", password="one")
         self.other = User.objects.create_user("other", password="two")
-        Group.objects.create(owner=self.other, name="Penn Labs", color="blue")
-        self.group = Group.objects.create(owner=self.owner, name="group", color="blue")
+        with mock.patch(
+            "gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False
+        ), mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False):
+            Group.objects.create(owner=self.other, name="Penn Labs", color="blue")
+            self.group = Group.objects.create(owner=self.owner, name="group", color="blue")
 
         self.booking = load_sample_booking(self.owner)
 
@@ -267,8 +274,11 @@ class ShareCodeViewTests(TestCase):
 
 
 class ShareCodeModelSerializerTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         call_command("load_gsrs")
+
+    def setUp(self):
         self.user = User.objects.create_user("owner", password="one")
         self.booking = load_sample_booking(self.user)
 
