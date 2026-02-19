@@ -1,3 +1,5 @@
+import asyncio
+
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
@@ -8,22 +10,59 @@ from gsr_booking.models import GroupMembership
 class Command(BaseCommand):
     help = "Updates SEAS status for all users."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--concurrency",
+            type=int,
+            default=20,
+            help="Max concurrent API calls (default: 20).",
+        )
+
     def handle(self, *args, **kwargs):
-        users = GroupMembership.objects.values_list("user__username", flat=True).distinct()
-        print(f"Checking {len(users)} users...")
-        penngroups_wrapper = PennGroupsBookingWrapper()
-        updated = 0
+        asyncio.run(self.ahandle(**kwargs))
 
-        for username in users:
-            user = get_user_model().objects.get(username=username)
-            is_seas = penngroups_wrapper.is_seas(user)
-            memberships = GroupMembership.objects.filter(user__username=user)
-            for membership in memberships:
-                if membership.is_seas != is_seas:
-                    membership.is_seas = is_seas
-                    membership.save()
-                    status = "now" if is_seas else "no longer"
-                    print(f"User {user} is {status} a SEAS user.")
-                    updated += 1
+    async def ahandle(self, **kwargs):
+        max_concurrency = kwargs["concurrency"]
+        usernames = await asyncio.to_thread(
+            lambda: list(
+                GroupMembership.objects.values_list("user__username", flat=True).distinct()
+            )
+        )
 
-        print(f"Done updating SEAS statuses. Updated: {updated} users.")
+        self.stdout.write(f"Checking {len(usernames)} users (concurrency={max_concurrency})...")
+
+        semaphore = asyncio.Semaphore(max_concurrency)
+        updated_count = 0
+
+        async def process_user(username: str) -> int:
+            async with semaphore:
+                wrapper = PennGroupsBookingWrapper()
+                user = await asyncio.to_thread(get_user_model().objects.get, username=username)
+                is_seas = await asyncio.to_thread(wrapper.is_seas, user)
+
+                memberships = await asyncio.to_thread(
+                    lambda: list(GroupMembership.objects.filter(user__username=username))
+                )
+
+                count = 0
+                for membership in memberships:
+                    if membership.is_seas != is_seas:
+                        membership.is_seas = is_seas
+                        await asyncio.to_thread(membership.save)
+                        status = "now" if is_seas else "no longer"
+                        self.stdout.write(f"User {user} is {status} a SEAS user.")
+                        count += 1
+                return count
+
+        results = await asyncio.gather(
+            *(process_user(u) for u in usernames),
+            return_exceptions=True,
+        )
+
+        for username, result in zip(usernames, results):
+            if isinstance(result, Exception):
+                self.stderr.write(f"Error processing {username}: {result}")
+            else:
+                updated_count += result
+
+        self.stdout.write(f"Done updating SEAS statuses. Updated: {updated_count} users.")
