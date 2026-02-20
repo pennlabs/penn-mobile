@@ -104,7 +104,7 @@ class IOSNotificationWrapper(NotificationWrapper):
         auth_key_path = (
             f"/app/secrets/notifications/ios{'/dev/apns-dev' if is_dev else '/prod/apns-prod'}.pem"
         )
-        return APNsClient(auth_key_path, use_sandbox=is_dev)
+        return APNsClient(credentials=auth_key_path, use_sandbox=is_dev)
 
     def __init__(self, is_dev=False):
         try:

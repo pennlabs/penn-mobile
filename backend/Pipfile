@@ -37,7 +37,6 @@ django-storages = "*"
 django-phonenumber-field = {extras = ["phonenumberslite"],version = "*"}
 pillow = "*"
 boto3 = "*"
-apns2 = "*"
 numpy = "*"
 celery = "==5.4.0"
 django-redis = "*"
@@ -49,6 +48,7 @@ pre-commit = "*"
 alt-profanity-check = "*"
 inflection = "*"
 firebase-admin = "*"
+apns2 = "*"
 
 [requires]
 python_version = "3.11"
