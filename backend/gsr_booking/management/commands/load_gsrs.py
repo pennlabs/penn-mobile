@@ -11,7 +11,7 @@ class Command(BaseCommand):
         with open("gsr_booking/data/gsr_data.csv") as data:
             reader = csv.reader(data)
             next(reader)
-            for lid, gid, name, service in reader:
+            for lid, gid, name, service, bookable_days in reader:
                 # gets image from s3 given the lid and gid
                 # TODO: fix image url!
                 image_url = (
@@ -23,7 +23,14 @@ class Command(BaseCommand):
                     else GSR.KIND_WHARTON if service == "wharton" else GSR.KIND_LIBCAL
                 )
                 GSR.objects.update_or_create(
-                    lid=lid, gid=gid, defaults={"name": name, "kind": kind, "image_url": image_url}
+                    lid=lid,
+                    gid=gid,
+                    defaults={
+                        "name": name,
+                        "kind": kind,
+                        "image_url": image_url,
+                        "bookable_days": int(bookable_days),
+                    },
                 )
 
         # Note: Caches are automatically cleared by post_save signals on GSR model
