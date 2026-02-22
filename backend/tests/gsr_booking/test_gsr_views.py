@@ -23,6 +23,7 @@ def create_test_gsrs(cls):
             "kind": GSR.KIND_WHARTON,
             "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-JMHH-gid-1.jpg",
             "in_use": True,
+            "bookable_days": 7,
         },
     )
     cls.agh_gsr, _ = GSR.objects.get_or_create(
@@ -33,6 +34,7 @@ def create_test_gsrs(cls):
             "kind": GSR.KIND_PENNGROUPS,
             "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-20157-gid-42437.jpg",
             "in_use": True,
+            "bookable_days": 4,
         },
     )
     cls.weigle_gsr, _ = GSR.objects.get_or_create(
@@ -43,6 +45,7 @@ def create_test_gsrs(cls):
             "kind": GSR.KIND_LIBCAL,
             "image_url": "https://s3.us-east-2.amazonaws.com/labs.api/gsr/lid-1086-gid-1889.jpg",
             "in_use": True,
+            "bookable_days": 7,
         },
     )
 
@@ -104,11 +107,26 @@ class TestGSRs(TestCase):
         """Test that the locations endpoint returns all GSRs without auth checks"""
         response = self.client.get(reverse("locations"))
         res_json = json.loads(response.content)
+        # TODO: add AGH back to availability route
         for entry in res_json:
             if entry["id"] == 1:
                 self.assertEquals(entry["name"], "Huntsman")
+                self.assertEquals(entry["kind"], GSR.KIND_WHARTON)
+                self.assertEquals(entry["lid"], "JMHH")
+                self.assertEquals(entry["gid"], 1)
+                self.assertEquals(entry["bookable_days"], 7)
             if entry["id"] == 2:
+                self.assertEquals(entry["name"], "Amy Gutmann Hall")
+                self.assertEquals(entry["kind"], GSR.KIND_PENNGROUPS)
+                self.assertEquals(entry["lid"], "20157")
+                self.assertEquals(entry["gid"], 42437)
+                self.assertEquals(entry["bookable_days"], 4)
+            if entry["id"] == 3:
                 self.assertEquals(entry["name"], "Weigle")
+                self.assertEquals(entry["kind"], GSR.KIND_LIBCAL)
+                self.assertEquals(entry["lid"], "1086")
+                self.assertEquals(entry["gid"], 1889)
+                self.assertEquals(entry["bookable_days"], 7)
 
     @mock.patch("gsr_booking.views.WhartonGSRBooker.is_wharton", return_value=False)
     @mock.patch("gsr_booking.views.PennGroupsGSRBooker.is_seas", return_value=False)
@@ -234,14 +252,15 @@ class TestGSRFunctions(TestCase):
         response = self.client.get(reverse("recent-gsrs"))
         res_json = json.loads(response.content)
         self.assertEqual(2, len(res_json))
-        self.assertEqual(6, len(res_json[0]))
-        self.assertEqual(6, len(res_json[1]))
+        self.assertEqual(7, len(res_json[0]))
+        self.assertEqual(7, len(res_json[1]))
         self.assertIn("id", res_json[0])
         self.assertIn("kind", res_json[0])
         self.assertIn("lid", res_json[0])
         self.assertIn("gid", res_json[0])
         self.assertIn("name", res_json[0])
         self.assertIn("image_url", res_json[0])
+        self.assertIn("bookable_days", res_json[0])
         self.assertNotEqual(res_json[0]["id"], res_json[1]["id"])
 
     @mock.patch("gsr_booking.api_wrapper.WhartonBookingWrapper.is_wharton", is_wharton_false)

@@ -117,6 +117,7 @@ class GSR(models.Model):
     lid = models.CharField(max_length=255)
     gid = models.IntegerField(null=True)
     name = models.CharField(max_length=255)
+    bookable_days = models.IntegerField(default=7)
     image_url = models.URLField()
 
     in_use = models.BooleanField(default=True)
