@@ -1,8 +1,6 @@
 import json
-import os
 from collections import defaultdict
 
-import requests
 from accounts.ipc import authenticated_request
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import PermissionDenied
@@ -14,38 +12,11 @@ User = get_user_model()
 
 
 def get_user_info(user):
-    """
-    Returns Platform user information.
-
-    In production: Uses IPC (authenticated_request)
-    Locally (with PLATFORM_BEARER_TOKEN): Uses direct HTTP request with bearer token
-    """
-    # Try IPC first (production)
-    try:
-        response = authenticated_request(user, "GET", "https://platform.pennlabs.org/accounts/me/")
-        if response.status_code == 403:
-            raise PermissionDenied("IPC request failed")
-        return json.loads(response.content)
-    except Exception as ipc_error:
-        # Fall back to bearer token for local development/testing
-        bearer_token = os.getenv("PLATFORM_BEARER_TOKEN")
-        if bearer_token:
-            try:
-                response = requests.get(
-                    "https://platform.pennlabs.org/accounts/me/",
-                    headers={"Authorization": f"Bearer {bearer_token}"},
-                    timeout=5,
-                )
-                if response.status_code == 401:
-                    raise PermissionDenied("Invalid PLATFORM_BEARER_TOKEN")
-                if response.status_code != 200:
-                    raise PermissionDenied(f"Platform API error: HTTP {response.status_code}")
-                return response.json()
-            except requests.exceptions.RequestException as e:
-                raise PermissionDenied(f"Platform API request failed: {str(e)}")
-
-        # No bearer token available, re-raise the original IPC error
-        raise PermissionDenied(f"IPC request failed: {str(ipc_error)}")
+    """Returns Platform user information"""
+    response = authenticated_request(user, "GET", "https://platform.pennlabs.org/accounts/me/")
+    if response.status_code == 403:
+        raise PermissionDenied("IPC request failed")
+    return json.loads(response.content)
 
 
 def get_user_clubs(user):
