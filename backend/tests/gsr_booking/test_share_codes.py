@@ -124,7 +124,6 @@ class ShareCodeViewTests(TestCase):
         payload = json.loads(response.content)
 
         # Should only contain booking info and not owner info
-        print("Payload: ", payload)
         self.assertIn("booking_id", payload)
         self.assertIn("gsr", payload)
         self.assertIn("lid", payload["gsr"])
