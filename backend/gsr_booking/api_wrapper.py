@@ -18,7 +18,6 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from gsr_booking.models import GSR, GroupMembership, GSRBooking, Reservation
 from gsr_booking.serializers import GSRBookingSerializer, GSRSerializer
-from portal.logic import get_user_info
 from utils.errors import APIError
 
 
@@ -231,29 +230,15 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         except (ConnectTimeout, ReadTimeout, ConnectionError):
             raise APIError("AGH LibCal: Connection timeout")
 
-    def get_user_pennid(self, user):
-        """
-        Get user's pennid.
-        """
-        user_info = get_user_info(user)
-        pennid = user_info.get("pennid")
-        if not pennid:
-            raise APIError("PennGroups: User pennid not found in Platform API response")
-        return pennid
-
     def get_authorized_rooms(self, user):
         """
         Check which AGH rooms the user can access via PennGroups API.
-        Returns dict mapping room extensions to their group info, or None if API fails.
+        Returns dict mapping room extensions to their group info, or empty dict if none.
         """
-        try:
-            # Get pennid from Platform API (PennGroups requires numerical pennid, not username)
-            try:
-                pennid = self.get_user_pennid(user)
-            except APIError:
-                raise APIError("PennGroups: Failed to get user pennid")
 
-            url = f"{PENNGROUPS_URL}{pennid}/groups"
+        try:
+            # user.id is the pennid (set by LabsUserBackend at authentication time)
+            url = f"{PENNGROUPS_URL}{user.id}/groups"
             response = requests.get(
                 url,
                 auth=HTTPBasicAuth(settings.PENNGROUPS_USERNAME, settings.PENNGROUPS_PASSWORD),
