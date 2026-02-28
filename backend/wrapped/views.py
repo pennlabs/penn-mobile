@@ -13,3 +13,12 @@ class SemesterView(APIView):
         semester = Semester.objects.get(semester=semester_id)
         serializer = SemesterSerializer(semester, context={"user": request.user})
         return Response(serializer.data)
+
+
+class SemesterCurrentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        current_semester = Semester.objects.filter(current=True).first()
+        serializer = SemesterSerializer(current_semester, context={"user": request.user})
+        return Response(serializer.data)
