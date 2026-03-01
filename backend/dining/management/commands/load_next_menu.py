@@ -5,7 +5,9 @@ from django.utils import timezone
 
 from dining.api_wrapper import DiningAPIWrapper
 
+from concurrent.futures import ThreadPoolExecutor
 
+yes
 class Command(BaseCommand):
     """
     Loads Menu for 1 week in advance.
@@ -13,7 +15,13 @@ class Command(BaseCommand):
     the next 7 days, including the original date.
     """
 
-    def handle(self, *args, **kwargs):
+    def load_one_menu(self, delta, *args, **kwargs):
         d = DiningAPIWrapper()
-        d.load_menu(timezone.now().date() + datetime.timedelta(days=6))
-        self.stdout.write("Loaded new Dining Menu!")
+        d.load_menu(timezone.now().date() + datetime.timedelta(days=delta))
+        self.stdout.write("Loaded new Dining Menu for " + str(timezone.now().date() + datetime.timedelta(days=delta)))
+
+
+    def handle(self, *args, **kwargs):
+        with ThreadPoolExecutor() as executor:
+            for i in range(7):
+                executor.submit(self.load_one_menu, i, *args, **kwargs)        

@@ -6,6 +6,9 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
+# NEW
+from django.db.models import F, Window
+from django.db.models.functions.window import RowNumber
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -16,7 +19,6 @@ from dining.models import DiningMenu, Venue
 from dining.serializers import DiningMenuSerializer
 from pennmobile.analytics import LabsAnalytics
 from utils.cache import Cache
-
 
 d = DiningAPIWrapper()
 
@@ -54,11 +56,21 @@ class Menus(generics.ListAPIView):
         # if date_param is out of bounds
         if date_param := self.kwargs.get("date"):
             date = make_aware(datetime.datetime.strptime(date_param, "%Y-%m-%d"))
-            return DiningMenu.objects.filter(date=date)
+            base = DiningMenu.objects.filter(date=date)
         else:
             start_date = timezone.now().date()
             end_date = start_date + datetime.timedelta(days=6)
-            return DiningMenu.objects.filter(date__gte=start_date, date__lte=end_date)
+            base = DiningMenu.objects.filter(date__gte=start_date, date__lte=end_date)
+        # Only returns most recently loaded menus (because there may be multiple in the database for one day)
+        latest = base.annotate(
+            rn=Window(
+                expression=RowNumber(),
+                partition_by=[F("venue_id"), F("date"), F("service"), F("start_time"), F("end_time")],
+                order_by=[F("id").desc()],
+            )
+        ).filter(rn=1)
+
+        return latest
 
 
 class Preferences(APIView):
