@@ -1,6 +1,7 @@
 import os
 
 import sentry_sdk
+from sentry_sdk import Event, Hint
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 
@@ -21,7 +22,23 @@ SECRET_KEY = os.environ.get("SECRET_KEY", None)
 
 # Sentry settings
 SENTRY_URL = os.environ.get("SENTRY_URL", "")
-sentry_sdk.init(dsn=SENTRY_URL, integrations=[CeleryIntegration(), DjangoIntegration()])
+
+
+def before_send(event: Event, hint: Hint) -> Event | None:
+    if (
+        "logentry" in event
+        and "message" in event["logentry"]
+        and "Wharton: Error 403 when reserving data" in event["logentry"]["message"]
+    ):
+        return None
+    return event
+
+
+sentry_sdk.init(
+    dsn=SENTRY_URL,
+    integrations=[CeleryIntegration(), DjangoIntegration()],
+    before_send=before_send,
+)
 
 # DLA settings
 PLATFORM_ACCOUNTS = {"ADMIN_PERMISSION": "penn_mobile_admin"}
