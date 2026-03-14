@@ -25,12 +25,11 @@ SENTRY_URL = os.environ.get("SENTRY_URL", "")
 
 
 def before_send(event: Event, hint: Hint | None) -> Event | None:
-    if (
-        "logentry" in event
-        and "message" in event["logentry"]
-        and "Wharton: Error 403 when reserving data" in event["logentry"]["message"]
-    ):
-        return None
+    logentry = event.get("logentry")
+    if isinstance(logentry, dict):
+        message = logentry.get("message")
+        if isinstance(message, str) and "Wharton: Error 403 when reserving data" in message:
+            return None
     return event
 
 
