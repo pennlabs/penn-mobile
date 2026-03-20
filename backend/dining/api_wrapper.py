@@ -1,15 +1,16 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import datetime
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 from django.conf import settings
 from django.utils import timezone
 from django.utils.timezone import make_aware
-from requests.exceptions import ConnectTimeout, ReadTimeout, ConnectionError
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from dining.models import DiningItem, DiningMenu, DiningStation, Venue
 from utils.errors import APIError
+
 
 OPEN_DATA_URL = "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/"
 OPEN_DATA_ENDPOINTS = {"VENUES": OPEN_DATA_URL + "venues", "MENUS": OPEN_DATA_URL + "menus"}
@@ -59,7 +60,7 @@ class DiningAPIWrapper:
         venues_route = OPEN_DATA_ENDPOINTS["VENUES"]
         response = self.request("GET", venues_route)
         if response.status_code != 200:
-            raise APIError(f"Dining: error connecting to API " + response.text)
+            raise APIError("Dining: error connecting to API " + response.text)
         venues = response.json()["result_data"]["campuses"]["203"]["cafes"]
         for key, value in venues.items():
             # Cleaning up json response
@@ -111,12 +112,15 @@ class DiningAPIWrapper:
         """
         Calls API to fetch menu for a given venue and date
         """
-        worker = DiningAPIWrapper()  # avoid shared mutable token state across threads       
+        worker = DiningAPIWrapper()  # avoid shared mutable token state across threads
         menu_base = OPEN_DATA_ENDPOINTS["MENUS"]
         response = worker.request("GET", f"{menu_base}?cafe={venue_id}&date={date}")
         if response.status_code != 200:
-            raise APIError(f"Dining: error connecting to API " + response.text)
-        return venue_id, response.json() # also storing venue_id to later access in fetched_menus list
+            raise APIError("Dining: error connecting to API " + response.text)
+        return (
+            venue_id,
+            response.json(),
+        )  # also storing venue_id to later access in fetched_menus list
 
     def load_menu(self, date=timezone.now().date()):
         """
@@ -131,9 +135,9 @@ class DiningAPIWrapper:
         venues = [v for v in Venue.objects.all() if v.venue_id not in skipped_venues]
         venue_map = {venue.venue_id: venue for venue in venues}
 
-        # Fetch all menus in parallel to speed up loading time. 
+        # Fetch all menus in parallel to speed up loading time.
         fetched_menus = []
-        with ThreadPoolExecutor(max_workers=8) as executor: # 8 can be tuned
+        with ThreadPoolExecutor(max_workers=8) as executor:  # 8 can be tuned
             futures = [executor.submit(self.fetch_menu, venue.venue_id, date) for venue in venues]
             for future in as_completed(futures):
                 try:
@@ -141,7 +145,7 @@ class DiningAPIWrapper:
                     fetched_menus.append((venue_id, response_json))
                 except Exception as e:
                     print(f"Error fetching menu: {e}")
-                    
+
         # Process the fetched menus and load them into the database
         for venue_id, response in fetched_menus:
             venue = venue_map[venue_id]
@@ -170,7 +174,6 @@ class DiningAPIWrapper:
 
                 # Append stations to dining menu
                 self.load_stations(daypart["stations"], dining_menu)
-
 
     def load_stations(self, station_response, dining_menu):
         for station_data in station_response:

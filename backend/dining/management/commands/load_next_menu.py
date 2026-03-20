@@ -1,11 +1,10 @@
 import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from django.core.management.base import BaseCommand
-from django.db import close_old_connections
 from django.utils import timezone
 
 from dining.api_wrapper import DiningAPIWrapper
+
 
 class Command(BaseCommand):
     """
@@ -20,8 +19,10 @@ class Command(BaseCommand):
         """
         d = DiningAPIWrapper()
         d.load_menu(timezone.now().date() + datetime.timedelta(days=delta))
-        self.stdout.write("Loaded new Dining Menu for " + str(timezone.now().date() + datetime.timedelta(days=delta)))
-
+        self.stdout.write(
+            "Loaded new Dining Menu for "
+            + str(timezone.now().date() + datetime.timedelta(days=delta))
+        )
 
     def handle(self, *args, **kwargs):
         """
@@ -29,5 +30,3 @@ class Command(BaseCommand):
         """
         for i in range(7):
             self.load_one_menu(i)
-
-        
