@@ -2,8 +2,6 @@ import datetime
 
 from analytics.entries import FuncEntry, ViewEntry
 from django.core.cache import cache
-
-# NEW
 from django.db.models import Count, F, Window
 from django.db.models.functions.window import RowNumber
 from django.shortcuts import get_object_or_404
