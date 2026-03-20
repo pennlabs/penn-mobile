@@ -27,13 +27,7 @@ class Command(BaseCommand):
         """
         Load menu for the next 7 days
         """
-        start_time = timezone.now()
-
         for i in range(7):
             self.load_one_menu(i)
-        
-        end_time = timezone.now()
-        elapsed_time = end_time - start_time
-        self.stdout.write(f"TOTAL menu stuff for today took {elapsed_time} seconds")
 
         

@@ -59,7 +59,7 @@ class DiningAPIWrapper:
         venues_route = OPEN_DATA_ENDPOINTS["VENUES"]
         response = self.request("GET", venues_route)
         if response.status_code != 200:
-            raise APIError("Dining: Error connecting to API")
+            raise APIError(f"Dining: error connecting to API " + response.text)
         venues = response.json()["result_data"]["campuses"]["203"]["cafes"]
         for key, value in venues.items():
             # Cleaning up json response
@@ -115,8 +115,8 @@ class DiningAPIWrapper:
         menu_base = OPEN_DATA_ENDPOINTS["MENUS"]
         response = worker.request("GET", f"{menu_base}?cafe={venue_id}&date={date}")
         if response.status_code != 200:
-            raise APIError("Dining: Error connecting to API") # MINGHAN WHICH ERRORS SHOULD I BE CATCHING
-        return venue_id, response.json()
+            raise APIError(f"Dining: error connecting to API " + response.text)
+        return venue_id, response.json() # also storing venue_id to later access in fetched_menus list
 
     def load_menu(self, date=timezone.now().date()):
         """
