@@ -8,12 +8,25 @@ from dining.api_wrapper import DiningAPIWrapper
 
 class Command(BaseCommand):
     """
-    Loads Menu for 1 week in advance.
+    Loads menu for the next 7 days, starting from today. Takes about 3 minutes to run.
     Invariant: For every date, the database should contain the menus for
     the next 7 days, including the original date.
     """
 
-    def handle(self, *args, **kwargs):
+    def load_one_menu(self, delta, *args, **kwargs):
+        """
+        Loads menu for a single day
+        """
         d = DiningAPIWrapper()
-        d.load_menu(timezone.now().date() + datetime.timedelta(days=6))
-        self.stdout.write("Loaded new Dining Menu!")
+        d.load_menu(timezone.now().date() + datetime.timedelta(days=delta))
+        self.stdout.write(
+            "Loaded new Dining Menu for "
+            + str(timezone.now().date() + datetime.timedelta(days=delta))
+        )
+
+    def handle(self, *args, **kwargs):
+        """
+        Load menu for the next 7 days
+        """
+        for i in range(7):
+            self.load_one_menu(i)

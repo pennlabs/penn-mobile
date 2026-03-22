@@ -2,7 +2,8 @@ import datetime
 
 from analytics.entries import FuncEntry, ViewEntry
 from django.core.cache import cache
-from django.db.models import Count
+from django.db.models import Count, F, Window
+from django.db.models.functions.window import RowNumber
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.timezone import make_aware
@@ -54,11 +55,27 @@ class Menus(generics.ListAPIView):
         # if date_param is out of bounds
         if date_param := self.kwargs.get("date"):
             date = make_aware(datetime.datetime.strptime(date_param, "%Y-%m-%d"))
-            return DiningMenu.objects.filter(date=date)
+            base = DiningMenu.objects.filter(date=date)
         else:
             start_date = timezone.now().date()
             end_date = start_date + datetime.timedelta(days=6)
-            return DiningMenu.objects.filter(date__gte=start_date, date__lte=end_date)
+            base = DiningMenu.objects.filter(date__gte=start_date, date__lte=end_date)
+        # Only returns most recently loaded menus
+        latest = base.annotate(
+            rn=Window(
+                expression=RowNumber(),
+                partition_by=[
+                    F("venue_id"),
+                    F("date"),
+                    F("service"),
+                    F("start_time"),
+                    F("end_time"),
+                ],
+                order_by=[F("id").desc()],
+            )
+        ).filter(rn=1)
+
+        return latest
 
 
 class Preferences(APIView):

@@ -1,11 +1,12 @@
 import datetime
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 from django.conf import settings
 from django.utils import timezone
 from django.utils.timezone import make_aware
-from requests.exceptions import ConnectTimeout, ReadTimeout
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from dining.models import DiningItem, DiningMenu, DiningStation, Venue
 from utils.errors import APIError
@@ -59,7 +60,7 @@ class DiningAPIWrapper:
         venues_route = OPEN_DATA_ENDPOINTS["VENUES"]
         response = self.request("GET", venues_route)
         if response.status_code != 200:
-            raise APIError("Dining: Error connecting to API")
+            raise APIError("Dining: error connecting to API " + response.text)
         venues = response.json()["result_data"]["campuses"]["203"]["cafes"]
         for key, value in venues.items():
             # Cleaning up json response
@@ -107,21 +108,47 @@ class DiningAPIWrapper:
             results.append(value)
         return results
 
+    def fetch_menu(self, venue_id, date):
+        """
+        Calls API to fetch menu for a given venue and date
+        """
+        worker = DiningAPIWrapper()  # avoid shared mutable token state across threads
+        menu_base = OPEN_DATA_ENDPOINTS["MENUS"]
+        response = worker.request("GET", f"{menu_base}?cafe={venue_id}&date={date}")
+        if response.status_code != 200:
+            raise APIError("Dining: error connecting to API " + response.text)
+        return (
+            venue_id,
+            response.json(),
+        )  # also storing venue_id to later access in fetched_menus list
+
     def load_menu(self, date=timezone.now().date()):
         """
-        Loads the weeks menu starting from today
+        Loads today's menu
         NOTE: This method should only be used in load_next_menu.py, which is
         run based on a cron job every day
         """
-
         # Venues without a menu should not be parsed
         skipped_venues = [747, 1163, 1731, 1732, 1733, 1464004, 1464009]
 
         # TODO: Handle API responses during empty menus (holidays)
-        menu_base = OPEN_DATA_ENDPOINTS["MENUS"]
         venues = [v for v in Venue.objects.all() if v.venue_id not in skipped_venues]
-        for venue in venues:
-            response = self.request("GET", f"{menu_base}?cafe={venue.venue_id}&date={date}").json()
+        venue_map = {venue.venue_id: venue for venue in venues}
+
+        # Fetch all menus in parallel to speed up loading time.
+        fetched_menus = []
+        with ThreadPoolExecutor(max_workers=8) as executor:  # 8 can be tuned
+            futures = [executor.submit(self.fetch_menu, venue.venue_id, date) for venue in venues]
+            for future in as_completed(futures):
+                try:
+                    venue_id, response_json = future.result()
+                    fetched_menus.append((venue_id, response_json))
+                except Exception as e:
+                    print(f"Error fetching menu: {e}")
+
+        # Process the fetched menus and load them into the database
+        for venue_id, response in fetched_menus:
+            venue = venue_map[venue_id]
             # Load new items into database
             # TODO: There is something called a "goitem" for venues like English House.
             # We are currently not loading them in
@@ -144,6 +171,7 @@ class DiningAPIWrapper:
                     end_time=daypart["endtime"],
                     service=daypart["label"],
                 )
+
                 # Append stations to dining menu
                 self.load_stations(daypart["stations"], dining_menu)
 
