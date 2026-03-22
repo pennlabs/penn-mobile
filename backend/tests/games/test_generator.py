@@ -3,8 +3,8 @@ from collections import Counter
 from django.test import SimpleTestCase
 
 from games.generator import (
-    MIN_LEN,
     MAX_LEN,
+    MIN_LEN,
     MIN_TOTAL_WORDS,
     SIX_LETTER_WORDS,
     WORD_SET,
@@ -103,7 +103,9 @@ class TestSolveGame(SimpleTestCase):
                 self.assertLessEqual(a, b, f"Alphabetical order violated: {a!r} before {b!r}")
             else:
                 self.assertGreater(
-                    len(a), len(b), f"Length order violated: {a!r} (len {len(a)}) before {b!r} (len {len(b)})"
+                    len(a),
+                    len(b),
+                    f"Length order violated: {a!r} (len {len(a)}) before {b!r} (len {len(b)})",
                 )
 
     def test_empty_like_board_returns_only_valid_words(self):

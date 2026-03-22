@@ -1,7 +1,12 @@
 from django.urls import path
-from django.views.decorators.cache import cache_page
 
-from games.views import TodayGameView, GameByDateView, LeaderboardByDateView, SubmitScoreView, ValidateGameLogView
+from games.views import (
+    GameByDateView,
+    LeaderboardByDateView,
+    SubmitScoreView,
+    TodayGameView,
+    ValidateGameLogView,
+)
 
 
 urlpatterns = [

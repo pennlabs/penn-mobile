@@ -1,8 +1,9 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from games.models import Game
 
 from games.generator import generate_good_game
+from games.models import Game
+
 
 class Command(BaseCommand):
     help = "Generate and save 100 future Word Hunt games"

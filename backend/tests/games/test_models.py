@@ -69,7 +69,9 @@ class TestLeaderboardEntryModel(TestCase):
     def test_unique_constraint_same_user_same_game(self):
         LeaderboardEntry.objects.create(game=self.game, user=self.user1, score=300, words_found=3)
         with self.assertRaises(IntegrityError):
-            LeaderboardEntry.objects.create(game=self.game, user=self.user1, score=400, words_found=4)
+            LeaderboardEntry.objects.create(
+                game=self.game, user=self.user1, score=400, words_found=4
+            )
 
     def test_different_users_same_game_allowed(self):
         LeaderboardEntry.objects.create(game=self.game, user=self.user1, score=300, words_found=3)
@@ -112,7 +114,10 @@ class TestLeaderboardEntryModel(TestCase):
 class TestGameSerializer(TestCase):
     def setUp(self):
         self.game = Game.objects.create(
-            date=DATE, board=BOARD, possible_words=POSSIBLE_WORDS, seed=SEED,
+            date=DATE,
+            board=BOARD,
+            possible_words=POSSIBLE_WORDS,
+            seed=SEED,
             freqs={"3": 5, "4": 3},
         )
 

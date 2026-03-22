@@ -13,10 +13,10 @@ MOCK_BOARD = [["a", "b", "c", "d", "e"]] * 5
 MOCK_SEED = "garden"
 MOCK_SOLS = (
     ["cat", "bat", "rat", "hat", "mat", "sat", "fat", "pat", "vat", "lat"] * 10  # 100 × len-3
-    + ["cats", "bats", "rats", "hats", "mats"] * 10                               #  50 × len-4
-    + ["table", "cable", "fable", "sable"] * 5                                    #  20 × len-5
-    + ["garden"] * 10                                                              #  10 × len-6
-    + ["gardens"] * 10                                                             #  10 × len-7
+    + ["cats", "bats", "rats", "hats", "mats"] * 10  # 50 × len-4
+    + ["table", "cable", "fable", "sable"] * 5  # 20 × len-5
+    + ["garden"] * 10  # 10 × len-6
+    + ["gardens"] * 10  # 10 × len-7
 )  # total: 190
 
 

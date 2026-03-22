@@ -1,6 +1,7 @@
 import random
-from pathlib import Path
 import zipfile
+from pathlib import Path
+
 
 BASE_DIR = Path(__file__).resolve().parent
 zip_file_path = BASE_DIR / "words.txt.zip"
@@ -9,10 +10,10 @@ extract_directory = BASE_DIR
 if not zip_file_path.exists():
     raise FileNotFoundError(f"words.txt.zip not found at {zip_file_path}")
 
-with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
     try:
-        with zip_ref.open('words.txt') as file:
-            ws = [line.decode('utf-8').strip() for line in file if line.strip()]
+        with zip_ref.open("words.txt") as file:
+            ws = [line.decode("utf-8").strip() for line in file if line.strip()]
     except KeyError as ex:
         raise FileNotFoundError(f"words.txt is not in {zip_file_path}") from ex
 
@@ -33,6 +34,7 @@ for w in ws:
         WORD_SET.add(w)
         for i in range(1, len(w) + 1):
             PREFIX_SET.add(w[:i])
+
 
 def neighbors(n, x, y):
     for dx in (-1, 0, 1):
@@ -66,11 +68,10 @@ def generate_game():
 
     return game, seed_word
 
+
 def solve_game(game, min_len=MIN_LEN, max_len=MAX_LEN):
     n = len(game)
-    dirs = [(-1, -1), (-1, 0), (-1, 1),
-            (0, -1),           (0, 1),
-            (1, -1),  (1, 0),  (1, 1)]
+    dirs = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
     found = set()
     visited = [[False] * n for _ in range(n)]
