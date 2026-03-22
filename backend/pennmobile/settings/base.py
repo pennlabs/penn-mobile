@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "sublet",
     "phonenumber_field",
     "market",
+    "games"
 ]
 
 MIDDLEWARE = [
