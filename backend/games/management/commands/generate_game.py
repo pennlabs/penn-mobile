@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = "Generate and save 100 future Word Hunt games"
 
     def handle(self, *args, **kwargs):
-        for i in range(1, 101):
+        for i in range(100):
             future_date = timezone.localdate() + timezone.timedelta(days=i)
             game, seed, sols = generate_good_game()
 

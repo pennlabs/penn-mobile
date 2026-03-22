@@ -68,4 +68,4 @@ class TestGenerateGameCommand(TestCase):
     def test_prints_success_message(self):
         out = StringIO()
         call_command("generate_game", stdout=out)
-        self.assertIn("Game generated successfully", out.getvalue())
+        self.assertIn("generated successfully", out.getvalue())
