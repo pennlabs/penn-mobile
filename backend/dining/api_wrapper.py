@@ -6,7 +6,7 @@ import requests
 from django.conf import settings
 from django.utils import timezone
 from django.utils.timezone import make_aware
-from requests.exceptions import ConnectTimeout, ReadTimeout
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from dining.models import DiningItem, DiningMenu, DiningStation, Venue
 from utils.errors import APIError

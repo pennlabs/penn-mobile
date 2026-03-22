@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
+from requests.exceptions import ConnectionError
 from rest_framework.test import APIClient
 
 from dining.api_wrapper import APIError, DiningAPIWrapper
