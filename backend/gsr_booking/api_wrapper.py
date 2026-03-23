@@ -242,7 +242,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
             response = requests.get(
                 url,
                 auth=HTTPBasicAuth(settings.PENNGROUPS_USERNAME, settings.PENNGROUPS_PASSWORD),
-                timeout=16,
+                timeout=5,
             )
 
             # Check HTTP status first
