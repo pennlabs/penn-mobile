@@ -2,8 +2,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
-from django.views.generic import TemplateView
-from rest_framework.schemas import get_schema_view
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 
 urlpatterns = [
@@ -13,18 +12,13 @@ urlpatterns = [
     path("accounts/", include("accounts.urls", namespace="accounts")),
     path("user/", include("user.urls")),
     path("laundry/", include("laundry.urls")),
-    path(
-        "openapi/",
-        get_schema_view(title="Penn Mobile Backend Documentation", public=True),
-        name="openapi-schema",
-    ),
+    path("openapi/", SpectacularAPIView.as_view(), name="openapi-schema"),
     path(
         "documentation/",
-        TemplateView.as_view(
-            template_name="redoc.html", extra_context={"schema_url": "openapi-schema"}
-        ),
+        SpectacularSwaggerView.as_view(url_name="openapi-schema"),
         name="documentation",
     ),
+    path("redoc/", SpectacularRedocView.as_view(url_name="openapi-schema"), name="redoc"),
     path("dining/", include("dining.urls")),
     path("penndata/", include("penndata.urls")),
     path("sublet/", include("sublet.urls")),
