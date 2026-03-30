@@ -11,7 +11,7 @@ class Game(models.Model):
     board = models.JSONField()
     possible_words = models.JSONField()
     seed = models.CharField(max_length=32)
-    freqs = models.JSONField(default=dict)
+    word_length_freq = models.JSONField(default=dict)
 
     def __str__(self):
         return str(self.date)
@@ -26,7 +26,7 @@ class LeaderboardEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="word_hunt_scores")
 
     score = models.PositiveIntegerField(db_index=True)
-    words_found = models.PositiveIntegerField()
+    num_words_found = models.PositiveIntegerField()
 
     submitted_at = models.DateTimeField(auto_now_add=True)
 
@@ -34,4 +34,4 @@ class LeaderboardEntry(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["game", "user"], name="unique_entry_per_user_per_game")
         ]
-        ordering = ["-score", "words_found", "submitted_at"]
+        ordering = ["-score"]

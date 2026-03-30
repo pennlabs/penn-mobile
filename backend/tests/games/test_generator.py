@@ -4,7 +4,6 @@ from django.test import SimpleTestCase
 
 from games.generator import (
     MAX_LEN,
-    MIN_LEN,
     MIN_TOTAL_WORDS,
     SIX_LETTER_WORDS,
     WORD_SET,
@@ -90,7 +89,7 @@ class TestSolveGame(SimpleTestCase):
 
     def test_all_words_within_length_limits(self):
         for word in self.sols:
-            self.assertGreaterEqual(len(word), MIN_LEN)
+            self.assertGreaterEqual(len(word), 3)
             self.assertLessEqual(len(word), MAX_LEN)
 
     def test_no_duplicate_words(self):

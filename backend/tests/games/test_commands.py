@@ -52,7 +52,7 @@ class TestGenerateGameCommand(TestCase):
         expected = {"3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0}
         for w in MOCK_SOLS:
             expected[str(len(w))] += 1
-        self.assertEqual(expected, game.freqs)
+        self.assertEqual(expected, game.word_length_freq)
 
     @mock.patch(
         "games.management.commands.generate_game.generate_good_game", mock_generate_good_game

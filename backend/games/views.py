@@ -6,7 +6,6 @@ from rest_framework.views import APIView
 
 from games.models import Game, LeaderboardEntry
 from games.serializers import GameSerializer, LeaderboardEntrySerializer
-from games.validators import validate_words_for_game
 from pennmobile.analytics import LabsAnalytics
 
 
@@ -63,57 +62,39 @@ class LeaderboardByDateView(APIView):
 )
 class SubmitScoreView(APIView):
     """
-    POST: submits the authenticated user's score for a specific date
+    POST: validates submitted words, computes score, and saves leaderboard entry
     """
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request, date):
         game = get_object_or_404(Game, date=date)
-        score = request.data.get("score")
-        words_found = request.data.get("words_found")
+        submitted_words = request.data.get("words")
 
-        if score is None or words_found is None:
-            return Response({"error": "score and words_found are required."}, status=400)
+        if not isinstance(submitted_words, list):
+            return Response({"error": "words must be a list."}, status=400)
 
-        if (
-            not isinstance(score, int)
-            or not isinstance(words_found, int)
-            or score < 0
-            or words_found < 0
-        ):
+        normalized = [w.lower().strip() for w in submitted_words]
+
+        if len(normalized) != len(set(normalized)):
+            return Response({"error": "Duplicate words submitted."}, status=400)
+
+        legal_words = set(game.possible_words)
+        invalid = [w for w in normalized if w not in legal_words]
+        if invalid:
             return Response(
-                {"error": "score and words_found must be non-negative integers."}, status=400
+                {"error": "Invalid words submitted.", "invalid_words": invalid}, status=400
             )
 
         if LeaderboardEntry.objects.filter(game=game, user=request.user).exists():
             return Response({"error": "Score already submitted for this game."}, status=400)
 
+        score = sum((len(w) - 2) ** 2 * 100 for w in normalized)
+
         entry = LeaderboardEntry.objects.create(
             game=game,
             user=request.user,
             score=score,
-            words_found=words_found,
+            num_words_found=len(normalized),
         )
         return Response(LeaderboardEntrySerializer(entry).data, status=201)
-
-
-@LabsAnalytics.record_apiview(
-    ViewEntry(name="validate-game-log"),
-)
-class ValidateGameLogView(APIView):
-    """
-    POST: returns whether the words chosen are valid
-    """
-
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, date):
-        game = get_object_or_404(Game, date=date)
-        submitted_words = request.data.get("words", [])
-
-        result = validate_words_for_game(game, submitted_words)
-        if not result["valid"]:
-            return Response(result, status=400)
-
-        return Response({"valid": True}, status=200)

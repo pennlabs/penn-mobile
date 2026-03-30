@@ -23,7 +23,7 @@ class Command(BaseCommand):
                     "board": game,
                     "possible_words": sols,
                     "seed": seed,
-                    "freqs": word_freqs,
+                    "word_length_freq": word_freqs,
                 },
             )
 

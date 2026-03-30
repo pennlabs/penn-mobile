@@ -10,30 +10,29 @@ extract_directory = BASE_DIR
 if not zip_file_path.exists():
     raise FileNotFoundError(f"words.txt.zip not found at {zip_file_path}")
 
-with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
-    try:
-        with zip_ref.open("words.txt") as file:
-            ws = [line.decode("utf-8").strip() for line in file if line.strip()]
-    except KeyError as ex:
-        raise FileNotFoundError(f"words.txt is not in {zip_file_path}") from ex
-
-MIN_LEN, MAX_LEN = 3, 8
+MAX_LEN = 8
 MIN_TOTAL_WORDS = 175
 
 WORD_SET = set()
 PREFIX_SET = set()
 SIX_LETTER_WORDS = []
 
-for w in ws:
-    w = w.lower()
-    if not w.isalpha():
-        continue
-    if len(w) == 6:
-        SIX_LETTER_WORDS.append(w)
-    if MIN_LEN <= len(w) <= MAX_LEN:
-        WORD_SET.add(w)
-        for i in range(1, len(w) + 1):
-            PREFIX_SET.add(w[:i])
+with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
+    try:
+        with zip_ref.open("words.txt") as file:
+            for line in file:
+                if line.strip():
+                    w = line.decode("utf-8").strip().lower()
+                    if not w.isalpha():
+                        continue
+                    if len(w) == 6:
+                        SIX_LETTER_WORDS.append(w)
+                    if len(w) <= MAX_LEN:
+                        WORD_SET.add(w)
+                        for i in range(1, len(w) + 1):
+                            PREFIX_SET.add(w[:i])
+    except KeyError as ex:
+        raise FileNotFoundError(f"words.txt is not in {zip_file_path}") from ex
 
 
 def neighbors(n, x, y):
@@ -69,35 +68,31 @@ def generate_game():
     return game, seed_word
 
 
-def solve_game(game, min_len=MIN_LEN, max_len=MAX_LEN):
+def solve_game(game, min_len=3, max_len=MAX_LEN):
     n = len(game)
     dirs = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
     found = set()
-    visited = [[False] * n for _ in range(n)]
-
-    def dfs(r, c, s):
-        s += game[r][c]
-        if s not in PREFIX_SET:
-            return
-        if len(s) >= min_len and s in WORD_SET:
-            found.add(s)
-        if len(s) == max_len:
-            return
-
-        visited[r][c] = True
-        for dr, dc in dirs:
-            rr, cc = r + dr, c + dc
-            if 0 <= rr < n and 0 <= cc < n and not visited[rr][cc]:
-                dfs(rr, cc, s)
-        visited[r][c] = False
 
     for r in range(n):
         for c in range(n):
-            dfs(r, c, "")
+            stack = [(r, c, "", frozenset())]
+            while stack:
+                cr, cc, s, vis = stack.pop()
+                s = s + game[cr][cc]
+                if s not in PREFIX_SET:
+                    continue
+                if len(s) >= min_len and s in WORD_SET:
+                    found.add(s)
+                if len(s) == max_len:
+                    continue
+                vis = vis | {(cr, cc)}
+                for dr, dc in dirs:
+                    rr, nc = cr + dr, cc + dc
+                    if 0 <= rr < n and 0 <= nc < n and (rr, nc) not in vis:
+                        stack.append((rr, nc, s, vis))
 
-    results = sorted(found, key=lambda w: (-len(w), w))
-    return results
+    return sorted(found, key=lambda w: (-len(w), w))
 
 
 def generate_good_game(min_total_words=MIN_TOTAL_WORDS):
