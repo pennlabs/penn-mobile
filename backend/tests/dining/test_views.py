@@ -28,8 +28,6 @@ def mock_dining_requests(url, *args, **kwargs):
         def json(self):
             return self.json_data
 
-    print("url: " + url)
-    print("args: " + str(args))
     if "token" in url:
         file_path = "tests/dining/dining_token.json"
     elif "venues" in args[0]:
