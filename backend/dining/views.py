@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 from dining.api_wrapper import APIError, DiningAPIWrapper
 from dining.models import DiningMenu, Venue
 from dining.serializers import DiningMenuSerializer
+from dining.utils.menu_view_cache import get_menu_view_cache, set_menu_view_cache
 from pennmobile.analytics import LabsAnalytics
 from utils.cache import Cache
 
@@ -76,6 +77,17 @@ class Menus(generics.ListAPIView):
         ).filter(rn=1)
 
         return latest
+
+    def get(self, request, *args, **kwargs):
+        try:
+            date_param = self.kwargs.get("date")
+            if get_menu_view_cache(date_param) is not None:
+                return Response(get_menu_view_cache(date_param))
+            res = super().get(request, *args, **kwargs)
+            set_menu_view_cache(date_param, res.data)
+            return res
+        except APIError as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class Preferences(APIView):
