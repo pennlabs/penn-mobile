@@ -30,6 +30,7 @@ urlpatterns = [
     path("sublet/", include("sublet.urls")),
     path("market/", include("market.urls")),
     path("wrapped/", include("wrapped.urls")),
+    path("games/", include("games.urls")),
 ]
 
 
