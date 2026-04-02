@@ -80,8 +80,8 @@ class SubmitScoreView(APIView):
             return Response({"error": "Duplicate words submitted."}, status=400)
 
         legal_words = set(game.possible_words)
-        invalid = [w for w in normalized if w not in legal_words]
-        if invalid:
+        if any(w not in legal_words for w in normalized):
+            invalid = [w for w in normalized if w not in legal_words]
             return Response(
                 {"error": "Invalid words submitted.", "invalid_words": invalid}, status=400
             )
