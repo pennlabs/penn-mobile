@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from dining.api_wrapper import DiningAPIWrapper
+from dining.utils.menu_view_cache import delete_menu_view_cache
 
 
 class Command(BaseCommand):
@@ -19,6 +20,7 @@ class Command(BaseCommand):
         """
         d = DiningAPIWrapper()
         d.load_menu(timezone.now().date() + datetime.timedelta(days=delta))
+        delete_menu_view_cache(timezone.now().date() + datetime.timedelta(days=delta))
         self.stdout.write(
             "Loaded new Dining Menu for "
             + str(timezone.now().date() + datetime.timedelta(days=delta))
