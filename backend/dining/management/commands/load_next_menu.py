@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from dining.api_wrapper import DiningAPIWrapper
+from dining.utils.menu_view_cache import delete_menu_view_cache
 
 
 class Command(BaseCommand):
@@ -13,15 +14,16 @@ class Command(BaseCommand):
     the next 7 days, including the original date.
     """
 
-    def load_one_day(self, today, delta, *args, **kwargs):
+    def load_one_menu(self, delta, *args, **kwargs):
         """
-        Loads all menus for a single day
+        Loads menu for a single day
         """
         d = DiningAPIWrapper()
-
-        d.load_menus(today + datetime.timedelta(days=delta))
+        d.load_menu(timezone.now().date() + datetime.timedelta(days=delta))
+        delete_menu_view_cache(timezone.now().date() + datetime.timedelta(days=delta))
         self.stdout.write(
-            "Loaded new Dining Menu for " + str(today + datetime.timedelta(days=delta))
+            "Loaded new Dining Menu for "
+            + str(timezone.now().date() + datetime.timedelta(days=delta))
         )
 
     def handle(self, *args, **kwargs):
