@@ -21,6 +21,10 @@ class DiningItem(models.Model):
     # Technically, postgres supports json fields but that involves local postgres
     # instead of sqlite AND we don't need to query on this field
 
+    # TODO: New fields to add from allergens:
+    # vegetarian, vegan, kosher, jain, ask us
+    # peanut, tree nut, sesame, fish, wheat/gluten, milk, egg, soy
+
     def __str__(self):
         return f"{self.name}"
 
