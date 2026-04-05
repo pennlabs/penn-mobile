@@ -6,7 +6,7 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.types import Event, Hint
 
 from pennmobile.settings.base import *  # noqa: F401, F403
-from pennmobile.settings.base import DOMAINS, REDIS_URL
+from pennmobile.settings.base import DOMAINS, REDIS_URL, SPECTACULAR_SETTINGS
 
 
 DEBUG = False
@@ -49,4 +49,9 @@ CACHES = {
         "LOCATION": REDIS_URL,
         "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
     }
+}
+
+SPECTACULAR_SETTINGS = {
+    **SPECTACULAR_SETTINGS,
+    "DISABLE_ERRORS_AND_WARNINGS": True,
 }
