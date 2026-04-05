@@ -5,12 +5,15 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.urls import reverse
+from django.utils import timezone
 from requests.exceptions import ConnectionError
 from rest_framework.test import APIClient
 
 from dining.api_wrapper import APIError, DiningAPIWrapper
 from dining.models import DiningMenu, Venue
+from dining.utils.menu_view_cache import get_menu_view_cache
 
 
 User = get_user_model()
@@ -35,7 +38,12 @@ def mock_dining_requests(url, *args, **kwargs):
         raise ValueError
 
     with open(file_path) as data:
-        return Mock(json.load(data), 200)
+        if len(args) > 0 and "menus" in args[0]:
+            res = json.load(data)
+            res["menus"]["days"][0]["date"] = str(timezone.now().date())
+            return Mock(res, 200)
+        else:
+            return Mock(json.load(data), 200)
 
 
 def mock_request_raise_error(*args, **kwargs):
@@ -137,7 +145,7 @@ class TestMenus(TestCase):
         self.try_structure(response.json())
 
     def test_get_date(self):
-        response = self.client.get("/dining/menus/2022-10-04/")
+        response = self.client.get("/dining/menus/" + str(timezone.now().date()) + "/")
         self.try_structure(response.json())
 
     @mock.patch("requests.request", mock_dining_requests)
@@ -147,6 +155,25 @@ class TestMenus(TestCase):
         wrapper = DiningAPIWrapper()
         wrapper.load_menus()
         self.assertEqual(DiningMenu.objects.count(), 0)
+
+
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+)
+class TestMenuViewCache(TestCase):
+    @mock.patch("requests.post", mock_dining_requests)
+    @mock.patch("requests.request", mock_dining_requests)
+    def test_cache_cleared_on_load_next_menu(self):
+        call_command("load_next_menu")
+        response = self.client.get(reverse("menus-with-date", args=[str(timezone.now().date())]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(get_menu_view_cache(str(timezone.now().date())))
+        call_command("load_next_menu")
+        self.assertIsNone(get_menu_view_cache(str(timezone.now().date())))
 
 
 class TestPreferences(TestCase):

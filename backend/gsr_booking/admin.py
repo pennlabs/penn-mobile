@@ -34,7 +34,7 @@ class GSRAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         return GSR.all_objects.all()
 
-    list_display = ["name", "kind", "lid", "gid", "in_use"]
+    list_display = ["name", "kind", "lid", "gid", "in_use", "bookable_days"]
     search_fields = ["name", "lid", "gid"]
     ordering = ["-in_use"]
 

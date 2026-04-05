@@ -3,12 +3,12 @@ import asyncio
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
-from gsr_booking.api_wrapper import WhartonBookingWrapper
+from gsr_booking.api_wrapper import PennGroupsBookingWrapper
 from gsr_booking.models import GroupMembership
 
 
 class Command(BaseCommand):
-    help = "Updates Wharton privilege status for all users."
+    help = "Updates SEAS status for all users."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -36,9 +36,9 @@ class Command(BaseCommand):
 
         async def process_user(username: str) -> int:
             async with semaphore:
-                wrapper = WhartonBookingWrapper()
+                wrapper = PennGroupsBookingWrapper()
                 user = await asyncio.to_thread(get_user_model().objects.get, username=username)
-                is_wharton = await asyncio.to_thread(wrapper.is_wharton, user)
+                is_seas = await asyncio.to_thread(wrapper.is_seas, user)
 
                 memberships = await asyncio.to_thread(
                     lambda: list(GroupMembership.objects.filter(user__username=username))
@@ -46,11 +46,11 @@ class Command(BaseCommand):
 
                 count = 0
                 for membership in memberships:
-                    if membership.is_wharton != is_wharton:
-                        membership.is_wharton = is_wharton
+                    if membership.is_seas != is_seas:
+                        membership.is_seas = is_seas
                         await asyncio.to_thread(membership.save)
-                        status = "now" if is_wharton else "no longer"
-                        self.stdout.write(f"User {user} is {status} a Wharton user.")
+                        status = "now" if is_seas else "no longer"
+                        self.stdout.write(f"User {user} is {status} a SEAS user.")
                         count += 1
                 return count
 
@@ -65,4 +65,4 @@ class Command(BaseCommand):
             else:
                 updated_count += result
 
-        self.stdout.write(f"Done updating Wharton statuses. Updated: {updated_count} users.")
+        self.stdout.write(f"Done updating SEAS statuses. Updated: {updated_count} users.")

@@ -1,0 +1,12 @@
+{
+    "WsGetGroupsLiteResult": {
+        "resultMetadata": {
+            "resultCode": "SUBJECT_NOT_FOUND",
+            "resultMessage": "There were 0 successes and 1 failures...",
+            "success": "F"
+        },
+        "wsSubject": {
+            "id": "82936717"
+        }
+    }
+}

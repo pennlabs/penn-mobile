@@ -1,3 +1,5 @@
+import datetime
+
 import requests
 from analytics.entries import FuncEntry
 from django.conf import settings
@@ -42,6 +44,7 @@ def update_machine_object(machine, machine_type_data):
         machine_type_data["running"] += 1
         try:
             machine_type_data["time_remaining"].append(int(time_remaining) // 60)
+            machine_type_data["time_remaining_seconds"].append(int(time_remaining))
         except ValueError:
             pass
     elif status in ["AVAILABLE", "COMPLETE"]:
@@ -65,8 +68,22 @@ def parse_a_room(room_request_link):
     Return names, hall numbers, and the washers/dryers available for a certain room_id
     """
 
-    washers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
-    dryers = {"open": 0, "running": 0, "out_of_order": 0, "offline": 0, "time_remaining": []}
+    washers = {
+        "open": 0,
+        "running": 0,
+        "out_of_order": 0,
+        "offline": 0,
+        "time_remaining": [],
+        "time_remaining_seconds": [],
+    }
+    dryers = {
+        "open": 0,
+        "running": 0,
+        "out_of_order": 0,
+        "offline": 0,
+        "time_remaining": [],
+        "time_remaining_seconds": [],
+    }
 
     detailed = []
 
@@ -88,6 +105,22 @@ def parse_a_room(room_request_link):
                 if machine["currentStatus"]["statusId"] == "IN_USE"
                 else 0
             ),
+            "time_remaining_seconds": (
+                int(machine["currentStatus"]["remainingSeconds"])
+                if machine["currentStatus"]["statusId"] == "IN_USE"
+                else 0
+            ),
+            "finishes_at": (
+                (
+                    datetime.datetime.fromisoformat(machine["currentStatus"]["receivedAt"])
+                    + datetime.timedelta(seconds=int(machine["currentStatus"]["remainingSeconds"]))
+                )
+                if machine["currentStatus"]["statusId"] == "IN_USE"
+                else None
+            ),
+            "selected_cycle": machine["currentStatus"]["selectedCycle"].get("name", None),
+            "selected_modifier": machine["currentStatus"]["selectedModifier"].get("name", None),
+            "display_status": (machine["currentStatus"]["displayStatus"].get("values", [])),
         }
         for machine in request_json
         if machine["isWasher"] or machine["isDryer"]

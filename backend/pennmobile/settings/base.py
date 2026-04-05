@@ -10,6 +10,10 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 import os
 
 import dj_database_url
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 DOMAINS = os.environ.get("DOMAINS", "example.com").split(",")
@@ -55,6 +59,7 @@ INSTALLED_APPS = [
     "sublet",
     "phonenumber_field",
     "market",
+    "games",
 ]
 
 MIDDLEWARE = [
@@ -176,9 +181,15 @@ DINING_PASSWORD = os.environ.get("DINING_PASSWORD", None)
 DINING_ID = os.environ.get("DINING_ID", None)
 DINING_SECRET = os.environ.get("DINING_SECRET", None)
 
-LIBCAL_ID = os.environ.get("LIBCAL_ID", None)
-LIBCAL_SECRET = os.environ.get("LIBCAL_SECRET", None)
+
+# GSR Booking API Credentials
+AGH_LIBCAL_ID = os.environ.get("AGH_LIBCAL_ID", None)
+AGH_LIBCAL_SECRET = os.environ.get("AGH_LIBCAL_SECRET", None)
+GENERAL_LIBCAL_ID = os.environ.get("GENERAL_LIBCAL_ID", None)
+GENERAL_LIBCAL_SECRET = os.environ.get("GENERAL_LIBCAL_SECRET", None)
 WHARTON_TOKEN = os.environ.get("WHARTON_TOKEN", None)
+PENNGROUPS_USERNAME = os.environ.get("PENNGROUPS_USERNAME", None)
+PENNGROUPS_PASSWORD = os.environ.get("PENNGROUPS_PASSWORD", None)
 
 # Fitness Token
 FITNESS_TOKEN = os.environ.get("FITNESS_TOKEN", None)

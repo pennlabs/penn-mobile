@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -43,13 +44,19 @@ def load_sample_booking(owner):
 
 
 class ShareCodeViewTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         call_command("load_gsrs")
+
+    def setUp(self):
         self.client = APIClient()
         self.owner = User.objects.create_user("owner", password="one")
         self.other = User.objects.create_user("other", password="two")
-        Group.objects.create(owner=self.other, name="Penn Labs", color="blue")
-        self.group = Group.objects.create(owner=self.owner, name="group", color="blue")
+        with mock.patch(
+            "gsr_booking.models.PennGroupsGSRBooker.is_seas", return_value=False
+        ), mock.patch("gsr_booking.models.WhartonGSRBooker.is_wharton", return_value=False):
+            Group.objects.create(owner=self.other, name="Penn Labs", color="blue")
+            self.group = Group.objects.create(owner=self.owner, name="group", color="blue")
 
         self.booking = load_sample_booking(self.owner)
 
@@ -117,13 +124,21 @@ class ShareCodeViewTests(TestCase):
         payload = json.loads(response.content)
 
         # Should only contain booking info and not owner info
+        self.assertIn("booking_id", payload)
+        self.assertIn("gsr", payload)
+        self.assertIn("lid", payload["gsr"])
+        self.assertIn("gid", payload["gsr"])
+        self.assertIn("name", payload["gsr"])
+        self.assertIn("kind", payload["gsr"])
+        self.assertIn("image_url", payload["gsr"])
         self.assertIn("room_name", payload)
-        self.assertIn("building", payload)
+        self.assertIn("room_id", payload)
         self.assertIn("start", payload)
         self.assertIn("end", payload)
         self.assertIn("is_valid", payload)
+        self.assertIn("owner_name", payload)
         self.assertEqual(payload["room_name"], self.booking.room_name)
-        self.assertEqual(payload["building"], self.booking.gsr.name)
+        self.assertEqual(payload["gsr"]["name"], self.booking.gsr.name)
         self.assertEqual(payload["is_valid"], True)
 
     def test_view_shared_booking_invalid_code(self):
@@ -258,8 +273,11 @@ class ShareCodeViewTests(TestCase):
 
 
 class ShareCodeModelSerializerTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         call_command("load_gsrs")
+
+    def setUp(self):
         self.user = User.objects.create_user("owner", password="one")
         self.booking = load_sample_booking(self.user)
 
@@ -304,17 +322,24 @@ class ShareCodeModelSerializerTests(TestCase):
         data = serializer.data
 
         # Should have booking details
+        self.assertIn("booking_id", data)
+        self.assertIn("gsr", data)
+        self.assertIn("lid", data["gsr"])
+        self.assertIn("gid", data["gsr"])
+        self.assertIn("name", data["gsr"])
+        self.assertIn("kind", data["gsr"])
+        self.assertIn("image_url", data["gsr"])
         self.assertIn("room_name", data)
-        self.assertIn("building", data)
+        self.assertIn("room_id", data)
         self.assertIn("start", data)
         self.assertIn("end", data)
         self.assertIn("is_valid", data)
+        self.assertIn("owner_name", data)
 
         # Should not have owner info
         self.assertNotIn("user", data)
         self.assertNotIn("owner", data)
         self.assertNotIn("reservation", data)
-        self.assertNotIn("booking_id", data)
 
     def test_is_valid_method(self):
         share_code = GSRShareCode.objects.create(
