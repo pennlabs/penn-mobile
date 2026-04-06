@@ -50,7 +50,6 @@ alt-profanity-check = "*"
 inflection = "*"
 firebase-admin = "*"
 drf-spectacular = "*"
-cachetools = "*"
 pytz = "*"
 
 [requires]
