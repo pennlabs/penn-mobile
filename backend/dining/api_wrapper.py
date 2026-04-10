@@ -142,16 +142,22 @@ class DiningAPIWrapper:
         venues = [v for v in Venue.objects.all() if v.venue_id not in skipped_venues]
         venue_map = {venue.venue_id: venue for venue in venues}
 
-        # Fetch all menus in parallel to speed up loading time.
+        # Fetch menus in parallel to speed up loading time
         fetched_menus = []
-        with ThreadPoolExecutor(max_workers=8) as executor:  # 8 can be tuned
-            futures = [executor.submit(self.fetch_menu, venue.venue_id, date) for venue in venues]
-            for future in as_completed(futures):
+        failed_venues = []
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            future_to_venue = {
+                executor.submit(self.fetch_menu, venue.venue_id, date): venue.venue_id
+                for venue in venues
+            }
+
+            for future in as_completed(future_to_venue):
                 try:
                     venue_id, response_json = future.result()
                     fetched_menus.append((venue_id, response_json))
-                except Exception as e:
-                    print(f"Error fetching menu: {e}")
+                except Exception:
+                    failed_venues.append(future_to_venue[future])
 
         # Process the fetched menus and load them into the database
         for venue_id, response in fetched_menus:
@@ -183,8 +189,8 @@ class DiningAPIWrapper:
                 self.load_stations(daypart["stations"], dining_menu)
 
         # delete duplicate menus
-        deleted_count = self.delete_duplicate_menus(date)
-        print(deleted_count, "duplicate objects deleted for date", date)
+        deleted_objects = self.delete_duplicate_menus(date)
+        return deleted_objects, failed_venues
 
     def load_stations(self, station_response, dining_menu):
         for station_data in station_response:

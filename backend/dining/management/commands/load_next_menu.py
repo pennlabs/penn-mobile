@@ -18,12 +18,21 @@ class Command(BaseCommand):
         """
         Loads menu for a single day
         """
+        date_to_load = today + datetime.timedelta(days=delta)
+
         d = DiningAPIWrapper()
-        d.load_menus(today + datetime.timedelta(days=delta))
-        delete_menu_view_cache(today + datetime.timedelta(days=delta))
-        self.stdout.write(
-            "Loaded new Dining Menu for " + str(today + datetime.timedelta(days=delta))
-        )
+        deleted_objects, failed_venues = d.load_menus(date_to_load)
+        delete_menu_view_cache(date_to_load)
+
+        # Error logging
+        self.stdout.write(f"Loaded new Dining Menu for {date_to_load}")
+        self.stdout.write(f"Deleted duplicate objects: {deleted_objects}")
+        if failed_venues:
+            self.stdout.write(
+                "Failed venues: " + ", ".join(str(venue_id) for venue_id in failed_venues)
+            )
+        else:
+            self.stdout.write("Failed venues: none")
 
     def handle(self, *args, **kwargs):
         """
