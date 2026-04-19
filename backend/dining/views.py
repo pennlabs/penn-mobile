@@ -81,10 +81,14 @@ class Menus(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         try:
             date_param = self.kwargs.get("date")
-            if get_menu_view_cache(date_param) is not None:
-                return Response(get_menu_view_cache(date_param))
+            # For debugging the cache in development, go to
+            # settings and replace dummy cache with locmem cache
+            cached_menu_view = get_menu_view_cache(date_param)
+            if cached_menu_view is not None:
+                return Response(cached_menu_view)
             res = super().get(request, *args, **kwargs)
-            set_menu_view_cache(date_param, res.data)
+            if res.status_code == 200:
+                set_menu_view_cache(date_param, res.data)
             return res
         except APIError as e:
             return Response({"error": str(e)}, status=400)

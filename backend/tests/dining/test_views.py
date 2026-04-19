@@ -28,8 +28,6 @@ def mock_dining_requests(url, *args, **kwargs):
         def json(self):
             return self.json_data
 
-    print("url: " + url)
-    print("args: " + str(args))
     if "token" in url:
         file_path = "tests/dining/dining_token.json"
     elif "venues" in args[0]:
@@ -147,7 +145,8 @@ class TestMenus(TestCase):
         self.try_structure(response.json())
 
     def test_get_date(self):
-        response = self.client.get("/dining/menus/" + str(timezone.now().date()) + "/")
+        menu_date = timezone.now().date()
+        response = self.client.get(reverse("menus-with-date", args=[menu_date]))
         self.try_structure(response.json())
 
     @mock.patch("requests.request", mock_dining_requests)
