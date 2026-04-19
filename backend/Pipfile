@@ -49,6 +49,8 @@ pre-commit = "*"
 alt-profanity-check = "*"
 inflection = "*"
 firebase-admin = "*"
+drf-spectacular = "*"
+pytz = "*"
 
 [requires]
 python_version = "3.11"
