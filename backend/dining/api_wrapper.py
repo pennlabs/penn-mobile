@@ -15,6 +15,24 @@ from utils.errors import APIError
 
 OPEN_DATA_URL = "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/"
 OPEN_DATA_ENDPOINTS = {"VENUES": OPEN_DATA_URL + "venues", "MENUS": OPEN_DATA_URL + "menus"}
+DINING_ICON_IDS = {
+    "vegetarian": "1",
+    "vegan": "4",
+    "kosher": "11",
+    "jain": "141",
+    "ask_us": "262",
+    "peanut": "253",
+    "tree_nut": "254",
+    "fish": "255",
+    "wheat_gluten": "257",
+    "milk": "258",
+    "egg": "259",
+    "soy": "260",
+}
+# Sesame appears on the website but is absent from the venue cor_icons fixture,
+# so we do not have a stable upstream ID for it yet???
+# Halal (10) and shellfish (256) are stable upstream IDs but are not tracked here
+# because they are also not on the website.
 
 
 class DiningAPIWrapper:
@@ -44,6 +62,7 @@ class DiningAPIWrapper:
         self.update_token()
 
         headers = {"Authorization": f"Bearer {self.token}"}
+        print(headers)
 
         # add authorization headers
         if "headers" in kwargs:
@@ -203,23 +222,36 @@ class DiningAPIWrapper:
             station.items.add(*items)
             station.save()
 
+    def _build_dining_item(self, key, value):
+        icon_ids = value["cor_icon"] or {}
+        return DiningItem(
+            item_id=key,
+            name=value["label"],
+            description=value["description"],
+            ingredients=value["ingredients"],
+            vegetarian=DINING_ICON_IDS["vegetarian"] in icon_ids,
+            vegan=DINING_ICON_IDS["vegan"] in icon_ids,
+            kosher=DINING_ICON_IDS["kosher"] in icon_ids,
+            jain=DINING_ICON_IDS["jain"] in icon_ids,
+            ask_us=DINING_ICON_IDS["ask_us"] in icon_ids,
+            peanut=DINING_ICON_IDS["peanut"] in icon_ids,
+            tree_nut=DINING_ICON_IDS["tree_nut"] in icon_ids,
+            sesame=False,
+            fish=DINING_ICON_IDS["fish"] in icon_ids,
+            wheat_gluten=DINING_ICON_IDS["wheat_gluten"] in icon_ids,
+            milk=DINING_ICON_IDS["milk"] in icon_ids,
+            egg=DINING_ICON_IDS["egg"] in icon_ids,
+            soy=DINING_ICON_IDS["soy"] in icon_ids,
+            nutrition_info=json.dumps(
+                {
+                    x["label"]: f"{x['value']}{x['unit']}"
+                    for x in value["nutrition_details"].values()
+                }
+            ),
+        )
+
     def load_items(self, item_response):
-        item_list = [
-            DiningItem(
-                item_id=key,
-                name=value["label"],
-                description=value["description"],
-                ingredients=value["ingredients"],
-                allergens=", ".join(value["cor_icon"].values()) if value["cor_icon"] else "",
-                nutrition_info=json.dumps(
-                    {
-                        x["label"]: f"{x['value']}{x['unit']}"
-                        for x in value["nutrition_details"].values()
-                    }
-                ),
-            )
-            for key, value in item_response.items()
-        ]
+        item_list = [self._build_dining_item(key, value) for key, value in item_response.items()]
         # Ignore conflicts because possibility of duplicate items
         DiningItem.objects.bulk_create(
             item_list,

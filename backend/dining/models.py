@@ -16,14 +16,24 @@ class DiningItem(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=1000, blank=True)
     ingredients = models.CharField(max_length=1000, blank=True)  # comma separated list
-    allergens = models.CharField(max_length=1000, blank=True)  # comma separated list
     nutrition_info = models.CharField(max_length=1000, blank=True)  # json string.
     # Technically, postgres supports json fields but that involves local postgres
     # instead of sqlite AND we don't need to query on this field
 
-    # TODO: New fields to add from allergens:
-    # vegetarian, vegan, kosher, jain, ask us
-    # peanut, tree nut, sesame, fish, wheat/gluten, milk, egg, soy
+    # 23 dietary information fields (stored as cor_icons)
+    vegetarian = models.BooleanField(default=False)
+    vegan = models.BooleanField(default=False)
+    kosher = models.BooleanField(default=False)
+    jain = models.BooleanField(default=False)
+    ask_us = models.BooleanField(default=False)
+    peanut = models.BooleanField(default=False)
+    tree_nut = models.BooleanField(default=False)
+    sesame = models.BooleanField(default=False)
+    fish = models.BooleanField(default=False)
+    wheat_gluten = models.BooleanField(default=False)
+    milk = models.BooleanField(default=False)
+    egg = models.BooleanField(default=False)
+    soy = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}"
