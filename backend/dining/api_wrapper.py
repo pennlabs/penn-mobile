@@ -19,6 +19,33 @@ logger = logging.getLogger(__name__)
 OPEN_DATA_URL = "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/"
 OPEN_DATA_ENDPOINTS = {"VENUES": OPEN_DATA_URL + "venues", "MENUS": OPEN_DATA_URL + "menus"}
 
+# Dining icon ids for parsing the API response cor_icon field into allergen boolean fields
+DINING_ICON_IDS = {
+    "vegetarian": "1",
+    "vegan": "4",
+    "in_balance": "7",
+    "halal": "10",
+    "kosher": "11",
+    "jain": "141",
+    "farm_to_fork": "6",
+    "locally_crafted": "55",
+    "garden_grown": "251",
+    "seafood_watch": "3",
+    "organic": "8",
+    "humane": "18",
+    "raw_undercooked": "228",
+    "peanut": "253",
+    "tree_nut": "254",
+    "sesame": "298",
+    "shellfish": "256",
+    "fish": "255",
+    "soy": "260",
+    "milk": "258",
+    "egg": "259",
+    "ask_us": "262",
+    "wheat_gluten": "257",
+}
+
 
 class DiningAPIWrapper:
     def __init__(self):
@@ -206,23 +233,31 @@ class DiningAPIWrapper:
             station.items.add(*items)
             station.save()
 
+    def _build_dining_item(self, key, value):
+        """
+        Helper function for load_items to build a DiningItem object from the dining API
+        """
+        icon_ids = value["cor_icon"] or {}
+        icon_flags = {
+            field_name: icon_id in icon_ids for field_name, icon_id in DINING_ICON_IDS.items()
+        }
+        return DiningItem(
+            item_id=key,
+            name=value["label"],
+            description=value["description"],
+            ingredients=value["ingredients"],
+            allergens=", ".join(value["cor_icon"].values()) if value["cor_icon"] else "",
+            **icon_flags,
+            nutrition_info=json.dumps(
+                {
+                    x["label"]: f"{x['value']}{x['unit']}"
+                    for x in value["nutrition_details"].values()
+                }
+            ),
+        )
+
     def load_items(self, item_response):
-        item_list = [
-            DiningItem(
-                item_id=key,
-                name=value["label"],
-                description=value["description"],
-                ingredients=value["ingredients"],
-                allergens=", ".join(value["cor_icon"].values()) if value["cor_icon"] else "",
-                nutrition_info=json.dumps(
-                    {
-                        x["label"]: f"{x['value']}{x['unit']}"
-                        for x in value["nutrition_details"].values()
-                    }
-                ),
-            )
-            for key, value in item_response.items()
-        ]
+        item_list = [self._build_dining_item(key, value) for key, value in item_response.items()]
         # Ignore conflicts because possibility of duplicate items
         DiningItem.objects.bulk_create(
             item_list,
