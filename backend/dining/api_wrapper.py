@@ -18,24 +18,33 @@ logger = logging.getLogger(__name__)
 
 OPEN_DATA_URL = "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/"
 OPEN_DATA_ENDPOINTS = {"VENUES": OPEN_DATA_URL + "venues", "MENUS": OPEN_DATA_URL + "menus"}
+
+# Dining icon ids for parsing the API response cor_icon field into allergen boolean fields
 DINING_ICON_IDS = {
     "vegetarian": "1",
     "vegan": "4",
+    "in_balance": "7",
+    "halal": "10",
     "kosher": "11",
     "jain": "141",
-    "ask_us": "262",
+    "farm_to_fork": "6",
+    "locally_crafted": "55",
+    "garden_grown": "251",
+    "seafood_watch": "3",
+    "organic": "8",
+    "humane": "18",
+    "raw_undercooked": "228",
     "peanut": "253",
     "tree_nut": "254",
+    "sesame": "298",
+    "shellfish": "256",
     "fish": "255",
-    "wheat_gluten": "257",
+    "soy": "260",
     "milk": "258",
     "egg": "259",
-    "soy": "260",
+    "ask_us": "262",
+    "wheat_gluten": "257",
 }
-# Sesame appears on the website but is absent from the venue cor_icons fixture,
-# so we do not have a stable upstream ID for it yet???
-# Halal (10) and shellfish (256) are stable upstream IDs but are not tracked here
-# because they are also not on the website.
 
 
 class DiningAPIWrapper:
@@ -65,7 +74,6 @@ class DiningAPIWrapper:
         self.update_token()
 
         headers = {"Authorization": f"Bearer {self.token}"}
-        print(headers)
 
         # add authorization headers
         if "headers" in kwargs:
@@ -226,25 +234,20 @@ class DiningAPIWrapper:
             station.save()
 
     def _build_dining_item(self, key, value):
+        """
+        Helper function for load_items to build a DiningItem object from the dining API
+        """
         icon_ids = value["cor_icon"] or {}
+        icon_flags = {
+            field_name: icon_id in icon_ids for field_name, icon_id in DINING_ICON_IDS.items()
+        }
         return DiningItem(
             item_id=key,
             name=value["label"],
             description=value["description"],
             ingredients=value["ingredients"],
-            vegetarian=DINING_ICON_IDS["vegetarian"] in icon_ids,
-            vegan=DINING_ICON_IDS["vegan"] in icon_ids,
-            kosher=DINING_ICON_IDS["kosher"] in icon_ids,
-            jain=DINING_ICON_IDS["jain"] in icon_ids,
-            ask_us=DINING_ICON_IDS["ask_us"] in icon_ids,
-            peanut=DINING_ICON_IDS["peanut"] in icon_ids,
-            tree_nut=DINING_ICON_IDS["tree_nut"] in icon_ids,
-            sesame=False,
-            fish=DINING_ICON_IDS["fish"] in icon_ids,
-            wheat_gluten=DINING_ICON_IDS["wheat_gluten"] in icon_ids,
-            milk=DINING_ICON_IDS["milk"] in icon_ids,
-            egg=DINING_ICON_IDS["egg"] in icon_ids,
-            soy=DINING_ICON_IDS["soy"] in icon_ids,
+            allergens=", ".join(value["cor_icon"].values()) if value["cor_icon"] else "",
+            **icon_flags,
             nutrition_info=json.dumps(
                 {
                     x["label"]: f"{x['value']}{x['unit']}"

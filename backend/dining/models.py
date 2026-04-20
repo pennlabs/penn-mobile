@@ -16,24 +16,35 @@ class DiningItem(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=1000, blank=True)
     ingredients = models.CharField(max_length=1000, blank=True)  # comma separated list
+    allergens = models.CharField(max_length=1000, blank=True)
     nutrition_info = models.CharField(max_length=1000, blank=True)  # json string.
     # Technically, postgres supports json fields but that involves local postgres
     # instead of sqlite AND we don't need to query on this field
 
-    # 23 dietary information fields (stored as cor_icons)
+    # Dietary information fields (stored as cor_icons)
     vegetarian = models.BooleanField(default=False)
     vegan = models.BooleanField(default=False)
+    in_balance = models.BooleanField(default=False)
+    halal = models.BooleanField(default=False)
     kosher = models.BooleanField(default=False)
     jain = models.BooleanField(default=False)
-    ask_us = models.BooleanField(default=False)
+    farm_to_fork = models.BooleanField(default=False)
+    locally_crafted = models.BooleanField(default=False)
+    garden_grown = models.BooleanField(default=False)
+    seafood_watch = models.BooleanField(default=False)
+    organic = models.BooleanField(default=False)
+    humane = models.BooleanField(default=False)
+    raw_undercooked = models.BooleanField(default=False)
     peanut = models.BooleanField(default=False)
     tree_nut = models.BooleanField(default=False)
     sesame = models.BooleanField(default=False)
+    shellfish = models.BooleanField(default=False)
     fish = models.BooleanField(default=False)
-    wheat_gluten = models.BooleanField(default=False)
+    soy = models.BooleanField(default=False)
     milk = models.BooleanField(default=False)
     egg = models.BooleanField(default=False)
-    soy = models.BooleanField(default=False)
+    ask_us = models.BooleanField(default=False)
+    wheat_gluten = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}"

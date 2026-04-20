@@ -10,10 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="diningitem",
-            name="allergens",
-        ),
         migrations.AddField(
             model_name="diningitem",
             name="ask_us",
@@ -31,6 +27,31 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="diningitem",
+            name="farm_to_fork",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="diningitem",
+            name="garden_grown",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="diningitem",
+            name="halal",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="diningitem",
+            name="humane",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="diningitem",
+            name="in_balance",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="diningitem",
             name="jain",
             field=models.BooleanField(default=False),
         ),
@@ -41,7 +62,17 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="diningitem",
+            name="locally_crafted",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="diningitem",
             name="milk",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="diningitem",
+            name="organic",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
@@ -51,7 +82,22 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="diningitem",
+            name="raw_undercooked",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="diningitem",
+            name="seafood_watch",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="diningitem",
             name="sesame",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="diningitem",
+            name="shellfish",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
