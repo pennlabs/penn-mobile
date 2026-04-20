@@ -186,6 +186,14 @@ export class MyChart extends PennLabsChart {
       cmd: ["python", "manage.py", "get_college_house_events"],
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
+
+    new CronJob(this, 'generate-games', {
+      schedule: cronTime.everyMonthOn(1),
+      image: backendImage,
+      secret,
+      cmd: ["python", "manage.py", "generate_game"],
+      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    });
   }
 }
 

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "analytics.apps.AnalyticsConfig",
     "wrapped.apps.WrappedConfig",
     "django_filters",
+    "drf_spectacular",
     "debug_toolbar",
     "gsr_booking",
     "portal",
@@ -156,6 +157,13 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.BasicAuthentication",
         "accounts.authentication.PlatformAuthentication",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Penn Mobile Backend Documentation",
+    "VERSION": "1.0.0",
+    "SERVE_PUBLIC": True,
 }
 
 # Redis for Celery & Caching
