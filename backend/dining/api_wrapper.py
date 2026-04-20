@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
@@ -12,6 +13,8 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from dining.models import DiningItem, DiningMenu, DiningStation, Venue
 from utils.errors import APIError
 
+
+logger = logging.getLogger(__name__)
 
 OPEN_DATA_URL = "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/"
 OPEN_DATA_ENDPOINTS = {"VENUES": OPEN_DATA_URL + "venues", "MENUS": OPEN_DATA_URL + "menus"}
@@ -144,7 +147,6 @@ class DiningAPIWrapper:
 
         # Fetch menus in parallel to speed up loading time
         fetched_menus = []
-        failed_venues = []
 
         with ThreadPoolExecutor(max_workers=8) as executor:
             future_to_venue = {
@@ -157,7 +159,9 @@ class DiningAPIWrapper:
                     venue_id, response_json = future.result()
                     fetched_menus.append((venue_id, response_json))
                 except Exception:
-                    failed_venues.append(future_to_venue[future])
+                    logger.exception(
+                        f"Dining: error fetching menu for venue {future_to_venue[future]}"
+                    )
 
         # Process the fetched menus and load them into the database
         for venue_id, response in fetched_menus:
@@ -189,8 +193,7 @@ class DiningAPIWrapper:
                 self.load_stations(daypart["stations"], dining_menu)
 
         # delete duplicate menus
-        deleted_objects = self.delete_duplicate_menus(date)
-        return deleted_objects, failed_venues
+        self.delete_duplicate_menus(date)
 
     def load_stations(self, station_response, dining_menu):
         for station_data in station_response:
