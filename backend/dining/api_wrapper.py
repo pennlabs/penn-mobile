@@ -1,9 +1,11 @@
 import datetime
 import json
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 from django.conf import settings
+from django.db.models import Count, Max
 from django.utils import timezone
 from django.utils.timezone import make_aware
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
@@ -11,6 +13,8 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from dining.models import DiningItem, DiningMenu, DiningStation, Venue
 from utils.errors import APIError
 
+
+logger = logging.getLogger(__name__)
 
 OPEN_DATA_URL = "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/"
 OPEN_DATA_ENDPOINTS = {"VENUES": OPEN_DATA_URL + "venues", "MENUS": OPEN_DATA_URL + "menus"}
@@ -122,12 +126,18 @@ class DiningAPIWrapper:
             response.json(),
         )  # also storing venue_id to later access in fetched_menus list
 
-    def load_menu(self, date=timezone.now().date()):
+    def load_menus(self, date=None):
         """
         Loads today's menu
+        Invariant: there should be no duplicate Menus. `load_menus` should delete
+        duplicate menus for all venues for the given date.
+
         NOTE: This method should only be used in load_next_menu.py, which is
         run based on a cron job every day
         """
+        if date is None:
+            date = timezone.now().date()
+
         # Venues without a menu should not be parsed
         skipped_venues = [747, 1163, 1731, 1732, 1733, 1464004, 1464009]
 
@@ -135,16 +145,23 @@ class DiningAPIWrapper:
         venues = [v for v in Venue.objects.all() if v.venue_id not in skipped_venues]
         venue_map = {venue.venue_id: venue for venue in venues}
 
-        # Fetch all menus in parallel to speed up loading time.
+        # Fetch menus in parallel to speed up loading time
         fetched_menus = []
-        with ThreadPoolExecutor(max_workers=8) as executor:  # 8 can be tuned
-            futures = [executor.submit(self.fetch_menu, venue.venue_id, date) for venue in venues]
-            for future in as_completed(futures):
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            future_to_venue = {
+                executor.submit(self.fetch_menu, venue.venue_id, date): venue.venue_id
+                for venue in venues
+            }
+
+            for future in as_completed(future_to_venue):
                 try:
                     venue_id, response_json = future.result()
                     fetched_menus.append((venue_id, response_json))
-                except Exception as e:
-                    print(f"Error fetching menu: {e}")
+                except Exception:
+                    logger.exception(
+                        f"Dining: error fetching menu for venue {future_to_venue[future]}"
+                    )
 
         # Process the fetched menus and load them into the database
         for venue_id, response in fetched_menus:
@@ -174,6 +191,9 @@ class DiningAPIWrapper:
 
                 # Append stations to dining menu
                 self.load_stations(daypart["stations"], dining_menu)
+
+        # delete duplicate menus
+        self.delete_duplicate_menus(date)
 
     def load_stations(self, station_response, dining_menu):
         for station_data in station_response:
@@ -212,3 +232,35 @@ class DiningAPIWrapper:
             ],
             unique_fields=[DiningItem._meta.pk.name],
         )
+
+    def delete_duplicate_menus(self, date):
+        """Delete duplicate menus for an exact `date`.
+        Will delete all but the most recently created menus for each dining hall
+        """
+        # Find groups of duplicate menus
+        duplicate_groups = (
+            DiningMenu.objects.values("venue", "date", "start_time", "end_time", "service")
+            .annotate(menu_count=Count("id"), keep_id=Max("id"))
+            .filter(menu_count__gt=1, date=date)
+        )
+
+        # Find all ids to delete
+        ids_to_delete = []
+
+        for group in duplicate_groups:
+            ids = (
+                DiningMenu.objects.filter(
+                    venue=group["venue"],
+                    date=group["date"],
+                    start_time=group["start_time"],
+                    end_time=group["end_time"],
+                    service=group["service"],
+                )
+                .exclude(id=group["keep_id"])
+                .values_list("id", flat=True)
+            )
+            ids_to_delete.extend(ids)
+
+        # Delete all duplicates
+        deleted_count, _ = DiningMenu.objects.filter(id__in=ids_to_delete).delete()
+        return deleted_count

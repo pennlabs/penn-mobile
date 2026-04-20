@@ -153,7 +153,7 @@ class TestMenus(TestCase):
         Venue.objects.all().delete()
         Venue.objects.create(venue_id=747, name="Skip", image_url="URL")
         wrapper = DiningAPIWrapper()
-        wrapper.load_menu()
+        wrapper.load_menus()
         self.assertEqual(DiningMenu.objects.count(), 0)
 
 
