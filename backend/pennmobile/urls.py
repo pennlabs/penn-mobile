@@ -4,6 +4,8 @@ from django.http import JsonResponse
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
+from penndata.views import Health
+
 
 urlpatterns = [
     path("gsr/", include("gsr_booking.urls")),
@@ -51,6 +53,7 @@ def universal_identifier_link(request):
 urlpatterns = [
     path("api/", include(urlpatterns)),
     path("", include((urlpatterns, "apex"))),
+    path("health/", Health.as_view(), name="health"),
     path(
         ".well-known/apple-app-site-association", universal_identifier_link, name="universal-links"
     ),
