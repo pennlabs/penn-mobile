@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
@@ -50,24 +51,28 @@ DINING_ICON_IDS = {
 class DiningAPIWrapper:
     def __init__(self):
         self.token = None
+        self.token_lock = threading.Lock()  # Only one thread should update the token at a time
         self.expiration = timezone.localtime()
         self.openid_endpoint = (
             "https://sso.apps.k8s.upenn.edu/auth/realms/master/protocol/openid-connect/token"
         )
 
     def update_token(self):
-        if self.expiration > timezone.localtime():
-            return
-        body = {
-            "client_id": settings.DINING_ID,
-            "client_secret": settings.DINING_SECRET,
-            "grant_type": "client_credentials",
-        }
-        response = requests.post(self.openid_endpoint, data=body).json()
-        if "error" in response:
-            raise APIError(f"Dining: {response['error']}, {response.get('error_description')}")
-        self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
-        self.token = response["access_token"]
+        with self.token_lock:
+            if self.expiration > timezone.localtime():
+                return
+            body = {
+                "client_id": settings.DINING_ID,
+                "client_secret": settings.DINING_SECRET,
+                "grant_type": "client_credentials",
+            }
+            response = requests.post(self.openid_endpoint, data=body).json()
+            if "error" in response:
+                raise APIError(f"Dining: {response['error']}, {response.get('error_description')}")
+            self.expiration = timezone.localtime() + datetime.timedelta(
+                seconds=response["expires_in"]
+            )
+            self.token = response["access_token"]
 
     def request(self, *args, **kwargs):
         """Make a signed request to the dining API."""
@@ -143,9 +148,8 @@ class DiningAPIWrapper:
         """
         Calls API to fetch menu for a given venue and date
         """
-        worker = DiningAPIWrapper()  # avoid shared mutable token state across threads
         menu_base = OPEN_DATA_ENDPOINTS["MENUS"]
-        response = worker.request("GET", f"{menu_base}?cafe={venue_id}&date={date}")
+        response = self.request("GET", f"{menu_base}?cafe={venue_id}&date={date}")
         if response.status_code != 200:
             raise APIError("Dining: error connecting to API " + response.text)
         return (
