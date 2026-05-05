@@ -58,9 +58,9 @@ class DiningAPIWrapper:
         )
 
     def update_token(self):
+        if self.expiration > timezone.localtime():
+            return
         with self.token_lock:
-            if self.expiration > timezone.localtime():
-                return
             body = {
                 "client_id": settings.DINING_ID,
                 "client_secret": settings.DINING_SECRET,
