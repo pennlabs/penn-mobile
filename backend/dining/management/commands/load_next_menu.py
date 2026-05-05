@@ -14,14 +14,13 @@ class Command(BaseCommand):
     the next 7 days, including the original date.
     """
 
-    def load_one_menu(self, today, delta, *args, **kwargs):
+    def load_one_menu(self, today, wrapper, delta, *args, **kwargs):
         """
         Loads menu for a single day
         """
         date_to_load = today + datetime.timedelta(days=delta)
 
-        d = DiningAPIWrapper()
-        d.load_menus(date_to_load)
+        wrapper.load_menus(date_to_load)
         delete_menu_view_cache(date_to_load)
 
         # Error logging
@@ -32,6 +31,7 @@ class Command(BaseCommand):
         Load menu for the next 7 days
         """
         today = timezone.now().date()
+        d = DiningAPIWrapper()
 
         for i in range(7):
-            self.load_one_menu(today, i)
+            self.load_one_menu(today, d, i)
