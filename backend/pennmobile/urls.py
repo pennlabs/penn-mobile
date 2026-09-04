@@ -43,7 +43,13 @@ def universal_identifier_link(request):
                         ],
                     }
                 ]
-            }
+            },
+            "webcredentials": {
+                "apps": [
+                    "VU59R57FGM.org.pennlabs.PennMobile",
+                    "VU59R57FGM.org.pennlabs.PennMobile.dev",
+                ]
+            },
         }
     )
 
