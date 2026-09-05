@@ -70,8 +70,7 @@ class Command(BaseCommand):
                 date = datetime.datetime.strptime(
                     month + day + str(current_year) + "-04:00", "%B%d%Y%z"
                 )
-                if date and date >= timezone.localtime():
-                    CalendarEvent.objects.get_or_create(event=event, date=date_info, date_obj=date)
+                CalendarEvent.objects.get_or_create(event=event, date=date_info, date_obj=date)
             except ValueError:
                 continue
 
