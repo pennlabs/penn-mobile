@@ -53,13 +53,42 @@ class TestCalender(TestCase):
         call_command("get_calendar")
 
     def test_response(self):
-        response = self.client.get(reverse("calendar"))
+        response = self.client.get(reverse("calendar"), {"days_ahead": 14})
         res_json = json.loads(response.content)
+        month_name_to_num = {
+            "January": 1,
+            "February": 2,
+            "March": 3,
+            "April": 4,
+            "May": 5,
+            "June": 6,
+            "July": 7,
+            "August": 8,
+            "September": 9,
+            "October": 10,
+            "November": 11,
+            "December": 12,
+        }
 
         for event in res_json:
             self.assertEqual(len(event), 2)
             self.assertIn("event", event)
             self.assertIn("date", event)
+            month, day = event["date"].split()
+            now = timezone.localtime()
+            event_date = datetime.datetime(
+                now.year,
+                month_name_to_num[month],
+                int(day),
+                tzinfo=now.tzinfo,
+            )
+            self.assertGreaterEqual(
+                event_date, timezone.localtime()
+            )  # Database only contains events from current year
+            self.assertLessEqual(
+                event_date,
+                timezone.localtime() + datetime.timedelta(days=14),
+            )
 
 
 class TestEvent(TestCase):

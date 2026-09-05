@@ -102,17 +102,20 @@ class News(APIView):
 
 class Calendar(generics.ListAPIView):
     """
-    list: Returns upcoming university events (within 2 weeks away)
+    list: Returns upcoming university events, configurable cutoff
     """
 
     permission_classes = [AllowAny]
     serializer_class = CalendarEventSerializer
 
     def get_queryset(self):
+        days_ahead = int(
+            self.request.query_params.get("days_ahead", 365)
+        )  # db contains current semester, 1 yr guarantees everything's returned
         return CalendarEvent.objects.filter(
             date_obj__gte=timezone.localtime(),
-            date_obj__lte=timezone.localtime() + timedelta(days=30),
-        )
+            date_obj__lte=timezone.localtime() + timedelta(days=days_ahead),
+        ).order_by("date_obj")
 
 
 class Events(generics.ListAPIView):
