@@ -9,6 +9,9 @@ from games.serializers import GameSerializer, LeaderboardEntrySerializer
 from pennmobile.analytics import LabsAnalytics
 
 
+LEADERBOARD_SORT_FIELDS = ("score", "num_words_found", "submitted_at")
+
+
 @LabsAnalytics.record_apiview(
     ViewEntry(name="game-today"),
 )
@@ -47,13 +50,29 @@ class GameByDateView(APIView):
 class LeaderboardByDateView(APIView):
     """
     GET: returns the leaderboard for a specific date
+
+    Query params:
+        sort: one of LEADERBOARD_SORT_FIELDS, optionally prefixed with "-" (default "-score")
+        limit: max number of entries to return (default all)
     """
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request, date):
         game = get_object_or_404(Game, date=date)
-        entries = game.scores.all()
+
+        sort = request.query_params.get("sort", "-score")
+        if sort.lstrip("-") not in LEADERBOARD_SORT_FIELDS:
+            return Response(
+                {"error": f"sort must be one of {list(LEADERBOARD_SORT_FIELDS)}."}, status=400
+            )
+        entries = game.scores.select_related("user").order_by(sort, "submitted_at")
+
+        if (limit := request.query_params.get("limit")) is not None:
+            if not limit.isdigit():
+                return Response({"error": "limit must be a non-negative integer."}, status=400)
+            entries = entries[: int(limit)]
+
         return Response(LeaderboardEntrySerializer(entries, many=True).data)
 
 
@@ -63,6 +82,10 @@ class LeaderboardByDateView(APIView):
 class SubmitScoreView(APIView):
     """
     POST: validates submitted words, computes score, and saves leaderboard entry
+
+    Body:
+        words: list of words found on the board
+        show_name: opt in to showing your name on the leaderboard (default False)
     """
 
     permission_classes = [IsAuthenticated]
@@ -96,5 +119,6 @@ class SubmitScoreView(APIView):
             user=request.user,
             score=score,
             num_words_found=len(normalized),
+            show_name=request.data.get("show_name") is True,
         )
         return Response(LeaderboardEntrySerializer(entry).data, status=201)
