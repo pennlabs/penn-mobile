@@ -73,6 +73,21 @@ class TestTokenAndRequest(TestCase):
         self.assertEqual(prev_token, self.wrapper.token)
         self.assertEqual(prev_expiration, self.wrapper.expiration)
 
+    def test_update_token_rechecks_expiration_after_lock(self):
+        class TokenLock:
+            def __enter__(lock_self):
+                self.wrapper.expiration = timezone.localtime() + datetime.timedelta(days=1)
+
+            def __exit__(lock_self, exc_type, exc_value, traceback):
+                pass
+
+        self.wrapper.token_lock = TokenLock()
+
+        with mock.patch("requests.post") as mock_post:
+            self.wrapper.update_token()
+
+        mock_post.assert_not_called()
+
     @mock.patch("requests.post", mock_request_post_error)
     def test_update_token_error(self):
         with self.assertRaises(APIError):
@@ -138,6 +153,29 @@ class TestMenus(TestCase):
                     self.assertIn("description", item)
                     self.assertIn("ingredients", item)
                     self.assertIn("allergens", item)
+                    self.assertIn("vegetarian", item)
+                    self.assertIn("vegan", item)
+                    self.assertIn("in_balance", item)
+                    self.assertIn("halal", item)
+                    self.assertIn("kosher", item)
+                    self.assertIn("jain", item)
+                    self.assertIn("farm_to_fork", item)
+                    self.assertIn("locally_crafted", item)
+                    self.assertIn("garden_grown", item)
+                    self.assertIn("seafood_watch", item)
+                    self.assertIn("organic", item)
+                    self.assertIn("humane", item)
+                    self.assertIn("raw_undercooked", item)
+                    self.assertIn("ask_us", item)
+                    self.assertIn("peanut", item)
+                    self.assertIn("tree_nut", item)
+                    self.assertIn("sesame", item)
+                    self.assertIn("shellfish", item)
+                    self.assertIn("fish", item)
+                    self.assertIn("wheat_gluten", item)
+                    self.assertIn("milk", item)
+                    self.assertIn("egg", item)
+                    self.assertIn("soy", item)
                     self.assertIn("nutrition_info", item)
 
     def test_get_default(self):
