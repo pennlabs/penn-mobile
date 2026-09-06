@@ -16,8 +16,11 @@ class GameDetailSerializer(serializers.ModelSerializer):
 
 
 class LeaderboardEntrySerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source="user.username", read_only=True)
+    name = serializers.SerializerMethodField()
 
     class Meta:
         model = LeaderboardEntry
-        fields = ["username", "score", "num_words_found", "submitted_at"]
+        fields = ["name", "score", "num_words_found", "submitted_at"]
+
+    def get_name(self, obj):
+        return (obj.user.get_full_name() or None) if obj.show_name else None

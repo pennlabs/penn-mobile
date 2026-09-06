@@ -27,6 +27,7 @@ class LeaderboardEntry(models.Model):
 
     score = models.PositiveIntegerField(db_index=True)
     num_words_found = models.PositiveIntegerField()
+    show_name = models.BooleanField(default=False)
 
     submitted_at = models.DateTimeField(auto_now_add=True)
 
