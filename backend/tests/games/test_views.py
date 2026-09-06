@@ -136,7 +136,7 @@ class TestLeaderboardByDateView(TestCase):
         res_json = json.loads(response.content)
         self.assertEqual(2, len(res_json))
         entry = res_json[0]
-        self.assertIn("display_name", entry)
+        self.assertIn("name", entry)
         self.assertIn("score", entry)
         self.assertIn("num_words_found", entry)
         self.assertIn("submitted_at", entry)
@@ -202,7 +202,7 @@ class TestLeaderboardByDateView(TestCase):
             game=self.game, user=self.user1, score=300, num_words_found=3
         )
         response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/")
-        self.assertIsNone(json.loads(response.content)[0]["display_name"])
+        self.assertIsNone(json.loads(response.content)[0]["name"])
 
     def test_leaderboard_shows_name_when_opted_in(self):
         self.user1.first_name, self.user1.last_name = "Ben", "Liu"
@@ -211,14 +211,14 @@ class TestLeaderboardByDateView(TestCase):
             game=self.game, user=self.user1, score=300, num_words_found=3, show_name=True
         )
         response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/")
-        self.assertEqual("Ben Liu", json.loads(response.content)[0]["display_name"])
+        self.assertEqual("Ben Liu", json.loads(response.content)[0]["name"])
 
     def test_leaderboard_opted_in_without_name_stays_anonymous(self):
         LeaderboardEntry.objects.create(
             game=self.game, user=self.user1, score=300, num_words_found=3, show_name=True
         )
         response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/")
-        self.assertIsNone(json.loads(response.content)[0]["display_name"])
+        self.assertIsNone(json.loads(response.content)[0]["name"])
 
     def test_get_leaderboard_not_found(self):
         response = self.client.get("/games/word-hunt/2000-01-01/leaderboard/")
@@ -251,7 +251,7 @@ class TestSubmitScoreView(TestCase):
         )
         self.assertEqual(201, response.status_code)
         res_json = json.loads(response.content)
-        self.assertIn("display_name", res_json)
+        self.assertIn("name", res_json)
         self.assertIn("score", res_json)
         self.assertIn("num_words_found", res_json)
         self.assertIn("submitted_at", res_json)
