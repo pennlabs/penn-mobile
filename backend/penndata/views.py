@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from requests.exceptions import ConnectionError
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -29,6 +29,11 @@ from penndata.serializers import (
     HomePageOrderSerializer,
 )
 from pennmobile.analytics import LabsAnalytics
+
+
+class Health(APIView):
+    def get(self, request):
+        return Response({"message": "OK"}, status=status.HTTP_200_OK)
 
 
 class News(APIView):
