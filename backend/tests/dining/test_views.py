@@ -11,7 +11,7 @@ from django.utils import timezone
 from requests.exceptions import ConnectionError
 from rest_framework.test import APIClient
 
-from dining.api_wrapper import APIError, DiningAPIWrapper
+from dining.api_wrapper import TOKEN_EXPIRATION_BUFFER, APIError, DiningAPIWrapper
 from dining.models import DiningMenu, Venue
 from dining.utils.menu_view_cache import get_menu_view_cache
 
@@ -62,7 +62,7 @@ class TestTokenAndRequest(TestCase):
     def setUp(self):
         self.wrapper = DiningAPIWrapper()
 
-    def test_expired_token(self):
+    def test_valid_token_does_not_refresh(self):
         self.wrapper.expiration += datetime.timedelta(days=1)
         prev_token = self.wrapper.token
         prev_expiration = self.wrapper.expiration
@@ -73,9 +73,33 @@ class TestTokenAndRequest(TestCase):
         self.assertEqual(prev_token, self.wrapper.token)
         self.assertEqual(prev_expiration, self.wrapper.expiration)
 
+    def test_expired_token_refreshes(self):
+        self.wrapper.token = "old token"
+
+        # use a mock to make sure it was only updated once
+        with mock.patch("requests.post", side_effect=mock_dining_requests) as mock_post:
+            self.wrapper.update_token()
+
+        mock_post.assert_called_once()
+        self.assertEqual("access token", self.wrapper.token)
+
+    def test_nearly_expired_token_refreshes(self):
+        self.wrapper.token = "old token"
+        # set expiration to just before the buffer time runs out
+        self.wrapper.expiration = (
+            timezone.localtime() + TOKEN_EXPIRATION_BUFFER - datetime.timedelta(seconds=1)
+        )
+
+        with mock.patch("requests.post", side_effect=mock_dining_requests) as mock_post:
+            self.wrapper.update_token()
+
+        mock_post.assert_called_once()
+        self.assertEqual("access token", self.wrapper.token)
+
     def test_update_token_rechecks_expiration_after_lock(self):
         class TokenLock:
             def __enter__(lock_self):
+                # lets say that someone else updated the token while we were waiting for the lock
                 self.wrapper.expiration = timezone.localtime() + datetime.timedelta(days=1)
 
             def __exit__(lock_self, exc_type, exc_value, traceback):
@@ -86,6 +110,7 @@ class TestTokenAndRequest(TestCase):
         with mock.patch("requests.post") as mock_post:
             self.wrapper.update_token()
 
+        # assert that the token was not updated since it was already refreshed by another thread
         mock_post.assert_not_called()
 
     @mock.patch("requests.post", mock_request_post_error)

@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 OPEN_DATA_URL = "https://3scale-public-prod-open-data.apps.k8s.upenn.edu/api/v1/dining/"
 OPEN_DATA_ENDPOINTS = {"VENUES": OPEN_DATA_URL + "venues", "MENUS": OPEN_DATA_URL + "menus"}
+TOKEN_EXPIRATION_BUFFER = datetime.timedelta(
+    seconds=5
+)  # Note: dining token takes 5 minutes to expire
 
 # Dining icon ids for parsing the API response cor_icon field into allergen boolean fields
 DINING_ICON_IDS = {
@@ -59,11 +62,11 @@ class DiningAPIWrapper:
 
     def update_token(self):
         # If the token is still valid, no need to update it
-        if self.expiration > timezone.localtime():
+        if self.expiration > timezone.localtime() + TOKEN_EXPIRATION_BUFFER:
             return
         with self.token_lock:
             # Check in case another thread updated the token while we were waiting for lock
-            if self.expiration > timezone.localtime():
+            if self.expiration > timezone.localtime() + TOKEN_EXPIRATION_BUFFER:
                 return
             body = {
                 "client_id": settings.DINING_ID,
