@@ -3,6 +3,7 @@ from django.urls import path
 from penndata.views import (
     Analytics,
     Calendar,
+    CalendarStartEnd,
     Events,
     FitnessPreferences,
     FitnessRoomView,
@@ -17,6 +18,7 @@ from penndata.views import (
 urlpatterns = [
     path("news/", News.as_view(), name="news"),
     path("calendar/", Calendar.as_view(), name="calendar"),
+    path("calendar/semester-start-end", CalendarStartEnd.as_view(), name="calendar"),
     path("homepage", HomePage.as_view(), name="homepage"),
     path("events/", Events.as_view(), name="events"),
     path("events/<str:type>/", Events.as_view(), name="events-type"),

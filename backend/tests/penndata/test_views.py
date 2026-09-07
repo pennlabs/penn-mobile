@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 
 from dining.models import Venue
 from laundry.models import LaundryRoom
-from penndata.models import AnalyticsEvent, Event, FitnessRoom, FitnessSnapshot
+from penndata.models import AnalyticsEvent, CalendarEvent, Event, FitnessRoom, FitnessSnapshot
 from portal.models import Poll, Post
 
 
@@ -60,6 +60,26 @@ class TestCalender(TestCase):
             self.assertEqual(len(event), 2)
             self.assertIn("event", event)
             self.assertIn("date", event)
+
+
+class TestCalendarStartEnd(TestCase):
+    def test_get_semester_start_end(self):
+        CalendarEvent.objects.create(event="Orientation", date="August 20, 2026")
+        CalendarEvent.objects.create(event="First Day of Classes", date="August 25, 2026")
+        CalendarEvent.objects.create(event="Fall Break", date="October 8, 2026")
+        CalendarEvent.objects.create(event="Term Ends", date="December 22, 2026")
+        CalendarEvent.objects.create(event="Winter Break", date="December 23, 2026")
+
+        response = self.client.get("/penndata/calendar/semester-start-end")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            [
+                {"event": "First Day of Classes", "date": "August 25, 2026"},
+                {"event": "Term Ends", "date": "December 22, 2026"},
+            ],
+        )
 
 
 class TestEvent(TestCase):
