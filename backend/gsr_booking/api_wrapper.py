@@ -198,7 +198,9 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
 
     def update_token(self):
         """Get AGH-specific LibCal token"""
-        if self.expiration > timezone.localtime():
+        if self.expiration > timezone.localtime() + datetime.timedelta(
+            seconds=5
+        ):  # Refresh 5 seconds before expiration
             return
         body = {
             "client_id": settings.AGH_LIBCAL_ID,  # Different from regular LibCal!
@@ -482,7 +484,9 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
 
     def update_token(self):
         # does not get new token if the current one is still usable
-        if self.expiration > timezone.localtime():
+        if self.expiration > timezone.localtime() + datetime.timedelta(
+            seconds=5
+        ):  # Refresh 5 seconds before expiration:
             return
         body = {
             "client_id": settings.GENERAL_LIBCAL_ID,
