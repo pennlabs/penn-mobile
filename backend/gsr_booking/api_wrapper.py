@@ -125,9 +125,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
 
         # presets end date as end midnight of next day
         end_date = (
-            datetime.datetime.strptime(end, "%Y-%m-%d").date()
-            if end is not None
-            else search_date
+            datetime.datetime.strptime(end, "%Y-%m-%d").date() if end is not None else search_date
         )
         end_date = timezone.make_aware(
             datetime.datetime.combine(
@@ -139,17 +137,9 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
             valid_slots = []
             for slot in room["availability"]:
                 # checks if the available slots are within the current time and midnight of next day
-                start_time = datetime.datetime.strptime(
-                    slot["start_time"], "%Y-%m-%dT%H:%M:%S%z"
-                )
-                end_time = datetime.datetime.strptime(
-                    slot["end_time"], "%Y-%m-%dT%H:%M:%S%z"
-                )
-                if (
-                    start_time >= current_time
-                    and end_time <= end_date
-                    and not slot["reserved"]
-                ):
+                start_time = datetime.datetime.strptime(slot["start_time"], "%Y-%m-%dT%H:%M:%S%z")
+                end_time = datetime.datetime.strptime(slot["end_time"], "%Y-%m-%dT%H:%M:%S%z")
+                if start_time >= current_time and end_time <= end_date and not slot["reserved"]:
                     del slot["reserved"]
                     valid_slots.append(slot)
                 room["availability"] = valid_slots
@@ -183,15 +173,10 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
         try:
             response = self.request("GET", url)
             if response.status_code != 200:
-                logger.error(
-                    f"Wharton API error for {user.username}: HTTP {response.status_code}"
-                )
+                logger.error(f"Wharton API error for {user.username}: HTTP {response.status_code}")
                 return False
             res_json = response.json()
-            return (
-                res_json.get("type") == "whartonMBA"
-                or res_json.get("type") == "whartonUGR"
-            )
+            return res_json.get("type") == "whartonMBA" or res_json.get("type") == "whartonUGR"
         except APIError as e:
             if e.status_code == 403:
                 # default to False if API returns 403
@@ -224,20 +209,14 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         response = requests.post(f"{API_URL}/1.1/oauth/token", body)
 
         if response.status_code != 200:
-            raise APIError(
-                f"AGH LibCal: HTTP {response.status_code} when getting token"
-            )
+            raise APIError(f"AGH LibCal: HTTP {response.status_code} when getting token")
 
         response = response.json()
 
         if "error" in response:
-            raise APIError(
-                f"AGH LibCal: {response['error']}, {response.get('error_description')}"
-            )
+            raise APIError(f"AGH LibCal: {response['error']}, {response.get('error_description')}")
 
-        self.expiration = timezone.localtime() + datetime.timedelta(
-            seconds=response["expires_in"]
-        )
+        self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
         self.token = response["access_token"]
 
     def request(self, *args, **kwargs):
@@ -268,9 +247,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
             url = f"{PENNGROUPS_URL}{user.id}/groups"
             response = requests.get(
                 url,
-                auth=HTTPBasicAuth(
-                    settings.PENNGROUPS_USERNAME, settings.PENNGROUPS_PASSWORD
-                ),
+                auth=HTTPBasicAuth(settings.PENNGROUPS_USERNAME, settings.PENNGROUPS_PASSWORD),
                 timeout=5,
             )
 
@@ -293,9 +270,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
                     if "AGH:GSR" in group.get("name", "")
                 }
 
-            raise APIError(
-                f"PennGroups: Unexpected resultCode '{metadata.get('resultCode')}'"
-            )
+            raise APIError(f"PennGroups: Unexpected resultCode '{metadata.get('resultCode')}'")
 
         except requests.exceptions.JSONDecodeError:
             raise APIError("PennGroups: Invalid JSON response")
@@ -401,9 +376,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=payload)
 
         if response.status_code != 200:
-            raise APIError(
-                f"GSR Reserve: Error {response.status_code} when reserving data"
-            )
+            raise APIError(f"GSR Reserve: Error {response.status_code} when reserving data")
 
         res_json = response.json()
         # corrects keys in response
@@ -411,9 +384,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
             errors = res_json["errors"]
             if isinstance(errors, list):
                 errors = " ".join(errors)
-            res_json["error"] = BeautifulSoup(
-                errors.replace("\n", " "), "html.parser"
-            ).text.strip()
+            res_json["error"] = BeautifulSoup(errors.replace("\n", " "), "html.parser").text.strip()
             del res_json["errors"]
         if "error" in res_json:
             raise APIError("LibCal: " + res_json["error"])
@@ -423,9 +394,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         """Cancels AGH room"""
         # Optional: verify SEAS status before canceling
         # For now, allow anyone to cancel their own booking
-        response = self.request(
-            "POST", f"{API_URL}/1.1/space/cancel/{booking_id}"
-        ).json()
+        response = self.request("POST", f"{API_URL}/1.1/space/cancel/{booking_id}").json()
         if "error" in response[0]:
             raise APIError("LibCal: " + response[0]["error"])
         return response
@@ -465,9 +434,7 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         response = self.request("GET", f"{API_URL}/1.1/space/item/{items}?{range_str}")
 
         if response.status_code != 200:
-            raise APIError(
-                f"AGH Reserve: Error {response.status_code} when fetching availability"
-            )
+            raise APIError(f"AGH Reserve: Error {response.status_code} when fetching availability")
 
         all_rooms = response.json()
 
@@ -526,12 +493,8 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
         response = requests.post(f"{API_URL}/1.1/oauth/token", body).json()
 
         if "error" in response:
-            raise APIError(
-                f"LibCal: {response['error']}, {response.get('error_description')}"
-            )
-        self.expiration = timezone.localtime() + datetime.timedelta(
-            seconds=response["expires_in"]
-        )
+            raise APIError(f"LibCal: {response['error']}, {response.get('error_description')}")
+        self.expiration = timezone.localtime() + datetime.timedelta(seconds=response["expires_in"])
         self.token = response["access_token"]
 
     def request(self, *args, **kwargs):
@@ -582,9 +545,7 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
         response = self.request("POST", f"{API_URL}/1.1/space/reserve", json=payload)
 
         if response.status_code != 200:
-            raise APIError(
-                f"GSR Reserve: Error {response.status_code} when reserving data"
-            )
+            raise APIError(f"GSR Reserve: Error {response.status_code} when reserving data")
 
         res_json = response.json()
         # corrects keys in response
@@ -592,9 +553,7 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
             errors = res_json["errors"]
             if isinstance(errors, list):
                 errors = " ".join(errors)
-            res_json["error"] = BeautifulSoup(
-                errors.replace("\n", " "), "html.parser"
-            ).text.strip()
+            res_json["error"] = BeautifulSoup(errors.replace("\n", " "), "html.parser").text.strip()
             del res_json["errors"]
         if "error" in res_json:
             raise APIError("LibCal: " + res_json["error"])
@@ -605,9 +564,7 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
 
     def cancel_room(self, booking_id, user):
         """Cancels room"""
-        response = self.request(
-            "POST", f"{API_URL}/1.1/space/cancel/{booking_id}"
-        ).json()
+        response = self.request("POST", f"{API_URL}/1.1/space/cancel/{booking_id}").json()
         if "error" in response[0]:
             raise APIError("LibCal: " + response[0]["error"])
         return response
@@ -636,9 +593,7 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
         response = self.request("GET", f"{API_URL}/1.1/space/item/{items}?{range_str}")
 
         if response.status_code != 200:
-            raise APIError(
-                f"GSR Reserve: Error {response.status_code} when reserving data"
-            )
+            raise APIError(f"GSR Reserve: Error {response.status_code} when reserving data")
 
         rooms = [
             {
@@ -687,11 +642,7 @@ class BookingHandler:
         return [
             (
                 User(
-                    **{
-                        k[len(PREFIX) :]: v
-                        for k, v in member.items()
-                        if k.startswith(PREFIX)
-                    }
+                    **{k[len(PREFIX) :]: v for k, v in member.items() if k.startswith(PREFIX)}
                 ),  # temp user object
                 member["credits"],
             )
@@ -726,9 +677,7 @@ class BookingHandler:
         return self.format_members(ret)
 
     def get_libcal_members(self, group):
-        day_start = timezone.localtime().replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        day_start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + datetime.timedelta(days=1)
         two_hours = datetime.timedelta(hours=2)
         zero_min = datetime.timedelta(minutes=0)
@@ -765,9 +714,7 @@ class BookingHandler:
 
     def get_seas_members(self, group):
         """Get SEAS members with LibCal-style credits for AGH bookings"""
-        day_start = timezone.localtime().replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        day_start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + datetime.timedelta(days=1)
         two_hours = datetime.timedelta(hours=2)
         zero_min = datetime.timedelta(minutes=0)
@@ -841,9 +788,7 @@ class BookingHandler:
         if (end - start) >= total_time_available:
             raise APIError("Error: Not enough credits")
 
-        reservation = Reservation.objects.create(
-            start=start, end=end, creator=user, group=group
-        )
+        reservation = Reservation.objects.create(start=start, end=end, creator=user, group=group)
 
         curr_start = start
         try:
@@ -885,9 +830,7 @@ class BookingHandler:
             .first()
         ):
             if gsr_booking.user != user and gsr_booking.reservation.creator != user:
-                raise APIError(
-                    "Error: Unauthorized: This reservation was booked by someone else."
-                )
+                raise APIError("Error: Unauthorized: This reservation was booked by someone else.")
 
             # Select appropriate wrapper based on GSR kind
             if gsr_booking.gsr.kind == GSR.KIND_WHARTON:
@@ -903,9 +846,7 @@ class BookingHandler:
             gsr_booking.save()
 
             reservation = gsr_booking.reservation
-            if all(
-                booking.is_cancelled for booking in reservation.gsrbooking_set.all()
-            ):
+            if all(booking.is_cancelled for booking in reservation.gsrbooking_set.all()):
                 reservation.is_cancelled = True
                 reservation.save()
         else:
@@ -967,16 +908,13 @@ class BookingHandler:
 
         booking_ids = set([booking["booking_id"] for booking in ret])
         wharton_bookings = [
-            booking
-            for booking in wharton_bookings
-            if booking["booking_id"] not in booking_ids
+            booking for booking in wharton_bookings if booking["booking_id"] not in booking_ids
         ]
         if len(wharton_bookings) == 0:
             return ret
 
         wharton_gsr_datas = {
-            gsr.gid: GSRSerializer(gsr).data
-            for gsr in GSR.objects.filter(kind=GSR.KIND_WHARTON)
+            gsr.gid: GSRSerializer(gsr).data for gsr in GSR.objects.filter(kind=GSR.KIND_WHARTON)
         }
         for booking in wharton_bookings:
             booking["gsr"] = wharton_gsr_datas[booking["gid"]]

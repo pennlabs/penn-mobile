@@ -5,7 +5,6 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.management import BaseCommand
 
-
 # Taken from PCx:
 # https://github.com/pennlabs/penn-courses/blob/master/backend/review/management/commands/clearcache.py
 
@@ -35,4 +34,4 @@ class Command(BaseCommand):
         root_logger.setLevel(logging.DEBUG)
 
         del_count = clear_cache()
-        print(f"{del_count if del_count >=0 else 'all'} cache entries removed.")
+        print(f"{del_count if del_count >= 0 else 'all'} cache entries removed.")
