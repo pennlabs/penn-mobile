@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.management import BaseCommand
 
+
 # Taken from PCx:
 # https://github.com/pennlabs/penn-courses/blob/master/backend/review/management/commands/clearcache.py
 
