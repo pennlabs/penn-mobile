@@ -78,7 +78,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
             raise APIError("Wharton: Connection timeout")
 
         if not response.ok:
-            raise APIError(f"Wharton: Error {response.status_code} when reserving data")
+            raise APIError(f"Wharton: Error {response.status_code} when reserving data", response.status_code)
 
         return response
 
@@ -175,6 +175,9 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
             res_json = response.json()
             return res_json.get("type") == "whartonMBA" or res_json.get("type") == "whartonUGR"
         except APIError as e:
+            if e.status_code == 403:
+                # default to False if API returns 403
+                return False
             logger.error(f"Wharton API error for {user.username}: {e}")
             return False
 
