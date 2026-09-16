@@ -75,8 +75,7 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
         try:
             response = requests.request(*args, **kwargs)
         except (ConnectTimeout, ReadTimeout, ConnectionError):
-            # technically wrong, but 504 is reasonable for timeout
-            raise APIError("Wharton: Connection timeout", 504)
+            raise APIError("Wharton: Connection timeout")
 
         if not response.ok:
             raise APIError(f"Wharton: Error {response.status_code} when reserving data", response.status_code)
