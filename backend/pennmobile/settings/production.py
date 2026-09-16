@@ -3,7 +3,6 @@ import os
 import sentry_sdk
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.types import Event, Hint
 
 from pennmobile.settings.base import *  # noqa: F401, F403
 from pennmobile.settings.base import DOMAINS, REDIS_URL, SPECTACULAR_SETTINGS
@@ -23,21 +22,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", None)
 # Sentry settings
 SENTRY_URL = os.environ.get("SENTRY_URL", "")
 
-
-def before_send(event: Event, hint: Hint | None) -> Event | None:
-    logentry = event.get("logentry")
-    if isinstance(logentry, dict):
-        message = logentry.get("message")
-        if isinstance(message, str) and "Wharton: Error 403 when reserving data" in message:
-            return None
-    return event
-
-
-sentry_sdk.init(
-    dsn=SENTRY_URL,
-    integrations=[CeleryIntegration(), DjangoIntegration()],
-    before_send=before_send,
-)
+sentry_sdk.init(dsn=SENTRY_URL, integrations=[CeleryIntegration(), DjangoIntegration()])
 
 # DLA settings
 PLATFORM_ACCOUNTS = {"ADMIN_PERMISSION": "penn_mobile_admin"}
