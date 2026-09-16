@@ -78,7 +78,10 @@ class WhartonBookingWrapper(AbstractBookingWrapper):
             raise APIError("Wharton: Connection timeout")
 
         if not response.ok:
-            raise APIError(f"Wharton: Error {response.status_code} when reserving data", response.status_code)
+            raise APIError(
+                f"Wharton: Error {response.status_code} when reserving data",
+                response.status_code,
+            )
 
         return response
 
@@ -414,7 +417,8 @@ class PennGroupsBookingWrapper(AbstractBookingWrapper):
         range_str = "availability"
         if start:
             start_datetime = datetime.datetime.combine(
-                datetime.datetime.strptime(start, "%Y-%m-%d").date(), datetime.datetime.min.time()
+                datetime.datetime.strptime(start, "%Y-%m-%d").date(),
+                datetime.datetime.min.time(),
             )
             range_str += "=" + start
             if end and not start == end:
@@ -572,7 +576,8 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
         range_str = "availability"
         if start:
             start_datetime = datetime.datetime.combine(
-                datetime.datetime.strptime(start, "%Y-%m-%d").date(), datetime.datetime.min.time()
+                datetime.datetime.strptime(start, "%Y-%m-%d").date(),
+                datetime.datetime.min.time(),
             )
             range_str += "=" + start
             if end and not start == end:
@@ -591,7 +596,11 @@ class LibCalBookingWrapper(AbstractBookingWrapper):
             raise APIError(f"GSR Reserve: Error {response.status_code} when reserving data")
 
         rooms = [
-            {"room_name": room["name"], "id": room["id"], "availability": room["availability"]}
+            {
+                "room_name": room["name"],
+                "id": room["id"],
+                "availability": room["availability"],
+            }
             for room in response.json()
             if room["id"] not in ROOM_BLACKLIST
         ]
@@ -772,7 +781,8 @@ class BookingHandler:
             )
 
         total_time_available = sum(
-            [time_available for _, time_available in members], datetime.timedelta(minutes=0)
+            [time_available for _, time_available in members],
+            datetime.timedelta(minutes=0),
         )
 
         if (end - start) >= total_time_available:

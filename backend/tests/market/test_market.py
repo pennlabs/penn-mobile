@@ -273,7 +273,6 @@ class TestItemGet(BaseMarketTest):
 
 
 class TestItemPost(BaseMarketTest):
-
     def setUp(self):
         super().setUp()
 
@@ -805,7 +804,7 @@ class TestSubletGet(BaseMarketTest):
         )
 
     def test_get_single_sublet_invalid_id(self):
-        response = self.client.get(f"/market/sublets/{self.sublets[1].id+1}/")
+        response = self.client.get(f"/market/sublets/{self.sublets[1].id + 1}/")
         self.assertEqual(response.status_code, 404)
 
 
