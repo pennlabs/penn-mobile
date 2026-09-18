@@ -115,6 +115,26 @@ class Calendar(generics.ListAPIView):
         )
 
 
+class CalendarStartEnd(generics.ListAPIView):
+    """
+    list: Returns the start and end dates of the current semester
+    """
+
+    permission_classes = [AllowAny]
+    serializer_class = CalendarEventSerializer
+
+    def get_queryset(self):
+        start = (
+            CalendarEvent.objects.filter(event__icontains="first day of classes").first()
+            or CalendarEvent.objects.first()
+        )
+        end = (
+            CalendarEvent.objects.filter(event__icontains="term ends").first()
+            or CalendarEvent.objects.last()
+        )
+        return [start, end]
+
+
 class Events(generics.ListAPIView):
     """
     list:
