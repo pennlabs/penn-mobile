@@ -24,16 +24,14 @@ def platform_student_attrs(user):
     return attrs
 
 
-class GameUser(User):
+class GameUser(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="gameuser")
     show_name = models.BooleanField(default=False)
     graduation_year = models.PositiveIntegerField(null=True, blank=True)
 
     @classmethod
     def for_user(cls, user, show_name=None, schools=None, majors=None, graduation_year=None):
-        game_user = cls.objects.filter(pk=user.pk).first()
-        if game_user is None:
-            game_user = cls(user_ptr_id=user.pk, show_name=False)
-            game_user.save_base(raw=True)
+        game_user, _ = cls.objects.get_or_create(user=user, defaults={"show_name": False})
         updates = []
         if show_name is not None and game_user.show_name != show_name:
             game_user.show_name = show_name
@@ -47,6 +45,7 @@ class GameUser(User):
             game_user.replace_tags(GameUserTag.SCHOOL, schools)
         if majors is not None:
             game_user.replace_tags(GameUserTag.MAJOR, majors)
+        user.gameuser = game_user
         return game_user
 
     def replace_tags(self, kind, values):

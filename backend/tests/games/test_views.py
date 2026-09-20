@@ -347,7 +347,7 @@ class TestSubmitScoreView(TestCase):
         self.assertIn("submitted_at", res_json)
         self.assertEqual(2, res_json["num_words_found"])
         self.assertEqual(1, LeaderboardEntry.objects.count())
-        self.assertFalse(GameUser.objects.get(pk=self.user.pk).show_name)
+        self.assertFalse(GameUser.objects.get(user=self.user).show_name)
 
     def test_submit_opting_in_to_show_name(self):
         payload = {"words": ["cat"], "show_name": True}
@@ -355,7 +355,7 @@ class TestSubmitScoreView(TestCase):
             f"/games/word-hunt/{DATE}/submit/", json.dumps(payload), content_type="application/json"
         )
         self.assertEqual(201, response.status_code)
-        self.assertTrue(GameUser.objects.get(pk=self.user.pk).show_name)
+        self.assertTrue(GameUser.objects.get(user=self.user).show_name)
 
     def test_show_name_is_user_level(self):
         self.user.first_name, self.user.last_name = "Ben", "Liu"
