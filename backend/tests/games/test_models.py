@@ -5,7 +5,7 @@ from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 
-from games.models import Game, LeaderboardEntry
+from games.models import Game, GameUser, LeaderboardEntry
 from games.serializers import GameDetailSerializer, GameSerializer
 
 
@@ -46,6 +46,40 @@ class TestGameModel(TestCase):
     def test_word_length_freq_defaults_to_empty_dict(self):
         game = Game.objects.create(date=DATE, board=BOARD, possible_words=POSSIBLE_WORDS, seed=SEED)
         self.assertEqual({}, game.word_length_freq)
+
+
+class TestGameUserModel(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("user1", "user1@seas.upenn.edu", "pass")
+
+    def test_for_user_creates_child_without_duplicating_auth_user(self):
+        game_user = GameUser.for_user(self.user)
+        self.assertEqual(self.user.pk, game_user.pk)
+        self.assertFalse(game_user.show_name)
+        self.assertEqual(1, User.objects.filter(pk=self.user.pk).count())
+        self.assertEqual(1, GameUser.objects.filter(pk=self.user.pk).count())
+
+    def test_for_user_updates_show_name(self):
+        GameUser.for_user(self.user, show_name=True)
+        self.assertTrue(GameUser.objects.get(pk=self.user.pk).show_name)
+        GameUser.for_user(self.user, show_name=False)
+        self.assertFalse(GameUser.objects.get(pk=self.user.pk).show_name)
+
+    def test_for_user_leaves_show_name_when_omitted(self):
+        GameUser.for_user(self.user, show_name=True)
+        GameUser.for_user(self.user)
+        self.assertTrue(GameUser.objects.get(pk=self.user.pk).show_name)
+
+    def test_for_user_stores_school_and_year(self):
+        GameUser.for_user(self.user, schools=["SEAS"], majors=["CIS"], graduation_year=2026)
+        game_user = GameUser.objects.get(pk=self.user.pk)
+        self.assertEqual(
+            ["SEAS"], list(game_user.tags.filter(kind="school").values_list("value", flat=True))
+        )
+        self.assertEqual(
+            ["CIS"], list(game_user.tags.filter(kind="major").values_list("value", flat=True))
+        )
+        self.assertEqual(2026, game_user.graduation_year)
 
 
 class TestLeaderboardEntryModel(TestCase):

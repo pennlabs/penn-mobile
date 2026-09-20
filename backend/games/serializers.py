@@ -17,10 +17,19 @@ class GameDetailSerializer(serializers.ModelSerializer):
 
 class LeaderboardEntrySerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
+    rank = serializers.SerializerMethodField()
 
     class Meta:
         model = LeaderboardEntry
-        fields = ["name", "score", "num_words_found", "submitted_at"]
+        fields = ["name", "score", "num_words_found", "submitted_at", "rank"]
+
+    def get_rank(self, obj):
+        return getattr(obj, "rank", None)
 
     def get_name(self, obj):
-        return (obj.user.get_full_name() or None) if obj.show_name else None
+        if not self.context.get("show_names"):
+            return None
+        game_user = getattr(obj.user, "gameuser", None)
+        if not game_user or not game_user.show_name:
+            return None
+        return obj.user.get_full_name() or None

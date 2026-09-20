@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from games.models import Game, LeaderboardEntry
+from games.models import Game, GameUser, LeaderboardEntry
 
 
 User = get_user_model()
@@ -47,7 +47,7 @@ class TestTodayGameView(TestCase):
         response = self.client.get("/games/word-hunt/today/")
         self.assertEqual(404, response.status_code)
         res_json = json.loads(response.content)
-        self.assertIn("error", res_json)
+        self.assertIn("detail", res_json)
 
     def test_get_today_unauthenticated(self):
         self.client.force_authenticate(user=None)
@@ -107,7 +107,12 @@ class TestLeaderboardByDateView(TestCase):
             seed=SEED,
         )
 
+    def opt_in(self, *users):
+        for user in users:
+            GameUser.for_user(user, show_name=True)
+
     def create_entries(self):
+        self.opt_in(self.user1, self.user2, self.user3)
         LeaderboardEntry.objects.create(
             game=self.game, user=self.user1, score=300, num_words_found=9
         )
@@ -118,107 +123,192 @@ class TestLeaderboardByDateView(TestCase):
             game=self.game, user=self.user3, score=400, num_words_found=1
         )
 
-    def test_get_leaderboard_empty(self):
-        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/")
+    def leaderboard(self, query=""):
+        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/{query}")
         self.assertEqual(200, response.status_code)
-        res_json = json.loads(response.content)
-        self.assertEqual([], res_json)
+        return json.loads(response.content)
+
+    def test_get_leaderboard_empty(self):
+        res_json = self.leaderboard()
+        self.assertEqual([], res_json["leaderboard"])
+        self.assertIsNone(res_json["me"])
 
     def test_get_leaderboard_with_entries(self):
+        self.opt_in(self.user1, self.user2)
         LeaderboardEntry.objects.create(
             game=self.game, user=self.user1, score=300, num_words_found=3
         )
         LeaderboardEntry.objects.create(
             game=self.game, user=self.user2, score=500, num_words_found=5
         )
-        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/")
-        self.assertEqual(200, response.status_code)
-        res_json = json.loads(response.content)
-        self.assertEqual(2, len(res_json))
-        entry = res_json[0]
+        res_json = self.leaderboard()
+        self.assertEqual(2, len(res_json["leaderboard"]))
+        entry = res_json["leaderboard"][0]
         self.assertIn("name", entry)
         self.assertIn("score", entry)
         self.assertIn("num_words_found", entry)
         self.assertIn("submitted_at", entry)
+        self.assertIn("rank", entry)
         self.assertNotIn("username", entry)
 
     def test_leaderboard_ordered_by_score_descending(self):
+        self.opt_in(self.user1, self.user2)
         LeaderboardEntry.objects.create(
             game=self.game, user=self.user1, score=300, num_words_found=3
         )
         LeaderboardEntry.objects.create(
             game=self.game, user=self.user2, score=500, num_words_found=5
         )
-        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/")
-        res_json = json.loads(response.content)
-        self.assertGreater(res_json[0]["score"], res_json[1]["score"])
-        self.assertEqual(500, res_json[0]["score"])
-        self.assertEqual(300, res_json[1]["score"])
+        res_json = self.leaderboard()
+        self.assertGreater(res_json["leaderboard"][0]["score"], res_json["leaderboard"][1]["score"])
+        self.assertEqual(500, res_json["leaderboard"][0]["score"])
+        self.assertEqual(300, res_json["leaderboard"][1]["score"])
 
     def test_leaderboard_limit(self):
         self.create_entries()
-        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/?limit=2")
-        self.assertEqual(200, response.status_code)
-        res_json = json.loads(response.content)
-        self.assertEqual([500, 400], [entry["score"] for entry in res_json])
+        res_json = self.leaderboard("?limit=2")
+        self.assertEqual([500, 400], [entry["score"] for entry in res_json["leaderboard"]])
 
     def test_leaderboard_limit_invalid(self):
         response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/?limit=-1")
         self.assertEqual(400, response.status_code)
-        self.assertIn("error", json.loads(response.content))
+        self.assertIn("detail", json.loads(response.content))
 
     def test_leaderboard_sort_by_field(self):
         self.create_entries()
-        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/?sort=-num_words_found")
-        self.assertEqual(200, response.status_code)
-        res_json = json.loads(response.content)
-        self.assertEqual([9, 5, 1], [entry["num_words_found"] for entry in res_json])
+        res_json = self.leaderboard("?sort=-num_words_found")
+        self.assertEqual([9, 5, 1], [entry["num_words_found"] for entry in res_json["leaderboard"]])
 
     def test_leaderboard_sort_ascending(self):
         self.create_entries()
-        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/?sort=score")
-        self.assertEqual(200, response.status_code)
-        res_json = json.loads(response.content)
-        self.assertEqual([300, 400, 500], [entry["score"] for entry in res_json])
+        res_json = self.leaderboard("?sort=score")
+        self.assertEqual([300, 400, 500], [entry["score"] for entry in res_json["leaderboard"]])
 
     def test_leaderboard_sort_invalid(self):
         response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/?sort=password")
         self.assertEqual(400, response.status_code)
-        self.assertIn("error", json.loads(response.content))
+        self.assertIn("detail", json.loads(response.content))
 
     def test_leaderboard_ties_broken_by_submission_time(self):
+        self.opt_in(self.user1, self.user2)
         LeaderboardEntry.objects.create(
             game=self.game, user=self.user1, score=300, num_words_found=3
         )
         LeaderboardEntry.objects.create(
             game=self.game, user=self.user2, score=300, num_words_found=3
         )
-        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/")
-        res_json = json.loads(response.content)
-        self.assertLess(res_json[0]["submitted_at"], res_json[1]["submitted_at"])
+        res_json = self.leaderboard()
+        self.assertLess(
+            res_json["leaderboard"][0]["submitted_at"], res_json["leaderboard"][1]["submitted_at"]
+        )
+        self.assertEqual(1, res_json["leaderboard"][0]["rank"])
+        self.assertEqual(1, res_json["leaderboard"][1]["rank"])
 
-    def test_leaderboard_anonymous_by_default(self):
+    def test_leaderboard_tied_rank_skips_next_number(self):
+        self.opt_in(self.user1, self.user2, self.user3)
         LeaderboardEntry.objects.create(
             game=self.game, user=self.user1, score=300, num_words_found=3
         )
-        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/")
-        self.assertIsNone(json.loads(response.content)[0]["name"])
+        LeaderboardEntry.objects.create(
+            game=self.game, user=self.user2, score=500, num_words_found=5
+        )
+        LeaderboardEntry.objects.create(
+            game=self.game, user=self.user3, score=500, num_words_found=5
+        )
+        ranks = [entry["rank"] for entry in self.leaderboard()["leaderboard"]]
+        self.assertEqual([1, 1, 3], ranks)
+
+    def test_opted_out_player_excluded_from_leaderboard(self):
+        LeaderboardEntry.objects.create(
+            game=self.game, user=self.user1, score=900, num_words_found=3
+        )
+        self.opt_in(self.user2)
+        LeaderboardEntry.objects.create(
+            game=self.game, user=self.user2, score=100, num_words_found=3
+        )
+        res_json = self.leaderboard()
+        self.assertEqual([100], [entry["score"] for entry in res_json["leaderboard"]])
+        self.assertEqual(900, res_json["me"]["score"])
+        self.assertEqual(1, res_json["me"]["rank"])
 
     def test_leaderboard_shows_name_when_opted_in(self):
         self.user1.first_name, self.user1.last_name = "Ben", "Liu"
         self.user1.save()
+        GameUser.for_user(self.user1, show_name=True)
         LeaderboardEntry.objects.create(
-            game=self.game, user=self.user1, score=300, num_words_found=3, show_name=True
+            game=self.game, user=self.user1, score=300, num_words_found=3
         )
-        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/")
-        self.assertEqual("Ben Liu", json.loads(response.content)[0]["name"])
+        self.assertEqual("Ben Liu", self.leaderboard()["leaderboard"][0]["name"])
 
     def test_leaderboard_opted_in_without_name_stays_anonymous(self):
+        GameUser.for_user(self.user1, show_name=True)
         LeaderboardEntry.objects.create(
-            game=self.game, user=self.user1, score=300, num_words_found=3, show_name=True
+            game=self.game, user=self.user1, score=300, num_words_found=3
         )
-        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/")
-        self.assertIsNone(json.loads(response.content)[0]["name"])
+        self.assertIsNone(self.leaderboard()["leaderboard"][0]["name"])
+
+    def test_opted_out_viewer_sees_anonymized_names(self):
+        self.user2.first_name, self.user2.last_name = "Ada", "Lovelace"
+        self.user2.save()
+        GameUser.for_user(self.user2, show_name=True)
+        LeaderboardEntry.objects.create(
+            game=self.game, user=self.user2, score=500, num_words_found=5
+        )
+        self.assertIsNone(self.leaderboard()["leaderboard"][0]["name"])
+
+    def test_me_when_outside_top(self):
+        self.create_entries()
+        res_json = self.leaderboard("?limit=2")
+        self.assertEqual([500, 400], [entry["score"] for entry in res_json["leaderboard"]])
+        self.assertEqual(3, res_json["me"]["rank"])
+        self.assertEqual(300, res_json["me"]["score"])
+
+    def test_me_tied_with_last_visible_row(self):
+        self.opt_in(self.user1, self.user2, self.user3)
+        LeaderboardEntry.objects.create(
+            game=self.game, user=self.user1, score=400, num_words_found=4
+        )
+        LeaderboardEntry.objects.create(
+            game=self.game, user=self.user2, score=500, num_words_found=5
+        )
+        LeaderboardEntry.objects.create(
+            game=self.game, user=self.user3, score=400, num_words_found=4
+        )
+        res_json = self.leaderboard("?limit=2")
+        self.assertEqual(2, res_json["me"]["rank"])
+        self.assertEqual(2, res_json["leaderboard"][1]["rank"])
+
+    def test_leaderboard_filter_by_school(self):
+        GameUser.for_user(self.user1, show_name=True, schools=["SEAS"])
+        GameUser.for_user(self.user2, show_name=True, schools=["Wharton", "SEAS"])
+        GameUser.for_user(self.user3, show_name=True, schools=["Nursing"])
+        self.create_entries()
+        self.assertEqual(
+            [500, 300],
+            [entry["score"] for entry in self.leaderboard("?school=SEAS")["leaderboard"]],
+        )
+
+    def test_leaderboard_filter_by_year(self):
+        GameUser.for_user(self.user1, show_name=True, graduation_year=2026)
+        GameUser.for_user(self.user2, show_name=True, graduation_year=2027)
+        GameUser.for_user(self.user3, show_name=True, graduation_year=2026)
+        self.create_entries()
+        self.assertEqual(
+            [400, 300], [entry["score"] for entry in self.leaderboard("?year=2026")["leaderboard"]]
+        )
+
+    def test_leaderboard_filter_by_major(self):
+        GameUser.for_user(self.user1, show_name=True, majors=["CIS"])
+        GameUser.for_user(self.user2, show_name=True, majors=["FIN"])
+        self.create_entries()
+        self.assertEqual(
+            [300], [entry["score"] for entry in self.leaderboard("?major=CIS")["leaderboard"]]
+        )
+
+    def test_leaderboard_year_invalid(self):
+        response = self.client.get(f"/games/word-hunt/{DATE}/leaderboard/?year=abc")
+        self.assertEqual(400, response.status_code)
+        self.assertIn("detail", json.loads(response.content))
 
     def test_get_leaderboard_not_found(self):
         response = self.client.get("/games/word-hunt/2000-01-01/leaderboard/")
@@ -257,7 +347,7 @@ class TestSubmitScoreView(TestCase):
         self.assertIn("submitted_at", res_json)
         self.assertEqual(2, res_json["num_words_found"])
         self.assertEqual(1, LeaderboardEntry.objects.count())
-        self.assertFalse(LeaderboardEntry.objects.get().show_name)
+        self.assertFalse(GameUser.objects.get(pk=self.user.pk).show_name)
 
     def test_submit_opting_in_to_show_name(self):
         payload = {"words": ["cat"], "show_name": True}
@@ -265,7 +355,29 @@ class TestSubmitScoreView(TestCase):
             f"/games/word-hunt/{DATE}/submit/", json.dumps(payload), content_type="application/json"
         )
         self.assertEqual(201, response.status_code)
-        self.assertTrue(LeaderboardEntry.objects.get().show_name)
+        self.assertTrue(GameUser.objects.get(pk=self.user.pk).show_name)
+
+    def test_show_name_is_user_level(self):
+        self.user.first_name, self.user.last_name = "Ben", "Liu"
+        self.user.save()
+        game2 = Game.objects.create(
+            date=datetime.date(2024, 3, 16),
+            board=BOARD,
+            possible_words=POSSIBLE_WORDS,
+            seed=SEED,
+        )
+        self.client.post(
+            f"/games/word-hunt/{DATE}/submit/",
+            json.dumps({"words": ["cat"]}),
+            content_type="application/json",
+        )
+        self.client.post(
+            f"/games/word-hunt/{game2.date}/submit/",
+            json.dumps({"words": ["dog"], "show_name": True}),
+            content_type="application/json",
+        )
+        first = json.loads(self.client.get(f"/games/word-hunt/{DATE}/leaderboard/").content)
+        self.assertEqual("Ben Liu", first["leaderboard"][0]["name"])
 
     def test_score_computed_from_word_lengths(self):
         payload = {"words": ["cat"]}
@@ -283,7 +395,7 @@ class TestSubmitScoreView(TestCase):
         )
         self.assertEqual(400, response.status_code)
         res_json = json.loads(response.content)
-        self.assertIn("error", res_json)
+        self.assertIn("detail", res_json)
         self.assertIn("invalid_words", res_json)
         self.assertIn("notarealword", res_json["invalid_words"])
 
@@ -294,7 +406,7 @@ class TestSubmitScoreView(TestCase):
         )
         self.assertEqual(400, response.status_code)
         res_json = json.loads(response.content)
-        self.assertIn("error", res_json)
+        self.assertIn("detail", res_json)
 
     def test_submit_words_not_a_list(self):
         payload = {"words": "cat"}
@@ -303,7 +415,7 @@ class TestSubmitScoreView(TestCase):
         )
         self.assertEqual(400, response.status_code)
         res_json = json.loads(response.content)
-        self.assertIn("error", res_json)
+        self.assertIn("detail", res_json)
 
     def test_submit_duplicate_entry_rejected(self):
         payload = {"words": ["cat"]}
@@ -315,7 +427,7 @@ class TestSubmitScoreView(TestCase):
         )
         self.assertEqual(400, response.status_code)
         res_json = json.loads(response.content)
-        self.assertIn("error", res_json)
+        self.assertIn("detail", res_json)
         self.assertEqual(1, LeaderboardEntry.objects.count())
 
     def test_submit_game_not_found(self):
