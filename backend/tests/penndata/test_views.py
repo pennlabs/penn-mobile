@@ -223,6 +223,52 @@ class TestGetRecentFitness(TestCase):
         self.assertEqual(expected, res_json)
 
 
+class TestFitnessRoomResponseFormat(TestCase):
+    """
+    Regression tests for the fields penn-mobile-ios and penn-mobile-android read off
+    /fitness/rooms/. Both clients broke silently when #368 moved fitness onto the GoBoard
+    API and changed these fields. See pennlabs/penn-mobile-ios#693.
+    """
+
+    def setUp(self):
+        call_command("load_fitness_rooms")
+        self.client = APIClient()
+        self.room = FitnessRoom.objects.first()
+
+    def get_rooms(self):
+        """Every room in the response, keyed by id. load_fitness_rooms creates 12."""
+        response = self.client.get(reverse("fitness"))
+        self.assertEqual(response.status_code, 200)
+        return {r["id"]: r for r in json.loads(response.content)}
+
+    def test_last_updated_omits_fractional_seconds(self):
+        # GoBoard reports millisecond precision, which iOS's date formatter cannot currently
+        # parse. A single unparseable room discards the whole array and the app renders no rooms.
+        FitnessSnapshot.objects.create(
+            room=self.room,
+            date=timezone.localtime().replace(microsecond=500000),
+            count=10,
+            capacity=100,
+        )
+        self.assertNotIn(".", self.get_rooms()[self.room.id]["last_updated"])
+
+    def test_capacity_is_a_percentage(self):
+        # Clients render this as a 0-100 percentage, not the room's absolute capacity.
+        FitnessSnapshot.objects.create(
+            room=self.room, date=timezone.localtime(), count=52, capacity=178
+        )
+        self.assertEqual(self.get_rooms()[self.room.id]["capacity"], 29.21)
+
+    def test_zero_capacity_does_not_divide_by_zero(self):
+        # capacity 0 exists on legacy rows; the division must not raise or alter the value.
+        FitnessSnapshot.objects.create(
+            room=self.room, date=timezone.localtime(), count=0, capacity=0
+        )
+        room = self.get_rooms()[self.room.id]
+        self.assertEqual(room["capacity"], 0)
+        self.assertEqual(room["count"], 0)
+
+
 @mock.patch("requests.get", fakeFitnessGet)
 class TestGetFitnessSnapshot(TestCase):
     def setUp(self):
