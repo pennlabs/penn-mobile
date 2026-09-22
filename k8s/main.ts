@@ -115,7 +115,7 @@ export class MyChart extends PennLabsChart {
     // });
 
     new CronJob(this, 'get-fitness-snapshot', {
-      schedule: cronTime.every(3).hours(),
+      schedule: cronTime.every(15).minutes(),
       image: backendImage,
       secret,
       cmd: ["python", "manage.py", "get_fitness_snapshot"],
