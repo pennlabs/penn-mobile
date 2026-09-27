@@ -4,21 +4,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from games.models import Game, GameUser, GameUserTag, LeaderboardEntry
-from games.serializers import GameSerializer, LeaderboardEntrySerializer
+from games.models import Game, GameUser, LeaderboardEntry
+from games.serializers import GameSerializer, GameUserSerializer, LeaderboardEntrySerializer
 from pennmobile.analytics import LabsAnalytics
 
 
 LEADERBOARD_SORT_FIELDS = ("score", "num_words_found", "submitted_at")
-
-
-def is_opted_in(user):
-    game_user = getattr(user, "gameuser", None)
-    return bool(game_user and game_user.show_name)
-
-
-def serialize_entry(entry, show_names):
-    return LeaderboardEntrySerializer(entry, context={"show_names": show_names}).data
 
 
 def assign_ranks(entries, field):
@@ -39,15 +30,9 @@ def rank_for(entries, entry, field, descending):
 
 def apply_leaderboard_filters(entries, params):
     if schools := params.getlist("school"):
-        entries = entries.filter(
-            user__gameuser__tags__kind=GameUserTag.SCHOOL,
-            user__gameuser__tags__value__in=schools,
-        ).distinct()
+        entries = entries.filter(user__gameuser__school__in=schools)
     if majors := params.getlist("major"):
-        entries = entries.filter(
-            user__gameuser__tags__kind=GameUserTag.MAJOR,
-            user__gameuser__tags__value__in=majors,
-        ).distinct()
+        entries = entries.filter(user__gameuser__major__in=majors)
     if (year := params.get("year")) is not None:
         if not year.isdigit():
             return None, Response({"detail": "year must be a non-negative integer."}, status=400)
@@ -100,6 +85,10 @@ class LeaderboardByDateView(APIView):
         school: filter by school name (repeatable)
         major: filter by major name (repeatable)
         year: filter by graduation year
+
+    The public leaderboard only includes users who are not anonymized. The
+    authenticated user's private result is returned separately in "me" and is
+    ranked against all matching scores, including anonymized users.
     """
 
     permission_classes = [IsAuthenticated]
@@ -120,7 +109,7 @@ class LeaderboardByDateView(APIView):
         field = sort.lstrip("-")
         descending = sort.startswith("-")
         entries = entries.order_by(sort, "submitted_at")
-        visible = entries.filter(user__gameuser__show_name=True)
+        visible = entries.filter(user__gameuser__anonymized=False)
         top = visible
         if (limit := request.query_params.get("limit")) is not None:
             if not limit.isdigit():
@@ -129,22 +118,37 @@ class LeaderboardByDateView(APIView):
         top = list(top)
         assign_ranks(top, field)
 
-        show_names = is_opted_in(request.user)
         payload = {
-            "leaderboard": LeaderboardEntrySerializer(
-                top, many=True, context={"show_names": show_names}
-            ).data,
+            "leaderboard": LeaderboardEntrySerializer(top, many=True).data,
             "me": None,
         }
-        mine = next((entry for entry in top if entry.user_id == request.user.pk), None)
-        if mine is None:
-            mine = entries.filter(user=request.user).first()
-            if mine:
-                ranking = visible if is_opted_in(request.user) else entries
-                mine.rank = rank_for(ranking, mine, field, descending)
-        if mine is not None:
-            payload["me"] = serialize_entry(mine, show_names=is_opted_in(mine.user))
+        mine = entries.filter(user=request.user).first()
+        if mine:
+            mine.rank = rank_for(entries, mine, field, descending)
+            payload["me"] = LeaderboardEntrySerializer(mine).data
         return Response(payload)
+
+
+@LabsAnalytics.record_apiview(
+    ViewEntry(name="game-user-profile"),
+)
+class GameUserProfileView(APIView):
+    """GET or update the authenticated user's Word Hunt profile."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        game_user = GameUser.for_user(request.user)
+        return Response(GameUserSerializer(game_user).data)
+
+    def patch(self, request):
+        serializer = GameUserSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        game_user = GameUser.for_user(
+            request.user, anonymized=serializer.validated_data.get("anonymized")
+        )
+        game_user = GameUser.sync_from_platform(request.user)
+        return Response(GameUserSerializer(game_user).data)
 
 
 @LabsAnalytics.record_apiview(
@@ -156,7 +160,6 @@ class SubmitScoreView(APIView):
 
     Body:
         words: list of words found on the board
-        show_name: if present, opt in or out of the named leaderboard
     """
 
     permission_classes = [IsAuthenticated]
@@ -183,9 +186,6 @@ class SubmitScoreView(APIView):
         if LeaderboardEntry.objects.filter(game=game, user=request.user).exists():
             return Response({"detail": "Score already submitted for this game."}, status=400)
 
-        show_name = request.data.get("show_name") is True if "show_name" in request.data else None
-        game_user = GameUser.sync_from_platform(request.user, show_name=show_name)
-
         score = sum((len(w) - 2) ** 2 * 100 for w in normalized)
 
         entry = LeaderboardEntry.objects.create(
@@ -194,4 +194,7 @@ class SubmitScoreView(APIView):
             score=score,
             num_words_found=len(normalized),
         )
-        return Response(serialize_entry(entry, show_names=game_user.show_name), status=201)
+        return Response(
+            LeaderboardEntrySerializer(entry).data,
+            status=201,
+        )

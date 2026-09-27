@@ -5,14 +5,17 @@ from django.conf import settings
 from django.db import migrations, models
 
 
-def copy_show_name_to_game_user(apps, schema_editor):
+def copy_show_name_to_anonymized(apps, schema_editor):
     LeaderboardEntry = apps.get_model("games", "LeaderboardEntry")
     GameUser = apps.get_model("games", "GameUser")
     prefs = {}
     for user_id, show_name in LeaderboardEntry.objects.values_list("user_id", "show_name"):
         prefs[user_id] = prefs.get(user_id, False) or show_name
     GameUser.objects.bulk_create(
-        [GameUser(user_id=user_id, show_name=show_name) for user_id, show_name in prefs.items()]
+        [
+            GameUser(user_id=user_id, anonymized=not show_name)
+            for user_id, show_name in prefs.items()
+        ]
     )
 
 
@@ -33,7 +36,9 @@ class Migration(migrations.Migration):
                         auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
                     ),
                 ),
-                ("show_name", models.BooleanField(default=False)),
+                ("anonymized", models.BooleanField(default=True)),
+                ("school", models.CharField(blank=True, max_length=255)),
+                ("major", models.CharField(blank=True, max_length=255)),
                 ("graduation_year", models.PositiveIntegerField(blank=True, null=True)),
                 (
                     "user",
@@ -45,32 +50,7 @@ class Migration(migrations.Migration):
                 ),
             ],
         ),
-        migrations.CreateModel(
-            name="GameUserTag",
-            fields=[
-                (
-                    "id",
-                    models.AutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
-                    ),
-                ),
-                ("kind", models.CharField(max_length=16)),
-                ("value", models.CharField(max_length=255)),
-                (
-                    "game_user",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="tags",
-                        to="games.gameuser",
-                    ),
-                ),
-            ],
-        ),
-        migrations.AddIndex(
-            model_name="gameusertag",
-            index=models.Index(fields=["kind", "value"], name="games_gameu_kind_15bc38_idx"),
-        ),
-        migrations.RunPython(copy_show_name_to_game_user, migrations.RunPython.noop),
+        migrations.RunPython(copy_show_name_to_anonymized, migrations.RunPython.noop),
         migrations.RemoveField(
             model_name="leaderboardentry",
             name="show_name",
