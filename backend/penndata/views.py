@@ -274,9 +274,19 @@ class FitnessRoomView(generics.ListAPIView):
         # also add last_updated and open/close times to each room in response
         for room in response.data:
             ss = FitnessSnapshot.objects.filter(room__id=room["id"]).order_by("-date").first()
-            room["last_updated"] = timezone.localtime(ss.date) if ss else None
+            # Whole seconds only: fractional seconds fail iOS's current date decoder, which
+            # discards the entire rooms array. pennlabs/penn-mobile-ios#693
+            room["last_updated"] = (
+                timezone.localtime(ss.date).replace(microsecond=0) if ss else None
+            )
             room["count"] = getattr(ss, "count", None)
-            room["capacity"] = getattr(ss, "capacity", None)
+            # Clients expect a 0-100 percentage; #368 started storing absolute capacity here.
+            # Zero or absent capacity passes through unconverted rather than dividing.
+            room["capacity"] = (
+                round(ss.count / ss.capacity * 100, 2)
+                if ss and ss.capacity
+                else getattr(ss, "capacity", None)
+            )
 
             room["open"] = [
                 datetime.time(hour=int(hours), minute=int((hours % 1) * 60))
