@@ -1,10 +1,17 @@
 from django.urls import path
 
-from games.views import GameByDateView, LeaderboardByDateView, SubmitScoreView, TodayGameView
+from games.views import (
+    GameByDateView,
+    GameUserProfileView,
+    LeaderboardByDateView,
+    SubmitScoreView,
+    TodayGameView,
+)
 
 
 urlpatterns = [
     path("word-hunt/today/", TodayGameView.as_view(), name="word-hunt-today"),
+    path("word-hunt/profile/", GameUserProfileView.as_view(), name="word-hunt-profile"),
     path("word-hunt/<date>/", GameByDateView.as_view(), name="word-hunt-by-date"),
     path(
         "word-hunt/<date>/leaderboard/",
