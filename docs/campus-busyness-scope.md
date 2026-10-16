@@ -13,7 +13,8 @@ Spec sections 1, 4–7, and the auth half of 13.
 ### Opt-in and anonymous identity (sections 5, 13)
 - Opt-in status stored on the authenticated user, kept separate from presence reporting
 - Issuance of short-lived rotating anonymous tokens that the app attaches to heartbeats
-- Tokens must not be linkable to PennKey or reconstructable into long-term location history
+- No persistent token-to-account mapping or long-term visit history is stored. Authenticated
+  token issuance/rotation can still be correlated by the server; this is not cryptographic unlinkability.
 
 ### Presence ingestion API (sections 4, 6)
 - Receives heartbeats: `venue_id`, token, timestamp. No GPS coordinates, no PennKey
@@ -52,15 +53,28 @@ The analytics project reads Redis directly. If a heartbeat stream is needed inst
 
 - `presence:active:{venue_id}`: sorted set, member = anonymous token, score = Unix timestamp of last heartbeat. Active device count = members with score within the last `ACTIVE_WINDOW_SECONDS` (600). `presence.store.active_count(venue_id)` implements this.
 - `presence:token:{token}`: validity marker, TTL `TOKEN_TTL_SECONDS` (3600). Value is the venue of the token's last heartbeat; used internally for rotation. Never map tokens to users.
-- Guarantee: one live token = one participating device. Token rotation transfers sorted-set membership atomically, so a device is never counted twice during rotation.
+- Token rotation transfers sorted-set membership atomically and invalidates the old token.
+  Moving venues removes the token's previous membership. The client must use one token per
+  device; token issuance alone does not enforce a one-device guarantee.
 - Heartbeats more frequent than `HEARTBEAT_MIN_INTERVAL_SECONDS` (30) are rejected with 429. Stale members are pruned on write; no janitor job exists.
-- Token issuance is capped at `TOKEN_ISSUE_HOURLY_LIMIT` (10) per user per hour via a Redis counter, so one account cannot inflate device counts by minting tokens.
+- Token issuance is capped at `TOKEN_ISSUE_HOURLY_LIMIT` (10) per user per hour via a Redis
+  counter. This bounds issuance but does not prevent multiple fresh tokens from one account.
 
 ## API (implemented)
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
 | GET | `/presence/venues/` | user | Enabled venues with geofence and dwell config |
-| GET/POST | `/presence/opt-in/` | user | Read or set `{"opted_in": bool}` |
+| GET/POST | `/presence/opt-in/` | user | Read consent/privacy; enable with `{"opted_in": true, "policy_version": "presence-v1"}`; disable with `{"opted_in": false}` |
 | POST | `/presence/token/` | user + opt-in | Issue anonymous token; optional `previous` rotates |
 | POST | `/presence/heartbeat/` | token only | `{venue_id, token}`; 204, or 400/403/429 |
+
+`/api/presence/` is the canonical prefix; root aliases also work. Heartbeat `timestamp`
+is optional and ignored: sorted-set scores use server receive time. Opt-out stops issuance;
+the app must stop sending, and previously issued tokens remain valid until expiry.
+
+Use the existing `Venue` and `PresenceOptIn` models; there is no parallel location/consent
+registry. Venue IDs are stable strings across gym, dining, and library locations; dining
+IDs remain separate source references. Geofences use `lat`, `lng`, and `radius_m`.
+Run `python manage.py import_tracked_locations [file] [--dry-run]` after loading dining and
+fitness sources to import the disabled pilot definitions.

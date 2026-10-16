@@ -130,6 +130,11 @@ Goals:
 - Individual presence data is temporary
 - Historical storage contains aggregates, not user trajectories
 
+Implementation note: authenticated token issuance and rotation can be correlated by the
+server. The current implementation stores no token-to-account mapping, but it does not
+provide cryptographic unlinkability. See [the scope and API contract](./campus-busyness-scope.md)
+for the current consent contract, token lifetime, opt-out behavior, and remaining limits.
+
 ## 6. Presence Ingestion API
 
 The backend receives heartbeats and:

@@ -29,19 +29,24 @@ def _active_key(venue_id):
 
 
 def issue_token(previous=None):
-    r = client()
     token = secrets.token_urlsafe(32)
-    r.set(_token_key(token), "", ex=TOKEN_TTL_SECONDS)
-    if previous is not None:
-        venue_id = r.get(_token_key(previous))
-        if venue_id:
-            score = r.zscore(_active_key(venue_id), previous)
-            if score is not None:
-                r.zadd(_active_key(venue_id), {token: score})
-                r.zrem(_active_key(venue_id), previous)
-            r.set(_token_key(token), venue_id, keepttl=True)
-        r.delete(_token_key(previous))
-    return token
+
+    def rotate(pipe):
+        venue_id = pipe.get(_token_key(previous)) if previous is not None else None
+        if previous is not None and venue_id is None:
+            return None
+        score = pipe.zscore(_active_key(venue_id), previous) if venue_id else None
+        pipe.multi()
+        pipe.set(_token_key(token), venue_id or "", ex=TOKEN_TTL_SECONDS)
+        if score is not None:
+            pipe.zadd(_active_key(venue_id), {token: score})
+            pipe.zrem(_active_key(venue_id), previous)
+        if previous is not None:
+            pipe.delete(_token_key(previous))
+        return token
+
+    keys = (_token_key(previous),) if previous is not None else ()
+    return client().transaction(rotate, *keys, value_from_callable=True)
 
 
 def is_valid_token(token):
@@ -58,21 +63,27 @@ def allow_issuance(user_id):
 
 
 def heartbeat(venue_id, token):
-    r = client()
-    if not is_valid_token(token):
-        return "invalid"
-    now = time.time()
-    active = _active_key(venue_id)
-    last = r.zscore(active, token)
-    if last is not None and now - last < HEARTBEAT_MIN_INTERVAL_SECONDS:
-        return "throttled"
-    pipe = r.pipeline()
-    pipe.zadd(active, {token: now})
-    pipe.zremrangebyscore(active, 0, now - ACTIVE_WINDOW_SECONDS)
-    pipe.expire(active, ACTIVE_WINDOW_SECONDS)
-    pipe.set(_token_key(token), venue_id, keepttl=True)
-    pipe.execute()
-    return "ok"
+    def update(pipe):
+        previous_venue = pipe.get(_token_key(token))
+        if previous_venue is None:
+            return "invalid"
+        now = time.time()
+        previous_active = _active_key(previous_venue) if previous_venue else _active_key(venue_id)
+        last = pipe.zscore(previous_active, token)
+        if last is not None and now - last < HEARTBEAT_MIN_INTERVAL_SECONDS:
+            return "throttled"
+        active = _active_key(venue_id)
+        pipe.multi()
+        if previous_venue and previous_venue != venue_id:
+            pipe.zrem(previous_active, token)
+        pipe.zadd(active, {token: now})
+        pipe.zremrangebyscore(active, 0, now - ACTIVE_WINDOW_SECONDS)
+        pipe.expire(active, ACTIVE_WINDOW_SECONDS)
+        pipe.set(_token_key(token), venue_id, keepttl=True)
+        return "ok"
+
+    # Watching the token prevents concurrent rotation/expiry from resurrecting it.
+    return client().transaction(update, _token_key(token), value_from_callable=True)
 
 
 def active_count(venue_id):

@@ -1,5 +1,4 @@
-import json
-
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -24,19 +23,27 @@ class TestOptInView(TestCase):
     def test_defaults_to_opted_out(self):
         response = self.client.get("/presence/opt-in/")
         self.assertEqual(200, response.status_code)
-        self.assertEqual({"opted_in": False}, json.loads(response.content))
+        self.assertFalse(response.json()["opted_in"])
 
     def test_opt_in(self):
-        response = self.client.post("/presence/opt-in/", {"opted_in": True}, format="json")
+        response = self.client.post(
+            "/presence/opt-in/",
+            {"opted_in": True, "policy_version": settings.PRESENCE_PRIVACY_POLICY_VERSION},
+            format="json",
+        )
         self.assertEqual(200, response.status_code)
-        self.assertEqual({"opted_in": True}, json.loads(response.content))
+        self.assertTrue(response.json()["opted_in"])
         self.assertTrue(self.user.presence_opt_in.opted_in)
 
     def test_opt_back_out(self):
-        self.client.post("/presence/opt-in/", {"opted_in": True}, format="json")
+        self.client.post(
+            "/presence/opt-in/",
+            {"opted_in": True, "policy_version": settings.PRESENCE_PRIVACY_POLICY_VERSION},
+            format="json",
+        )
         self.client.post("/presence/opt-in/", {"opted_in": False}, format="json")
         response = self.client.get("/presence/opt-in/")
-        self.assertEqual({"opted_in": False}, json.loads(response.content))
+        self.assertFalse(response.json()["opted_in"])
         self.assertEqual(1, PresenceOptIn.objects.count())
 
     def test_non_boolean_rejected(self):

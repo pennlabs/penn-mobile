@@ -1,6 +1,7 @@
 import json
 
 import fakeredis
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -34,6 +35,7 @@ class TestTokenStore(PresenceStoreTestCase):
         self.assertNotEqual(old, new)
         self.assertTrue(store.is_valid_token(new))
         self.assertFalse(store.is_valid_token(old))
+        self.assertIsNone(store.issue_token(previous=old))
 
     def test_issuance_counter_expires(self):
         for _ in range(store.TOKEN_ISSUE_HOURLY_LIMIT):
@@ -51,7 +53,7 @@ class TestTokenView(PresenceStoreTestCase):
         self.client = APIClient()
         self.user = User.objects.create_user("user", "user@seas.upenn.edu", "user")
         self.client.force_authenticate(user=self.user)
-        PresenceOptIn.set_for_user(self.user, True)
+        PresenceOptIn.set_for_user(self.user, True, settings.PRESENCE_PRIVACY_POLICY_VERSION)
 
     def test_unauthenticated(self):
         self.client.force_authenticate(user=None)
@@ -80,6 +82,6 @@ class TestTokenView(PresenceStoreTestCase):
             self.assertEqual(200, self.client.post("/presence/token/").status_code)
         self.assertEqual(429, self.client.post("/presence/token/").status_code)
         other = User.objects.create_user("other", "other@seas.upenn.edu", "other")
-        PresenceOptIn.set_for_user(other, True)
+        PresenceOptIn.set_for_user(other, True, settings.PRESENCE_PRIVACY_POLICY_VERSION)
         self.client.force_authenticate(user=other)
         self.assertEqual(200, self.client.post("/presence/token/").status_code)
