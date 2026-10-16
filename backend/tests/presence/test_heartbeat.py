@@ -1,4 +1,5 @@
 import time
+from unittest.mock import patch
 
 import fakeredis
 from django.test import TestCase
@@ -53,6 +54,36 @@ class TestHeartbeatStore(HeartbeatTestCase):
         self.assertEqual(1, store.active_count("pottruck"))
         self.assertEqual([new], store._client.zrange("presence:active:pottruck", 0, -1))
         self.assertEqual("throttled", store.heartbeat("pottruck", new))
+
+    def test_moving_venues_removes_previous_presence(self):
+        store.heartbeat("pottruck", self.token)
+        self.backdate(self.token, store.HEARTBEAT_MIN_INTERVAL_SECONDS + 1)
+        self.assertEqual("ok", store.heartbeat("commons", self.token))
+        self.assertEqual(0, store.active_count("pottruck"))
+        self.assertEqual(1, store.active_count("commons"))
+
+    def test_expiry_during_heartbeat_does_not_resurrect_token(self):
+        original = store.client().pipeline
+        expired = False
+
+        def interleave(*args, **kwargs):
+            pipe = original(*args, **kwargs)
+            execute = pipe.execute
+
+            def expire_before_commit(*args, **kwargs):
+                nonlocal expired
+                if not expired:
+                    expired = True
+                    store.client().delete(f"presence:token:{self.token}")
+                return execute(*args, **kwargs)
+
+            pipe.execute = expire_before_commit
+            return pipe
+
+        with patch.object(store.client(), "pipeline", side_effect=interleave):
+            self.assertEqual("invalid", store.heartbeat("pottruck", self.token))
+        self.assertFalse(store.is_valid_token(self.token))
+        self.assertEqual(0, store.active_count("pottruck"))
 
 
 class TestHeartbeatView(HeartbeatTestCase):
