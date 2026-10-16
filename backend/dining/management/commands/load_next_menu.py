@@ -9,9 +9,9 @@ from dining.utils.menu_view_cache import delete_menu_view_cache
 
 class Command(BaseCommand):
     """
-    Loads menu for the next 7 days, starting from today. Takes about 3 minutes to run.
+    Loads menu for the next X days, starting from today. Takes about 3 minutes to run.
     Invariant: For every date, the database should contain the menus for
-    the next 7 days, including the original date.
+    the next X days, including the original date.
     """
 
     def load_one_menu(self, today, wrapper, delta, *args, **kwargs):
@@ -26,12 +26,20 @@ class Command(BaseCommand):
         # Error logging
         self.stdout.write(f"Loaded new Dining Menu for {date_to_load}")
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--days",
+            type=int,
+            default=7,
+            help="Number of days to load menus for, starting from today.",
+        )
+
     def handle(self, *args, **kwargs):
         """
-        Load menu for the next 7 days
+        Load menu for the next X days
         """
-        today = timezone.now().date()
+        today = timezone.localdate()
         dining_api_wrapper = DiningAPIWrapper()
 
-        for days_in_advance in range(7):
+        for days_in_advance in range(kwargs["days"]):
             self.load_one_menu(today, dining_api_wrapper, days_in_advance)
