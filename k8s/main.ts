@@ -122,7 +122,15 @@ export class MyChart extends PennLabsChart {
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
 
-    new CronJob(this, 'load-dining-menus', {
+    new CronJob(this, 'load-dining-menus-today', {
+      schedule: cronTime.every(3).hours(),
+      image: backendImage,
+      secret,
+      cmd: ["python", "manage.py", "load_next_menu", "--days", "1"],
+      env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
+    });
+
+    new CronJob(this, 'load-dining-menus-week', {
       schedule: cronTime.everyDay(),
       image: backendImage,
       secret,
