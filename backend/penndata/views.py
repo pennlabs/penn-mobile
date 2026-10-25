@@ -6,6 +6,7 @@ from analytics.entries import ViewEntry
 from bs4 import BeautifulSoup
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from requests.exceptions import ConnectionError
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -13,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from laundry.models import LaundryRoom
+from penndata.ml.predict import predict_fitness
 from penndata.models import (
     AnalyticsEvent,
     CalendarEvent,
@@ -401,6 +403,34 @@ class FitnessUsage(APIView):
                 "usage": {i: amt for i, amt in enumerate(usage_per_hour)},
             }
         )
+
+
+class FitnessPrediction(APIView):
+    """
+    GET: predicted occupancy for a room at a future time.
+
+    Query params:
+      at           ISO datetime (defaults to the next few hours)
+      hours_ahead  integer hours from now (alternative to `at`)
+    """
+
+    def get(self, request, room_id):
+        room = get_object_or_404(FitnessRoom, pk=room_id)
+        at = request.query_params.get("at")
+        hours_ahead = request.query_params.get("hours_ahead")
+        target = None
+        if at:
+            target = parse_datetime(at)
+            if target is None:
+                return Response({"detail": "at must be an ISO datetime"}, status=400)
+            if timezone.is_naive(target):
+                target = timezone.make_aware(target)
+        if hours_ahead is not None:
+            try:
+                hours_ahead = int(hours_ahead)
+            except ValueError:
+                return Response({"detail": "hours_ahead must be an integer"}, status=400)
+        return Response(predict_fitness(room, target_time=target, hours_ahead=hours_ahead))
 
 
 class FitnessPreferences(APIView):
