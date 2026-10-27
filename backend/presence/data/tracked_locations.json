@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Pottruck",
+    "kind": "gym",
+    "enabled": false,
+    "fitness_room_names": [
+      "Climbing Wall",
+      "Rec Lounge",
+      "1st Floor Fitness",
+      "Court 1",
+      "Court 2",
+      "Court 3",
+      "Multipurpose Room",
+      "2nd Floor Weight Room",
+      "3rd Floor Fitness Room",
+      "4th Floor Fitness Room",
+      "Studio 409",
+      "Sheerr Pool"
+    ],
+    "venue_id": "pottruck"
+  },
+  {
+    "name": "1920 Commons",
+    "kind": "dining",
+    "enabled": false,
+    "dining_venue_id": 593,
+    "venue_id": "1920-commons"
+  },
+  {
+    "name": "Hill House",
+    "kind": "dining",
+    "enabled": false,
+    "dining_venue_id": 636,
+    "venue_id": "hill-house"
+  },
+  {
+    "name": "Van Pelt",
+    "kind": "library",
+    "enabled": false,
+    "venue_id": "van-pelt"
+  }
+]

@@ -10,11 +10,20 @@ from presence.models import Venue
 User = get_user_model()
 
 GEOFENCE = {"lat": 39.9535, "lng": -75.1970, "radius_m": 60}
+HOURS = {
+    "timezone": "America/New_York",
+    "weekly": {"0": [{"open": "06:00", "close": "23:30"}]},
+    "overrides": {},
+}
 
 
 def create_venue(venue_id="pottruck", **kwargs):
     return Venue.objects.create(
-        venue_id=venue_id, name=kwargs.pop("name", "Pottruck"), geofence=GEOFENCE, **kwargs
+        venue_id=venue_id,
+        name=kwargs.pop("name", "Pottruck"),
+        geofence=GEOFENCE,
+        opening_hours=HOURS,
+        **kwargs
     )
 
 
@@ -60,7 +69,16 @@ class TestVenueListView(TestCase):
                 "min_dwell_seconds": 180,
                 "exit_grace_seconds": 120,
             },
-            venues[0],
+            {
+                field: venues[0][field]
+                for field in (
+                    "venue_id",
+                    "name",
+                    "geofence",
+                    "min_dwell_seconds",
+                    "exit_grace_seconds",
+                )
+            },
         )
 
     def test_excludes_disabled_venues(self):
