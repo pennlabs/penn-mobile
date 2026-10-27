@@ -32,6 +32,8 @@ from penndata.serializers import (
 )
 from pennmobile.analytics import LabsAnalytics
 
+FITNESS_COUNT_STALE_AFTER = timedelta(hours=2)
+
 
 class News(APIView):
     """
@@ -253,12 +255,56 @@ class FitnessRoomView(generics.ListAPIView):
 
     def get(self, request):
         response = super().get(self, request)
-        # also add last_updated and open/close times to each room in response
+        now = timezone.now()
         for room in response.data:
             ss = FitnessSnapshot.objects.filter(room__id=room["id"]).order_by("-date").first()
-            room["last_updated"] = timezone.localtime(ss.date) if ss else None
+            last_updated = timezone.localtime(ss.date) if ss else None
+            room["last_updated"] = last_updated
             room["count"] = getattr(ss, "count", None)
             room["capacity"] = getattr(ss, "capacity", None)
+            room["count_is_prediction"] = False
+            room["count_source"] = "reported" if ss else "unavailable"
+            room["prediction_method"] = None
+            room["count_disclaimer"] = None
+
+            if ss and now - ss.date >= FITNESS_COUNT_STALE_AFTER:
+                prediction = predict_fitness(
+                    FitnessRoom.objects.get(pk=room["id"]),
+                    target_time=now,
+                )["predictions"][0]
+                if prediction["count"] is not None:
+                    room["count"] = prediction["count"]
+                    room["count_is_prediction"] = prediction["method"] != "closed"
+                    room["count_source"] = (
+                        "closed"
+                        if prediction["method"] == "closed"
+                        else "prediction"
+                    )
+                    room["prediction_method"] = prediction["method"]
+                    if prediction["method"] == "closed":
+                        room["count_disclaimer"] = (
+                            f"Estimated as 0 because the gym is closed; "
+                            f"last reported at {last_updated.isoformat()}."
+                        )
+                    else:
+                        # method_label = {
+                        #     "hist-avg": "historical average",
+                        #     "gbm-24h": "24-hour occupancy model",
+                        #     "gbm-7d": "7-day occupancy model",
+                        # }.get(prediction["method"], "occupancy model")
+                        room["count_disclaimer"] = (
+                            f"Estimated because "
+                            f"the last count was reported at {last_updated.isoformat()}."
+                        )
+                else:
+                    room["count"] = None
+                    room["count_source"] = "unavailable"
+                    room["count_disclaimer"] = (
+                        f"The last count was reported "
+                        f"at {last_updated.isoformat()}."
+                    )
+            elif not ss:
+                room["count_disclaimer"] = "No count has been reported and no estimate is available."
 
             room["open"] = [
                 datetime.time(hour=int(hours), minute=int((hours % 1) * 60))

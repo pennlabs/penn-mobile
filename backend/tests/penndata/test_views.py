@@ -180,6 +180,10 @@ class TestGetRecentFitness(TestCase):
                 "last_updated": None,
                 "count": None,
                 "capacity": None,
+                "count_is_prediction": False,
+                "count_source": "unavailable",
+                "prediction_method": None,
+                "count_disclaimer": "No count has been reported and no estimate is available.",
             }
             for room in FitnessRoom.objects.all()
             if room.id != self.fitness_room.id
@@ -193,6 +197,10 @@ class TestGetRecentFitness(TestCase):
                 "image_url": self.fitness_room.image_url,
                 "count": self.new_count,
                 "capacity": None,
+                "count_is_prediction": False,
+                "count_source": "reported",
+                "prediction_method": None,
+                "count_disclaimer": None,
             }
         )
 
@@ -201,6 +209,31 @@ class TestGetRecentFitness(TestCase):
         res_json.sort(key=lambda x: x["id"])
 
         self.assertEqual(expected, res_json)
+
+    @mock.patch("penndata.views.predict_fitness")
+    def test_stale_count_uses_prediction_and_explains_its_source(self, predict):
+        stale_time = timezone.now() - datetime.timedelta(hours=2, minutes=1)
+        snapshot = FitnessSnapshot.objects.filter(room=self.fitness_room).latest("date")
+        snapshot.date = stale_time
+        snapshot.save(update_fields=["date"])
+        predict.return_value = {
+            "predictions": [{"count": 31.5, "method": "hist-avg"}]
+        }
+
+        response = self.client.get(reverse("fitness"))
+        room = next(
+            item
+            for item in response.json()
+            if item["id"] == self.fitness_room.id
+        )
+
+        self.assertEqual(room["count"], 31.5)
+        self.assertTrue(room["count_is_prediction"])
+        self.assertEqual(room["count_source"], "prediction")
+        self.assertEqual(room["prediction_method"], "hist-avg")
+        self.assertIn("historical average", room["count_disclaimer"])
+        self.assertIn("last count was reported at", room["count_disclaimer"])
+        predict.assert_called_once()
 
 
 @mock.patch("requests.get", fakeFitnessGet)
