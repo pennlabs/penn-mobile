@@ -287,13 +287,13 @@ class FitnessRoomView(generics.ListAPIView):
                             f"last reported at {last_updated.isoformat()}."
                         )
                     else:
-                        # method_label = {
-                        #     "hist-avg": "historical average",
-                        #     "gbm-24h": "24-hour occupancy model",
-                        #     "gbm-7d": "7-day occupancy model",
-                        # }.get(prediction["method"], "occupancy model")
+                        method_label = {
+                            "hist-avg": "historical average",
+                            "gbm-24h": "24-hour occupancy model",
+                            "gbm-7d": "7-day occupancy model",
+                        }.get(prediction["method"], "occupancy model")
                         room["count_disclaimer"] = (
-                            f"Estimated because "
+                            f"Estimated using {method_label} because "
                             f"the last count was reported at {last_updated.isoformat()}."
                         )
                 else:

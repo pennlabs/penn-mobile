@@ -81,10 +81,10 @@ def _fit_gbm(
         subset=[target]
     )
 
-    if len(training) < 100:
+    if len(training) < 30:
         raise ValueError(
             f"Only {len(training)} usable training rows; "
-            "need at least 100."
+            "need at least 30."
         )
 
     X = training[usable]

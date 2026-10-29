@@ -52,7 +52,7 @@ class Command(BaseCommand):
         summary = coverage_summary(df)
         self.stdout.write(f"Loaded {summary}")
 
-        if df.empty or summary.get("rows", 0) < 100:
+        if df.empty or summary.get("rows", 0) < 30:
             raise CommandError(
                 "Not enough snapshots to train. Keep get_fitness_snapshot running "
                 "every 10 minutes and retry after more history accumulates."

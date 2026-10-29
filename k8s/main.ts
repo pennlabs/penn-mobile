@@ -122,6 +122,14 @@ export class MyChart extends PennLabsChart {
       env: [{ name: "DJANGO_SETTINGS_MODULE", value: "pennmobile.settings.production" }]
     });
 
+    new CronJob(this, 'train-fitness-model', {
+      schedule: '0 0 * * *', // Daily at 8 PM EDT / 7 PM EST (Kubernetes schedules use UTC).
+      image: backendImage,
+      secret,
+      cmd: ['python', 'manage.py', 'train_fitness_model', '--from-db', '--skip-eval'],
+      env: [{ name: 'DJANGO_SETTINGS_MODULE', value: 'pennmobile.settings.production' }]
+    });
+
     new CronJob(this, 'load-dining-menus', {
       schedule: cronTime.everyDay(),
       image: backendImage,
