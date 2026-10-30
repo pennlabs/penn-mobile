@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "phonenumber_field",
     "market",
     "games",
+    "presence",
 ]
 
 MIDDLEWARE = [
@@ -165,6 +166,8 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_PUBLIC": True,
 }
+
+PRESENCE_PRIVACY_POLICY_VERSION = "presence-v1"
 
 # Redis for Celery & Caching
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
