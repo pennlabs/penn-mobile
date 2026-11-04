@@ -2,7 +2,15 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
 
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRShareCode
+from gsr_booking.models import (
+    GSR,
+    Group,
+    GroupMembership,
+    GSRBooking,
+    GSRBookingShare,
+    GSRShareCode,
+    Reservation,
+)
 
 
 User = get_user_model()
@@ -158,3 +166,127 @@ class SharedGSRBookingSerializer(serializers.ModelSerializer):
 
     def get_is_valid(self, obj):
         return obj.end and obj.end > timezone.now()
+
+
+class SharedReservationBookingSerializer(serializers.ModelSerializer):
+    location = serializers.CharField(source="gsr.name", read_only=True)
+
+    class Meta:
+        model = GSRBooking
+        fields = ["location", "room_name", "start", "end"]
+
+
+class GSRBookingShareSerializer(serializers.ModelSerializer):
+    reservation = serializers.PrimaryKeyRelatedField(
+        queryset=Reservation.objects.all(), write_only=True, required=True
+    )
+    recipient = serializers.SlugRelatedField(
+        slug_field="username", queryset=User.objects.filter(is_active=True)
+    )
+    reservation_id = serializers.IntegerField(read_only=True)
+    inviter = serializers.SlugRelatedField(slug_field="username", read_only=True)
+    invited_at = serializers.DateTimeField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+    responded_at = serializers.DateTimeField(read_only=True)
+    revoked_at = serializers.DateTimeField(read_only=True)
+    bookings = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GSRBookingShare
+        validators = []
+        fields = [
+            "id",
+            "reservation",
+            "reservation_id",
+            "recipient",
+            "inviter",
+            "status",
+            "invited_at",
+            "created_at",
+            "updated_at",
+            "responded_at",
+            "revoked_at",
+            "bookings",
+        ]
+        read_only_fields = [
+            "id",
+            "reservation_id",
+            "inviter",
+            "status",
+            "invited_at",
+            "created_at",
+            "updated_at",
+            "responded_at",
+            "revoked_at",
+            "bookings",
+        ]
+
+    def validate(self, attrs):
+        request = self.context["request"]
+        reservation = attrs["reservation"]
+        recipient = attrs["recipient"]
+
+        if reservation.creator_id != request.user.id:
+            raise serializers.ValidationError(
+                {"reservation": "Only the reservation owner can invite others."}
+            )
+        if recipient.id == request.user.id:
+            raise serializers.ValidationError({"recipient": "You cannot invite yourself."})
+        if reservation.is_cancelled or reservation.end <= timezone.now():
+            raise serializers.ValidationError(
+                {"reservation": "Only active, upcoming reservations can be shared."}
+            )
+        if not reservation.gsrbooking_set.filter(
+            is_cancelled=False, end__gt=timezone.now()
+        ).exists():
+            raise serializers.ValidationError(
+                {"reservation": "This reservation has no active bookings to share."}
+            )
+        return attrs
+
+    def create(self, validated_data):
+        reservation = validated_data.pop("reservation")
+        recipient = validated_data["recipient"]
+        inviter = self.context["request"].user
+
+        share, created = GSRBookingShare.objects.get_or_create(
+            reservation=reservation,
+            recipient=recipient,
+            defaults={"inviter": inviter},
+        )
+        if not created and share.status in (GSRBookingShare.DECLINED, GSRBookingShare.REVOKED):
+            share.inviter = inviter
+            share.status = GSRBookingShare.PENDING
+            share.invited_at = timezone.now()
+            share.responded_at = None
+            share.revoked_at = None
+            share.save(
+                update_fields=[
+                    "inviter",
+                    "status",
+                    "invited_at",
+                    "responded_at",
+                    "revoked_at",
+                    "updated_at",
+                ]
+            )
+        return share
+
+    def get_bookings(self, obj):
+        request = self.context.get("request")
+        can_view = (
+            request
+            and (
+                obj.inviter_id == request.user.id
+                or (obj.recipient_id == request.user.id and obj.status == GSRBookingShare.ACCEPTED)
+            )
+            and obj.is_relevant()
+        )
+        if not can_view:
+            return []
+
+        bookings = obj.reservation.gsrbooking_set.filter(
+            is_cancelled=False, end__gt=timezone.now()
+        ).select_related("gsr")
+        return SharedReservationBookingSerializer(bookings, many=True).data

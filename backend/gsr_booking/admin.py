@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRBookingShare, Reservation
 
 
 class GroupMembershipInline(admin.TabularInline):
@@ -43,4 +43,5 @@ admin.site.register(Group, GroupAdmin)
 admin.site.register(GroupMembership, GroupMembershipAdmin)
 admin.site.register(GSR, GSRAdmin)
 admin.site.register(GSRBooking)
+admin.site.register(GSRBookingShare)
 admin.site.register(Reservation)

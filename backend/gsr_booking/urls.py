@@ -9,6 +9,7 @@ from gsr_booking.views import (
     CheckWharton,
     GroupMembershipViewSet,
     GroupViewSet,
+    GSRBookingShareViewSet,
     GSRShareCodeViewSet,
     Locations,
     MyMembershipViewSet,
@@ -23,6 +24,7 @@ router = routers.DefaultRouter()
 router.register(r"mymemberships", MyMembershipViewSet, "mymemberships")
 router.register(r"membership", GroupMembershipViewSet)
 router.register(r"groups", GroupViewSet)
+router.register(r"booking-shares", GSRBookingShareViewSet, basename="booking-shares")
 router.register(r"share", GSRShareCodeViewSet, basename="share")
 
 urlpatterns = [

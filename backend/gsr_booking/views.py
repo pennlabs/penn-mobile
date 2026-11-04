@@ -5,6 +5,7 @@ from django.core.cache import cache
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
@@ -13,11 +14,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from gsr_booking.api_wrapper import APIError, GSRBooker, PennGroupsGSRBooker, WhartonGSRBooker
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, GSRShareCode
+from gsr_booking.models import (
+    GSR,
+    Group,
+    GroupMembership,
+    GSRBooking,
+    GSRBookingShare,
+    GSRShareCode,
+)
 from gsr_booking.permissions import IsShareCodeOwner
 from gsr_booking.serializers import (
     GroupMembershipSerializer,
     GroupSerializer,
+    GSRBookingShareSerializer,
     GSRSerializer,
     GSRShareCodeSerializer,
     SharedGSRBookingSerializer,
@@ -424,3 +433,66 @@ class GSRShareCodeViewSet(
 
     # create() is inherited from CreateModelMixin
     # destroy() is inherited from DestroyModelMixin
+
+
+class GSRBookingShareViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    permission_classes = [IsAuthenticated]
+    serializer_class = GSRBookingShareSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return (
+            GSRBookingShare.objects.filter(Q(inviter=user) | Q(recipient=user))
+            .select_related("reservation", "inviter", "recipient")
+            .prefetch_related(Prefetch("reservation__gsrbooking_set"))
+        )
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        share = serializer.save()
+        # GSR invitation notifications are paused pending team lead approval.
+        return Response(self.get_serializer(share).data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        share = self.get_object()
+        if share.inviter_id != request.user.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        share.status = GSRBookingShare.REVOKED
+        share.revoked_at = timezone.now()
+        share.save(update_fields=["status", "revoked_at", "updated_at"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["post"])
+    def accept(self, request, *args, **kwargs):
+        share = self.get_object()
+        if share.recipient_id != request.user.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if share.status != GSRBookingShare.PENDING:
+            return Response({"detail": "Only pending invitations can be accepted."}, status=400)
+        if not share.is_relevant():
+            return Response({"detail": "This reservation is no longer active."}, status=400)
+
+        share.status = GSRBookingShare.ACCEPTED
+        share.responded_at = timezone.now()
+        share.save(update_fields=["status", "responded_at", "updated_at"])
+        return Response(self.get_serializer(share).data)
+
+    @action(detail=True, methods=["post"])
+    def decline(self, request, *args, **kwargs):
+        share = self.get_object()
+        if share.recipient_id != request.user.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if share.status != GSRBookingShare.PENDING:
+            return Response({"detail": "Only pending invitations can be declined."}, status=400)
+
+        share.status = GSRBookingShare.DECLINED
+        share.responded_at = timezone.now()
+        share.save(update_fields=["status", "responded_at", "updated_at"])
+        return Response(self.get_serializer(share).data)
