@@ -1,9 +1,163 @@
 from __future__ import annotations
 
+import re
+from datetime import date
+from functools import lru_cache
+from pathlib import Path
+
 import pandas as pd
 from pandas.tseries.holiday import USFederalHolidayCalendar
 
 from penndata.ml.constants import FINALS_MD, OPEN_TIMES, SESSION_MD, TIMEZONE
+
+
+ACADEMIC_CALENDAR_PATH = Path(__file__).resolve().parents[2] / "penn-calendar.csv"
+
+
+@lru_cache(maxsize=4)
+def _read_academic_calendar(
+    path: str,
+    modified_at_ns: int,
+) -> tuple[tuple[str, str, date, date], ...]:
+    if Path(path).stat().st_mtime_ns != modified_at_ns:
+        raise RuntimeError("Academic calendar CSV changed while being loaded.")
+
+    calendar = pd.read_csv(path, dtype=str).fillna("")
+    required = {"term", "event", "start", "end", "status"}
+    missing = required.difference(calendar.columns)
+    if missing:
+        raise ValueError(
+            f"Academic calendar CSV is missing columns: {', '.join(sorted(missing))}"
+        )
+
+    active = calendar["status"].str.strip().str.upper().ne("TBD")
+    starts = pd.to_datetime(calendar["start"].str.strip(), errors="coerce")
+    ends = pd.to_datetime(calendar["end"].str.strip(), errors="coerce")
+    invalid = active & (
+        starts.isna() | ends.isna() | (starts > ends)
+    )
+    if invalid.any():
+        rows = (calendar.index[invalid] + 2).tolist()
+        raise ValueError(
+            f"Academic calendar CSV has invalid date ranges on rows: {rows}"
+        )
+
+    return tuple(
+        (
+            row.term.strip(),
+            row.event.strip(),
+            start.date(),
+            end.date(),
+        )
+        for row, start, end in zip(
+            calendar.loc[active].itertuples(index=False),
+            starts.loc[active],
+            ends.loc[active],
+        )
+    )
+
+
+def _academic_calendar_events(
+    path: str | Path | None,
+) -> tuple[tuple[str, str, date, date], ...]:
+    calendar_path = Path(path) if path is not None else ACADEMIC_CALENDAR_PATH
+    if not calendar_path.is_file():
+        return ()
+    resolved_path = calendar_path.resolve()
+    return _read_academic_calendar(
+        str(resolved_path),
+        resolved_path.stat().st_mtime_ns,
+    )
+
+
+def _calendar_day_sets(
+    events: tuple[tuple[str, str, date, date], ...],
+) -> tuple[
+    set[date],
+    set[date],
+    set[date],
+    set[int],
+    set[date],
+    set[date],
+]:
+    session_bounds: dict[str, dict[str, date]] = {}
+    summer_bounds: dict[tuple[str, str], dict[str, date]] = {}
+    finals_days: set[date] = set()
+    finals_years: set[int] = set()
+    holiday_days: set[date] = set()
+    break_days: set[date] = set()
+
+    for term, event, start, end in events:
+        name = event.casefold()
+        days = pd.date_range(start, end, freq="D").date
+
+        if name == "first day of classes":
+            session_bounds.setdefault(term, {})["start"] = start
+        elif name in {"last day of classes", f"{term.split()[0].casefold()} term ends"}:
+            session_bounds.setdefault(term, {})["end"] = end
+
+        if re.search(r"\bclasses\s+(?:begin|end)\b", name):
+            periods = {
+                "session i": r"\bsession\s+i\b",
+                "session ii": r"\bsession\s+ii\b",
+                "11-week": r"\b11-week session\b",
+            }
+            for period, pattern in periods.items():
+                if re.search(pattern, name):
+                    bound = "start" if "classes begin" in name else "end"
+                    summer_bounds.setdefault((term, period), {})[bound] = (
+                        start if bound == "start" else end
+                    )
+
+        if re.search(r"\b(?:final examinations?|reading days)\b", name):
+            finals_days.update(days)
+            finals_years.add(start.year)
+        if re.search(r"\bno classes\b", name) and not re.search(
+            r"\bclasses\s+(?:begin|end|resume)\b",
+            name,
+        ):
+            holiday_days.update(days)
+        if re.search(r"\bbreak\b", name):
+            break_days.update(days)
+
+    session_days: set[date] = set()
+    session_coverage_days: set[date] = set()
+    for term, bounds in session_bounds.items():
+        start = bounds.get("start")
+        end = bounds.get("end")
+        if start is not None and end is not None and start <= end:
+            session = term.split()[0].casefold()
+            if session not in {"fall", "spring"}:
+                continue
+            session_days.update(pd.date_range(start, end, freq="D").date)
+            fallback_range = SESSION_MD[1] if session == "fall" else SESSION_MD[0]
+            year_days = pd.date_range(
+                date(start.year, 1, 1),
+                date(start.year, 12, 31),
+                freq="D",
+            ).date
+            session_coverage_days.update(
+                day
+                for day in year_days
+                if fallback_range[0] <= day.month * 100 + day.day <= fallback_range[1]
+            )
+            session_coverage_days.update(pd.date_range(start, end, freq="D").date)
+
+    for bounds in summer_bounds.values():
+        start = bounds.get("start")
+        end = bounds.get("end")
+        if start is not None and end is not None and start <= end:
+            session_days.update(pd.date_range(start, end, freq="D").date)
+            session_coverage_days.update(pd.date_range(start, end, freq="D").date)
+
+    return (
+        session_days,
+        session_coverage_days,
+        finals_days,
+        finals_years,
+        holiday_days,
+        break_days,
+    )
 
 
 def load_snapshot_frame(rows) -> pd.DataFrame:
@@ -17,8 +171,9 @@ def prepare_frame(
     df: pd.DataFrame,
     *,
     keep_missing_count: bool = False,
+    calendar_path: str | Path | None = None,
 ) -> pd.DataFrame:
-    #clean snapshots and create model features
+    """Create snapshot features, using the academic CSV when available."""
 
     df = df.copy()
 
@@ -112,6 +267,31 @@ def prepare_frame(
 
     df["in_session"] = _in_ranges(md, SESSION_MD)
     df["finals_window"] = _in_ranges(md, FINALS_MD)
+    df["is_break"] = 0
+
+    events = _academic_calendar_events(calendar_path)
+    if events:
+        (
+            session_days,
+            session_coverage_days,
+            finals_days,
+            finals_years,
+            holiday_days,
+            break_days,
+        ) = _calendar_day_sets(events)
+        local_dates = df["ts_local"].dt.date
+        if session_coverage_days:
+            covered = local_dates.isin(session_coverage_days)
+            calendar_session = local_dates.isin(session_days).astype(int)
+            df.loc[covered, "in_session"] = calendar_session.loc[covered]
+        if finals_years:
+            covered = df["ts_local"].dt.year.isin(finals_years)
+            calendar_finals = local_dates.isin(finals_days).astype(int)
+            df.loc[covered, "finals_window"] = calendar_finals.loc[covered]
+        df["is_holiday"] = (
+            df["is_holiday"] | local_dates.isin(holiday_days).astype(int)
+        )
+        df["is_break"] = local_dates.isin(break_days).astype(int)
 
     return df
 

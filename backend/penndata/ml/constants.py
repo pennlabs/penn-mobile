@@ -18,7 +18,7 @@ SESSION_MD = [(110, 505), (828, 1220)]
 FINALS_MD = [(425, 505), (1208, 1220)]
 
 BASE_FEATURES = ["room_id", "minute_of_day", "dow", "month", "is_weekend", "is_open"]
-CAL_FEATURES = ["is_holiday", "in_session", "finals_window"]
+CAL_FEATURES = ["is_holiday", "in_session", "finals_window", "is_break"]
 LAGS_7D = ["lag_7d", "lag_wk_mean4"]
 LAGS_24H = ["lag_1d"] + LAGS_7D
 LAGS_1H = ["lag_1h"] + LAGS_24H

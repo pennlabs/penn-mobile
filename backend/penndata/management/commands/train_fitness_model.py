@@ -13,7 +13,9 @@ from penndata.ml.train import (
 class Command(BaseCommand):
     help = (
         "Evaluate fitness occupancy models with walk-forward MAE, then save "
-        "7d and 24h HistGradientBoosting artifacts."
+        "7d and 24h HistGradientBoosting artifacts. Academic features use "
+        "backend/penn-calendar.csv when present, with existing date-range "
+        "defaults retained where calendar data is unavailable."
     )
 
     def add_arguments(self, parser):

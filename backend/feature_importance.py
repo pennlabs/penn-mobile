@@ -37,8 +37,8 @@ GROUPS = {
     "yesterday lag (lag_1d)": ["lag_1d"],
     "hour lag (lag_1h)": ["lag_1h"],
     "time of day/week": ["minute_of_day", "dow", "is_weekend", "is_open"],
-    "calendar (month, holiday, session, finals)": [
-        "month", "is_holiday", "in_session", "finals_window",
+    "calendar (month, holiday, session, finals, breaks)": [
+        "month", "is_holiday", "in_session", "finals_window", "is_break",
     ],
     "room": ["room_id"],
 }
