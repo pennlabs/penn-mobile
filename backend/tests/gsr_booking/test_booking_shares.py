@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -6,6 +7,8 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from gsr_booking.models import GSR, GSRBooking, GSRBookingShare, Reservation
+from gsr_booking.tasks import send_gsr_booking_invite_notification
+from user.models import AndroidNotificationToken, IOSNotificationToken, NotificationService
 
 
 User = get_user_model()
@@ -40,17 +43,20 @@ class GSRBookingShareTests(TestCase):
             end=self.reservation.end,
         )
 
-    def test_owner_can_invite_user(self):
+    @mock.patch("gsr_booking.views.send_gsr_booking_invite_notification.delay")
+    def test_owner_can_invite_user_and_notification_is_queued(self, send_notification):
         self.client.force_authenticate(self.owner)
-        response = self.client.post(
-            "/api/gsr/booking-shares/",
-            {"reservation": self.reservation.pk, "recipient": self.recipient.username},
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                "/api/gsr/booking-shares/",
+                {"reservation": self.reservation.pk, "recipient": self.recipient.username},
+            )
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["status"], GSRBookingShare.PENDING)
         self.assertEqual(response.data["recipient"], self.recipient.username)
         self.assertEqual(len(response.data["bookings"]), 1)
+        send_notification.assert_called_once_with(response.data["id"])
         self.assertEqual(GSRBookingShare.objects.count(), 1)
 
     def test_only_reservation_owner_can_invite(self):
@@ -73,17 +79,21 @@ class GSRBookingShareTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertFalse(GSRBookingShare.objects.exists())
 
-    def test_duplicate_invite_reuses_existing_share(self):
+    @mock.patch("gsr_booking.views.send_gsr_booking_invite_notification.delay")
+    def test_duplicate_invite_reuses_existing_share(self, send_notification):
         self.client.force_authenticate(self.owner)
         payload = {"reservation": self.reservation.pk, "recipient": self.recipient.username}
 
-        first = self.client.post("/api/gsr/booking-shares/", payload)
-        second = self.client.post("/api/gsr/booking-shares/", payload)
+        with self.captureOnCommitCallbacks(execute=True):
+            first = self.client.post("/api/gsr/booking-shares/", payload)
+        with self.captureOnCommitCallbacks(execute=True):
+            second = self.client.post("/api/gsr/booking-shares/", payload)
 
         self.assertEqual(first.status_code, 201)
         self.assertEqual(second.status_code, 201)
         self.assertEqual(first.data["id"], second.data["id"])
         self.assertEqual(GSRBookingShare.objects.count(), 1)
+        send_notification.assert_called_once_with(first.data["id"])
 
     def test_invitee_can_accept_and_view_only_active_bookings(self):
         share = GSRBookingShare.objects.create(
@@ -222,3 +232,69 @@ class GSRBookingShareTests(TestCase):
         response = self.client.get(f"/api/gsr/booking-shares/{share.pk}/")
 
         self.assertEqual(response.status_code, 404)
+
+    @mock.patch("gsr_booking.tasks.android_send_notification.delay")
+    def test_invite_notifies_opted_in_user(self, send_notification):
+        share = GSRBookingShare.objects.create(
+            reservation=self.reservation, inviter=self.owner, recipient=self.recipient
+        )
+        service = NotificationService.objects.create(name="PENN_MOBILE")
+        service.enabled_users.add(self.recipient)
+        AndroidNotificationToken.objects.create(user=self.recipient, token="android-token")
+
+        send_gsr_booking_invite_notification(share.pk)
+
+        send_notification.assert_called_once_with(
+            ["android-token"],
+            "GSR booking invitation",
+            "owner invited you to a GSR booking. Open Penn Mobile to respond.",
+            False,
+        )
+
+    @mock.patch("gsr_booking.tasks.ios_send_notification.delay")
+    def test_invite_notifies_opted_in_production_ios_user(self, send_notification):
+        share = GSRBookingShare.objects.create(
+            reservation=self.reservation, inviter=self.owner, recipient=self.recipient
+        )
+        service = NotificationService.objects.create(name="PENN_MOBILE")
+        service.enabled_users.add(self.recipient)
+        IOSNotificationToken.objects.create(user=self.recipient, token="ios-token", is_dev=False)
+
+        send_gsr_booking_invite_notification(share.pk)
+
+        send_notification.assert_called_once_with(
+            ["ios-token"],
+            "GSR booking invitation",
+            "owner invited you to a GSR booking. Open Penn Mobile to respond.",
+            False,
+        )
+
+    @mock.patch("gsr_booking.tasks.ios_send_dev_notification.delay")
+    def test_invite_notifies_opted_in_development_ios_user(self, send_notification):
+        share = GSRBookingShare.objects.create(
+            reservation=self.reservation, inviter=self.owner, recipient=self.recipient
+        )
+        service = NotificationService.objects.create(name="PENN_MOBILE")
+        service.enabled_users.add(self.recipient)
+        IOSNotificationToken.objects.create(user=self.recipient, token="ios-dev-token", is_dev=True)
+
+        send_gsr_booking_invite_notification(share.pk)
+
+        send_notification.assert_called_once_with(
+            ["ios-dev-token"],
+            "GSR booking invitation",
+            "owner invited you to a GSR booking. Open Penn Mobile to respond.",
+            False,
+        )
+
+    @mock.patch("gsr_booking.tasks.android_send_notification.delay")
+    def test_invite_skips_user_without_notification_opt_in(self, send_notification):
+        share = GSRBookingShare.objects.create(
+            reservation=self.reservation, inviter=self.owner, recipient=self.recipient
+        )
+        NotificationService.objects.create(name="PENN_MOBILE")
+        AndroidNotificationToken.objects.create(user=self.recipient, token="android-token")
+
+        send_gsr_booking_invite_notification(share.pk)
+
+        send_notification.assert_not_called()

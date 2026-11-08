@@ -2,6 +2,7 @@ from analytics.entries import FuncEntry, ViewEntry
 from dateutil.parser import parse as parse_datetime
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.db import transaction
 from django.db.models import Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
@@ -31,6 +32,7 @@ from gsr_booking.serializers import (
     GSRShareCodeSerializer,
     SharedGSRBookingSerializer,
 )
+from gsr_booking.tasks import send_gsr_booking_invite_notification
 from pennmobile.analytics import LabsAnalytics
 from utils.cache import Cache
 
@@ -456,8 +458,18 @@ class GSRBookingShareViewSet(
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        reservation = serializer.validated_data["reservation"]
+        recipient = serializer.validated_data["recipient"]
+        existing_share = GSRBookingShare.objects.filter(
+            reservation=reservation, recipient=recipient
+        ).first()
+        should_notify = existing_share is None or existing_share.status in (
+            GSRBookingShare.DECLINED,
+            GSRBookingShare.REVOKED,
+        )
         share = serializer.save()
-        # GSR invitation notifications are paused pending team lead approval.
+        if should_notify:
+            transaction.on_commit(lambda: send_gsr_booking_invite_notification.delay(share.pk))
         return Response(self.get_serializer(share).data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
