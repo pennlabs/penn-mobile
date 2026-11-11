@@ -8,7 +8,8 @@ from dining.models import DiningItem, DiningMenu, DiningStation, Venue
 class VenueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Venue
-        fields = "__all__"
+        # presence_venue is internal wiring; keep the mobile response contract unchanged.
+        exclude = ["presence_venue"]
 
 
 class DiningItemSerializer(serializers.ModelSerializer):
