@@ -12,14 +12,7 @@ def current_policy():
     return {
         "version": settings.PRESENCE_PRIVACY_POLICY_VERSION,
         "collection_active": True,
-        "description": (
-            "Phones report a venue ID and temporary token while present. Raw GPS stays on "
-            "the phone. Opt-in and token issuance use your account; heartbeats use only "
-            "the token. No token-to-account mapping or visit history is stored. Authenticated "
-            "token issuance and rotation can still be correlated by the server. Opting out "
-            "stops new token issuance; the app must stop heartbeats and discard its token. "
-            "Previously issued tokens remain valid until expiry."
-        ),
+        "description": settings.PRESENCE_PRIVACY_POLICY_DESCRIPTION,
         "token_ttl_seconds": TOKEN_TTL_SECONDS,
         "active_window_seconds": ACTIVE_WINDOW_SECONDS,
     }

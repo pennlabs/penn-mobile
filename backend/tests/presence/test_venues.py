@@ -32,7 +32,6 @@ class TestVenueModel(TestCase):
         venue = create_venue()
         self.assertTrue(venue.enabled)
         self.assertEqual(180, venue.min_dwell_seconds)
-        self.assertEqual(120, venue.exit_grace_seconds)
         self.assertEqual(5, venue.min_sample_size)
         self.assertEqual({}, venue.calibration)
         self.assertIsNone(venue.capacity)
@@ -61,13 +60,14 @@ class TestVenueListView(TestCase):
         self.assertEqual(200, response.status_code)
         venues = json.loads(response.content)
         self.assertEqual(1, len(venues))
+        # The server's 10-minute active window already covers exits, so no grace field.
+        self.assertNotIn("exit_grace_seconds", venues[0])
         self.assertEqual(
             {
                 "venue_id": "pottruck",
                 "name": "Pottruck",
                 "geofence": GEOFENCE,
                 "min_dwell_seconds": 180,
-                "exit_grace_seconds": 120,
             },
             {
                 field: venues[0][field]
@@ -76,7 +76,6 @@ class TestVenueListView(TestCase):
                     "name",
                     "geofence",
                     "min_dwell_seconds",
-                    "exit_grace_seconds",
                 )
             },
         )

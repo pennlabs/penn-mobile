@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -75,9 +76,23 @@ class HomePageOrder(models.Model):
 class FitnessRoom(models.Model):
     name = models.CharField(max_length=255)
     image_url = models.URLField()
+    presence_venue = models.ForeignKey(
+        "presence.Venue",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="fitness_rooms",
+    )
 
     def __str__(self):
         return str(self.name)
+
+    def clean(self):
+        super().clean()
+        if self.presence_venue is not None and self.presence_venue.kind != "gym":
+            raise ValidationError(
+                {"presence_venue": "Only gym presence venues can link fitness rooms."}
+            )
 
 
 class FitnessSnapshot(models.Model):

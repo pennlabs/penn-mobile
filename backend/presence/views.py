@@ -4,13 +4,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from presence import store
+from presence import blind, store
 from presence.consent import get_consent
 from presence.models import PresenceOptIn, Venue
 from presence.serializers import (
     ConsentSerializer,
     HeartbeatSerializer,
     OptInSerializer,
+    TokenKeySerializer,
     TokenResponseSerializer,
     TokenSerializer,
     VenueSerializer,
@@ -23,7 +24,11 @@ class VenueListView(ListAPIView):
 
     permission_classes = [IsAuthenticated]
     serializer_class = VenueSerializer
-    queryset = Venue.objects.filter(enabled=True).prefetch_related("fitness_rooms")
+    queryset = (
+        Venue.objects.filter(enabled=True)
+        .select_related("dining_venue")
+        .prefetch_related("fitness_rooms")
+    )
 
 
 @extend_schema(tags=["Presence"])
@@ -57,13 +62,30 @@ class OptInView(APIView):
 
 
 @extend_schema(tags=["Presence"])
+class TokenKeyView(APIView):
+    """GET: the public key clients blind their tokens against. It changes every hour."""
+
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(responses=TokenKeySerializer)
+    def get(self, request):
+        return Response(blind.key_info())
+
+
+@extend_schema(tags=["Presence"])
 class TokenView(APIView):
-    """POST: issues or rotates a temporary token for an opted-in account."""
+    """POST: blind-signs a token made on the device, for an opted-in account.
+
+    The server sees who is asking but not the token, so it cannot later tell which
+    heartbeats belong to this account.
+    """
 
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=TokenSerializer, responses={200: TokenResponseSerializer, 403: None, 429: None}
+        request=TokenSerializer,
+        responses={200: TokenResponseSerializer, 400: None, 403: None, 409: None, 429: None},
     )
     def post(self, request):
         if not PresenceOptIn.is_opted_in(request.user):
@@ -72,17 +94,36 @@ class TokenView(APIView):
             )
         serializer = TokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        key_id = serializer.validated_data["key_id"]
+        if key_id != blind.current_key_id():
+            return Response(
+                {"detail": "Signing key has rotated; blind again.", "key": blind.key_info()},
+                status=409,
+            )
         if not store.allow_issuance(request.user.pk):
             return Response({"detail": "Token issuance limit reached."}, status=429)
-        token = store.issue_token(previous=serializer.validated_data.get("previous"))
-        if token is None:
-            return Response({"detail": "Invalid or expired previous token."}, status=403)
-        return Response({"token": token, "expires_in": store.TOKEN_TTL_SECONDS})
+        try:
+            message = blind.decode(serializer.validated_data["blinded_message"])
+            blind_signature = blind.blind_sign(key_id, message)
+        except blind.StaleKey:
+            return Response(
+                {"detail": "Signing key has rotated; blind again.", "key": blind.key_info()},
+                status=409,
+            )
+        except ValueError:
+            return Response({"blinded_message": ["Not a valid blinded message."]}, status=400)
+        return Response(
+            {
+                "key_id": key_id,
+                "blind_signature": blind.encode(blind_signature),
+                "expires_in": blind.expires_in(key_id),
+            }
+        )
 
 
 @extend_schema(tags=["Presence"])
 class HeartbeatView(APIView):
-    """POST: accepts token-only presence updates and scores them by server receive time."""
+    """POST: accepts signed-token presence updates and scores them by server receive time."""
 
     authentication_classes = []
     permission_classes = []
@@ -95,8 +136,9 @@ class HeartbeatView(APIView):
                 "Presence heartbeat",
                 value={
                     "venue_id": "pottruck",
-                    "token": "temporary-token",
-                    "timestamp": "2026-10-16T17:00:00Z",
+                    "token": "token-made-on-the-device",
+                    "key_id": "498765",
+                    "signature": "base64-unblinded-signature",
                 },
                 request_only=True,
             )
@@ -108,7 +150,9 @@ class HeartbeatView(APIView):
         data = serializer.validated_data
         if not Venue.objects.filter(pk=data["venue_id"], enabled=True).exists():
             return Response({"detail": "Unknown or disabled venue."}, status=400)
-        result = store.heartbeat(data["venue_id"], data["token"])
+        if not blind.verify(data["key_id"], data["token"], data["signature"]):
+            return Response({"detail": "Invalid or expired token."}, status=403)
+        result = store.heartbeat(data["venue_id"], data["token"], data.get("previous_token"))
         if result == "invalid":
             return Response({"detail": "Invalid or expired token."}, status=403)
         if result == "throttled":

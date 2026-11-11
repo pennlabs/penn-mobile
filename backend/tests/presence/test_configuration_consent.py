@@ -16,10 +16,13 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from dining.models import Venue as DiningVenue
+from dining.serializers import VenueSerializer as DiningVenueSerializer
 from penndata.models import FitnessRoom
+from penndata.serializers import FitnessRoomSerializer
 from presence import store
 from presence.admin import VenueAdmin, VenueForm
 from presence.models import PresenceOptIn, Venue
+from tests.presence.blind_client import BlindedToken
 from tests.presence.test_venues import GEOFENCE, HOURS, create_venue
 
 
@@ -54,7 +57,15 @@ class ConfigurationConsentTests(TestCase):
         other.refresh_from_db()
         self.assertFalse(other.opted_in)
         create_venue()
-        token = self.client.post("/api/presence/token/", {}, format="json").data["token"]
+        # The whole client flow over HTTP: fetch the key, blind, get it signed, unblind.
+        key = self.client.get("/api/presence/token-key/").data
+        blinded = BlindedToken(key["public_key"])
+        signed = self.client.post(
+            "/api/presence/token/",
+            {"key_id": key["key_id"], "blinded_message": blinded.blinded_message},
+            format="json",
+        ).data
+        token = blinded.token
         self.client.force_authenticate(None)
         received_after = time.time()
         response = self.client.post(
@@ -62,6 +73,8 @@ class ConfigurationConsentTests(TestCase):
             {
                 "venue_id": "pottruck",
                 "token": token,
+                "key_id": signed["key_id"],
+                "signature": blinded.finalize(signed["blind_signature"]),
                 "timestamp": "1900-01-01T00:00:00Z",
             },
             format="json",
@@ -105,16 +118,15 @@ class ConfigurationConsentTests(TestCase):
         gym = create_venue(kind="gym")
         room = FitnessRoom.objects.create(name="Example fitness room")
         gym.fitness_rooms.add(room)
-        source = DiningVenue.objects.create(
-            venue_id=593, name="Commons", image_url="https://example.com"
-        )
-        Venue.objects.create(
+        commons = Venue.objects.create(
             venue_id="1920-commons",
             name="Commons",
             kind="dining",
-            dining_venue=source,
             geofence=GEOFENCE,
             opening_hours=HOURS,
+        )
+        source = DiningVenue.objects.create(
+            venue_id=593, name="Commons", image_url="https://example.com", presence_venue=commons
         )
         Venue.objects.create(venue_id="van-pelt", name="Van Pelt", kind="library", enabled=False)
         self.client.force_authenticate(self.user)
@@ -128,12 +140,11 @@ class ConfigurationConsentTests(TestCase):
         self.assertEqual(venues["pottruck"]["fitness_room_ids"], [room.pk])
         self.assertEqual(PresenceOptIn.objects.count(), 0)
         # Include the hidden original values posted by Django's JSON widgets.
-        data = model_to_dict(gym, exclude=["fitness_rooms"])
+        data = model_to_dict(gym)
         for field in ("geofence", "opening_hours", "calibration"):
             data[field] = json.dumps(getattr(gym, field))
             data["initial-" + field] = data[field]
-        another = FitnessRoom.objects.create(name="Another fitness room")
-        data["fitness_rooms"] = [room.pk, another.pk]
+        data["name"] = "Pottruck Health and Fitness Center"
         model_admin = VenueAdmin(Venue, admin.site)
         for _ in range(2):
             form = VenueForm(data=data, instance=gym)
@@ -142,6 +153,17 @@ class ConfigurationConsentTests(TestCase):
             model_admin.save_model(None, gym, form, change=True)
             model_admin.save_related(None, form, [], change=True)
             self.assertEqual(gym.configuration_version, 2, form.changed_data)
+        # Links are owned by the dining venue / fitness room and must match the venue kind.
+        for kind in ("dining", "library"):
+            form = VenueForm(data={**data, "kind": kind}, instance=gym)
+            self.assertFalse(form.is_valid())
+            self.assertIn("kind", form.errors)
+        room.presence_venue = commons
+        with self.assertRaises(ValidationError):
+            room.full_clean()
+        source.presence_venue = gym
+        with self.assertRaises(ValidationError):
+            source.full_clean()
         for fields in (
             {"geofence": {}},
             {"geofence": {**GEOFENCE, "lat": float("nan")}},
@@ -171,7 +193,7 @@ class ConfigurationConsentTests(TestCase):
         self.assertEqual(pottruck.fitness_rooms.count(), 12)
         self.assertEqual(pottruck.configuration_version, 1)
         commons = Venue.objects.get(pk="1920-commons")
-        self.assertEqual(commons.dining_venue_id, 593)
+        self.assertEqual(commons.dining_venue.venue_id, 593)
         update = {"venue_id": commons.pk, "name": "Updated Commons"}
         self.import_records([update], dry_run=True)
         commons.refresh_from_db()
@@ -196,6 +218,34 @@ class ConfigurationConsentTests(TestCase):
                 commons.refresh_from_db()
                 self.assertEqual(commons.name, "Updated Commons")
                 self.assertEqual(Venue.objects.count(), 4)
+        # A dining source or fitness room that already belongs to another venue is not stolen.
+        for taken in (
+            {
+                "venue_id": "second-commons",
+                "name": "Second",
+                "kind": "dining",
+                "dining_venue_id": 593,
+            },
+            {
+                "venue_id": "second-gym",
+                "name": "Second",
+                "kind": "gym",
+                "fitness_room_names": ["Sheerr Pool"],
+            },
+        ):
+            with self.subTest(taken=taken):
+                with self.assertRaises(CommandError):
+                    self.import_records([{**taken, "enabled": False}])
+                self.assertEqual(Venue.objects.count(), 4)
+        self.assertEqual(commons.dining_venue.venue_id, 593)
+        self.assertEqual(pottruck.fitness_rooms.count(), 12)
+        # Moving a link away and back works, and existing API responses do not expose it.
+        self.import_records([{"venue_id": commons.pk, "dining_venue_id": None}])
+        self.assertFalse(DiningVenue.objects.filter(presence_venue=commons).exists())
+        self.import_records([{"venue_id": commons.pk, "dining_venue_id": 593}])
+        self.assertEqual(DiningVenue.objects.get(presence_venue=commons).venue_id, 593)
+        self.assertNotIn("presence_venue", DiningVenueSerializer(DiningVenue.objects.first()).data)
+        self.assertNotIn("presence_venue", FitnessRoomSerializer(FitnessRoom.objects.first()).data)
         duplicate = {
             "name": "Duplicate",
             "dining_venue_id": 636,

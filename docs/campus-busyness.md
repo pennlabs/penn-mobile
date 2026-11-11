@@ -50,7 +50,6 @@ Each venue can include:
 - Name
 - Geofence
 - Minimum dwell time
-- Exit grace period
 - Capacity
 - Calibration information
 - Minimum sample size
@@ -111,8 +110,9 @@ Example heartbeat:
 ```json
 {
   "venue_id": "pottruck",
-  "token": "temporary_anonymous_token",
-  "timestamp": "..."
+  "token": "token_made_on_the_device",
+  "key_id": "498765",
+  "signature": "unblinded_server_signature"
 }
 ```
 
@@ -130,9 +130,10 @@ Goals:
 - Individual presence data is temporary
 - Historical storage contains aggregates, not user trajectories
 
-Implementation note: authenticated token issuance and rotation can be correlated by the
-server. The current implementation stores no token-to-account mapping, but it does not
-provide cryptographic unlinkability. See [the scope and API contract](./campus-busyness-scope.md)
+Implementation note: tokens are made on the device and blind-signed by the server
+(RFC 9474). The server checks the account and opt-in when it signs, but it never sees the
+token, so it cannot match a heartbeat to the account that asked for the signature. IP
+address and request timing are not hidden. See [the scope and API contract](./campus-busyness-scope.md)
 for the current consent contract, token lifetime, opt-out behavior, and remaining limits.
 
 ## 6. Presence Ingestion API

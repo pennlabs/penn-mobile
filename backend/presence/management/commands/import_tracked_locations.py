@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import IntegrityError, transaction
 
-from presence.models import Venue
+from presence.models import Venue, linked_dining_venue
 from presence.serializers import VenueImportSerializer
 
 
@@ -42,21 +42,41 @@ class Command(BaseCommand):
             if not serializer.is_valid():
                 raise CommandError(f"{venue_id}: {serializer.errors}")
             data = dict(serializer.validated_data)
+            # The links live on FitnessRoom and dining.Venue, so they are applied
+            # separately from the venue's own fields.
             rooms = data.pop("fitness_room_names", None)
+            sets_dining = "dining_venue" in data
+            dining = data.pop("dining_venue", None)
             venue = venue or Venue()
+            current_dining = linked_dining_venue(venue)
             changed = any(getattr(venue, field) != value for field, value in data.items())
             rooms_changed = rooms is not None and (
                 is_new
                 or set(venue.fitness_rooms.values_list("pk", flat=True))
                 != {room.pk for room in rooms}
             )
-            changed |= rooms_changed
+            dining_changed = sets_dining and dining != current_dining
+            changed |= rooms_changed or dining_changed
             for field, value in data.items():
                 setattr(venue, field, value)
-            if venue.dining_venue_id is not None:
-                if venue.dining_venue_id in dining_sources:
+            effective_dining = dining if sets_dining else current_dining
+            if effective_dining is not None:
+                if effective_dining.pk in dining_sources:
                     raise CommandError("Each dining source can belong to only one presence venue.")
-                dining_sources.add(venue.dining_venue_id)
+                dining_sources.add(effective_dining.pk)
+                if effective_dining.presence_venue_id not in (None, venue_id):
+                    raise CommandError(
+                        f"{venue_id}: Dining source {effective_dining.pk} already belongs to "
+                        f"{effective_dining.presence_venue_id}."
+                    )
+                if venue.kind != Venue.Kind.DINING:
+                    raise CommandError(f"{venue_id}: Clear dining_venue_id before changing kind.")
+            for room in rooms or ():
+                if room.presence_venue_id not in (None, venue_id):
+                    raise CommandError(
+                        f"{venue_id}: Fitness room '{room.name}' already belongs to "
+                        f"{room.presence_venue_id}."
+                    )
             if not is_new and rooms is None and venue.kind != Venue.Kind.GYM:
                 if venue.fitness_rooms.exists():
                     raise CommandError(
@@ -68,14 +88,29 @@ class Command(BaseCommand):
                 raise CommandError(f"{venue_id}: {error.message_dict}")
             if not is_new and changed:
                 venue.configuration_version += 1
-            plans.append((venue, rooms if rooms_changed else None, is_new or changed))
+            plans.append(
+                (
+                    venue,
+                    rooms if rooms_changed else None,
+                    (dining, current_dining) if dining_changed else None,
+                    is_new or changed,
+                )
+            )
         if not options["dry_run"]:
             try:
-                for venue, rooms, save in plans:
+                for venue, rooms, dining_change, save in plans:
                     if save:
                         venue.save()
                     if rooms is not None:
                         venue.fitness_rooms.set(rooms)
+                    if dining_change is not None:
+                        new_dining, old_dining = dining_change
+                        if old_dining is not None:
+                            old_dining.presence_venue = None
+                            old_dining.save(update_fields=["presence_venue"])
+                        if new_dining is not None:
+                            new_dining.presence_venue = venue
+                            new_dining.save(update_fields=["presence_venue"])
             except IntegrityError as error:
                 raise CommandError(f"Conflicting venue/source references: {error}")
         action = "Validated" if options["dry_run"] else "Imported"

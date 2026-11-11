@@ -7,18 +7,19 @@ Scope boundaries for the implementation described in [campus-busyness.md](./camp
 Spec sections 1, 4–7, and the auth half of 13.
 
 ### Venue configuration (section 1)
-- Venue model: `venue_id`, name, geofence, minimum dwell time, exit grace period, capacity, calibration info, minimum sample size, enabled flag
+- Venue model: `venue_id`, name, geofence, minimum dwell time, capacity, calibration info, minimum sample size, enabled flag
 - Endpoint serving venue definitions to the app so location classification happens on-device
 
 ### Opt-in and anonymous identity (sections 5, 13)
 - Opt-in status stored on the authenticated user, kept separate from presence reporting
-- Issuance of short-lived rotating anonymous tokens that the app attaches to heartbeats
-- No persistent token-to-account mapping or long-term visit history is stored. Authenticated
-  token issuance/rotation can still be correlated by the server; this is not cryptographic unlinkability.
+- Short-lived anonymous tokens that the app makes itself and attaches to heartbeats
+- The server blind-signs each token (RFC 9474, `RSABSSA-SHA384-PSS-Deterministic`) for an
+  opted-in account without seeing it, so a heartbeat cannot be matched to the account that
+  requested the signature. No visit history is stored. IP address and timing are not hidden.
 
 ### Presence ingestion API (sections 4, 6)
 - Receives heartbeats: `venue_id`, token, timestamp. No GPS coordinates, no PennKey
-- Validates the venue and the token
+- Validates the venue and the token's signature
 - Rejects duplicate or excessive updates (rate limiting)
 - Stateless across backend instances
 
@@ -52,10 +53,11 @@ The backend only ever sees heartbeats from devices already in the Present state.
 The analytics project reads Redis directly. If a heartbeat stream is needed instead, ingestion in `backend/presence/store.py` grows a publish step; raise it before building on polling.
 
 - `presence:active:{venue_id}`: sorted set, member = anonymous token, score = Unix timestamp of last heartbeat. Active device count = members with score within the last `ACTIVE_WINDOW_SECONDS` (600). `presence.store.active_count(venue_id)` implements this.
-- `presence:token:{token}`: validity marker, TTL `TOKEN_TTL_SECONDS` (3600). Value is the venue of the token's last heartbeat; used internally for rotation. Never map tokens to users.
-- Token rotation transfers sorted-set membership atomically and invalidates the old token.
-  Moving venues removes the token's previous membership. The client must use one token per
-  device; token issuance alone does not enforce a one-device guarantee.
+- `presence:token:{token}`: the venue of the token's last heartbeat, TTL `TOKEN_TTL_SECONDS` (7200). Created on the first heartbeat, not at issuance. A rotated-out token holds `!retired` so it cannot be replayed. Never map tokens to users.
+- `presence:signing-key:{hour}`: that hour's RSA private key, encrypted with `SECRET_KEY`, shared by all web workers. A key signs for one hour and is accepted on heartbeats for that hour and the next, so a token lives one to two hours.
+- A heartbeat with `previous_token` transfers sorted-set membership atomically and retires the
+  old token. Moving venues removes the token's previous membership. The client must use one
+  token per device; token issuance alone does not enforce a one-device guarantee.
 - Heartbeats more frequent than `HEARTBEAT_MIN_INTERVAL_SECONDS` (30) are rejected with 429. Stale members are pruned on write; no janitor job exists.
 - Token issuance is capped at `TOKEN_ISSUE_HOURLY_LIMIT` (10) per user per hour via a Redis
   counter. This bounds issuance but does not prevent multiple fresh tokens from one account.
@@ -66,12 +68,19 @@ The analytics project reads Redis directly. If a heartbeat stream is needed inst
 |---|---|---|---|
 | GET | `/presence/venues/` | user | Enabled venues with geofence and dwell config |
 | GET/POST | `/presence/opt-in/` | user | Read consent/privacy; enable with `{"opted_in": true, "policy_version": "presence-v1"}`; disable with `{"opted_in": false}` |
-| POST | `/presence/token/` | user + opt-in | Issue anonymous token; optional `previous` rotates |
-| POST | `/presence/heartbeat/` | token only | `{venue_id, token}`; 204, or 400/403/429 |
+| GET | `/presence/token-key/` | none | Current public signing key: `{key_id, algorithm, public_key, issues_for, token_expires_in}` |
+| POST | `/presence/token/` | user + opt-in | Blind-sign a token: `{key_id, blinded_message}` returns `{key_id, blind_signature, expires_in}`; 409 with the new key if the key rotated |
+| POST | `/presence/heartbeat/` | signed token only | `{venue_id, token, key_id, signature}`, optional `previous_token`; 204, or 400/403/429 |
 
 `/api/presence/` is the canonical prefix; root aliases also work. Heartbeat `timestamp`
 is optional and ignored: sorted-set scores use server receive time. Opt-out stops issuance;
-the app must stop sending, and previously issued tokens remain valid until expiry.
+the app must stop sending, and previously signed tokens remain valid until expiry.
+
+Client token flow: fetch the key, make a random token (32 random bytes, base64url), blind it,
+POST the blinded message, unblind the reply into a signature, then send token, `key_id` and
+signature on every heartbeat. Binary fields are base64. To switch tokens, send the old one
+as `previous_token` on the new token's first heartbeat. `backend/tests/presence/blind_client.py`
+is a short reference implementation of the client side.
 
 Use the existing `Venue` and `PresenceOptIn` models; there is no parallel location/consent
 registry. Venue IDs are stable strings across gym, dining, and library locations; dining

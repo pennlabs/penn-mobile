@@ -167,7 +167,18 @@ SPECTACULAR_SETTINGS = {
     "SERVE_PUBLIC": True,
 }
 
+# Shown to users on the presence consent screen. Bump the version whenever this text changes
+# so that existing consent stops counting and users must accept the new text.
 PRESENCE_PRIVACY_POLICY_VERSION = "presence-v1"
+PRESENCE_PRIVACY_POLICY_DESCRIPTION = (
+    "Phones report a venue ID and temporary token while present. Raw GPS stays on "
+    "the phone. Your account is used only to opt in and to have the server sign a "
+    "token it cannot see; heartbeats carry only that token. The server therefore "
+    "cannot match a token to the account that requested it, and no visit history is "
+    "stored. Network details such as IP address and request timing are not hidden. "
+    "Opting out stops new tokens from being signed; the app must stop heartbeats and "
+    "discard its token. Tokens already signed remain valid until they expire."
+)
 
 # Redis for Celery & Caching
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/1")

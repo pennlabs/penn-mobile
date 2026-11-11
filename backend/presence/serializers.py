@@ -19,7 +19,9 @@ class GeofenceSerializer(serializers.Serializer):
 class VenueSerializer(serializers.ModelSerializer):
     scope = serializers.CharField(default="building", read_only=True)
     geofence = GeofenceSerializer(read_only=True)
-    dining_venue_id = serializers.IntegerField(read_only=True, allow_null=True)
+    dining_venue_id = serializers.IntegerField(
+        source="dining_venue.venue_id", read_only=True, allow_null=True
+    )
     fitness_room_ids = serializers.PrimaryKeyRelatedField(
         source="fitness_rooms", many=True, read_only=True
     )
@@ -31,7 +33,6 @@ class VenueSerializer(serializers.ModelSerializer):
             "name",
             "geofence",
             "min_dwell_seconds",
-            "exit_grace_seconds",
             "kind",
             "scope",
             "max_accuracy_m",
@@ -77,18 +78,36 @@ class OptInSerializer(serializers.Serializer):
         return super().to_internal_value(data)
 
 
+class TokenKeySerializer(serializers.Serializer):
+    key_id = serializers.CharField()
+    algorithm = serializers.CharField()
+    public_key = serializers.CharField(help_text="PEM-encoded RSA public key.")
+    issues_for = serializers.IntegerField(help_text="Seconds this key keeps signing.")
+    token_expires_in = serializers.IntegerField(
+        help_text="Seconds until tokens signed by this key stop being accepted."
+    )
+
+
 class TokenSerializer(serializers.Serializer):
-    previous = serializers.CharField(max_length=128, required=False)
+    key_id = serializers.CharField(max_length=20)
+    blinded_message = serializers.CharField(
+        max_length=1024, help_text="Base64 of the blinded token. The token itself is never sent."
+    )
 
 
 class TokenResponseSerializer(serializers.Serializer):
-    token = serializers.CharField()
+    key_id = serializers.CharField()
+    blind_signature = serializers.CharField(help_text="Base64; unblind it on the device.")
     expires_in = serializers.IntegerField()
 
 
 class HeartbeatSerializer(serializers.Serializer):
     venue_id = serializers.SlugField(max_length=64)
-    token = serializers.CharField(max_length=128)
+    token = serializers.CharField(min_length=16, max_length=128)
+    key_id = serializers.CharField(max_length=20)
+    signature = serializers.CharField(max_length=1024)
+    # The token this device used before, so switching tokens does not count it twice.
+    previous_token = serializers.CharField(max_length=128, required=False)
     # Accepted for client compatibility; Redis scores always use server receive time.
     timestamp = serializers.CharField(required=False)
 
@@ -110,7 +129,6 @@ class VenueImportSerializer(serializers.ModelSerializer):
             "enabled",
             "geofence",
             "min_dwell_seconds",
-            "exit_grace_seconds",
             "max_accuracy_m",
             "opening_hours",
             "capacity",
@@ -141,4 +159,8 @@ class VenueImportSerializer(serializers.ModelSerializer):
         kind = attrs.get("kind", getattr(self.instance, "kind", None))
         if attrs.get("fitness_room_names") and kind != Venue.Kind.GYM:
             raise serializers.ValidationError({"fitness_room_names": "Only gyms can link rooms."})
+        if attrs.get("dining_venue") and kind != Venue.Kind.DINING:
+            raise serializers.ValidationError(
+                {"dining_venue_id": "Only dining venues can reference a dining source."}
+            )
         return attrs

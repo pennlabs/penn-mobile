@@ -24,7 +24,6 @@ class Venue(models.Model):
     kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.OTHER)
     geofence = models.JSONField(default=dict, blank=True)
     min_dwell_seconds = models.PositiveIntegerField(default=180, validators=[MinValueValidator(1)])
-    exit_grace_seconds = models.PositiveIntegerField(default=120)
     max_accuracy_m = models.FloatField(default=50, validators=[MinValueValidator(1)])
     capacity = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
     min_sample_size = models.PositiveIntegerField(default=5, validators=[MinValueValidator(1)])
@@ -32,16 +31,9 @@ class Venue(models.Model):
     enabled = models.BooleanField(default=True)
     opening_hours = models.JSONField(default=dict, blank=True)
     configuration_version = models.PositiveIntegerField(default=1, editable=False)
-    dining_venue = models.OneToOneField(
-        "dining.Venue",
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name="presence_venue",
-    )
-    fitness_rooms = models.ManyToManyField(
-        "penndata.FitnessRoom", blank=True, related_name="presence_venues"
-    )
+    # Links to existing data live on the other side: dining.Venue.presence_venue
+    # (reverse accessor: dining_venue) and penndata.FitnessRoom.presence_venue
+    # (reverse accessor: fitness_rooms).
 
     class Meta:
         ordering = ["venue_id"]
@@ -66,10 +58,13 @@ class Venue(models.Model):
                     errors[field] = "Enabled venues require a geofence and verified opening hours."
         if isinstance(self.max_accuracy_m, (int, float)) and not math.isfinite(self.max_accuracy_m):
             errors["max_accuracy_m"] = "Must be finite."
-        if self.dining_venue_id is not None and self.kind != self.Kind.DINING:
-            errors["dining_venue"] = "Only dining venues can reference a dining source."
         if errors:
             raise ValidationError(errors)
+
+
+def linked_dining_venue(venue):
+    """Return the dining.Venue linked to this presence venue, or None."""
+    return getattr(venue, "dining_venue", None) if not venue._state.adding else None
 
 
 class PresenceOptIn(models.Model):
