@@ -154,6 +154,50 @@ class GSRBooking(models.Model):
         return f"{self.user} - {self.gsr.name} - {self.start} - {self.end}"
 
 
+class GSRBookingShare(models.Model):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+    REVOKED = "revoked"
+    STATUS_OPTIONS = (
+        (PENDING, "Pending"),
+        (ACCEPTED, "Accepted"),
+        (DECLINED, "Declined"),
+        (REVOKED, "Revoked"),
+    )
+
+    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, related_name="shares")
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="gsr_booking_shares")
+    inviter = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="sent_gsr_booking_shares"
+    )
+    status = models.CharField(max_length=10, choices=STATUS_OPTIONS, default=PENDING)
+    invited_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["reservation", "recipient"], name="unique_gsr_share_recipient"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.reservation_id} shared with {self.recipient} ({self.status})"
+
+    def is_relevant(self):
+        return (
+            not self.reservation.is_cancelled
+            and self.reservation.end > timezone.now()
+            and self.reservation.gsrbooking_set.filter(
+                is_cancelled=False, end__gt=timezone.now()
+            ).exists()
+        )
+
+
 class GSRShareCode(models.Model):
     code = models.CharField(max_length=8, unique=True, db_index=True)
     booking = models.OneToOneField(GSRBooking, on_delete=models.CASCADE, related_name="share_code")
