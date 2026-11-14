@@ -469,7 +469,10 @@ class GSRBookingShareViewSet(
         )
         share = serializer.save()
         if should_notify:
-            transaction.on_commit(lambda: send_gsr_booking_invite_notification.delay(share.pk))
+            transaction.on_commit(
+                lambda: send_gsr_booking_invite_notification.delay(share.pk),
+                robust=True,
+            )
         return Response(self.get_serializer(share).data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):

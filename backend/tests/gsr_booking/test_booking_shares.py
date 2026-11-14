@@ -193,6 +193,58 @@ class GSRBookingShareTests(TestCase):
         self.assertIsNone(response.data["revoked_at"])
         self.assertEqual(GSRBookingShare.objects.count(), 1)
 
+    def test_declined_invitation_can_be_sent_again(self):
+        share = GSRBookingShare.objects.create(
+            reservation=self.reservation,
+            inviter=self.owner,
+            recipient=self.recipient,
+            status=GSRBookingShare.DECLINED,
+            responded_at=timezone.now(),
+        )
+        self.client.force_authenticate(self.owner)
+
+        response = self.client.post(
+            "/api/gsr/booking-shares/",
+            {"reservation": self.reservation.pk, "recipient": self.recipient.username},
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["id"], share.pk)
+        self.assertEqual(response.data["status"], GSRBookingShare.PENDING)
+        self.assertIsNone(response.data["responded_at"])
+        self.assertEqual(GSRBookingShare.objects.count(), 1)
+
+    @mock.patch(
+        "gsr_booking.views.send_gsr_booking_invite_notification.delay",
+        side_effect=ConnectionError("Notification broker unavailable"),
+    )
+    def test_invitation_succeeds_when_notification_dispatch_fails(self, send_notification):
+        self.client.force_authenticate(self.owner)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                "/api/gsr/booking-shares/",
+                {"reservation": self.reservation.pk, "recipient": self.recipient.username},
+            )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(
+            GSRBookingShare.objects.filter(
+                reservation=self.reservation, recipient=self.recipient
+            ).exists()
+        )
+        send_notification.assert_called_once()
+
+    def test_invitee_cannot_cancel_the_underlying_booking(self):
+        self.client.force_authenticate(self.recipient)
+
+        response = self.client.post("/api/gsr/cancel/", {"booking_id": self.booking.booking_id})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Unauthorized", response.data["error"])
+        self.booking.refresh_from_db()
+        self.assertFalse(self.booking.is_cancelled)
+
     def test_expired_or_cancelled_reservation_cannot_be_accepted(self):
         share = GSRBookingShare.objects.create(
             reservation=self.reservation, inviter=self.owner, recipient=self.recipient
@@ -206,6 +258,34 @@ class GSRBookingShareTests(TestCase):
         self.assertEqual(response.status_code, 400)
         share.refresh_from_db()
         self.assertEqual(share.status, GSRBookingShare.PENDING)
+
+    def test_expired_reservation_cannot_be_shared(self):
+        self.reservation.end = timezone.now() - timedelta(minutes=1)
+        self.reservation.save(update_fields=["end"])
+        self.client.force_authenticate(self.owner)
+
+        response = self.client.post(
+            "/api/gsr/booking-shares/",
+            {"reservation": self.reservation.pk, "recipient": self.recipient.username},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Only active, upcoming reservations can be shared.", str(response.data))
+        self.assertFalse(GSRBookingShare.objects.exists())
+
+    def test_cancelled_reservation_cannot_be_shared(self):
+        self.reservation.is_cancelled = True
+        self.reservation.save(update_fields=["is_cancelled"])
+        self.client.force_authenticate(self.owner)
+
+        response = self.client.post(
+            "/api/gsr/booking-shares/",
+            {"reservation": self.reservation.pk, "recipient": self.recipient.username},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Only active, upcoming reservations can be shared.", str(response.data))
+        self.assertFalse(GSRBookingShare.objects.exists())
 
     def test_cancelled_booking_is_not_exposed_after_acceptance(self):
         share = GSRBookingShare.objects.create(
