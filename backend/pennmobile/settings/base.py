@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "phonenumber_field",
     "market",
     "games",
+    "healthcheck",
 ]
 
 MIDDLEWARE = [
