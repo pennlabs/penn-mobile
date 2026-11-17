@@ -7,17 +7,18 @@ the public key, which is how heartbeats stay unauthenticated but hard to forge.
 
 A new signing key is used every hour. A key signs during its own hour and is accepted on
 heartbeats for that hour and the next, so a token lives between one and two hours.
+
+PyCryptodome owns the RSA operations: key generation, the blinded private-key step inside
+BlindSign, and PSS verification. This module only checks inputs and rotates keys.
 """
 
 import base64
 import binascii
-import math
-import secrets
 import time
 
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from Crypto.Hash import SHA384
+from Crypto.PublicKey import RSA
+from Crypto.Signature import pss
 from django.conf import settings
 
 from presence import store
@@ -72,16 +73,11 @@ def _key(epoch, create=False):
     if pem is None:
         if not create:
             return None
-        fresh = rsa.generate_private_key(public_exponent=65537, key_size=KEY_BITS)
-        pem = fresh.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.PKCS8,
-            serialization.BestAvailableEncryption(password),
-        ).decode()
+        pem = RSA.generate(KEY_BITS).export_key(passphrase=password, pkcs=8).decode()
         # nx: if another worker created the key first, use theirs.
         store.client().set(redis_key, pem, nx=True, ex=max(_expires_in(epoch), 1) + 60)
         pem = store.client().get(redis_key)
-    key = serialization.load_pem_private_key(pem.encode(), password)
+    key = RSA.import_key(pem.encode(), passphrase=password)
     for old in [cached for cached in _cache if cached < epoch - 1]:
         del _cache[old]
     _cache[epoch] = key
@@ -91,39 +87,29 @@ def _key(epoch, create=False):
 def key_info():
     """The public half of the current key, for clients to blind against."""
     epoch = _epoch()
-    public_key = _key(epoch, create=True).public_key()
     return {
         "key_id": str(epoch),
         "algorithm": ALGORITHM,
-        "public_key": public_key.public_bytes(
-            serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
-        ).decode(),
+        "public_key": _key(epoch, create=True).public_key().export_key().decode(),
         "issues_for": int((epoch + 1) * KEY_EPOCH_SECONDS - time.time()),
         "token_expires_in": _expires_in(epoch),
     }
 
 
 def blind_sign(key_id, blinded_message):
-    """Sign a blinded message with the current key, without learning what it hides."""
+    """Sign a blinded message with the current key, without learning what it hides.
+
+    `_decrypt_to_bytes` is PyCryptodome's blinded RSA private operation, the same call
+    its PSS signer makes. The message is already blinded by the client.
+    """
     epoch = _epoch()
     if key_id != str(epoch):
         raise StaleKey
-    numbers = _key(epoch, create=True).private_numbers()
-    n, e = numbers.public_numbers.n, numbers.public_numbers.e
-    length = (n.bit_length() + 7) // 8
+    key = _key(epoch, create=True)
     message = int.from_bytes(blinded_message, "big")
-    if len(blinded_message) != length or not 0 < message < n:
+    if len(blinded_message) != key.size_in_bytes() or not 0 < message < key.n:
         raise ValueError("Blinded message has the wrong size for this key.")
-    # Python's pow is not constant-time, so mask the input with a random factor to keep
-    # the private exponent from leaking through timing (RFC 9474 section 7.2).
-    while True:
-        mask = secrets.randbelow(n)
-        if mask > 1 and math.gcd(mask, n) == 1:
-            break
-    signed = pow(message * pow(mask, e, n) % n, numbers.d, n) * pow(mask, -1, n) % n
-    if pow(signed, e, n) != message:
-        raise ValueError("Signing failed.")
-    return signed.to_bytes(length, "big")
+    return key._decrypt_to_bytes(message)
 
 
 def expires_in(key_id):
@@ -139,12 +125,9 @@ def verify(key_id, token, signature):
     if key is None:
         return False
     try:
-        key.public_key().verify(
-            decode(signature),
-            token.encode(),
-            padding.PSS(mgf=padding.MGF1(hashes.SHA384()), salt_length=SALT_LENGTH),
-            hashes.SHA384(),
+        pss.new(key.public_key(), salt_bytes=SALT_LENGTH).verify(
+            SHA384.new(token.encode()), decode(signature)
         )
-    except (InvalidSignature, ValueError):
+    except (ValueError, TypeError):
         return False
     return True

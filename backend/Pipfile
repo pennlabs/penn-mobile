@@ -52,6 +52,7 @@ inflection = "*"
 firebase-admin = "*"
 drf-spectacular = "*"
 pytz = "*"
+pycryptodome = "*"
 
 [requires]
 python_version = "3.11"
