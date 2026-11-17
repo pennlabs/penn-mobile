@@ -15,6 +15,7 @@ rope = "*"
 pytest = "*"
 tblib = "*"
 coverage = "*"
+fakeredis = "*"
 
 [packages]
 beautifulsoup4 = "*"
@@ -51,6 +52,7 @@ inflection = "*"
 firebase-admin = "*"
 drf-spectacular = "*"
 pytz = "*"
+pycryptodome = "*"
 
 [requires]
 python_version = "3.11"

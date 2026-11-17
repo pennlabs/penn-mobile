@@ -25,6 +25,7 @@ urlpatterns = [
     path("market/", include("market.urls")),
     path("wrapped/", include("wrapped.urls")),
     path("games/", include("games.urls")),
+    path("presence/", include("presence.urls")),
 ]
 
 

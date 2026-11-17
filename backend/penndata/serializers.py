@@ -41,7 +41,8 @@ class HomePageOrderSerializer(serializers.ModelSerializer):
 class FitnessRoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = FitnessRoom
-        fields = "__all__"
+        # presence_venue is internal wiring; keep the mobile response contract unchanged.
+        exclude = ["presence_venue"]
 
 
 class FitnessSnapshotSerializer(serializers.ModelSerializer):

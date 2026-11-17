@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -6,9 +7,23 @@ class Venue(models.Model):
     venue_id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255, null=True)
     image_url = models.URLField()
+    presence_venue = models.OneToOneField(
+        "presence.Venue",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="dining_venue",
+    )
 
     def __str__(self):
         return f"{self.name}-{str(self.venue_id)}"
+
+    def clean(self):
+        super().clean()
+        if self.presence_venue is not None and self.presence_venue.kind != "dining":
+            raise ValidationError(
+                {"presence_venue": "Only dining presence venues can link a dining venue."}
+            )
 
 
 class DiningItem(models.Model):
