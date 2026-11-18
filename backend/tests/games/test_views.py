@@ -195,7 +195,7 @@ class TestSubmitScoreView(TestCase):
     @patch("games.models.platform_student_attrs")
     def test_valid_submission_does_not_update_profile_or_sync(self, sync):
         response = self.client.post(
-            f"/games/word-hunt/{DATE}/submit/", {"words": ["cat"]}, format="json"
+            f"/games/word-hunt/{DATE}/submit/", {"words": ["cat"], "score": 100}, format="json"
         )
 
         self.assertEqual(201, response.status_code)
@@ -206,15 +206,33 @@ class TestSubmitScoreView(TestCase):
 
     def test_invalid_and_duplicate_submissions_are_rejected(self):
         invalid = self.client.post(
-            f"/games/word-hunt/{DATE}/submit/", {"words": ["unknown"]}, format="json"
+            f"/games/word-hunt/{DATE}/submit/", {"words": ["unknown"], "score": 100}, format="json"
         )
         valid = self.client.post(
-            f"/games/word-hunt/{DATE}/submit/", {"words": ["cat"]}, format="json"
+            f"/games/word-hunt/{DATE}/submit/", {"words": ["cat"], "score": 100}, format="json"
         )
         duplicate = self.client.post(
-            f"/games/word-hunt/{DATE}/submit/", {"words": ["cat"]}, format="json"
+            f"/games/word-hunt/{DATE}/submit/", {"words": ["cat"], "score": 100}, format="json"
         )
 
         self.assertEqual(400, invalid.status_code)
         self.assertEqual(201, valid.status_code)
         self.assertEqual(400, duplicate.status_code)
+
+    def test_mismatched_score_rejected(self):
+        response = self.client.post(
+            f"/games/word-hunt/{DATE}/submit/", {"words": ["cat"], "score": 200}, format="json"
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(100, response.data["score"])
+        self.assertFalse(LeaderboardEntry.objects.exists())
+
+    def test_missing_or_invalid_score_rejected(self):
+        for score in (None, -1, 1.5, "100", True):
+            with self.subTest(score=score):
+                payload = {"words": ["cat"]}
+                if score is not None:
+                    payload["score"] = score
+                response = self.client.post(f"/games/word-hunt/{DATE}/submit/", payload, format="json")
+                self.assertEqual(400, response.status_code)
+        self.assertFalse(LeaderboardEntry.objects.exists())

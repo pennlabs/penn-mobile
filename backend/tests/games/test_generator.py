@@ -15,44 +15,44 @@ from games.generator import (
 
 
 class TestNeighbors(SimpleTestCase):
-    """Tests the neighbors() grid adjacency helper (used on a 5x5 board, n=4)."""
+    """Tests the neighbors() grid adjacency helper (used on a 4x4 board, n=3)."""
 
     def test_corner_has_three_neighbors(self):
-        result = list(neighbors(4, 0, 0))
+        result = list(neighbors(3, 0, 0))
         self.assertEqual(3, len(result))
 
     def test_edge_has_five_neighbors(self):
         # top edge, not a corner
-        result = list(neighbors(4, 2, 0))
+        result = list(neighbors(3, 2, 0))
         self.assertEqual(5, len(result))
 
     def test_center_has_eight_neighbors(self):
-        result = list(neighbors(4, 2, 2))
+        result = list(neighbors(3, 2, 2))
         self.assertEqual(8, len(result))
 
     def test_all_neighbors_within_bounds(self):
-        for x in range(5):
-            for y in range(5):
-                for xx, yy in neighbors(4, x, y):
+        for x in range(4):
+            for y in range(4):
+                for xx, yy in neighbors(3, x, y):
                     self.assertGreaterEqual(xx, 0)
-                    self.assertLessEqual(xx, 4)
+                    self.assertLessEqual(xx, 3)
                     self.assertGreaterEqual(yy, 0)
-                    self.assertLessEqual(yy, 4)
+                    self.assertLessEqual(yy, 3)
 
     def test_no_self_in_neighbors(self):
-        for x in range(5):
-            for y in range(5):
-                self.assertNotIn((x, y), list(neighbors(4, x, y)))
+        for x in range(4):
+            for y in range(4):
+                self.assertNotIn((x, y), list(neighbors(3, x, y)))
 
 
 class TestGenerateGame(SimpleTestCase):
     def setUp(self):
         self.game, self.seed = generate_game()
 
-    def test_board_is_5x5(self):
-        self.assertEqual(5, len(self.game))
+    def test_board_is_4x4(self):
+        self.assertEqual(4, len(self.game))
         for row in self.game:
-            self.assertEqual(5, len(row))
+            self.assertEqual(4, len(row))
 
     def test_all_cells_are_single_lowercase_letters(self):
         for row in self.game:
@@ -109,7 +109,7 @@ class TestSolveGame(SimpleTestCase):
 
     def test_empty_like_board_returns_only_valid_words(self):
         # A board filled with a single rare letter should return no spurious words
-        board = [["z"] * 5 for _ in range(5)]
+        board = [["z"] * 4 for _ in range(4)]
         result = solve_game(board)
         for word in result:
             self.assertIn(word, WORD_SET)
@@ -123,10 +123,10 @@ class TestGenerateGoodGame(SimpleTestCase):
         super().setUpClass()
         cls.game, cls.seed, cls.sols = generate_good_game()
 
-    def test_board_is_5x5(self):
-        self.assertEqual(5, len(self.game))
+    def test_board_is_4x4(self):
+        self.assertEqual(4, len(self.game))
         for row in self.game:
-            self.assertEqual(5, len(row))
+            self.assertEqual(4, len(row))
 
     def test_meets_minimum_word_count(self):
         self.assertGreaterEqual(len(self.sols), MIN_TOTAL_WORDS)

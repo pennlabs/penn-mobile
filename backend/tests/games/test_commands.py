@@ -7,7 +7,7 @@ from django.utils import timezone
 from games.models import Game
 
 
-MOCK_BOARD = [["a", "b", "c", "d", "e"]] * 5
+MOCK_BOARD = [["a", "b", "c", "d"]] * 4
 MOCK_SEED = "garden"
 MOCK_SOLS = ["cat", "cats", "table", "garden", "gardens"]
 
