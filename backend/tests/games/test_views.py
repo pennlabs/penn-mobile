@@ -167,7 +167,7 @@ class TestSubmitScoreView(TestCase):
         )
 
     def test_submit_valid_words(self):
-        payload = {"words": ["cat", "dog"]}
+        payload = {"words": ["cat", "dog"], "score": 200}
         response = self.client.post(
             f"/games/word-hunt/{DATE}/submit/", json.dumps(payload), content_type="application/json"
         )
@@ -182,7 +182,7 @@ class TestSubmitScoreView(TestCase):
         self.assertEqual(1, LeaderboardEntry.objects.count())
 
     def test_score_computed_from_word_lengths(self):
-        payload = {"words": ["cat"]}
+        payload = {"words": ["cat"], "score": 100}
         response = self.client.post(
             f"/games/word-hunt/{DATE}/submit/", json.dumps(payload), content_type="application/json"
         )
@@ -190,8 +190,26 @@ class TestSubmitScoreView(TestCase):
         res_json = json.loads(response.content)
         self.assertEqual((3 - 2) ** 2 * 100, res_json["score"])
 
+    def test_mismatched_score_rejected(self):
+        response = self.client.post(
+            f"/games/word-hunt/{DATE}/submit/", {"words": ["cat"], "score": 200}, format="json"
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(100, response.data["score"])
+        self.assertFalse(LeaderboardEntry.objects.exists())
+
+    def test_missing_or_invalid_score_rejected(self):
+        for score in (None, -1, 1.5, "100", True):
+            with self.subTest(score=score):
+                payload = {"words": ["cat"]}
+                if score is not None:
+                    payload["score"] = score
+                response = self.client.post(f"/games/word-hunt/{DATE}/submit/", payload, format="json")
+                self.assertEqual(400, response.status_code)
+        self.assertFalse(LeaderboardEntry.objects.exists())
+
     def test_submit_invalid_words_rejected(self):
-        payload = {"words": ["cat", "notarealword"]}
+        payload = {"words": ["cat", "notarealword"], "score": 100}
         response = self.client.post(
             f"/games/word-hunt/{DATE}/submit/", json.dumps(payload), content_type="application/json"
         )
@@ -202,7 +220,7 @@ class TestSubmitScoreView(TestCase):
         self.assertIn("notarealword", res_json["invalid_words"])
 
     def test_submit_duplicate_words_rejected(self):
-        payload = {"words": ["cat", "cat"]}
+        payload = {"words": ["cat", "cat"], "score": 200}
         response = self.client.post(
             f"/games/word-hunt/{DATE}/submit/", json.dumps(payload), content_type="application/json"
         )
@@ -211,7 +229,7 @@ class TestSubmitScoreView(TestCase):
         self.assertIn("error", res_json)
 
     def test_submit_words_not_a_list(self):
-        payload = {"words": "cat"}
+        payload = {"words": "cat", "score": 100}
         response = self.client.post(
             f"/games/word-hunt/{DATE}/submit/", json.dumps(payload), content_type="application/json"
         )
@@ -220,7 +238,7 @@ class TestSubmitScoreView(TestCase):
         self.assertIn("error", res_json)
 
     def test_submit_duplicate_entry_rejected(self):
-        payload = {"words": ["cat"]}
+        payload = {"words": ["cat"], "score": 100}
         self.client.post(
             f"/games/word-hunt/{DATE}/submit/", json.dumps(payload), content_type="application/json"
         )
@@ -233,7 +251,7 @@ class TestSubmitScoreView(TestCase):
         self.assertEqual(1, LeaderboardEntry.objects.count())
 
     def test_submit_game_not_found(self):
-        payload = {"words": ["cat"]}
+        payload = {"words": ["cat"], "score": 100}
         response = self.client.post(
             "/games/word-hunt/2000-01-01/submit/",
             json.dumps(payload),
@@ -243,7 +261,7 @@ class TestSubmitScoreView(TestCase):
 
     def test_submit_unauthenticated(self):
         self.client.force_authenticate(user=None)
-        payload = {"words": ["cat"]}
+        payload = {"words": ["cat"], "score": 100}
         response = self.client.post(
             f"/games/word-hunt/{DATE}/submit/", json.dumps(payload), content_type="application/json"
         )

@@ -9,7 +9,7 @@ from games.models import Game
 
 
 # 190 words spanning lengths 3–7 to exercise all freq buckets
-MOCK_BOARD = [["a", "b", "c", "d", "e"]] * 5
+MOCK_BOARD = [["a", "b", "c", "d"]] * 4
 MOCK_SEED = "garden"
 MOCK_SOLS = (
     ["cat", "bat", "rat", "hat", "mat", "sat", "fat", "pat", "vat", "lat"] * 10  # 100 × len-3

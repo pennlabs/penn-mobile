@@ -11,7 +11,7 @@ if not zip_file_path.exists():
     raise FileNotFoundError(f"words.txt.zip not found at {zip_file_path}")
 
 MAX_LEN = 8
-MIN_TOTAL_WORDS = 175
+MIN_TOTAL_WORDS = 75
 
 WORD_SET = set()
 PREFIX_SET = set()
@@ -47,8 +47,8 @@ def neighbors(n, x, y):
 
 def generate_game():
     letters = list("abcdefghijklmnopqrstuvwxyz")
-    game = [[""] * 5 for _ in range(5)]
-    n = 4
+    game = [[""] * 4 for _ in range(4)]
+    n = 3
 
     seed_word = random.choice(SIX_LETTER_WORDS)
     curr_x, curr_y = random.randint(0, n), random.randint(0, n)
@@ -60,8 +60,8 @@ def generate_game():
             return generate_game()
         curr_x, curr_y = random.choice(options)
 
-    for y in range(5):
-        for x in range(5):
+    for y in range(4):
+        for x in range(4):
             if game[y][x] == "":
                 game[y][x] = random.choice(letters)
 

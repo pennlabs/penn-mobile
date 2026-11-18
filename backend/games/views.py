@@ -70,6 +70,10 @@ class SubmitScoreView(APIView):
     def post(self, request, date):
         game = get_object_or_404(Game, date=date)
         submitted_words = request.data.get("words")
+        submitted_score = request.data.get("score")
+
+        if type(submitted_score) is not int or submitted_score < 0:
+            return Response({"error": "score must be a nonnegative integer."}, status=400)
 
         if not isinstance(submitted_words, list):
             return Response({"error": "words must be a list."}, status=400)
@@ -90,6 +94,8 @@ class SubmitScoreView(APIView):
             return Response({"error": "Score already submitted for this game."}, status=400)
 
         score = sum((len(w) - 2) ** 2 * 100 for w in normalized)
+        if submitted_score != score:
+            return Response({"error": "Score does not match.", "score": score}, status=400)
 
         entry = LeaderboardEntry.objects.create(
             game=game,
