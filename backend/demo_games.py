@@ -69,7 +69,7 @@ print(json.dumps(response.data, indent=2)[:200] + "...\n")
 # TASK 4 ----------------------------------------------------------------------
 print("--- Testing Task 4: Submit Score Route (valid words) ---")
 valid_words = game.possible_words[:3] if game and game.possible_words else []
-data = {"words": valid_words}
+data = {"words": valid_words, "score": sum((len(w) - 2) ** 2 * 100 for w in valid_words)}
 response = client.post(f"/games/word-hunt/{game.date}/submit/", data, format="json")
 print(f"✅ Route Status Code: {response.status_code}")
 print("✅ Submit Route Response:")
@@ -78,7 +78,7 @@ print(json.dumps(response.data, indent=2) + "\n")
 
 # TASK 5 ----------------------------------------------------------------------
 print("--- Testing Task 5: Submit Score Route (invalid words) ---")
-data = {"words": [valid_words[0] if valid_words else "cat", "notarealword123"]}
+data = {"words": [valid_words[0] if valid_words else "cat", "notarealword123"], "score": 0}
 response2_user, _ = User.objects.get_or_create(username="testuser2")
 client2 = APIClient()
 client2.force_authenticate(user=response2_user)
