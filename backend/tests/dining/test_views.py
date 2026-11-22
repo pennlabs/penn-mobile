@@ -222,6 +222,12 @@ class TestMenus(TestCase):
         self.assertNotIn("Content-Encoding", response)
         self.try_structure(response.json())
 
+    def test_non_dining_route_is_not_gzip_encoded(self):
+        response = self.client.get(reverse("admin:login"), HTTP_ACCEPT_ENCODING="gzip")
+        # Make sure that this reponse is over 200 bytes (so that the gzip middleware is applied)
+        self.assertGreaterEqual(len(response.content), 200)
+        self.assertNotIn("Content-Encoding", response)
+
     @mock.patch("requests.request", mock_dining_requests)
     def test_skip_venue(self):
         Venue.objects.all().delete()
