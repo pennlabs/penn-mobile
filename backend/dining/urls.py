@@ -14,5 +14,5 @@ urlpatterns = [
         gzip_page(cache_page(3 * Cache.HOUR)(Menus.as_view())),
         name="menus-with-date",
     ),
-    path("preferences/", gzip_page(Preferences.as_view()), name="dining-preferences"),
+    path("preferences/", Preferences.as_view(), name="dining-preferences"),
 ]
