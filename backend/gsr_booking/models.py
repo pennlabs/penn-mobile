@@ -177,6 +177,8 @@ class GSRBookingShare(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     responded_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
+    notification_pending = models.BooleanField(default=True)
+    notification_sent_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [

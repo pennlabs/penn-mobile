@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from analytics.entries import FuncEntry, ViewEntry
 from dateutil.parser import parse as parse_datetime
 from django.contrib.auth import get_user_model
@@ -38,6 +40,7 @@ from utils.cache import Cache
 
 
 User = get_user_model()
+GSR_SHARE_NOTIFICATION_COOLDOWN = timedelta(minutes=3)
 
 
 class MyMembershipViewSet(viewsets.ReadOnlyModelViewSet):
@@ -460,19 +463,30 @@ class GSRBookingShareViewSet(
         serializer.is_valid(raise_exception=True)
         reservation = serializer.validated_data["reservation"]
         recipient = serializer.validated_data["recipient"]
-        existing_share = GSRBookingShare.objects.filter(
-            reservation=reservation, recipient=recipient
-        ).first()
-        should_notify = existing_share is None or existing_share.status in (
-            GSRBookingShare.DECLINED,
-            GSRBookingShare.REVOKED,
-        )
-        share = serializer.save()
-        if should_notify:
-            transaction.on_commit(
-                lambda: send_gsr_booking_invite_notification.delay(share.pk),
-                robust=True,
+        with transaction.atomic():
+            existing_share = (
+                GSRBookingShare.objects.select_for_update()
+                .filter(reservation=reservation, recipient=recipient)
+                .first()
             )
+            should_notify = existing_share is None or existing_share.status in (
+                GSRBookingShare.DECLINED,
+                GSRBookingShare.REVOKED,
+            )
+            share = serializer.save()
+            if should_notify:
+                cooldown_active = (
+                    share.notification_sent_at is not None
+                    and timezone.now() - share.notification_sent_at
+                    < GSR_SHARE_NOTIFICATION_COOLDOWN
+                )
+                if not cooldown_active:
+                    share.notification_pending = True
+                    share.save(update_fields=["notification_pending", "updated_at"])
+                    transaction.on_commit(
+                        lambda: send_gsr_booking_invite_notification.delay(share.pk),
+                        robust=True,
+                    )
         return Response(self.get_serializer(share).data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
@@ -481,7 +495,15 @@ class GSRBookingShareViewSet(
             return Response(status=status.HTTP_403_FORBIDDEN)
         share.status = GSRBookingShare.REVOKED
         share.revoked_at = timezone.now()
-        share.save(update_fields=["status", "revoked_at", "updated_at"])
+        share.notification_pending = False
+        share.save(
+            update_fields=[
+                "status",
+                "revoked_at",
+                "notification_pending",
+                "updated_at",
+            ]
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["post"])
@@ -496,7 +518,15 @@ class GSRBookingShareViewSet(
 
         share.status = GSRBookingShare.ACCEPTED
         share.responded_at = timezone.now()
-        share.save(update_fields=["status", "responded_at", "updated_at"])
+        share.notification_pending = False
+        share.save(
+            update_fields=[
+                "status",
+                "responded_at",
+                "notification_pending",
+                "updated_at",
+            ]
+        )
         return Response(self.get_serializer(share).data)
 
     @action(detail=True, methods=["post"])
@@ -509,5 +539,13 @@ class GSRBookingShareViewSet(
 
         share.status = GSRBookingShare.DECLINED
         share.responded_at = timezone.now()
-        share.save(update_fields=["status", "responded_at", "updated_at"])
+        share.notification_pending = False
+        share.save(
+            update_fields=[
+                "status",
+                "responded_at",
+                "notification_pending",
+                "updated_at",
+            ]
+        )
         return Response(self.get_serializer(share).data)

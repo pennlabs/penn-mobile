@@ -1,6 +1,8 @@
 import logging
 
 from celery import shared_task
+from django.db import transaction
+from django.utils import timezone
 
 from gsr_booking.models import GSRBookingShare
 from user.models import AndroidNotificationToken, IOSNotificationToken, NotificationService
@@ -16,9 +18,28 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="gsr_booking.send_gsr_booking_invite_notification")
 def send_gsr_booking_invite_notification(share_id):
-    share = GSRBookingShare.objects.select_related("inviter", "recipient").get(pk=share_id)
-    if share.status != GSRBookingShare.PENDING or not share.is_relevant():
-        return
+    with transaction.atomic():
+        share = (
+            GSRBookingShare.objects.select_for_update()
+            .select_related("inviter", "recipient")
+            .get(pk=share_id)
+        )
+        if (
+            share.status != GSRBookingShare.PENDING
+            or not share.notification_pending
+            or not share.is_relevant()
+        ):
+            return
+
+        share.notification_pending = False
+        share.notification_sent_at = timezone.now()
+        share.save(
+            update_fields=[
+                "notification_pending",
+                "notification_sent_at",
+                "updated_at",
+            ]
+        )
 
     inviter_name = share.inviter.get_full_name() or share.inviter.username
     title = "GSR booking invitation"

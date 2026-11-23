@@ -95,6 +95,48 @@ class GSRBookingShareTests(TestCase):
         self.assertEqual(GSRBookingShare.objects.count(), 1)
         send_notification.assert_called_once_with(first.data["id"])
 
+    @mock.patch("gsr_booking.views.send_gsr_booking_invite_notification.delay")
+    def test_reinvite_is_suppressed_during_cooldown(self, send_notification):
+        share = GSRBookingShare.objects.create(
+            reservation=self.reservation,
+            inviter=self.owner,
+            recipient=self.recipient,
+            status=GSRBookingShare.REVOKED,
+            notification_sent_at=timezone.now(),
+        )
+        self.client.force_authenticate(self.owner)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                "/api/gsr/booking-shares/",
+                {"reservation": self.reservation.pk, "recipient": self.recipient.username},
+            )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["status"], GSRBookingShare.PENDING)
+        self.assertEqual(response.data["id"], share.pk)
+        send_notification.assert_not_called()
+
+    @mock.patch("gsr_booking.views.send_gsr_booking_invite_notification.delay")
+    def test_reinvite_notifies_after_cooldown(self, send_notification):
+        share = GSRBookingShare.objects.create(
+            reservation=self.reservation,
+            inviter=self.owner,
+            recipient=self.recipient,
+            status=GSRBookingShare.REVOKED,
+            notification_sent_at=timezone.now() - timedelta(minutes=6),
+        )
+        self.client.force_authenticate(self.owner)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                "/api/gsr/booking-shares/",
+                {"reservation": self.reservation.pk, "recipient": self.recipient.username},
+            )
+
+        self.assertEqual(response.status_code, 201)
+        send_notification.assert_called_once_with(share.pk)
+
     def test_invitee_can_accept_and_view_only_active_bookings(self):
         share = GSRBookingShare.objects.create(
             reservation=self.reservation, inviter=self.owner, recipient=self.recipient
