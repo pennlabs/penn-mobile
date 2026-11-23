@@ -44,6 +44,7 @@ def send_gsr_booking_invite_notification(share_id):
     inviter_name = share.inviter.get_full_name() or share.inviter.username
     title = "GSR booking invitation"
     body = f"{inviter_name} invited you to a GSR booking. Open Penn Mobile to respond."
+    notification_data = {"type": "gsr_booking_share", "share_id": str(share.pk)}
     service = NotificationService.objects.filter(name="PENN_MOBILE").first()
     if service is None:
         logger.error("Cannot notify GSR invitee: PENN_MOBILE notification service is missing.")
@@ -70,4 +71,4 @@ def send_gsr_booking_invite_notification(share_id):
     for tokens, send_notification in notification_targets:
         token_values = list(tokens.values_list("token", flat=True))
         if token_values:
-            send_notification.delay(token_values, title, body, False)
+            send_notification.delay(token_values, title, body, False, notification_data)

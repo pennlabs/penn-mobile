@@ -371,6 +371,7 @@ class GSRBookingShareTests(TestCase):
             "GSR booking invitation",
             "owner invited you to a GSR booking. Open Penn Mobile to respond.",
             False,
+            {"type": "gsr_booking_share", "share_id": str(share.pk)},
         )
 
     @mock.patch("gsr_booking.tasks.ios_send_notification.delay")
@@ -389,6 +390,7 @@ class GSRBookingShareTests(TestCase):
             "GSR booking invitation",
             "owner invited you to a GSR booking. Open Penn Mobile to respond.",
             False,
+            {"type": "gsr_booking_share", "share_id": str(share.pk)},
         )
 
     @mock.patch("gsr_booking.tasks.ios_send_dev_notification.delay")
@@ -407,6 +409,7 @@ class GSRBookingShareTests(TestCase):
             "GSR booking invitation",
             "owner invited you to a GSR booking. Open Penn Mobile to respond.",
             False,
+            {"type": "gsr_booking_share", "share_id": str(share.pk)},
         )
 
     @mock.patch("gsr_booking.tasks.android_send_notification.delay")
