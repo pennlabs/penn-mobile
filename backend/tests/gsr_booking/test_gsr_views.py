@@ -1,13 +1,16 @@
 import json
+from datetime import timedelta
+from types import SimpleNamespace
 from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
-from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking
+from gsr_booking.models import GSR, Group, GroupMembership, GSRBooking, Reservation
 
 
 User = get_user_model()
@@ -305,7 +308,10 @@ class TestGSRFunctions(TestCase):
             self.assertIn("id", room)
             self.assertIn("availability", room)
 
-    @mock.patch("gsr_booking.api_wrapper.BookingHandler.book_room", book_cancel_room)
+    @mock.patch(
+        "gsr_booking.api_wrapper.BookingHandler.book_room",
+        new=mock.Mock(return_value=SimpleNamespace(pk=123)),
+    )
     def test_book_libcal(self):
         payload = {
             "start_time": "2021-11-21T18:30:00-05:00",
@@ -318,10 +324,14 @@ class TestGSRFunctions(TestCase):
             reverse("book"), json.dumps(payload), content_type="application/json"
         )
         res_json = json.loads(response.content)
-        self.assertEqual(1, len(res_json))
+        self.assertEqual(2, len(res_json))
         self.assertEqual("success", res_json["detail"])
+        self.assertEqual(123, res_json["reservation_id"])
 
-    @mock.patch("gsr_booking.api_wrapper.BookingHandler.book_room", book_cancel_room)
+    @mock.patch(
+        "gsr_booking.api_wrapper.BookingHandler.book_room",
+        new=mock.Mock(return_value=SimpleNamespace(pk=123)),
+    )
     def test_book_wharton(self):
         payload = {
             "start_time": "2021-11-21T18:30:00-05:00",
@@ -334,8 +344,9 @@ class TestGSRFunctions(TestCase):
             reverse("book"), json.dumps(payload), content_type="application/json"
         )
         res_json = json.loads(response.content)
-        self.assertEqual(1, len(res_json))
+        self.assertEqual(2, len(res_json))
         self.assertEqual("success", res_json["detail"])
+        self.assertEqual(123, res_json["reservation_id"])
 
     @mock.patch("gsr_booking.api_wrapper.BookingHandler.cancel_room", book_cancel_room)
     def test_cancel_room(self):
@@ -361,6 +372,10 @@ class TestGSRFunctions(TestCase):
         self.assertIn("room_name", entry)
         self.assertIn("start", entry)
         self.assertIn("end", entry)
+        self.assertIn("reservation_id", entry)
+        self.assertIn("is_creator", entry)
+        self.assertIsNone(entry["reservation_id"])
+        self.assertFalse(entry["is_creator"])
 
         gsr = entry["gsr"]
         self.assertIn("id", gsr)
@@ -369,6 +384,31 @@ class TestGSRFunctions(TestCase):
         self.assertIn("gid", gsr)
         self.assertIn("name", gsr)
         self.assertIn("image_url", gsr)
+
+    @mock.patch("gsr_booking.api_wrapper.BookingHandler.get_reservations")
+    def test_reservations_include_local_reservation_and_creator(self, get_reservations):
+        reservation = Reservation.objects.create(
+            creator=self.user,
+            start=timezone.now(),
+            end=timezone.now() + timedelta(hours=1),
+        )
+        GSRBooking.objects.create(
+            reservation=reservation,
+            user=self.user,
+            booking_id="local-booking",
+            gsr=self.huntsman_gsr,
+            room_id=1,
+            room_name="Room 1",
+            start=reservation.start,
+            end=reservation.end,
+        )
+        get_reservations.return_value = [{"booking_id": "local-booking"}]
+
+        response = self.client.get(reverse("reservations"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]["reservation_id"], reservation.pk)
+        self.assertTrue(response.data[0]["is_creator"])
 
 
 class TestSEASViews(TestCase):
@@ -457,7 +497,10 @@ class TestPennGroupsViews(TestCase):
             self.assertIn("id", room)
             self.assertIn("availability", room)
 
-    @mock.patch("gsr_booking.api_wrapper.BookingHandler.book_room", penngroups_book_cancel)
+    @mock.patch(
+        "gsr_booking.api_wrapper.BookingHandler.book_room",
+        new=mock.Mock(return_value=SimpleNamespace(pk=123)),
+    )
     def test_book_penngroups(self):
         """Test AGH booking endpoint"""
         payload = {
@@ -471,8 +514,9 @@ class TestPennGroupsViews(TestCase):
             reverse("book"), json.dumps(payload), content_type="application/json"
         )
         res_json = json.loads(response.content)
-        self.assertEqual(1, len(res_json))
+        self.assertEqual(2, len(res_json))
         self.assertEqual("success", res_json["detail"])
+        self.assertEqual(123, res_json["reservation_id"])
 
     @mock.patch("gsr_booking.api_wrapper.BookingHandler.cancel_room", penngroups_book_cancel)
     def test_cancel_penngroups(self):
