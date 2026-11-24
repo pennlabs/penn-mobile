@@ -352,7 +352,7 @@ class BookRoom(APIView):
         room_name = request.data["room_name"]
 
         try:
-            GSRBooker.book_room(
+            reservation = GSRBooker.book_room(
                 gid,
                 room_id,
                 room_name,
@@ -361,7 +361,7 @@ class BookRoom(APIView):
                 request.user,
                 request.user.booking_groups.filter(name="Penn Labs").first(),
             )
-            return Response({"detail": "success"})
+            return Response({"detail": "success", "reservation_id": reservation.pk})
         except APIError as e:
             return Response({"error": str(e)}, status=400)
 
@@ -397,11 +397,30 @@ class ReservationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response(
-            GSRBooker.get_reservations(
-                request.user, request.user.booking_groups.filter(name="Penn Labs").first()
-            )
+        reservations = GSRBooker.get_reservations(
+            request.user, request.user.booking_groups.filter(name="Penn Labs").first()
         )
+        booking_ids = [booking["booking_id"] for booking in reservations]
+        local_bookings = {
+            booking.booking_id: booking
+            for booking in GSRBooking.objects.filter(booking_id__in=booking_ids).select_related(
+                "reservation"
+            )
+        }
+
+        for booking_data in reservations:
+            local_booking = local_bookings.get(booking_data["booking_id"])
+            reservation = (
+                local_booking.reservation
+                if local_booking and local_booking.reservation_id
+                else None
+            )
+            booking_data["reservation_id"] = reservation.pk if reservation else None
+            booking_data["is_creator"] = bool(
+                reservation and reservation.creator_id == request.user.id
+            )
+
+        return Response(reservations)
 
 
 class GSRShareCodeViewSet(
